@@ -1,0 +1,10 @@
+# Never commit business data or secrets
+src/
+out/
+*.xlsx
+*.xls
+*.csv
+.env
+.env.*
+!.env.example
+node_modules/

@@ -1,0 +1,1 @@
+{"name":"crux-bi-dashboard","private":true,"version":"1.0.0","description":"Crux zonal BI: Supabase schema, shared extractor, loader, dashboard","dependencies":{"xlsx":"https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"}}
