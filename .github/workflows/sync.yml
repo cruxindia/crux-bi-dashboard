@@ -7,6 +7,8 @@ on:
     paths: ['.github/workflows/sync.yml']
 permissions:
   contents: write
+  pages: write
+  id-token: write
 concurrency: sync
 jobs:
   sync:
@@ -42,3 +44,19 @@ jobs:
           git add -A
           git diff --cached --quiet && echo "no changes" || git commit -m "Sync code, migrations and docs from Supabase export ($(date -u +%F))"
           git push
+  deploy:
+    needs: sync
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4
