@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Crux Business Intelligence</title>
+<meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -77,13 +78,7 @@ tr:hover td{background:var(--blue-soft)}
 </style>
 </head>
 <body>
-<div id="login" class="login hidden">
- <h2>Sign in</h2><p class="lede">Use your Crux email. Access is limited to approved users.</p>
- <label>Email<input id="em" type="email" autocomplete="username"></label>
- <label>Password<input id="pw" type="password" autocomplete="current-password"></label>
- <button class="btn primary" id="signin">Sign in</button> <button class="btn" id="magic">Email me a sign-in link</button>
- <p id="loginMsg" class="note"></p>
-</div>
+<div id="login" class="login hidden"><h2>Crux Business Intelligence</h2><p id="loginMsg" class="note"></p></div>
 <div class="app hidden" id="app">
 <nav aria-label="Sections">
  <h1>Crux BI</h1><div class="sub">Zonal business &amp; operations</div>
@@ -107,7 +102,7 @@ tr:hover td{background:var(--blue-soft)}
 <script>
 'use strict';
 const CFG={project:'czdjbbhxboweawqbjywr',url:'https://czdjbbhxboweawqbjywr.supabase.co',key:'sb_publishable_J7fFRVLVB_h5SHZcquWfXA_p_O30PkF',server:'Supabase'};
-const S={mode:null,mcp:null,sb:null,role:null,email:null,meta:null,section:'overview',charts:[]};
+const S={mode:null,mcp:null,sb:null,role:null,email:null,meta:null,section:'overview',charts:[],adminKey:(()=>{try{return sessionStorage.getItem('crux_admin_key')}catch{return null}})()};
 const $=s=>document.querySelector(s), el=(t,a={},...c)=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(v!=null)e.setAttribute(k,v)}c.flat().forEach(x=>x!=null&&e.append(x.nodeType?x:document.createTextNode(String(x))));return e};
 const nf=new Intl.NumberFormat('en-IN'),fmt=v=>v==null||isNaN(v)?'–':nf.format(Math.round(v)),pct=v=>v==null||isNaN(v)?'–':(v*100).toFixed(1)+'%',hrs=v=>v==null?'–':(v>=48?(v/24).toFixed(1)+' d':(+v).toFixed(1)+' h'),inr=v=>v==null?'–':'₹'+nf.format(Math.round(v));
 const mlabel=m=>m?new Date(m+'T00:00:00Z').toLocaleDateString('en-IN',{month:'short',year:'numeric',timeZone:'UTC'}):'–';
@@ -120,7 +115,7 @@ function sqlFor(fn,a){const m=a.month,f=a.filters||{};const g=k=>{const v=a.grou
  case'zonal':return`bi.api_zonal(${dt(a.snapshot)},${js(f)})`;case'daily':return`bi.api_daily(${dt(m)},${js(f)})`;case'monthly':return`bi.api_monthly(${dt(a.from)},${dt(a.to)},${js(f)},${g('monthly')})`;
  case'force':return`bi.api_force(${dt(m)},${js(f)})`;case'force_trend':return`bi.api_force_trend(${js(f)})`;case'case_tat':return`bi.api_case_tat(${dt(m)},${js(f)},${g('case_tat')})`;
  case'point_tat':return`bi.api_point_tat(${dt(m)},${js(f)},${g('point_tat')})`;case'manual_tat':return`bi.api_manual_tat(${dt(m)},${js(f)})`;case'employees':return`bi.api_employees(${dt(m)},${js(f)})`;
- case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
+ case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
  throw new Error('unknown fn '+fn)}
 function parseSqlPayload(p){let rows=p;if(p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.result==='string')p=p.result;
  if(typeof p==='string'){const m=p.match(/<untrusted-data-[^>]+>\s*([\s\S]*?)\s*<\/untrusted-data-/);rows=JSON.parse(m?m[1]:p)}
@@ -130,28 +125,26 @@ async function mcpSql(q){try{const res=await S.mcp.callTool(CFG.server,'execute_
 function mcpErr(e){const c=e&&e.code;const msg={server_not_connected:'The Supabase connector is not connected for you. Add it in Claude settings, then reload.',needs_reauth:'Your Supabase connector needs to be reconnected (Settings → Connectors), then reload.',not_granted:'Access to the Supabase connector was declined for this page. Allow it from the page permissions to load data.',consent_required:'Allow this page to use your Supabase connector to load data.',tool_error:'The database rejected the request: '+((e.result&&JSON.stringify(e.result.content||'').slice(0,300))||e.message),server_unavailable:'Supabase did not respond in time. Try again in a moment.'}[c];
  const er=new Error(msg||((c?c+': ':'')+(e&&e.message||e)));er.code=c;return er}
 async function api(fn,args={}){if(S.mode==='mcp')return mcpSql(`select ${sqlFor(fn,args)} as r`);
- const {data,error}=await S.sb.rpc('bi_call',{p_fn:fn,p_args:args});if(error)throw new Error(error.message);return data}
-async function adminCall(action,p){if(S.mode==='mcp'){if(action==='mapping_update')return mcpSql(`select bi.api_mapping_update(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='refresh_employees')return mcpSql(`select jsonb_build_object('employees',bi.refresh_employee_classification()) as r`)}
- const {data,error}=await S.sb.rpc('bi_admin',{p_action:action,p});if(error)throw new Error(error.message);return data}
+ const {data,error}=await S.sb.rpc('bi_call',{p_fn:fn,p_args:S.adminKey?{...args,admin_key:S.adminKey}:args});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);return data}
+async function adminCall(action,p){if(S.mode==='mcp'){if(action==='verify')return{ok:true};if(action==='mapping_update')return mcpSql(`select bi.api_mapping_update(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='refresh_employees')return mcpSql(`select jsonb_build_object('employees',bi.refresh_employee_classification()) as r`)}
+ const {data,error}=await S.sb.rpc('bi_admin',{p_action:action,p:{...p,admin_key:S.adminKey}});if(error)throw new Error(error.message);return data}
 async function ingest(action,payload){if(S.mode==='mcp')return mcpSql(`select bi.ingest_as(${lit('connector:'+(S.email||'owner'))},${lit(action)},${js(payload)}) as r`);
- const {data,error}=await S.sb.rpc('bi_ingest',{p_token:null,p_action:action,p_payload:payload});if(error)throw new Error(error.message);return data}
+ const {data,error}=await S.sb.rpc('bi_ingest',{p_token:S.adminKey,p_action:action,p_payload:payload});if(error)throw new Error(error.message);return data}
 
 /* ---------- boot ---------- */
 async function boot(){
  if(window.claude&&claude.use){try{const m=await claude.use('mcp');if(m){S.mode='mcp';S.mcp=m;S.role='admin';try{const u=await claude.use('user');if(u){const me=await u.me();S.email=me&&me.email||null}}catch{}}}catch{}}
- if(!S.mode){if(!window.supabase){showLoginMsg('This page needs either the Claude connector or the Supabase client library.');$('#login').classList.remove('hidden');return}
-  S.mode='supabase';S.sb=supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,detectSessionInUrl:true}});
-  const {data:{session}}=await S.sb.auth.getSession();if(!session){$('#login').classList.remove('hidden');return}S.email=session.user.email}
- try{S.meta=await api('meta')}catch(e){$('#login').classList.remove('hidden');showLoginMsg(e.message.includes('not authorised')?'Your account is signed in but not approved for this dashboard. Ask an administrator to add '+(S.email||'your email')+'.':e.message);return}
+ if(!S.mode){if(!window.supabase){$('#login').classList.remove('hidden');showLoginMsg('Could not load the database client library. Check your connection and reload.');return}
+  S.mode='supabase';S.sb=supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:false,autoRefreshToken:false}})}
+ try{S.meta=await api('meta')}catch(e){$('#login').classList.remove('hidden');showLoginMsg('Could not load data: '+e.message);return}
  if(S.mode==='supabase'){S.role=S.meta.role||'viewer'}
- $('#app').classList.remove('hidden');$('#modeLbl').textContent=S.mode==='mcp'?'Live via your Supabase connector':'Signed in as '+S.email;
+ $('#app').classList.remove('hidden');$('#modeLbl').textContent=S.mode==='mcp'?'Live via your Supabase connector':(S.role==='admin'?'Admin unlocked':'Read-only view');
  initFilters();renderFresh();buildNav();go(location.hash.slice(1)||'overview')}
 function showLoginMsg(t){$('#loginMsg').textContent=t}
-$('#signin').addEventListener('click',async()=>{const {error}=await S.sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error)return showLoginMsg(error.message);location.reload()});
-$('#magic').addEventListener('click',async()=>{const {error}=await S.sb.auth.signInWithOtp({email:$('#em').value.trim(),options:{shouldCreateUser:false,emailRedirectTo:location.href.split('#')[0]}});showLoginMsg(error?error.message:'Check your inbox for the sign-in link.')});
+
 
 const SECTIONS=[['overview','Overview'],['tracker','Business tracker'],['growth','Growth & trends'],['force','Force & reconciliation'],['tat','TAT & operations'],['people','People'],['quality','Data quality'],['upload','Upload centre']];
-function buildNav(){const n=$('#navbtns');n.innerHTML='';SECTIONS.forEach(([k,l])=>{if(['upload'].includes(k)&&S.role!=='admin')return;n.append(el('button',{'data-k':k,onclick:()=>go(k)},l))})}
+function buildNav(){const n=$('#navbtns');n.innerHTML='';SECTIONS.forEach(([k,l])=>{n.append(el('button',{'data-k':k,onclick:()=>go(k)},l))})}
 function go(k){S.section=k;location.hash=k;document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.k===k?'page':'false'));render()}
 function filters(){const f={};const s=$('#fStake').value,r=$('#fRegion').value,z=$('#fZone').value,l=$('#fLoc').value,c=$('#fFam').value;if(s)f.stakeholder=s;if(r)f.region=r;if(z)f.zone_group=z;if(l)f.location_id=+l;if(c)f.client_family=c;return f}
 function initFilters(){const m=S.meta;const mo=$('#fMonth');m.months.forEach(x=>mo.append(el('option',{value:x},mlabel(x))));
@@ -189,7 +182,7 @@ function render(){({overview:vOverview,tracker:vTracker,growth:vGrowth,force:vFo
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
  const [ov,daily,ins]=await Promise.all([api('overview',{month:m,filters:f}),api('daily',{month:m,filters:f}),api('insights',{month:m,filters:f})]);
  s.append(el('h2',{},'Business position — '+mlabel(m)),el('p',{class:'lede'},`Authoritative counts from the Zonal Tracker as of ${ov.as_of||'–'}. Force, TAT and forecast figures state their own basis.`));
- const fc=ov.forecast||{};const tgt=ov.target_cases||0;const max=Math.max(tgt,fc.curve_range?fc.curve_range[1]:0,ov.mtd_cases||0)||1;
+ const fc=ov.forecast||{};const tgt=ov.target_cases||0;const max=(Math.max(tgt,fc.curve_range?fc.curve_range[1]:0,ov.mtd_cases||0)||1)*1.06;
  const wpace=fc.workdays_in_month?fc.workdays_elapsed/fc.workdays_in_month:null;
  const track=el('div',{class:'track',role:'img','aria-label':`MTD ${fmt(ov.mtd_cases)} of target ${fmt(tgt)}`},el('div',{class:'mtd',style:`width:${100*(ov.mtd_cases||0)/max}%`}),
   fc.curve_range?el('div',{class:'fc',style:`left:${100*fc.curve_range[0]/max}%;width:${100*(fc.curve_range[1]-fc.curve_range[0])/max}%`}):null,
@@ -228,7 +221,11 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
   const cols=g==='none'?[{key:'stakeholder',label:'Stakeholder'},{key:'zone',label:'Zone'},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'change',label:'Change',num:1,fmt:(v,r)=>v==null?'–':el('span',{class:v<0?'bad':''},fmt(v))},{key:'change_basis',label:'Change basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'src_daily',label:'Source daily col',num:1,fmt:fmt},{key:'rate',label:'Rate ₹',num:1,fmt:fmt},{key:'revenue_target',label:'Revenue target',num:1,fmt:inr},{key:'revenue',label:'Revenue',num:1,fmt:inr},{key:'region',label:'Region'},{key:'tier',label:'Tier'}]
    :[{key:'name',label:g[0].toUpperCase()+g.slice(1)},{key:'rows',label:'Rows',num:1},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'shortfall',label:'vs target',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'revenue_target',label:'Revenue target',num:1,fmt:inr},{key:'revenue',label:'Revenue',num:1,fmt:inr}];
   holder.append(table(data,cols,{name:`tracker_${pick.value}_${g}.csv`,defaultHidden:g==='none'?['src_daily','region','tier','rate']:[]}),el('p',{class:'note'},'"Change" is computed by the database from consecutive snapshots; "Source daily col" is the tracker\'s own column O, kept for cross-checking. Negative changes are kept and flagged, never zeroed.'))}
- pick.onchange=load;gsel.onchange=load;await load();
+ const ex=el('div');async function loadEx(){ex.innerHTML='';const e=await api('expense',{snapshot:pick.value});const st=v=>v==null?'–':el('span',{class:v<0?'bad':'good'},inr(v));
+  ex.append(el('h3',{},'Expense & margin (tracker columns L, M, N)'),el('div',{class:'tiles'},tile('All-India projected expense',inr(e.source_pan_india_expense),'Tracker total row for '+e.snapshot)),
+   table(e.rows.filter(r=>r.expense!=null),[{key:'level',label:'Level'},{key:'name',label:'Location / zone'},{key:'stakeholder',label:'Stakeholder'},{key:'revenue',label:'Revenue (MTD)',num:1,fmt:inr},{key:'expense',label:'Projected expense',num:1,fmt:inr},{key:'margin',label:'Revenue − expense',num:1,fmt:st},{key:'cover_2x',label:'Revenue − 2 × expense',num:1,fmt:st},{key:'expense_ratio',label:'Expense / revenue',num:1,fmt:pct},{key:'basis',label:'Taken from'}],{name:`expense_${e.snapshot}.csv`}),
+   el('p',{class:'note'},'Projected expense is the monthly cost entered in the tracker (salary + rent + other). Revenue is month-to-date, so margins improve through the month. Zone rows and their location rows overlap — do not add them together; the all-India figure is the tracker\'s own total.'))}
+ pick.onchange=()=>{load();loadEx()};gsel.onchange=load;await load();s.append(ex);await loadEx();
  s.append(el('h3',{},'Snapshots this month'),table(daily,[{key:'date',label:'Snapshot'},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'basis',label:'Basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'gap_days',label:'Gap (days)',num:1},{key:'target',label:'Target',num:1,fmt:fmt},{key:'negative_rows',label:'Rows with negative change',num:1}],{name:'snapshots.csv',search:false}));
 });
 
@@ -267,25 +264,25 @@ const vTat=guard(async s=>{const m=$('#fMonth').value,f=filters();
  async function lc(){a.innerHTML='Loading…';const r=await api('case_tat',{month:m,filters:f,group:cg.value});a.innerHTML='';a.append(table(r,[{key:'key',label:cg.value},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'completed_valid',label:'Completed (valid)',num:1,fmt:fmt},{key:'open',label:'Open',num:1,fmt:fmt},{key:'median_hours',label:'Median',num:1,fmt:lowS},{key:'avg_hours',label:'Average',num:1,fmt:hrs},{key:'p90_hours',label:'P90',num:1,fmt:hrs},{key:'sla_met_pct',label:'SLA met',num:1,fmt:v=>v==null?'–':el('span',{class:'chip '+(v>=.9?'good':v>=.7?'warn':'bad')},pct(v))},{key:'negative',label:'Negative durations (excluded)',num:1}],{name:`case_tat_${cg.value}.csv`}))}
  async function lp(){b.innerHTML='Loading…';const r=await api('point_tat',{month:m,filters:f,group:pg.value});b.innerHTML='';
   if(!r.length){b.append(el('div',{class:'banner'},'No Point Wise data for '+mlabel(m)+'. Point Wise files currently run to '+String(S.meta.freshness.point_latest_created_ist).slice(0,7)+'.'));return}
-  b.append(table(r,[{key:'key',label:pg.value.replace('_',' ')},{key:'points',label:'Points',num:1,fmt:fmt},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'field_points',label:'Field points',num:1,fmt:fmt},{key:'field_median_hours',label:'Field TAT median',num:1,fmt:lowS},{key:'field_p90_hours',label:'Field TAT P90',num:1,fmt:hrs},{key:'field_tat_n',label:'Field TAT n',num:1,fmt:fmt},{key:'field_invalid_dates',label:'Invalid field dates',num:1,fmt:fmt},{key:'doc_points',label:'Document points',num:1,fmt:fmt},{key:'doc_median_hours',label:'Document TAT median',num:1,fmt:hrs},{key:'tele_points',label:'Tele points',num:1,fmt:fmt},{key:'tele_median_hours',label:'Tele TAT median',num:1,fmt:hrs},{key:'route_in_force',label:'Field: verified by assignee',num:1,fmt:fmt},{key:'route_backoffice',label:'Field: updated by back office',num:1,fmt:fmt},{key:'route_unknown',label:'Field: route unknown',num:1,fmt:fmt}],{name:`point_tat_${pg.value}.csv`,defaultHidden:['tele_points','tele_median_hours']}),
-   el('p',{class:'note'},'Processing route is inferred: "verified by assignee" when the assigned executive is the verifier; "updated by back office" when a back-office-classified employee verified someone else\'s field point; otherwise unknown. Not an explicit Force flag — the source has none.'))}
+  b.append(table(r,[{key:'key',label:pg.value.replace('_',' ')},{key:'points',label:'Points',num:1,fmt:fmt},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'field_points',label:'Field points',num:1,fmt:fmt},{key:'field_median_hours',label:'Field TAT median',num:1,fmt:lowS},{key:'field_p90_hours',label:'Field TAT P90',num:1,fmt:hrs},{key:'field_tat_n',label:'Field TAT n',num:1,fmt:fmt},{key:'field_invalid_dates',label:'Invalid field dates',num:1,fmt:fmt},{key:'doc_points',label:'Document points',num:1,fmt:fmt},{key:'doc_median_hours',label:'Document TAT median',num:1,fmt:hrs},{key:'tele_points',label:'Tele points',num:1,fmt:fmt},{key:'tele_median_hours',label:'Tele TAT median',num:1,fmt:hrs},{key:'route_in_force',label:'Field: by field executive (Force)',num:1,fmt:fmt},{key:'route_backoffice',label:'Field: manual by back office',num:1,fmt:fmt},{key:'route_unknown',label:'Field: not verified',num:1,fmt:fmt}],{name:`point_tat_${pg.value}.csv`,defaultHidden:['tele_points','tele_median_hours']}),
+   el('p',{class:'note'},'Route rule (business definition): field executives submit only field points. A field point submitted by anyone who also creates cases or handles non-field points is a manual submission by back office.'))}
  cg.onchange=lc;pg.onchange=lp;await Promise.all([lc(),lp()])});
 
 /* ---------- People ---------- */
 const vPeople=guard(async s=>{const m=$('#fMonth').value,f=filters();const r=await api('employees',{month:m,filters:f});
  s.append(el('h2',{},'People — '+mlabel(m)),el('p',{class:'lede'},'Workload by employee from Point Wise ("Verified By"). Counts are not comparable across roles: field, document and tele points differ in effort.'));
  if(S.role==='admin')s.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:async e=>{e.target.disabled=true;try{const x=await adminCall('refresh_employees',{});alert('Re-classified '+JSON.stringify(x.employees)+' employees.');render()}catch(err){alert(err.message)}finally{e.target.disabled=false}}},'Re-run classification')));
- const cls=(v,row)=>{const sel=el('select',{'aria-label':'Classification for '+row.name},['field_executive','back_office','mixed','unclassified'].map(x=>el('option',{value:x},x.replace('_',' '))));sel.value=v;if(S.role!=='admin'){return el('span',{class:'chip'},(v||'').replace('_',' ')+(row.override?' (reviewed)':''))}
+ const cls=(v,row)=>{const sel=el('select',{'aria-label':'Classification for '+row.name},['field_executive','back_office','unclassified'].map(x=>el('option',{value:x},x.replace('_',' '))));sel.value=v;if(S.role!=='admin'){return el('span',{class:'chip'},(v||'').replace('_',' ')+(row.override?' (reviewed)':''))}
   sel.onchange=async()=>{try{await adminCall('mapping_update',{kind:'employee',name:row.name,classification:sel.value})}catch(e){alert(e.message)}};return sel};
  if(!r.length){s.append(el('div',{class:'banner'},'No Point Wise data for '+mlabel(m)+'.'));return}
  s.append(table(r,[{key:'name',label:'Employee'},{key:'classification',label:'Classification',fmt:cls},{key:'points',label:'Points verified',num:1,fmt:fmt},{key:'field',label:'Field',num:1,fmt:fmt},{key:'document',label:'Document',num:1,fmt:fmt},{key:'tele',label:'Tele',num:1,fmt:fmt},{key:'field_median_hours',label:'Field TAT median',num:1,fmt:hrs},{key:'field_tat_n',label:'Field TAT n',num:1,fmt:fmt},{key:'verified_for_other_assignee',label:'Verified others\' field points',num:1,fmt:fmt},{key:'units',label:'Location groups'}],{name:`employees_${m}.csv`}),
-  el('p',{class:'note'},'Rule: an employee whose verified points are only field types (with enough volume) is a field-executive candidate; anyone also handling document/tele points is back office or mixed. Admins can override; overrides persist.'))});
+  el('p',{class:'note'},'Rule: field executives submit only field points. Anyone who creates cases/points or verifies any document or tele point is back office. Admins can override; overrides persist.'))});
 
 /* ---------- Data quality ---------- */
 const vQuality=guard(async s=>{s.append(el('h2',{},'Data quality & mapping'),el('p',{class:'lede'},'Every exception is kept with its evidence. Nothing is silently dropped or zeroed.'));
  const dq=S.meta.dq_open||{};s.append(el('div',{class:'tiles'},Object.entries(dq).map(([k,v])=>tile(k.replace(/_/g,' '),fmt(v),'open'))));
  const fr=S.meta.freshness;s.append(el('h3',{},'Source coverage (latest month received per location group)'),table(Object.keys(fr.case_coverage).sort().map(k=>({unit:k,case:fr.case_coverage[k],point:fr.point_coverage[k]||null})),[{key:'unit',label:'Location group'},{key:'case',label:'Case Wise to',fmt:mlabel},{key:'point',label:'Point Wise to',fmt:v=>v?mlabel(v):el('span',{class:'chip warn'},'none')}],{search:false,name:'coverage.csv'}));
- if(S.role!=='admin'){s.append(el('p',{class:'note'},'Exception details and mapping review are available to administrators.'));return}
+ if(!adminGate(s,'Reviewing exceptions and mappings'))return;
  const [ex,mq]=await Promise.all([api('exceptions'),api('mapping_queue')]);
  const act=(kind,idk,opts)=>(v,row)=>{const sel=el('select',{'aria-label':'Review status'},opts.map(o=>el('option',{value:o},o)));sel.value=v;sel.onchange=async()=>{try{await adminCall('mapping_update',{kind,[idk]:row[idk],status:sel.value})}catch(e){alert(e.message);sel.value=v}};return sel};
  s.append(el('h3',{},'Exceptions'),table(ex.recent||[],[{key:'id',label:'#',num:1},{key:'rule',label:'Rule'},{key:'severity',label:'Severity'},{key:'source_category',label:'Source'},{key:'record_key',label:'Record'},{key:'detail',label:'Evidence',fmt:v=>JSON.stringify(v).slice(0,160),raw:r=>JSON.stringify(r.detail)},{key:'status',label:'Status',fmt:act('dq','id',['open','accepted','resolved'])},{key:'created_at',label:'Logged',fmt:v=>String(v).slice(0,16)}],{name:'exceptions.csv'}));
@@ -294,10 +291,15 @@ const vQuality=guard(async s=>{s.append(el('h2',{},'Data quality & mapping'),el(
  if(mq.clients)s.append(el('h3',{},'Client aliases'),table(mq.clients,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'client_code',label:'Client'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'status',label:'Review'}],{name:'client_aliases.csv'}));
 });
 
+/* ---------- Admin key ---------- */
+function adminGate(s,what){if(S.role==='admin')return true;const inp=el('input',{type:'password',placeholder:'Admin key','aria-label':'Admin key',autocomplete:'off',style:'padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);min-width:260px'});const msg=el('span',{class:'note'});
+ const go2=async()=>{S.adminKey=inp.value.trim();try{await adminCall('verify',{});S.role='admin';try{sessionStorage.setItem('crux_admin_key',S.adminKey)}catch{}$('#modeLbl').textContent='Admin unlocked';render()}catch(e){S.adminKey=null;msg.textContent='That key was not accepted.'}};
+ inp.addEventListener('keydown',e=>{if(e.key==='Enter')go2()});
+ s.append(el('div',{class:'banner'},el('p',{style:'margin:0 0 8px'},what+' is limited to administrators. Enter the admin key to unlock it for this browser session.'),el('div',{class:'tools'},inp,el('button',{class:'btn primary',onclick:go2},'Unlock'),msg)));return false}
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
-const vUpload=guard(async s=>{if(S.role!=='admin'){s.append(el('div',{class:'banner'},'Uploads are limited to administrators.'));return}
- s.append(el('h2',{},'Upload centre'),el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
+const vUpload=guard(async s=>{s.append(el('h2',{},'Upload centre'));if(!adminGate(s,'Uploading data'))return;
+ s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
  const list=el('div');const inp=el('input',{type:'file',multiple:'',accept:'.xlsx,.xls',class:'hidden',id:'fin'});
  const drop=el('div',{class:'drop',tabindex:0,role:'button','aria-label':'Choose files to upload'},el('p',{},el('strong',{},'Drop .xlsx files here'),' or ',el('button',{class:'btn',onclick:()=>inp.click()},'choose files')),el('p',{class:'note'},'Personal data (applicant names, mobile, PAN, Aadhaar, account numbers, addresses) is removed in your browser before upload.'),inp);
  ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));

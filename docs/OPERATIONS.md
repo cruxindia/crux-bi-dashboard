@@ -12,8 +12,9 @@
 Data quality → exceptions (status open/accepted/resolved), location aliases (confirm / reject / needs review), point-type categories. All edits are audited.
 
 ## Access
-* Add a user: `insert into bi.app_user(email, role) values ('x@cruxindia.co.in','viewer');` (role `admin` to upload/map).
-* Remove: `update bi.app_user set active=false where email='x@…';`
+* Viewing: open the GitHub Pages link — no login.
+* Admin: Upload centre / Data quality → enter the admin key (kept for the browser session only).
+* New admin key: generate a random string, insert its SHA-256 hash into `bi.ingest_token` with an expiry; revoke with `update bi.ingest_token set revoked=true where label=…`.
 * Bulk-load token: create random token, store `encode(digest(token,'sha256'),'hex')` in `bi.ingest_token` with an expiry; revoke after use.
 
 ## Hosting options for the standalone app (`web/index.html`)

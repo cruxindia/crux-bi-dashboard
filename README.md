@@ -8,7 +8,9 @@ One analytical system that connects the three operational sources:
 | 2 | Case Wise (Force MIS) | one row per case | Force usage, case TAT, SLA |
 | 3 | Point Wise (Force MIS) | one row per verification point | field / document / tele TAT, workload, people |
 
-**No business data is stored in this repository.** Data lives in Supabase (schema `bi`), protected by role checks.
+**No business data is stored in this repository.** Data lives in Supabase (schema `bi`).
+
+**Access model (decided 12-Oct-2026):** the dashboard is public and needs no login (read-only, `noindex`). Uploads, mapping edits and exception details require an **admin key** (time-limited token; only its SHA-256 hash is stored).
 
 ## Architecture
 ```
@@ -16,8 +18,8 @@ xlsx files ──► web/extract.js (browser or Node; strips PII) ──► publ
                                                               └─► bi.stg_row ─► bi.commit_* (dedup, upsert, aliasing, DQ)
 bi.fact_case / bi.fact_point / bi.zt_row / bi.zt_month_history ─► bi.v_* views ─► bi.api_* functions
                                                                                      │
-          dashboard (web/index.html) ◄── public.bi_call (Supabase Auth + bi.app_user role)
-          Claude artifact build      ◄── viewer's own Supabase connector (no keys in page)
+          dashboard (web/index.html, GitHub Pages) ◄── public.bi_call (anonymous read, cached per data version)
+          admin functions                          ◄── public.bi_admin / bi_ingest (admin key)
 ```
 * All calculations are in SQL (`bi.api_*`, `bi.v_*`); the UI only formats.
 * Structure interpretation of the tracker lives only in `web/extract.js`, shared by the browser Upload Centre and the bulk loader.
@@ -36,12 +38,12 @@ bi.fact_case / bi.fact_point / bi.zt_row / bi.zt_month_history ─► bi.v_* vie
 
 ## Setup (new environment)
 1. Create a Supabase project; apply `supabase/migrations/*.sql` in filename order.
-2. Auth → enable email sign-in, **keep "Confirm email" ON**, disable public sign-ups if not needed.
-3. Add users: `insert into bi.app_user(email, role) values ('name@cruxindia.co.in','viewer');` (`admin` for uploaders).
+2. Create an admin key: random string; store `encode(extensions.digest(key,'sha256'),'hex')` in `bi.ingest_token` with an expiry.
+3. Set `alter role anon set statement_timeout='20s'` (done by migration bi_021).
 4. Set `CFG.url` / `CFG.key` (publishable key only) in `web/index.src.html`, then serve `web/` from any static host.
 5. Bulk history: put files in `src/<zonal|case|point>/`, run `node tools/extract-all.js <kind>` then `node tools/loader.js <kind>` with `.env` values.
 
 ## Deployment status
 * Database: Supabase project `czdjbbhxboweawqbjywr` (`bi` schema) — live, loaded, tests passing.
-* Dashboard: live as a private Claude artifact using the viewer's Supabase connector.
-* GitHub Pages: **not enabled** — Pages on a private repository requires a paid GitHub plan. See `docs/OPERATIONS.md` for options.
+* Dashboard: GitHub Pages, deployed by `.github/workflows/sync.yml` from `web/` (no login).
+* Storage: compact integer-coded stores (`bi.case_store`, `bi.point_store`) behind same-named decoding views; DB ≈195 MB (was 401 MB).

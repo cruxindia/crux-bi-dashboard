@@ -26,8 +26,13 @@
 | D13 | Role check via auth.users.email_confirmed_at, not JWT claims | Fixed a privilege-escalation path (bi_009) |
 | D14 | Code-only export channel for GitHub | Make proxy is the only GitHub route; avoids moving code through manual API calls |
 
+| D15 | Udyam = Document (confirmed) | Business decision 12-Oct |
+| D16 | PUNJAB+Rajisthan (1-Oct) = Punjab row; Rajasthan moved to Delhi+Rajasthan from 3-Oct | Business decision 12-Oct |
+| D17 | Field route: only-field submitters = field executive (Force); anyone who creates cases/points or verifies non-field points = back office, their field submissions manual | Business rule 12-Oct; result Jan–Jul: 14.8% field exec, 82.6% manual, 2.6% not verified |
+| D18 | Expense block: L = projected monthly expense; M = revenue − expense; N = revenue − 2 × expense (labelled YTD in source). Rows overlap; all-India expense taken from the tracker total row | Formula inspection; derived sum ≠ source total because zone/location rows overlap |
+| D19 | Storage compaction: text → integer dictionary codes, 64-bit hashes, unused fields dropped | Lossless check: 0 mismatches on all retained fields; 401 MB → 195 MB |
+| D20 | Public, login-free dashboard; admin key for writes; API result cache keyed by data version; anon timeout 20 s | Business decision; browser test found anon 3 s timeout |
+
 ## Open questions (need business confirmation)
-1. Udyam Registration Certificate: field or document? (D10)
-2. Is a Force-side "submitted from app vs web" flag available? Without it outside-Force field work cannot be measured (D11).
-3. Expense block (L/M/N): intended definitions of "Shortfall" (M) and "YTD" (N).
-4. Should PUNJAB+Rajisthan (1-Oct only) be treated as Punjab or Delhi+Rajasthan for that day?
+1. Validate D17 with Operations: 82.6% of field points come out as manual under the rule — confirm no back-office staff legitimately submit field points in-app.
+2. Confirm the D18 reading of tracker columns M and N.

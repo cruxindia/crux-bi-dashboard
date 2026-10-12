@@ -22,9 +22,19 @@ Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload
 | T16 | Security | Pass | anon/authenticated have no `bi` usage; RPCs reject missing role / wrong token |
 | T18 | AI/forecast accuracy | Pass | insight text contains computed run-rate 58,863 |
 
+Browser tests (headless Chromium against the live database, 12-Oct-2026, public mode, no login)
+| Check | Result |
+|---|---|
+| All 8 sections render with live data, 0 JavaScript errors | Pass |
+| Stakeholder filter → overview MTD 6,299 (= tracker E590) | Pass |
+| Wrong admin key rejected; correct key unlocks admin features | Pass |
+| Upload a real Case Wise file → parsed (48 rows, PII stripped) → detected as identical → nothing changed | Pass |
+| Anonymous role: read allowed; exceptions/mapping/ingest/admin/raw tables refused | Pass (found and fixed a NULL-logic hole in admin check, bi_020) |
+| Anonymous 3 s timeout | Found failing → fixed with cache + 20 s anon timeout (bi_021) |
+
 Manual / partially verified
 | # | Test | Status |
 |---|---|---|
-| T17 | Live dashboard (filters, drill-downs, exports, uploads) | Every query the page issues (14 endpoints, with combined filters) executed against the live DB and returned the expected types. Interactive click-through in a browser not yet performed by a human. Upload path verified in a browser-equivalent sandbox (same SheetJS build + extractor) but not yet exercised end-to-end from the UI. |
+| T17 | Live dashboard | Automated browser pass done (above). A human click-through on GitHub Pages is still recommended. |
 
 Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenue ₹6,518,972 ✓, daily change 2,489 ✓, Sep-26 month total 58,065 ✓.

@@ -16,9 +16,9 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | I | Achieved (graph) | `REPT("█",H×20)` | text | Not stored (presentation only) | H |
 | J | BD Revenue | Business-development revenue | ₹ | Stored as-is | M |
 | K | Shortfall | `G − F` | ₹ | | H |
-| L | Projected Expense | Location expense; formula or constant, placed on varying rows | ₹ | Stored as-is; aggregated only at location-total level | L |
-| M | Shortfall | Totals: `G − L`; Zone A/Pan India: `G − K` (inconsistent) | ₹ | Stored as `margin_after_expense`; not used in KPIs | L |
-| N | YTD | Actually `G − 2×L` — **not year-to-date** | ₹ | Stored as `col_n_value`; not shown as YTD | L |
+| L | Projected Expense | Projected monthly cost (salary + rent + other) | ₹ | Per block: larger of total-row value and sum of client rows; all-India from tracker total | M |
+| M | Shortfall | Revenue − expense (surplus / deficit); Zone A/Pan India rows use `G − K` (source inconsistency) | ₹ | Recomputed as revenue − expense | M |
+| N | YTD | Actually `G − 2×L`: surplus after covering expense twice — **not year-to-date** | ₹ | Recomputed as revenue − 2 × expense | M |
 | O | `<dd.mm.yyyy>` | Leaf: `E − prev MTD` (case delta). Totals: `G − prev revenue` (revenue delta) | mixed | Kept as `src_daily_value`; database recomputes deltas | H |
 | P,Q,R | Location/Client/Region (history side) | Labels for the history block (e.g. `SBI HL`) | text | Used as alias evidence | H |
 | S… | Month blocks | Per month: cases (`Actual MTD`/`Target MTD`), revenue, billing | num | Row 1 marker: month = month, year = 2000 + day | H (2026) / M (2024–25) |
