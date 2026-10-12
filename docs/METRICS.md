@@ -16,6 +16,11 @@
 | Estimated manual-case TAT | observed Force TAT: same group & client (n ≥ 30) → same client elsewhere → overall | | Always labelled estimate + basis |
 | Field TAT | Field Reviewed − Assigned | field point types only | invalid dates (outside plausible range / negative) excluded and counted |
 | Document TAT | Completed − Created | document point types only | |
+| Case-level Force1 utilisation | Force1 cases received in month ÷ Zonal Tracker cases (same location group, client family, month) | only groups with Case Wise data | Jul-26: 32,575 ÷ 51,162 = 63.7% |
+| Field-level Force1 utilisation | field points submitted by field executives ÷ (field-executive + back-office submissions) | month × location group | unverified points excluded and shown separately; Jul-26: 7,507 ÷ 37,092 = 20.2% |
+| Field executive | verifies only field points, never creates cases/points, never handles document/tele points | per person | business rule confirmed 12-Oct-2026 |
+| Back office | creates cases/points or handles any document/tele point; their field submissions are manual | per person | |
+| Points per person | submissions ÷ distinct active people in the month | per group | |
 | Processing route (field) | verifier = assignee → in Force (inferred); verifier is back-office/mixed ≠ assignee → likely outside Force; no assignee → unknown | | Inferred; no explicit source flag |
 | Forecast (run-rate) | MTD ÷ Mon–Sat working days elapsed × working days in month | | |
 | Forecast (curve) | MTD ÷ average share of month-end reached by same working day in prior months with daily snapshots (range = min/max share) | needs ≥ 2 months | Not a guarantee |

@@ -1,6 +1,6 @@
 # Acceptance test report — 12-Oct-2026
 
-Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload). Result: **17 / 17 passed** (after fixing one defect in test T07's case selection).
+Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload). Result: **18 / 18 passed** (T17 is a browser check, listed separately) (after fixing one defect in test T07's case selection).
 
 | # | Test | Result | Evidence |
 |---|---|---|---|
@@ -20,6 +20,7 @@ Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload
 | T14 | Cut-off | Pass | earliest month 2024-04 |
 | T15 | Card ↔ table reconciliation | Pass | stakeholder filter: overview 6,299 = table 6,299 (= source E590) |
 | T16 | Security (public read model) | Pass | anon has no `bi` schema usage; public read returns role=viewer; exceptions, admin, ingest and repo-stash refuse without a valid admin key |
+| T19 | Force1 field vs back office | Pass | Jul-26 API = independent counts: 7,507 field-exec / 29,585 manual / 141 execs / 268 back office (20.2%) |
 | T18 | AI/forecast accuracy | Pass | insight text contains computed run-rate 58,863 |
 
 Browser tests (headless Chromium against the live database, 12-Oct-2026, public mode, no login)

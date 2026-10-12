@@ -35,6 +35,9 @@
 | D19 | Storage compaction: text → integer dictionary codes, 64-bit hashes, unused fields dropped | Lossless check: 0 mismatches on all retained fields; 401 MB → 195 MB |
 | D20 | Public, login-free dashboard; admin key for writes; API result cache keyed by data version; anon timeout 20 s | Business decision; browser test found anon 3 s timeout |
 
+| D21 | Force1 utilisation reported at two levels (cases; field points) with formulas on screen; field vs back office comparison | Business request 12-Oct; rule D17 confirmed by Ops |
+| D22 | Derived per-point facts materialised in `bi.point_derived`, rebuilt by pg_cron every 10 min when data changed (also re-runs classification) | api_force1 27.5 s → 2.6 s; anon limit 20 s |
+| D23 | Navigation as hamburger drawer (all screen sizes) | Business request 12-Oct |
+
 ## Open questions (need business confirmation)
-1. Validate D17 with Operations: 82.6% of field points come out as manual under the rule — confirm no back-office staff legitimately submit field points in-app.
 2. Confirm the D18 reading of tracker columns M and N.
