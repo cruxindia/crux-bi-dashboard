@@ -6,7 +6,9 @@
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026).
 
-**Status.** Database built and loaded (213,472 cases; 470,552 points; 58,905 tracker rows; 8,082 monthly history rows). 17/17 automated acceptance tests pass (`select * from bi.run_acceptance_tests()`). Dashboard live (Claude artifact). Repo created.
+**Status (12-Oct-2026, evening).** Public dashboard live on GitHub Pages; DB 195 MB after compaction; 17/17 tests pass; no newer source files in Drive (Point Wise ends Jul-2026).
+
+**Earlier status.** Database built and loaded (213,472 cases; 470,552 points; 58,905 tracker rows; 8,082 monthly history rows). 17/17 automated acceptance tests pass (`select * from bi.run_acceptance_tests()`). Dashboard live (Claude artifact). Repo created.
 
 ## Decision log
 | # | Decision | Rationale / evidence |

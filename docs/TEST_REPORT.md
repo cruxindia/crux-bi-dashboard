@@ -19,7 +19,7 @@ Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload
 | T13 | Processing route | Pass | routes only on field points |
 | T14 | Cut-off | Pass | earliest month 2024-04 |
 | T15 | Card ↔ table reconciliation | Pass | stakeholder filter: overview 6,299 = table 6,299 (= source E590) |
-| T16 | Security | Pass | anon/authenticated have no `bi` usage; RPCs reject missing role / wrong token |
+| T16 | Security (public read model) | Pass | anon has no `bi` schema usage; public read returns role=viewer; exceptions, admin, ingest and repo-stash refuse without a valid admin key |
 | T18 | AI/forecast accuracy | Pass | insight text contains computed run-rate 58,863 |
 
 Browser tests (headless Chromium against the live database, 12-Oct-2026, public mode, no login)
