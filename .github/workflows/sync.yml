@@ -1,0 +1,44 @@
+name: Sync code from Supabase export
+# Pulls the code-only bundle (migrations as applied + app + docs) and commits it.
+# The bundle never contains business data; the export token is read-only and expires.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/sync.yml']
+permissions:
+  contents: write
+concurrency: sync
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://czdjbbhxboweawqbjywr.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_J7fFRVLVB_h5SHZcquWfXA_p_O30PkF
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch bundle
+        env:
+          BI_EXPORT_TOKEN: ${{ secrets.BI_EXPORT_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, pathlib
+          req = urllib.request.Request(os.environ['SUPABASE_URL'] + '/rest/v1/rpc/bi_repo_export',
+              data=json.dumps({'p_token': os.environ['BI_EXPORT_TOKEN']}).encode(),
+              headers={'apikey': os.environ['SUPABASE_PUBLISHABLE_KEY'], 'Content-Type': 'application/json'})
+          bundle = json.load(urllib.request.urlopen(req, timeout=120))
+          root = pathlib.Path('.').resolve()
+          for rel, content in bundle.items():
+              p = (root / rel).resolve()
+              if root not in p.parents or rel.startswith('.github/') or rel.endswith(('.xlsx', '.xls', '.csv')):
+                  raise SystemExit(f'refusing path {rel}')
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(content, encoding='utf-8')
+          print(f'wrote {len(bundle)} files')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "crux-bi-sync"
+          git config user.email "crux-bi-sync@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "no changes" || git commit -m "Sync code, migrations and docs from Supabase export ($(date -u +%F))"
+          git push
