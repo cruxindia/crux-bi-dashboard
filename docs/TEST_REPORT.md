@@ -63,3 +63,15 @@ Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenu
 | Growth → Compare two periods (preset): totals, warning "9 vs 8 day", diverging bar chart, sortable table | Pass |
 | Data quality → WEF preview (stakeholder change, WEF 1-Nov) validates; Save enabled; not applied | Pass |
 | Collapsible section headings (fold/unfold, remembered) | Pass |
+
+## 14-Oct-2026 — daily update table, business count, SBI Car Loan, expense removal (bi_041–bi_044)
+| Check | Result |
+|---|---|
+| T23 enter → validate → commit → reopen → correct → archive (rolled back, no residue) | Pass (17,446 → 17,448; 1 changed value; 1 archived version) |
+| Entry table: 392 rows, Oct dates 01–14 (7 committed, 5 open, Sundays hidden); committed daily counts reconcile to `v_zt_daily` by codes (1-Oct 2,071; 7-Oct 3,445) | Pass (found and fixed label-based matching that showed 1,807) |
+| Daily/MTD toggle, typing updates Total till date and previews, zone filter | Pass (browser) |
+| BUSINESS COUNT vs Training workbook (9-Oct): Odisha 11,750 / 0 / 4,500 / 6,250 / 12,000 / 11,750 / 9,750; daily totals 7,71,152 … 9,61,829; Total 65,18,972; Odisha target 2,58,750; per-day avg 8,000 | All equal |
+| Client-wise SBI = 14,031 and SBI Car Loan+ = 0 (as the tracker) | Pass; tracker view now has 0 subtotal mismatches vs source |
+| Expense columns absent from API and UI | Pass |
+| `run_acceptance_tests()` | 22/22 pass |
+| Storage after VACUUM FULL | 388 → 338 MB |

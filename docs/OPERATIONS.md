@@ -27,10 +27,13 @@ Data quality → exceptions (status open/accepted/resolved), location aliases (c
 * Upload "Already imported": same file hash already committed.
 * Tracker control mismatch warning: the file's own Pan India row disagrees with its leaf rows; leaf rows are used and the mismatch is logged.
 
-## Daily matrix (Upload centre)
-1. Unlock with the admin key → Upload centre → "Daily tracker entry". Range defaults to the day after the last snapshot → today.
-2. Type or paste MTD values (paste a column from Excel into the first cell; several columns fill several dates). Red = not a number/negative; amber = below last MTD in the same month.
-3. Save draft → Validate → fix errors; tick "Accept warnings" + reason if needed → Commit. Use "Mark no report" for holidays.
+## Daily update table (Upload centre) — replaces the routine tracker upload
+1. Unlock with the admin key → Upload centre → "Zonal Tracker — daily update table". Pick the month; enter your name (audit trail).
+2. Choose **Daily counts** (each date's count, like the Test Details sheet) or **Cumulative MTD**. Committed dates are grey; open dates (missing / draft / correcting) are editable.
+3. Type, or paste from Excel: a plain column fills downward; rows copied together with their Location and Client columns are matched by name (total rows are skipped). "Fill blanks with 0" sets untouched cells to no business for that date.
+4. Save all changes → pick the date → Validate (optional control total = Pan India MTD from the source) → tick "Accept warnings" + reason if needed → Commit this date, or "Commit all open dates in order".
+5. Holidays: "Mark no report". Wrong figures already committed: ✎ on the date header → reason → edit → validate → commit (old values archived).
+6. New month: tick "Edit target & rate" and enter the month's targets (and changed rates) before the first commit.
 
 ## WEF group changes (Data quality)
 Pick location → group type → new value → WEF date → reason + your name → Preview impact → Save. Future-dated changes are applied to today's mapping by the daily job `bi-wef-sync`.

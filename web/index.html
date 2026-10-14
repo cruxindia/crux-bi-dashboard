@@ -130,6 +130,8 @@ table.zt tr.zt-r:hover td{filter:brightness(.96)}
 .zt-w{color:#B45309;cursor:help;margin-left:2px}
 @media(max-width:759px){table.zt .stk0{min-width:150px;max-width:170px}}
 .sorti{color:var(--muted);font-weight:400;font-size:.85em}
+.du th.du-missing{background:#F4CCCC}.du th.du-draft{background:#FFE599}.du th.du-reopened{background:#D9D2E9}.du th.du-loaded{background:#D9D9D9}.du th.du-not_expected,.du th.du-no_report{background:#EFEFEF}
+table.du input.cell{width:62px}table.du input.cell.dirty{background:#FFF2CC;border-color:#C2892B}table.du td.du-c{color:#555}
 </style>
 </head>
 <body>
@@ -298,8 +300,8 @@ const vForce1=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=awa
 
 /* ---------- Business tracker: Zonal Tracker replica ---------- */
 const ZTF={zh:'#BDD7EE',roll:'#DEEBF6',ztot:'#9CC3E5',single:'#D9E2F3',leaf:'#FBE5D5',ltot:'#F4B083',zab:'#A8D08D',reg:'#FFD966',roi:'#C9C9C9',pan:'#E2EFD9',hdr:'#9FC5E8',sec:'#FFFFFF'};
-const ZT={level:'all',zones:{},blocks:{},sort:null,q:'',hideZero:false,show:{rev:true,bd:true,sf:true,exp:false,dr:false},hist:6,cmp:'none',cmpDate:'',flat:false};
-try{Object.assign(ZT.show,JSON.parse(localStorage.getItem('crux_zt_show')||'{}'));const h=localStorage.getItem('crux_zt_hist');if(h!=null)ZT.hist=+h}catch{}
+const ZT={level:'all',zones:{},blocks:{},sort:null,q:'',hideZero:false,show:{rev:true,bd:true,sf:true,dr:false},hist:6,cmp:'none',cmpDate:'',flat:false};
+try{Object.assign(ZT.show,JSON.parse(localStorage.getItem('crux_zt_show')||'{}'));delete ZT.show.exp;const h=localStorage.getItem('crux_zt_hist');if(h!=null)ZT.hist=+h}catch{}
 const ztSave=()=>{try{localStorage.setItem('crux_zt_show',JSON.stringify(ZT.show));localStorage.setItem('crux_zt_hist',String(ZT.hist))}catch{}};
 const zn=v=>v==null||v===''||isNaN(v)?'':nf.format(Math.round(+v));
 const zp=v=>v==null||isNaN(v)?'':Math.round(v*100)+'%';
@@ -343,13 +345,12 @@ function ztCols(J){const m=J.report_month,c=[];
  c.push({k:'ach',h:'% Achmt Against\nAllocated Tgt',p:1},{k:'bar',h:'ACHIEVED\n(In Graph)',bar:1});
  if(ZT.show.bd)c.push({k:'bd',h:`BD\nRevenue\nOf ${monLong(m)}`,n:1});
  if(ZT.show.sf)c.push({k:'sf',h:'Shortfall',n:1,red:1});
- if(ZT.show.exp)c.push({k:'exp',h:'Projected\nExpense ⓘ',n:1,asis:1},{k:'m',h:'Shortfall\n(Rev − Exp) ⓘ',n:1,asis:1,neg:1},{k:'n',h:'YTD\n(Rev − 2×Exp) ⓘ',n:1,asis:1,neg:1});
  c.push({k:'d',h:ddmm(J.snapshot),n:1,grp:'Daily Counts',daily:1});
  if(ZT.show.dr)c.push({k:'dr',h:'Revenue\nadded',n:1,grp:'Daily Counts'});
  if(J.compare_snapshot){const g='Compare: '+ddmm(J.compare_snapshot);c.push({k:'cm',h:'MTD',n:1,grp:g},{k:'dd',h:'Δ cases',n:1,grp:g,delta:1},{k:'dp',h:'Δ %',grp:g,dp:1})}
  (J.history_months||[]).forEach(mm=>{const mo=mm+'-01',g=monLong(mo);c.push({k:'h:'+mm+':0',h:'Actual\nMTD',n:1,grp:g},{k:'h:'+mm+':1',h:'Actual\nRevenue',n:1,grp:g},{k:'h:'+mm+':2',h:`Actual Billing\nAmount ${monShort(mo)}`,n:1,grp:g})});
  return c}
-function ztVal(x,k){if(k.startsWith('h:')){const[,mm,i]=k.split(':');return x.h&&x.h[mm]?x.h[mm][+i]:null}
+function ztVal(x,k){if(x.t!=='leaf'&&x.mem==null&&['tgt','mtd','rtgt','rev','bd','sf','d','dr'].includes(k))return x[k]??0;if(k.startsWith('h:')){const[,mm,i]=k.split(':');return x.h&&x.h[mm]?x.h[mm][+i]:null}
  if(k==='dd')return x.cm==null?null:(x.mtd||0)-(x.cm||0);if(k==='dp')return x.cm?((x.mtd||0)-x.cm)/x.cm:null;return x[k]}
 function ztLabels(x){const t=x.t;
  if(t==='leaf'||t==='zone_client_rollup')return[x.loc||'',x.cli||''];
@@ -422,13 +423,13 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
  const xBtn=el('button',{class:'btn'},'Export to Excel'),fsBtn=el('button',{class:'btn'},'⤢ Full screen');
  const info=el('div',{class:'note'});const host=el('div');const notes=el('details',{class:'note'},el('summary',{},'How this view is built'));
  const panel=el('div',{class:'zt-panel'},el('div',{class:'tools'},el('label',{},'Snapshot ',pick),el('label',{},'Compare ',cmpSel,cmpDate),el('label',{},'History ',histSel),lvlBtns,search),
-  el('div',{class:'tools'},chk('rev','Revenue'),chk('bd','BD revenue'),chk('sf','Shortfall'),chk('dr','Daily revenue'),chk('exp','Expense L/M/N (as entered)','Columns L, M and N exactly as typed in the tracker — not calculated or verified'),
+  el('div',{class:'tools'},chk('rev','Revenue'),chk('bd','BD revenue'),chk('sf','Shortfall'),chk('dr','Daily revenue'),
    el('label',{class:'chk'},zeroCb,' Hide zero rows'),xBtn,fsBtn),info,host,notes);
  s.append(panel);
  let J=null,model=null;
  const cmpTarget=()=>{const d=pick.value;if(ZT.cmp==='prev'){const i=snaps.indexOf(d);return i>0?snaps[i-1]:addMonths(d,-1)}if(ZT.cmp==='lm')return addMonths(d,-1);if(ZT.cmp==='ly')return addMonths(d,-12);if(ZT.cmp==='custom')return ZT.cmpDate||null;return null};
  function draw(){if(!J)return;ztRender(host,J,model);
-  info.textContent=`Snapshot ${ddmm(J.snapshot)}`+(J.prev_snapshot?` · daily count vs ${ddmm(J.prev_snapshot)}`:' · first snapshot of the month (daily = MTD)')+(J.compare_snapshot?` · compared with ${ddmm(J.compare_snapshot)}`+(J.requested_compare&&J.requested_compare!==J.compare_snapshot?` (nearest snapshot on or before ${ddmm(J.requested_compare)})`:''):'')+(Object.keys(J.filters||{}).length?' · filtered: totals cover the filtered rows only':'')+(ZT.show.exp?' · Expense columns L/M/N are shown exactly as typed in the tracker — not calculated or verified':'');
+  info.textContent=`Snapshot ${ddmm(J.snapshot)}`+(J.prev_snapshot?` · daily count vs ${ddmm(J.prev_snapshot)}`:' · first snapshot of the month (daily = MTD)')+(J.compare_snapshot?` · compared with ${ddmm(J.compare_snapshot)}`+(J.requested_compare&&J.requested_compare!==J.compare_snapshot?` (nearest snapshot on or before ${ddmm(J.requested_compare)})`:''):'')+(Object.keys(J.filters||{}).length?' · filtered: totals cover the filtered rows only':'');
   lvlBtns.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===ZT.level))}
  async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading tracker…'));
   try{J=await api('tracker_sheet',{snapshot:pick.value,filters:f,compare:cmpTarget(),history:ZT.hist})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},'Could not load the tracker view: '+e.message));return}
@@ -442,12 +443,13 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
  fsBtn.onclick=()=>{const on=!panel.classList.contains('zt-full');panel.classList.toggle('zt-full',on);fsBtn.textContent=on?'✕ Exit full screen':'⤢ Full screen';document.body.classList.toggle('noscroll',on)};
  panel.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('zt-full'))fsBtn.click()});
  await load();
+ const bc=el('div');s.append(bc);businessCountSection(bc,m,f);
  // Intelligence below the sheet
  const br=el('div');s.append(br);await branchSection(br,f);
  const pv=el('div');s.append(pv);pv.append(el('h3',{},'Pivot: group the snapshot by any dimension'));const gsel=el('select',{'aria-label':'Group by'},['location','client','zone','stakeholder','region','none'].map(x=>el('option',{value:x},'By '+x)));
  const ph=el('div');pv.append(el('div',{class:'tools'},gsel),ph);
  async function loadPivot(){ph.innerHTML='Loading…';const rows=await api('zonal',{snapshot:pick.value,filters:f});ph.innerHTML='';const g=gsel.value;let data=rows;
-  if(g!=='none'){const agg={};rows.forEach(r=>{const k=r[g]||'(none)';const a=agg[k]||(agg[k]={name:k,rows:0,target:0,mtd:0,revenue_target:0,revenue:0,change:0});a.rows++;a.target+=+r.target||0;a.mtd+=+r.mtd||0;a.revenue_target+=+r.revenue_target||0;a.revenue+=+r.revenue||0;a.change+=+r.change||0});
+  if(g!=='none'){const agg={};rows.forEach(r=>{const k=(g==='client'?(r.client_group||r.client):r[g])||'(none)';const a=agg[k]||(agg[k]={name:k,rows:0,target:0,mtd:0,revenue_target:0,revenue:0,change:0});a.rows++;a.target+=+r.target||0;a.mtd+=+r.mtd||0;a.revenue_target+=+r.revenue_target||0;a.revenue+=+r.revenue||0;a.change+=+r.change||0});
    data=Object.values(agg).map(a=>({...a,achievement:a.target?a.mtd/a.target:null,shortfall:a.mtd-a.target}))}
   const ach=v=>v==null?'–':el('span',{class:'chip '+(v>=.9?'good':v>=.6?'warn':'bad')},pct(v));
   ph.append(table(data,g==='none'?[{key:'stakeholder',label:'Stakeholder'},{key:'zone',label:'Zone'},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'change',label:'Daily change',num:1,fmt:fmt},{key:'revenue',label:'Revenue',num:1,fmt:inr}]
@@ -591,68 +593,167 @@ function lflSection(box,month,f){const lg=el('select',{'aria-label':'Like-for-li
   catch(e){bx.innerHTML='';bx.append(el('p',{class:'note'},'Like-for-like unavailable: '+e.message))}}
  lg.onchange=load;load()}
 
-/* ---------- Daily tracker matrix (Upload centre) ---------- */
-function matrixUI(box){const today=new Date(Date.now()+19800000).toISOString().slice(0,10);
- const last=String((S.meta.freshness||{}).zonal_latest_snapshot||today).slice(0,10);
- const nx=d=>{const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+1);return t.toISOString().slice(0,10)};
- const fromI=el('input',{type:'date',value:nx(last)>today?today:nx(last),'aria-label':'From date',max:today}),toI=el('input',{type:'date',value:today,'aria-label':'To date',max:today});
- const loadB=el('button',{class:'btn primary'},'Load matrix');const body=el('div');
- box.append(el('h3',{style:'margin-top:0'},'Daily tracker entry (matrix)'),
-  el('p',{class:'note'},'Enter each day\'s cumulative MTD cases per location × client instead of uploading the whole tracker. Rows come from the latest loaded snapshot. Paste a column copied from Excel into the first cell and it fills downward (and across, for several dates). Nothing reaches the reports until a date is validated and committed.'),
-  el('div',{class:'tools'},el('label',{},'From ',fromI),el('label',{},'To ',toI),loadB),body);
- let M=null;const val={};const key=r=>r.location+'\u0001'+r.client;
- loadB.onclick=load;
- async function load(){if(fromI.value>toI.value){body.textContent='"From" must be on or before "To".';return}body.innerHTML='';body.append(el('p',{class:'note'},'Loading…'));
-  try{M=await adminCall('matrix',{from:fromI.value,to:toI.value})}catch(e){body.textContent='Could not load the matrix: '+e.message;return}draw()}
- function draw(){body.innerHTML='';const ds=M.dates||[];const lbl={loaded:'loaded',missing:'missing',draft:'draft',no_report:'no report',not_expected:'Sunday'};
-  body.append(el('div',{class:'datechips'},ds.map(d=>el('span',{class:'chip '+({loaded:'good',missing:'bad',draft:'warn'}[d.status]||'')},`${d.date.slice(5)} ${lbl[d.status]||d.status}`))),
-   el('p',{class:'note'},`${M.cadence_note||''} Rows from snapshot ${M.template_snapshot||'–'}.`));
-  const cols=ds.filter(d=>d.status==='missing'||d.status==='draft').map(d=>d.date);
-  if(!cols.length){body.append(el('p',{},'Nothing to enter in this range — every expected date is loaded or marked no-report.'));return}
-  const rows=M.rows||[];const tplMonth=String(M.template_snapshot||'').slice(0,7);
-  cols.forEach(d=>{val[d]=val[d]||{};rows.forEach(r=>{const dr=r.drafts&&r.drafts[d];if(dr&&val[d][key(r)]==null)val[d][key(r)]={mtd:dr.mtd,target:dr.target}})});
-  const filt=el('input',{type:'search',placeholder:'Filter rows (location, client, stakeholder)','aria-label':'Filter matrix rows',style:'min-width:260px'});
-  const newMonth=cols.some(d=>d.slice(0,7)!==tplMonth);
-  const tbl=el('table',{class:'matrix'});const tb=el('tbody');const inputs={};const tInputs=[];
-  tbl.append(el('thead',{},el('tr',{},el('th',{},'Stakeholder'),el('th',{},'Location'),el('th',{},'Client'),el('th',{class:'num'},newMonth?'Target (edit for new month)':'Target'),el('th',{class:'num'},'Last MTD'),cols.map(d=>el('th',{class:'num'},d.slice(5)+' MTD')))));
-  const setv=(d,r,v,k='mtd')=>{const s=String(v).trim().replace(/,/g,'');const n=s===''?null:Number(s);val[d][key(r)]={...(val[d][key(r)]||{}),[k]:s===''?null:(Number.isFinite(n)?n:s),dirty:true}};
-  const mark=(inp,r,d)=>{const s=inp.value.trim().replace(/,/g,'');const n=Number(s);inp.classList.toggle('bad',s!==''&&(!Number.isFinite(n)||n<0));
-   inp.classList.toggle('warn',s!==''&&Number.isFinite(n)&&r.last_mtd!=null&&d&&d.slice(0,7)===tplMonth&&n<r.last_mtd)};
-  const trs=()=>[...tb.children];const visIdx=(start,k)=>{const vis=trs().map((t,ix)=>t.style.display==='none'?null:ix).filter(x=>x!=null);const p=vis.indexOf(start);return p<0?null:(vis[p+k]??null)};
-  rows.forEach((r,i)=>{const tIn=el('input',{type:'text',inputmode:'numeric',class:'cell','aria-label':`${r.location} ${r.client} target`,value:r.target==null?'':String(r.target)});tInputs[i]=tIn;
-   if(!newMonth)tIn.readOnly=true;tIn.oninput=()=>{cols.forEach(d=>{if(d.slice(0,7)!==tplMonth)setv(d,r,tIn.value,'target')});mark(tIn,r,null)};
-   const tr=el('tr',{'data-s':(r.location+' '+r.client+' '+(r.stakeholder||'')).toLowerCase()},el('td',{},r.stakeholder||'–'),el('td',{},r.location),el('td',{},r.client),el('td',{class:'num'},newMonth?tIn:fmt(r.target)),el('td',{class:'num'},fmt(r.last_mtd)),
-    cols.map((d,j)=>{const v=val[d][key(r)];const inp=el('input',{type:'text',inputmode:'numeric',class:'cell','aria-label':`${r.location} ${r.client} MTD on ${d}`,value:v&&v.mtd!=null?String(v.mtd):''});
-     (inputs[d]=inputs[d]||[])[i]=inp;inp.oninput=()=>{setv(d,r,inp.value);mark(inp,r,d)};mark(inp,r,d);
-     inp.addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text');if(!/[\n\t]/.test(t.trim()))return;e.preventDefault();
-      t.replace(/\r/g,'').replace(/\n+$/,'').split('\n').forEach((ln,k)=>ln.split('\t').forEach((cell,c)=>{const dd=cols[j+c];const ix=visIdx(i,k);if(dd==null||ix==null)return;const ii=inputs[dd][ix];ii.value=cell.trim();setv(dd,rows[ix],ii.value);mark(ii,rows[ix],dd)}))});
-     return el('td',{},inp)}));tb.append(tr)});
-  filt.oninput=()=>{const q=filt.value.toLowerCase();trs().forEach(t=>t.style.display=!q||t.dataset.s.includes(q)?'':'none')};
-  tbl.append(tb);body.append(el('div',{class:'tools'},filt,el('span',{class:'note'},`${rows.length} rows · red = invalid, amber = below last MTD in the same month`)),el('div',{class:'tablewrap',style:'max-height:60vh;overflow:auto'},tbl));
-  cols.forEach(d=>{const out=el('div');const reason=el('input',{type:'text',placeholder:'Reason (to accept warnings or mark no-report)','aria-label':'Reason for '+d,style:'min-width:260px'});
-   const ack=el('input',{type:'checkbox'});const bSave=el('button',{class:'btn'},'Save draft'),bVal=el('button',{class:'btn'},'Validate'),bCom=el('button',{class:'btn primary',disabled:''},'Commit'),bNo=el('button',{class:'btn'},'Mark no report');
-   body.append(el('div',{class:'card',style:'margin-top:10px'},el('h4',{style:'margin:0 0 6px'},'Date '+d+(d.slice(0,7)!==tplMonth?' (new month — targets needed)':'')),el('div',{class:'tools'},bSave,bVal,el('label',{},ack,' Accept warnings'),reason,bCom,bNo),out));
-   const say=(t,c)=>{out.innerHTML='';out.append(el('p',{class:c||'note'},t))};
-   const busy=async(b,fn)=>{b.disabled=true;try{await fn()}catch(e){say('Error: '+e.message,'bad')}finally{if(b!==bCom)b.disabled=false}};
-   async function save(){const all=Object.entries(val[d]).filter(([k,v])=>v.dirty);const bad=all.filter(([k,v])=>(v.mtd!=null&&typeof v.mtd!=='number')||(v.target!=null&&typeof v.target!=='number'));
-    if(bad.length)throw new Error(`${bad.length} cell(s) are not numbers — fix the red cells first`);
-    const cells=all.map(([k,v])=>{const [location,client]=k.split('\u0001');return{date:d,location,client,mtd:v.mtd,target:v.target}});
-    for(let i=0;i<cells.length;i+=400)await adminCall('matrix_save',{cells:cells.slice(i,i+400)});all.forEach(([k,v])=>v.dirty=false);return cells.length}
-   bSave.onclick=()=>busy(bSave,async()=>{const n=await save();say(n?`Saved ${n} value(s) as draft for ${d}.`:'No unsaved changes for '+d+'.')});
-   function showV(v,head){out.innerHTML='';if(head)out.append(el('p',{class:'bad'},head));const ok=!(+v.errors);bCom.disabled=!ok;
-    out.append(el('div',{class:'tiles'},tile('Rows entered',`${fmt(v.rows_entered)} / ${fmt(v.rows_expected)}`),tile('Total MTD',fmt(v.total_mtd),v.same_month?'previous '+fmt(v.prev_total_mtd):'new month'),
-     tile('Change vs previous snapshot',v.same_month&&v.total_mtd!=null&&v.prev_total_mtd!=null?fmt(v.total_mtd-v.prev_total_mtd):'–'),tile('Errors',fmt(v.errors),'',+v.errors?'bad':'good'),tile('Warnings',fmt(v.warnings),'',+v.warnings?'warn':'')),
-     (v.issues||[]).length?table(v.issues,[{key:'severity',label:'Severity',fmt:x=>el('span',{class:'chip '+(x==='error'?'bad':'warn')},x)},{key:'rule',label:'Rule',fmt:x=>String(x||'').replace(/_/g,' ')},{key:'location',label:'Location'},{key:'client',label:'Client'},
-      {key:'previous',label:'Previous MTD',num:1,fmt:fmt},{key:'entered',label:'Entered',num:1,fmt:fmt}],{name:`matrix_issues_${d}.csv`,pageSize:50}):el('p',{},'No issues found.'),
-     el('p',{class:'note'},ok?(+v.warnings?'Warnings must be accepted (tick "Accept warnings" and give a reason) before committing.':'Ready to commit.'):'Fix the errors, then validate again.'))}
-   bVal.onclick=()=>busy(bVal,async()=>{await save();showV(await adminCall('matrix_validate',{date:d}))});
-   bCom.onclick=async()=>{if(ack.checked&&reason.value.trim().length<3){say('Give a reason for accepting the warnings.','bad');return}
-    if(!confirm(`Commit the tracker snapshot for ${d}? It becomes part of every report.`))return;bCom.disabled=true;
-    try{await save();const r=await adminCall('matrix_commit',{date:d,ack:ack.checked,reason:reason.value.trim()||null});
-     if(r&&r.committed){say(`Committed ${d}: ${fmt(r.rows)} rows, total MTD ${fmt(r.total_mtd)} (batch ${r.batch}).`,'good');S.meta=await api('meta');renderFresh()}
-     else{showV(r.validation||{},'Not committed — '+(r.reason||'see issues')+'.')}}catch(e){say('Error: '+e.message,'bad');bCom.disabled=false}};
-   bNo.onclick=()=>busy(bNo,async()=>{if(reason.value.trim().length<3){say('Enter a reason (for example, "public holiday") first.','bad');return}
-    if(!confirm(`Mark ${d} as a day with no tracker report?`))return;await adminCall('matrix_no_report',{date:d,reason:reason.value.trim()});await load()})})}}
+/* ---------- Zonal Tracker daily update table (Upload centre) ---------- */
+const DU={mode:'daily',showAll:false,month:null,editTR:false};try{DU.mode=localStorage.getItem('crux_du_mode')||'daily'}catch{}
+function dailyUpdateUI(box){
+ const today=new Date(Date.now()+19800000).toISOString().slice(0,10);
+ const lastSnap=String((S.meta.freshness||{}).zonal_latest_snapshot||today).slice(0,10);
+ DU.month=DU.month||lastSnap.slice(0,7);
+ const monthI=el('input',{type:'month',value:DU.month,'aria-label':'Month',max:today.slice(0,7)});
+ const modeSel=el('div',{class:'seg',role:'group','aria-label':'Entry mode'},[['daily','Daily counts'],['mtd','Cumulative MTD']].map(([v,l])=>el('button',{class:'btn'+(DU.mode===v?' on':''),'data-m':v},l)));
+ const allCb=el('input',{type:'checkbox'});allCb.checked=DU.showAll;
+ const trCb=el('input',{type:'checkbox'});trCb.checked=DU.editTR;
+ const fStk=el('select',{'aria-label':'Stakeholder filter'}),fZone=el('select',{'aria-label':'Zone filter'}),fLocS=el('select',{'aria-label':'Location filter'}),fq=el('input',{type:'search',placeholder:'Find client or location','aria-label':'Find client or location'});
+ const editor=el('input',{type:'text',placeholder:'Your name (audit trail)','aria-label':'Your name for the audit trail',style:'max-width:200px'});try{editor.value=localStorage.getItem('crux_editor')||''}catch{}
+ editor.onchange=()=>{try{localStorage.setItem('crux_editor',editor.value)}catch{}};
+ const statusLine=el('div',{class:'note'}),host=el('div'),act=el('div');
+ box.append(el('h3',{style:'margin-top:0'},'Zonal Tracker — daily update table'),
+  el('p',{class:'note'},'Same rows and order as the Main Tracker. Type each report date\'s count for every location × client — either the day\'s count ("Daily counts", like your Test Details sheet) or the cumulative month-to-date ("Cumulative MTD"). Total till date, block, zone and Pan India totals update as you type. Paste straight from Excel: a plain column fills downward; rows copied with their Location and Client columns are matched by name. Nothing reaches the reports until a date is validated and committed; committed dates can be corrected with a reason (the old values are archived).'),
+  el('div',{class:'tools'},el('label',{},'Month ',monthI),modeSel,el('label',{class:'chk'},allCb,' Show Sundays / no-report days'),el('label',{class:'chk',title:'Needed when a new month starts or a rate changes'},trCb,' Edit target & rate'),editor),
+  el('div',{class:'tools'},el('label',{},'Stakeholder ',fStk),el('label',{},'Zone ',fZone),el('label',{},'Location ',fLocS),fq),statusLine,host,act);
+ let M=null,cols=[],rows=[];const st={};// st[rowIdx][date]={kind,v}
+ const TR={};// TR[rowIdx]={target,rate} edited for new month
+ const key=(i,d)=>i+'|'+d;
+ const isOpen=d=>['missing','draft','reopened'].includes(d.status)||(DU.showAll&&['not_expected','no_report'].includes(d.status));
+ async function load(){host.innerHTML='';act.innerHTML='';host.append(el('p',{class:'note'},'Loading…'));
+  const m0=DU.month+'-01';const last=new Date(Date.UTC(+DU.month.slice(0,4),+DU.month.slice(5,7),0)).toISOString().slice(0,10);
+  try{M=await adminCall('matrix',{from:m0,to:last<today?last:today})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},'Could not load: '+e.message));return}
+  rows=M.rows||[];Object.keys(st).forEach(k=>delete st[k]);Object.keys(TR).forEach(k=>delete TR[k]);
+  rows.forEach((r,i)=>{Object.entries(r.drafts||{}).forEach(([d,v])=>{if(v.mtd!=null)st[key(i,d)]={kind:'mtd',v:+v.mtd,saved:true};if(v.target!=null||v.rate!=null)TR[i]={target:v.target??TR[i]?.target,rate:v.rate??TR[i]?.rate,saved:true}})});
+  const opts=(sel,vals,lbl)=>{const cur=sel.value;sel.innerHTML='';sel.append(el('option',{value:''},'All'),...[...new Set(vals.filter(Boolean))].sort().map(v=>el('option',{value:v},v)));sel.value=cur};
+  opts(fStk,rows.map(r=>r.stakeholder));opts(fZone,rows.map(r=>r.zone));opts(fLocS,rows.map(r=>r.location));
+  draw()}
+ function colList(){return (M.dates||[]).filter(d=>d.status==='loaded'||isOpen(d))}
+ const newMonth=()=>M&&M.template_snapshot&&M.template_snapshot.slice(0,7)!==DU.month;
+ // cumulative MTD for row i on column index j (presentation of the entry; validation is server-side)
+ function mtdAt(i,j){if(j<0){const b=rows[i].base;return b==null?0:+b}const d=cols[j];
+  if(d.status==='loaded'){const c=(rows[i].committed||{})[d.date];return c==null?null:+c}
+  const s=st[key(i,d.date)];if(!s||s.v==null||s.v==='')return null;if(s.kind==='mtd')return +s.v;const p=prevKnown(i,j);return p==null?null:p+(+s.v)}
+ function prevKnown(i,j){for(let k=j-1;k>=0;k--){const m=mtdAt(i,k);if(m!=null)return m}return mtdAt(i,-1)}
+ function shown(i,j){const m=mtdAt(i,j);if(m==null)return null;if(DU.mode==='mtd')return m;const p=prevKnown(i,j);return p==null?null:m-p}
+ function visible(r){if(fStk.value&&r.stakeholder!==fStk.value)return false;if(fZone.value&&r.zone!==fZone.value)return false;if(fLocS.value&&r.location!==fLocS.value)return false;
+  const q=fq.value.trim().toLowerCase();return !q||[r.location,r.client,r.zone].some(x=>String(x||'').toLowerCase().includes(q))}
+ function draw(){host.innerHTML='';act.innerHTML='';cols=colList();
+  if(!rows.length){host.append(el('div',{class:'banner'},'No tracker rows found for this month.'));return}
+  const open=cols.filter(isOpen);const nm=newMonth();
+  statusLine.textContent=`${rows.length} rows · ${cols.length} report dates (${cols.filter(d=>d.status==='loaded').length} committed, ${open.length} open)`+(M.base_snapshot?` · starting from MTD of ${ddmm(M.base_snapshot)}`:'')+(nm?' · new month: enter targets (and rates if changed) — tick "Edit target & rate"':'');
+  const t=el('table',{class:'zt du'});const hdr=el('tr',{class:'zt-h'});
+  hdr.append(el('th',{class:'stk0'},'Location'),el('th',{class:'stk1'},'Client'),el('th',{class:'num'},`Target\n${monShort(DU.month+'-01')}`),el('th',{class:'num'},'Rate'));
+  const stLbl={loaded:'committed',missing:'missing',draft:'draft',reopened:'correcting',not_expected:'Sunday',no_report:'no report'};
+  cols.forEach(d=>{const th=el('th',{class:'num du-'+d.status},ddmm(d.date).slice(0,5)+'\n'+stLbl[d.status]);
+   if(d.status==='loaded'){const b=el('button',{class:'zt-tg',title:'Correct this committed date'},'✎');b.onclick=()=>reopen(d.date);th.append(b);th.title=d.info?`Committed by ${d.info.by||'–'}; Pan India MTD ${zn(d.info.mtd)}`:''}
+   if(d.status==='reopened'&&d.reopen)th.title=`Being corrected: ${d.reopen.reason}`;hdr.append(th)});
+  hdr.append(el('th',{class:'num'},'Total till\ndate (MTD)'));
+  t.append(el('thead',{},hdr));const tb=el('tbody');t.append(tb);
+  const inputs={};// inputs[j]=[{i,inp}]
+  const totalsFor=idxs=>cols.map((d,j)=>{let s=0,n=0;idxs.forEach(i=>{const v=shown(i,j);if(v!=null){s+=v;n++}});return n?s:null});
+  const lastMtd=i=>{for(let j=cols.length-1;j>=0;j--){const m=mtdAt(i,j);if(m!=null)return m}return mtdAt(i,-1)};
+  const totRow=(label,idxs,fill,cls)=>{const tot=totalsFor(idxs);const tr=el('tr',{class:'zt-r tot '+(cls||''),style:`background:${fill}`},el('td',{class:'stk0'},label),el('td',{class:'stk1'},'preview'),
+    el('td',{class:'num'},zn(idxs.reduce((a,i)=>a+(+((TR[i]&&TR[i].target!=null)?TR[i].target:(nm?0:rows[i].target))||0),0))),el('td'),...tot.map(v=>el('td',{class:'num'},zn(v))),el('td',{class:'num'},zn(idxs.reduce((a,i)=>a+(lastMtd(i)||0),0))));return tr};
+  let zc=null,lc=null,locIdx=[],zoneIdx=[],zoneLocs=0;const allIdx=[];
+  const flushLoc=()=>{if(lc!==null&&locIdx.length){const anyVis=locIdx.some(i=>visible(rows[i]));if(anyVis)tb.append(totRow('Total '+lc,locIdx,ZTF.ltot));zoneLocs++}locIdx=[]};
+  const flushZone=()=>{flushLoc();if(zc!==null&&zoneLocs>1&&zoneIdx.some(i=>visible(rows[i])))tb.append(totRow('Total '+zc,zoneIdx,ZTF.ztot));zoneIdx=[];zoneLocs=0};
+  rows.forEach((r,i)=>{allIdx.push(i);
+   if(r.zone!==zc){flushZone();zc=r.zone;lc=null;if(rows.some((x,k)=>x.zone===zc&&visible(x)))tb.append(el('tr',{class:'zt-zh',style:`background:${ZTF.zh}`},el('td',{class:'stk0',colspan:2},zc||''),el('td',{colspan:cols.length+3})))}
+   if(r.location!==lc){flushLoc();lc=r.location}
+   locIdx.push(i);zoneIdx.push(i);if(!visible(r))return;
+   const tr=el('tr',{class:'zt-r leaf',style:`background:${ZTF.leaf}`});tr.append(el('td',{class:'stk0'},r.location),el('td',{class:'stk1'},r.client));
+   const trv=TR[i]||{};const tgtCell=el('td',{class:'num'}),rateCell=el('td',{class:'num'});
+   if(DU.editTR){const ti=el('input',{class:'cell',inputmode:'numeric','aria-label':`${r.location} ${r.client} target`,value:trv.target!=null?String(trv.target):(nm?'':String(r.target??''))});
+     const ri=el('input',{class:'cell',inputmode:'decimal','aria-label':`${r.location} ${r.client} rate`,value:trv.rate!=null?String(trv.rate):String(r.rate??'')});
+     ti.oninput=()=>{TR[i]={...(TR[i]||{}),target:ti.value===''?null:+ti.value.replace(/,/g,''),dirty:true}};ri.oninput=()=>{TR[i]={...(TR[i]||{}),rate:ri.value===''?null:+ri.value.replace(/,/g,''),dirty:true}};tgtCell.append(ti);rateCell.append(ri)}
+   else{tgtCell.textContent=trv.target!=null?zn(trv.target):(nm?'–':zn(r.target));rateCell.textContent=trv.rate!=null?zn(trv.rate):zn(r.rate)}
+   tr.append(tgtCell,rateCell);
+   cols.forEach((d,j)=>{const v=shown(i,j);
+    if(!isOpen(d)){tr.append(el('td',{class:'num du-c'},v==null?'':zn(v)));return}
+    const s=st[key(i,d.date)];const inp=el('input',{class:'cell'+(s&&!s.saved?' dirty':''),inputmode:'numeric','aria-label':`${r.location} ${r.client} ${d.date}`,value:v==null?(s&&s.v!=null&&s.v!==''?'?':''):String(v)});
+    (inputs[j]=inputs[j]||[]).push({i,inp});
+    inp.addEventListener('change',()=>{setCell(i,d.date,inp.value);draw()});
+    inp.addEventListener('keydown',e=>nav(e,j,i));
+    inp.addEventListener('paste',e=>{const tx=(e.clipboardData||window.clipboardData).getData('text');if(!/[\t\n]/.test(tx.trim()))return;e.preventDefault();pasteAt(tx,i,j);draw()});
+    tr.append(el('td',{},inp))});
+   tr.append(el('td',{class:'num',style:'font-weight:700'},zn(lastMtd(i))));tb.append(tr)});
+  flushZone();
+  tb.append(totRow('Pan India',allIdx,ZTF.pan));
+  host.append(el('div',{class:'zt-wrap',style:'max-height:68vh'},t));
+  drawActions(open)}
+ function setCell(i,d,raw){const s=String(raw).trim().replace(/,/g,'');st[key(i,d)]={kind:DU.mode,v:s===''?null:(isNaN(+s)?s:+s),saved:false}}
+ function nav(e,j,i){const mv={ArrowDown:[0,1],Enter:[0,1],ArrowUp:[0,-1],ArrowRight:[1,0],ArrowLeft:[-1,0]}[e.key];if(!mv)return;if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&e.target.selectionStart!==e.target.value.length&&e.key==='ArrowRight')return;
+  e.preventDefault();e.target.dispatchEvent(new Event('change'));setTimeout(()=>{const ins=[...host.querySelectorAll('input.cell[aria-label]')].filter(x=>!/target$|rate$/.test(x.getAttribute('aria-label')));
+   const openCols=cols.filter(isOpen);const curCol=openCols.indexOf(cols[j]);const perCol=ins.length/Math.max(1,openCols.length);
+   const vis=rows.map((r,k)=>visible(r)?k:null).filter(k=>k!=null);const ri=vis.indexOf(i);const ni=Math.min(vis.length-1,Math.max(0,ri+mv[1]));const nc=Math.min(openCols.length-1,Math.max(0,curCol+mv[0]));
+   const target=ins[ni*openCols.length+nc];if(target){target.focus();target.select()}},0)}
+ function pasteAt(tx,i0,j0){const lines=tx.replace(/\r/g,'').replace(/\n+$/,'').split('\n').map(l=>l.split('\t'));const openIdx=cols.map((d,j)=>isOpen(d)?j:null).filter(x=>x!=null);const startPos=openIdx.indexOf(j0);
+  const norm=s=>String(s||'').trim().toLowerCase();const labelled=lines.length&&lines[0].length>=3&&rows.some(r=>norm(r.location)===norm(lines[0][0])&&norm(r.client)===norm(lines[0][1]));
+  let used=0,skipped=0;
+  if(labelled){lines.forEach(c=>{const i=rows.findIndex(r=>norm(r.location)===norm(c[0])&&norm(r.client)===norm(c[1]));if(i<0){skipped++;return}c.slice(2).forEach((v,k)=>{const j=openIdx[startPos+k];if(j==null)return;setCell(i,cols[j].date,v);used++})})}
+  else{const vis=rows.map((r,k)=>visible(r)?k:null).filter(k=>k!=null);const r0=vis.indexOf(i0);lines.forEach((c,li)=>{const i=vis[r0+li];if(i==null)return;c.forEach((v,k)=>{const j=openIdx[startPos+k];if(j==null)return;setCell(i,cols[j].date,v);used++})})}
+  statusLine.textContent=`Pasted ${used} value(s)`+(labelled?` matched by Location + Client`:' by position')+(skipped?`; ${skipped} line(s) did not match a row (e.g. total rows) and were skipped`:'')+'. Remember to save.'}
+ async function reopen(d){const reason=prompt(`Correct the committed figures for ${ddmm(d)}? Give a reason (kept in the audit trail):`);if(!reason)return;
+  if(!editor.value.trim()){alert('Enter your name for the audit trail first.');return}
+  try{await adminCall('matrix_reopen',{date:d,reason,editor:editor.value.trim()});await load()}catch(e){alert('Could not open for correction: '+e.message)}}
+ function cellsFor(dates){const out=[];const bad=[];rows.forEach((r,i)=>{dates.forEach(d=>{const j=cols.findIndex(c=>c.date===d);const s=st[key(i,d)];const t=TR[i];
+   const dirty=(s&&!s.saved)||(t&&t.dirty);if(!dirty)return;const m=s&&s.v!=null&&s.v!==''?mtdAt(i,j):null;
+   if(s&&s.v!=null&&s.v!==''&&(m==null||isNaN(m)))bad.push(`${r.location} / ${r.client} on ${ddmm(d)}`);
+   out.push({date:d,location:r.location,client:r.client,mtd:m,target:t&&t.target!=null?t.target:null,rate:t&&t.rate!=null?t.rate:null,clear:!!(s&&!s.saved&&(s.v==null||s.v===''))})})});return{out,bad}}
+ async function save(dates){const {out,bad}=cellsFor(dates);if(bad.length)throw new Error(`${bad.length} cell(s) are not numbers or have no earlier value to add to: `+bad.slice(0,3).join('; '));
+  for(const grp of [out.filter(c=>!c.clear),out.filter(c=>c.clear)])for(let k=0;k<grp.length;k+=400)await adminCall('matrix_save',{cells:grp.slice(k,k+400),editor:editor.value.trim(),clear_blank:grp.length&&grp[0].clear});
+  rows.forEach((r,i)=>dates.forEach(d=>{const s=st[key(i,d)];if(s)s.saved=true;if(TR[i])TR[i].dirty=false}));return out.length}
+ function drawActions(open){act.innerHTML='';if(!open.length){act.append(el('p',{class:'note'},'No open dates in this month. Use ✎ on a committed date to correct it, or tick "Show Sundays / no-report days" to enter an extra date.'));return}
+  const dSel=el('select',{'aria-label':'Date to act on'},open.map(d=>el('option',{value:d.date},`${ddmm(d.date)} — ${d.status==='reopened'?'correction':d.status}`)));
+  const ctl=el('input',{type:'text',inputmode:'numeric',placeholder:'Pan India MTD from the source (optional)','aria-label':'Control total',style:'min-width:240px'});
+  const ack=el('input',{type:'checkbox'}),reason=el('input',{type:'text',placeholder:'Reason (corrections / accepting warnings / no-report day)','aria-label':'Reason',style:'min-width:280px'});
+  const out=el('div');const say=(t,c)=>{out.innerHTML='';out.append(el('p',{class:c||'note'},t))};
+  const b=(l,fn,cls)=>{const x=el('button',{class:'btn'+(cls?' '+cls:'')},l);x.onclick=async()=>{x.disabled=true;try{await fn()}catch(e){say('Error: '+e.message,'bad')}finally{x.disabled=false}};return x};
+  const syncCtl=()=>{const d=open.find(x=>x.date===dSel.value);ctl.value=d&&d.control!=null?String(d.control):''};dSel.onchange=syncCtl;syncCtl();
+  const showV=(v,head)=>{out.innerHTML='';if(head)out.append(el('p',{class:'bad'},head));
+   out.append(el('div',{class:'tiles'},tile('Rows entered',`${fmt(v.rows_entered)} / ${fmt(v.rows_expected)}`),tile('Pan India MTD',fmt(v.total_mtd),v.same_month?'previous '+fmt(v.prev_total_mtd):'first report of the month'),
+    tile('Day\'s addition',v.same_month&&v.total_mtd!=null&&v.prev_total_mtd!=null?fmt(v.total_mtd-v.prev_total_mtd):'–'),v.reopened?tile('Changed vs committed',fmt(v.changed_vs_committed),'was '+fmt(v.old_total_mtd)):null,
+    tile('Errors',fmt(v.errors),'',+v.errors?'bad':'good'),tile('Warnings',fmt(v.warnings),'',+v.warnings?'warn':'')),
+    (v.issues||[]).length?table(v.issues,[{key:'severity',label:'Severity',fmt:x=>el('span',{class:'chip '+(x==='error'?'bad':'warn')},x)},{key:'rule',label:'Check',fmt:x=>String(x||'').replace(/_/g,' ')},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'previous',label:'Previous / reference',num:1,fmt:fmt},{key:'entered',label:'Entered MTD',num:1,fmt:fmt}],{name:`daily_update_issues_${v.date}.csv`,pageSize:50}):el('p',{},'All checks passed.'),
+    (v.changes||[]).length?el('details',{},el('summary',{},`${v.changes.length} value(s) changed vs committed`),table(v.changes,[{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'old',label:'Committed MTD',num:1,fmt:fmt},{key:'new',label:'New MTD',num:1,fmt:fmt}],{search:false,name:'changes.csv'})):null,
+    el('p',{class:'note'},+v.errors?'Fix the errors (every row needs a value — use "Fill blanks" if nothing came in), save and validate again.':(+v.warnings||v.reopened?'Tick "Accept warnings" and give a reason, then commit.':'Ready to commit.')))};
+  const validate=async()=>{const d=dSel.value;await save([d]);await adminCall('matrix_save',{cells:[],control:[{date:d,mtd:ctl.value.replace(/,/g,'')}],editor:editor.value.trim()});return adminCall('matrix_validate',{date:d})};
+  const fillBlanks=()=>{const d=dSel.value;const j=cols.findIndex(c=>c.date===d);let n=0;rows.forEach((r,i)=>{if(shown(i,j)==null&&!(st[key(i,d)]&&st[key(i,d)].v!=null&&st[key(i,d)].v!=='')){st[key(i,d)]={kind:'daily',v:0,saved:false};n++}});draw();say(`Filled ${n} empty cell(s) for ${ddmm(d)} with a daily count of 0 (MTD carried forward). Save to keep them.`)};
+  const commit=async d=>{const v=await validate();if(+v.errors){showV(v,`${ddmm(d)} has errors — not committed.`);return false}
+   if((+v.warnings||v.reopened)&&!(ack.checked&&reason.value.trim().length>=5)){showV(v,`${ddmm(d)}: tick "Accept warnings" and give a reason (5+ characters) to commit.`);return false}
+   const r=await adminCall('matrix_commit',{date:d,ack:ack.checked,reason:reason.value.trim()||null,editor:editor.value.trim()});
+   if(!r||!r.committed){showV(r&&r.validation||{},'Not committed — '+((r&&r.reason)||'see checks')+'.');return false}return r};
+  act.append(el('div',{class:'card',style:'margin-top:10px'},el('div',{class:'tools'},b('Save all changes',async()=>{const n=await save(open.map(d=>d.date));say(n?`Saved ${n} value(s) as drafts.`:'Nothing new to save.');await load()},'primary'),
+    el('span',{class:'note'},'Act on date:'),dSel,b('Fill blanks with 0',async()=>fillBlanks()),b('Validate',async()=>{if(!editor.value.trim()){say('Enter your name for the audit trail first.','bad');return}showV(await validate())}),
+    el('label',{class:'chk'},ack,' Accept warnings'),reason),
+   el('div',{class:'tools'},el('label',{},'Control total ',ctl),
+    b('Commit this date',async()=>{if(!editor.value.trim()){say('Enter your name for the audit trail first.','bad');return}const d=dSel.value;if(!confirm(`Commit ${ddmm(d)}? It becomes part of every report.`))return;const r=await commit(d);if(r){await load();say(`Committed ${ddmm(d)}: Pan India MTD ${fmt(r.total_mtd)}`+(r.correction?` (correction; ${fmt(r.changed)} value(s) changed, previous version archived)`:'')+'.','good')}},'primary'),
+    b('Commit all open dates in order',async()=>{if(!editor.value.trim()){say('Enter your name for the audit trail first.','bad');return}if(!confirm('Validate and commit every open date, oldest first? It stops at the first date with errors or unaccepted warnings.'))return;
+     const ds=open.map(x=>x.date).sort();let done=0;for(const d of ds){dSel.value=d;const r=await commit(d);if(!r)break;done++}await load();if(done)act.prepend(el('p',{class:'good'},`Committed ${done} date(s).`))}),
+    b('Mark no report',async()=>{const d=dSel.value;if(reason.value.trim().length<3){say('Enter a reason (e.g. "public holiday") first.','bad');return}if(!confirm(`Mark ${ddmm(d)} as a day with no tracker report?`))return;await adminCall('matrix_no_report',{date:d,reason:reason.value.trim()});await load()}),
+    b('Discard drafts',async()=>{const d=dSel.value;if(!confirm(`Discard all unsaved and saved draft values for ${ddmm(d)}`+(open.find(x=>x.date===d).status==='reopened'?' and cancel the correction':'')+'?'))return;await adminCall('matrix_discard',{date:d,editor:editor.value.trim()});await load()})),out))}
+ monthI.onchange=()=>{if(monthI.value){DU.month=monthI.value;load()}};
+ modeSel.querySelectorAll('button').forEach(x=>x.onclick=()=>{DU.mode=x.dataset.m;try{localStorage.setItem('crux_du_mode',DU.mode)}catch{}modeSel.querySelectorAll('button').forEach(y=>y.classList.toggle('on',y===x));draw()});
+ allCb.onchange=()=>{DU.showAll=allCb.checked;draw()};trCb.onchange=()=>{DU.editTR=trCb.checked;draw()};
+ [fStk,fZone,fLocS].forEach(s=>s.onchange=draw);let qt;fq.oninput=()=>{clearTimeout(qt);qt=setTimeout(draw,250)};
+ load()}
+
+/* ---------- BUSINESS COUNT report (date × location, like the tracker's count sheet) ---------- */
+function businessCountSection(box,month,f){let meas='revenue';const segB=el('div',{class:'seg',role:'group','aria-label':'Measure'},[['revenue','Revenue'],['cases','Cases']].map(([v,l])=>el('button',{class:'btn'+(v===meas?' on':''),'data-v':v},l)));
+ const xb=el('button',{class:'btn'},'Export to Excel');const host=el('div');let J=null;
+ box.append(el('h3',{},'Business count — daily, by location'),el('p',{class:'note'},'Same layout as the "BUSINESS COUNT" sheet: one row per report date, one column per location, with Total, Projected Target, Shortfall and Per Day Average. Filters at the top apply.'),el('div',{class:'tools'},segB,xb),host);
+ async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading…'));try{J=await api('business_count',{month,filters:f,measure:meas})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},e.message));return}
+  host.innerHTML='';if(!J||J.error){host.append(el('div',{class:'banner'},(J&&J.error)||'Not available from the server yet.'));return}
+  const C=J.columns||[];const t=el('table',{class:'zt'});const zr=el('tr',{class:'zt-g'}),lr=el('tr',{class:'zt-h'});
+  zr.append(el('th',{class:'stk0',rowspan:2,style:'background:#9FC5E8'},'Date'));let i=0;while(i<C.length){let j=i;while(j<C.length&&C[j].zone===C[i].zone)j++;const single=j-i===1&&C[i].label===C[i].zone;
+   zr.append(el('th',{colspan:j-i,rowspan:single?2:1,class:'g'},C[i].zone||''));if(!single)for(let k=i;k<j;k++)lr.append(el('th',{class:'num'},C[k].label));i=j}
+  zr.append(el('th',{rowspan:2,style:'background:#9FC5E8'},'TOTAL'));t.append(el('thead',{},zr,lr));
+  const tb=el('tbody');(J.rows||[]).forEach(r=>{tb.append(el('tr',{class:'zt-r',style:'background:#FFFFFF'},el('td',{class:'stk0'},ddmm(r.date).replace(/\.(\d{2})(\d{2})$/,'.$2')),...C.map(c=>el('td',{class:'num'},zn((r.cells||{})[c.location_id]))),el('td',{class:'num',style:'font-weight:700'},zn(r.total))))});
+  const S2=J.summary||{},G=J.grand||{};const sumRow=(lab,k,fill,neg)=>el('tr',{class:'zt-r tot',style:`background:${fill}`},el('td',{class:'stk0'},lab),...C.map(c=>{const v=(S2[c.location_id]||{})[k];return el('td',{class:'num'+(neg&&v<0?' neg':'')},zn(v))}),el('td',{class:'num'+(neg&&G[k]<0?' neg':'')},zn(G[k])));
+  const ml=monLong(J.month);tb.append(sumRow('Total','total',ZTF.pan),sumRow('Projected Target Of '+ml,'target','#FFF2CC'),sumRow('Shortfall For '+ml,'shortfall','#FCE4D6',true),sumRow('Per Day Average'+(meas==='revenue'?' Revenue':' Cases'),'avg_day','#EDEDED'));
+  t.append(tb);host.append(el('div',{class:'zt-wrap',style:'max-height:60vh'},t),el('p',{class:'note'},J.method||''))}
+ segB.querySelectorAll('button').forEach(x=>x.onclick=()=>{meas=x.dataset.v;segB.querySelectorAll('button').forEach(y=>y.classList.toggle('on',y===x));load()});
+ xb.onclick=()=>{if(!J||!window.XLSX)return;const C=J.columns||[];const aoa=[['Date',...C.map(c=>c.zone===c.label?c.label:c.zone+' — '+c.label),'TOTAL']];
+  (J.rows||[]).forEach(r=>aoa.push([ddmm(r.date),...C.map(c=>(r.cells||{})[c.location_id]??''),r.total]));const S2=J.summary||{},G=J.grand||{};
+  [['Total','total'],['Projected Target','target'],['Shortfall','shortfall'],['Per Day Average','avg_day']].forEach(([l,k])=>aoa.push([l,...C.map(c=>(S2[c.location_id]||{})[k]??''),G[k]??'']));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Business Count');XLSX.writeFile(wb,`Business_Count_${J.month.slice(0,7)}_${meas}.xlsx`)};
+ load()}
 
 /* ---------- WEF-dated group mapping (Data quality) ---------- */
 async function groupUI(box){box.append(el('h3',{},'Groups & mappings (WEF-dated)'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
@@ -738,7 +839,7 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
 const vUpload=guard(async s=>{s.append(el('h2',{},'Upload centre'));if(!adminGate(s,'Uploading data'))return;
- const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);matrixUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, or a full Zonal Tracker'));
+ const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, or a full Zonal Tracker (backfill / recovery)'));
  s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
  const list=el('div');const inp=el('input',{type:'file',multiple:'',accept:'.xlsx,.xls',class:'hidden',id:'fin'});
  const drop=el('div',{class:'drop',tabindex:0,role:'button','aria-label':'Choose files to upload'},el('p',{},el('strong',{},'Drop .xlsx files here'),' or ',el('button',{class:'btn',onclick:()=>inp.click()},'choose files')),el('p',{class:'note'},'Personal data (applicant names, mobile, PAN, Aadhaar, account numbers, addresses) is removed in your browser before upload.'),inp);

@@ -53,8 +53,17 @@
 | D33 | Period comparison (snapshot or month, any two) with explicit like-for-like warnings | User request: comparative analysis |
 | D34 | Migrations avoid top-level DROP/REVOKE/UPDATE/DELETE (the Supabase connector cancels them); use guarded DO blocks | Six cancelled attempts on 14-Oct |
 
+| D35 | Daily update table replaces the routine tracker upload: rows in tracker order, one column per report date, entry as daily counts (like the "Test Details" sheet) or cumulative MTD (toggle); stored as cumulative MTD; Total till date, block/zone/Pan India previews | Business decision 14-Oct ("Both, with a toggle") |
+| D36 | Committed dates can be corrected: reopen with reason → edit → validate → commit; previous leaf values archived in `bi.zt_snapshot_archive` | Brief §6 (admin-assisted corrections, previous/new value logged) |
+| D37 | "BUSINESS COUNT" sheet reproduced (date × location daily revenue or cases, Total, Projected Target, Shortfall, Per Day Average); Penalty sheet not reproduced (penalty = ₹ amount, report only — available on request) | Business decision 14-Oct |
+| D38 | SBI Car Loan+ reported under SBI (client), product = Car Loan; client-wise block now equals the tracker (SBI 14,031) | Business decision 14-Oct |
+| D39 | Tracker expense columns L/M/N ignored everywhere (not displayed, not used) | Business: "that data and calculation is incorrect" |
+| D40 | Entry-table values matched across snapshots by location/client codes (labels change, e.g. Rajasthan move on 3-Oct) | Found 27 relabelled rows on 3-Oct during testing |
+| D41 | Drafts and corrections never deleted: `committed_batch` / `active` flags instead (also required because the connector cancels DELETE) | Audit trail + tooling constraint |
+
 ## Open questions (need business confirmation)
 2. Confirm the D18 reading of tracker columns M and N.
 
-3. What should tracker column L (Projected Expense) mean — monthly cost per zone or per location? Until confirmed it stays hidden/unverified.
-4. SBI Car Loan+ is counted inside SBI in the tracker's client-wise block (14,031) but kept separate in the dashboard (12,500 + 1,531). Confirm preferred treatment.
+3. ~~Expense column L~~ — resolved 14-Oct: ignore (data incorrect).
+4. ~~SBI Car Loan+~~ — resolved 14-Oct: count in SBI, product Car Loan.
+5. 2-Oct-2026 has no tracker snapshot (holiday?) — mark it "no report" in the daily update table or enter it.

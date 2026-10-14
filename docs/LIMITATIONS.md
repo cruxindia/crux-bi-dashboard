@@ -6,10 +6,10 @@
 | L2 | No Case Wise files for Amaravati, Jalgaon, Solapur, Nanded, Punjab (partly), Bihar/Patna, Goa (via Mumbai only) | ~4,100 Oct cases cannot be compared with Force | Shown as "not received", never as 0% Force |
 | L3 | Case Wise cannot distinguish BOM MSME PRE/POST, SBI Car Loan+ | Force usage only at client-family level | Need a product/sub-client field in Force export |
 | L4 | Route is rule-based (D17), not an explicit source flag | Manual share may be overstated if back-office staff submit field points in-app | Validate with Ops; a Force submission-channel flag would make it exact |
-| L5 | Tracker expense block (L/M/N) is typed by hand and inconsistent (e.g. Ahmedabad 225, Vadodara 412.5, Jalgaon = Chh. Sambhajinagar 3,14,046); "YTD" is not YTD | Not used in any KPI; old Expense & margin panel removed; shown only in the tracker view, off by default, labelled "as entered" | Business to define L; then capture it in the daily matrix |
+| L5 | Tracker expense block (L/M/N) is incorrect (business confirmed 14-Oct) | Ignored everywhere — not displayed, not used | — |
 | L6 | Historical tracker targets not in source | No historical achievement % | — |
 | L7 | 2,425 negative case TATs (mostly Guwahati), 1,353 points without a Case Wise case | Excluded / counted at point level only | Logged in `bi.dq_exception` |
-| L8 | **Storage: DB 388 MB of the 500 MB free tier (14-Oct)** — point_store 186 MB (751,902 points, ~92k dead tuples from re-uploads), point_derived 86 MB, stg_row 19 MB bloat. Point Wise adds ~110k points ≈ 40 MB/month | **~3 months of headroom** | Short term: `VACUUM FULL bi.point_store, bi.stg_row` (~30–40 MB); then either archive points older than 18 months or move to Supabase Pro (8 GB). Decision needed |
+| L8 | Storage: DB 338 MB of 500 MB after cleanup on 14-Oct (was 388 MB; VACUUM FULL of point_store and staging). Point Wise adds ~110k points ≈ 40 MB/month | ~4 months of headroom | Decide before Feb-2027: archive points older than 18 months, or move to Supabase Pro (8 GB) |
 | L9 | Dashboard is public (anyone with the link can read business figures and employee names) | Business decision | `noindex`; rotate the link by renaming the repo if it leaks; admin functions need the key |
 | L13 | Anonymous API calls can be repeated by anyone (no rate limit) | Possible load spikes | Result cache absorbs repeats; Supabase rate limits apply |
 | L10 | Browser upload uses SheetJS 0.20.3 (inlined in artifact build) | — | Keep pinned; files from trusted internal sources only |
@@ -18,6 +18,6 @@
 | L15 | Branch universe = branches seen in Force1; no verified branch master | No coverage %, no never-activated branches | Supply client branch master (bi.client_branch_master) |
 | L16 | No workforce master (joining/exit dates) | Attrition not computed | Supply HR master |
 | L17 | Ask Crux narrative needs GEMINI_API_KEY (not set) | Answers are the deterministic SQL text | Set the Edge Function secret; budget cap via GEMINI_DAILY_CAP |
-| L18 | Two interrupted loader batches (#361, #366) remain "staged" | None (data reloaded in later batches) | Mark rejected when DB writes are approved |
-| L19 | Tracker replica recomputes every subtotal from leaf rows; source subtotals with broken ranges (client-wise SBI 14,031 incl. Car Loan+, BD revenue Mumbai+Goa ₹2,400 vs ₹1,200) differ and are flagged ⚠ | Small differences vs the Excel in the client-wise block and J/K columns | Fix the formulas in the Excel or accept dashboard values |
-| L20 | Matrix-entered snapshots copy the tracker's row structure from the latest uploaded file; new locations/clients still need a full tracker upload once | — | Add row management to the matrix if structure changes often |
+| L18 | ~~Interrupted loader batches #361/#366~~ | Resolved 14-Oct (marked rejected, staging rows cleared) | — |
+| L19 | Tracker replica recomputes subtotals from leaf rows; the source BD-revenue/Shortfall (J/K) totals use broken ranges (e.g. Mumbai+Goa BD ₹2,400 vs ₹1,200) | Small differences in J/K totals only; all target/MTD/revenue totals match | Fix the Excel formulas or accept dashboard values |
+| L20 | Daily update rows come from the latest tracker snapshot; a brand-new location or client row still needs one full tracker upload. Back-dating a date that falls before a label change (e.g. 2-Oct) may need a full-file upload instead | — | Add row management to the entry table if structure changes often |
