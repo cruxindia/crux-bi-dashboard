@@ -107,3 +107,28 @@ At about 40 MB of new Force1 data per month, the project reaches the free-plan l
 3. **Both**: upgrade now, design archiving later.
 
 Option 1 or 3 is recommended. Nothing irreversible is done until the owner chooses.
+
+## 8. Re-measure — 15-Oct-2026 (corrective wave)
+| Measure | 14-Oct after cleanup | 15-Oct before | 15-Oct after safe actions |
+|---|---:|---:|---:|
+| Database `postgres` (bytes) | 432,958,611 | 446,475,411 | **439,667,859** |
+| All databases (bytes) | 450,187,441 (end of 14-Oct) | 461,590,705 | **454,783,153** |
+| Headroom to 500,000,000 bytes | — | 38.4 MB | **45.2 MB** (69.5 MB if the limit is 500 MiB) |
+
+**Where the +13.5 MB came from (14-Oct cleanup → 15-Oct):** `branch_seen` 9.5 → 18.6 MiB (every monitor run rewrites one row per branch; two runs left a dead copy of each row and a bloated index), `zt_row` +1.1 MiB (rolled-back test updates), branch master/history +0.5 MiB (wave-3 research rows), the rest small (functions, cache, AI messages). No new Force1 upload in this period; `point_store` / `point_derived` unchanged.
+
+**Safe actions taken (no rows removed):** `VACUUM FULL` on `zt_row` (−1.2 MB) and `api_cache` (−2.6 MB); `branch_seen` set to fillfactor 50 then `VACUUM FULL` (−3.0 MB; later monitor runs update in place, so the index stops growing) — `bi_081`. Total **−6.8 MB**. Row counts checked before/after (58,905 / 236 / 92,239); all SQL suites and browser suites re-run afterwards.
+
+**Owner items — status 15-Oct:** `owner_storage_cleanup.sql` **not run** (`point_derived_pkey` still present, 21 MB; its scan counter now shows 1 scan, so re-check before dropping); bucket `ocr` (public, 6 files, 10.5 MB) and empty bucket `bills` **still exist**.
+
+**Forecast:** at about 40 MB of Force1 data per month the database reaches 500,000,000 bytes around **mid-November 2026** (early December if the limit is 500 MiB or after the owner script). The §7 decision (Pro plan or archive design) is now urgent.
+
+**Dry run of the remaining options (nothing executed):**
+| Option | Gain | Risk / recovery |
+|---|---:|---|
+| Owner script: drop `point_derived_pkey` | ~21 MB | Low; script has a dry-run check and a re-create line |
+| Delete buckets `ocr`, `bills` | 10.5 MB object storage (not the DB limit) | Low; download the 6 files first if wanted |
+| Compact `client_branch_history` first-observed rows | ~12 MB | Medium; loses per-row source version of first sighting |
+| Archive visit history older than 6 months | ~35 MB per month archived | Needs design + tested restore before any data leaves |
+| Upgrade to Pro (8 GB) | removes the limit | Cost; no data risk |
+

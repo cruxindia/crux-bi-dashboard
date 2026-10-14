@@ -1,4 +1,4 @@
-# Acceptance test report — updated 14-Oct-2026 (night)
+# Acceptance test report — updated 15-Oct-2026
 
 Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload). Result: **18 / 18 passed** (T17 is a browser check, listed separately) (after fixing one defect in test T07's case selection).
 
@@ -162,3 +162,28 @@ Ask Crux v11 end-to-end (9 questions incl. injection, spaced phone number, defin
 
 **Storage**: 428 → 413 MB by VACUUM FULL (no rows removed); 415 MB at the end of the session; see STORAGE_AUDIT.md.
 | Regression run (Overview, Business tracker, Growth, admin rate preview, penalty form, 390 px) | Pass; no console errors |
+
+## 15-Oct-2026 — corrective wave: drill-down, filters, admin, mapping, AI cache, storage (bi_077–bi_082, Ask Crux v12)
+`select * from bi.run_wave_tests();` — **4 / 4 pass**; regression `run_acceptance_tests()` **27 / 27**, `run_addendum_tests()` **8 / 8** (after bi_081/bi_082).
+
+| # | Test | Result | Evidence |
+|---|---|---|---|
+| T39 | Drill-down reconciles: Pan India = Σ zones, zone = Σ locations, location = Σ clients; parent shown; Pan India = Overview | Pass | Oct-2026: 17,441 Pan India; Rest of Maharashtra 6,220; top location 1,649 |
+| T40 | Branch list (Force1) and branch detail agree for the month | Pass | top branch 201 cases in both; branch rows ≤ location Force1 total |
+| T41 | Penalty and mapping changes need a valid, unexpired, unrevoked admin key; anon has no direct schema access | Pass | valid → allowed; none / wrong / expired / revoked / job-scope → refused; test tokens and rows rolled back |
+| T42 | Mapping correction moves only records from the effective date, needs a reason, keeps history | Pass | 636 tracker rows previewed and moved; rows before the date unchanged; no-reason apply refused; rolled back |
+
+**Anonymous REST probe (15-Oct, public key):** `bi_admin` mapping/penalty without or with a wrong key → 401 "admin key required"; `bi_ai_gateway`, `bi_branch_job` → "forbidden"; `bi.mapping_retarget` → schema not exposed; `bi_call('employees')` → empty; `bi_call('mapping_queue')` → "admin key required".
+
+**Live browser run (https://cruxindia.github.io/crux-bi-dashboard/, Chromium, 1366 × 900 and 390 × 844, dark mode):** 42 / 42 checks pass, no console errors (`test_wave.py live`); the drawer organic tile (added afterwards) passed locally against the live database (43 / 43) and is re-checked after deployment. Earlier suites `test_ui2.py live` and `test_ui3.py live` pass, no console errors. Note: the first live run timed out waiting 30 s for a cold drill-down; the rerun passed. Cause: 23 s first-open time for filtered drill-downs, reduced to ~7 s by `bi_082` (identical results on 11 filter/grouping combinations).
+
+| Area | Checks |
+|---|---|
+| Filters | F1 hidden when collapsed · F2 no filter row above content · F3 no content shift · F4 below header, inside viewport · F5 badge count · F6 summary · F7 Escape · F8 Reset · F9 persists across sections · F10 visible while scrolling · F11 no horizontal overflow |
+| Drill-down | D1 KPI keeps filters · D2 parent total · D3 breakdown ✓ · D3b organic to date · D4–D5 child level + breadcrumb · D6 Back · D7 Reset · D8 Close · D9 history chart · D10 daily bar → report date · D11–D12 coexists with filters · D13 growth chart · D14 sort header does not drill · D15 search does not drill · D16 table row · D17 tracker expand/collapse unaffected · D18 tracker leaf → location·client · D19 branch detail · D20 no penalty controls in tracker · D21 Force1 group row |
+| Admin | A1 penalty form in Upload centre · A2 tracker penalties read-only for admin · A3 mapping correction preview |
+| 390 px | M1 no overflow · M2 compact button · M3 bottom sheet · M4 dark mode · M5 full-width drawer · M6 button reachable after scroll · M7 sheet no overflow |
+
+**Ask Crux v12 (15-Oct):** same question twice → second answer `cached: true`, no Gemini or embedding call, usage row `ask_cached`; a question repeated after a data change (version 3006 → 3010) was answered fresh. 0 HTTP 429 since v12 (3 live calls — too few to show the shared cool-down working under load).
+
+**Storage:** 446.5 → 439.7 MB (VACUUM FULL `zt_row`, `api_cache`, `branch_seen`; fillfactor 50 on `branch_seen`); row counts unchanged; all SQL suites re-run afterwards.

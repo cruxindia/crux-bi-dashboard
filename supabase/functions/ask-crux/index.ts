@@ -185,6 +185,14 @@ Deno.serve(async (req) => {
   try {
     const budget = await gw({ op: 'budget', purpose: 'ask' });
     if (!budget.ok) return det('AI daily limit reached; showing the calculated answer.');
+    // directions are calculated here (figures are hidden from the model, so it cannot judge them itself)
+    const facts = directions(String(base.answer));
+    // the same question on the same data already has a checked summary: reuse it without calling the provider
+    const hit = await gw({ op: 'narrative_cache', question, answer: base.answer, data_version: base.data_version ?? null }).catch(() => null);
+    if (hit?.narrative && !FIGURE.test(hit.narrative) && !facts.check(hit.narrative) && !/[#{}<>]|\[name\]|https?:|www\.|@/.test(hit.narrative)) {
+      await record({ model: hit.model, purpose: 'ask_cached', message_id: base.message_id, ok: true, ms: 0, in: 0, out: hit.narrative.length, narrative: hit.narrative, knowledge: [], note: 'reused checked summary of message ' + hit.message_id });
+      return json({ ...base, narrative: hit.narrative, provider: 'gemini', model: hit.model, cached: true, knowledge: [] });
+    }
     // retrieval: approved definitions / methods only (never operational records)
     let knowledge: { title: string; source: string; content: string; similarity: number }[] = [];
     if (cfg.GEMINI_EMBEDDING_MODEL) {
@@ -205,10 +213,8 @@ Deno.serve(async (req) => {
       'Your text: Business so far this month is behind the same point last month, so the gap to target needs attention.';
     // figures are masked before they reach the model: '#' = a figure shown separately, '(a decrease)' = a negative change
     const mask = (t: string) => t.replace(/\b\d{4}-\d{2}-\d{2}\b/g, '(a date)').replace(/(^|[\s(:,=])-\d[\d,]*(\.\d+)?%?/g, '$1(a decrease)').replace(/(change\s+)(\d[\d,]*(?:\.\d+)?)%?/gi, (_m, p1, v) => p1 + (Number(String(v).replace(/,/g, '')) === 0 ? '(no change)' : '(an increase)')).replace(/\d[\d,]*(\.\d+)?%?/g, '#');
-    // directions are calculated here (figures are hidden from the model, so it cannot judge them itself)
-    const facts = directions(String(base.answer));
     const prompt = `QUESTION: ${mask(qSafe)}\nEVIDENCE:\n${mask(evSafe)}${facts.text.length ? `\nFACTS (calculated): ${facts.text.join(' ')}` : ''}${kText ? `\nKNOWLEDGE:\n${mask(redact(kText))}` : ''}`;
-    const cooling = !!cfg.GEMINI_FALLBACK_MODEL && Date.now() < primaryCoolUntil;
+    const cooling = !!cfg.GEMINI_FALLBACK_MODEL && (Date.now() < primaryCoolUntil || !!budget.primary_cool);
     let r = await ai.generate(cooling ? cfg.GEMINI_FALLBACK_MODEL : cfg.GEMINI_MODEL, { system, prompt, maxTokens: 512, temperature: 0 });
     if (!cooling && !r.ok && cfg.GEMINI_FALLBACK_MODEL && (r.status === 429 || r.status >= 500 || r.status === 0)) {
       if (r.status === 429) primaryCoolUntil = Date.now() + 15 * 60000;

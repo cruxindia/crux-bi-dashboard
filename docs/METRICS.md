@@ -63,3 +63,15 @@
 | Research status per combination | verified (≥1 source-verified branch in territory) · researched, none in territory · not applicable (no branch network) · partial source · territory not established · not researched |
 | Researched % | (verified + researched-none + not applicable) ÷ combinations |
 | Monitor overdue | No succeeded `branch_monitor` run in 35 days |
+
+## Drill-down (15-Oct-2026)
+| Metric | Definition |
+|---|---|
+| Selected value | Month-to-date cases for the drawer's filters from the latest tracker snapshot of the month (= Overview / tracker) |
+| Parent total and share | Same figure with the most specific filter removed (client → location → zone → region → stakeholder → Pan India); share = selected ÷ parent |
+| Breakdown check | Σ child month-to-date = selected value (shown with ✓; T39) |
+| Likely month end | Overview projection for the selection (`api_potential`); range = weakest–strongest past month |
+| Organic in the drawer | Organic for the month, organic expected to date, actual − organic to date (= Overview tile and zone highlights) |
+| vs same point last month | Like-for-like: last month's report on or before the same day (`api_lfl`) |
+| Branch rows | Force1 cases by client branch code for the month and the last 3 months; Force1 counts differ from tracker counts |
+| Branch peer median | Median monthly cases (last 3 months) of active branches of the same client in the same location, shown when ≥ 5 peers |

@@ -82,3 +82,10 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | `bi.ai_model_check` | Model validation results (models.list + synthetic test) | id | cron `bi-ai-validate` |
 | `bi.ai_provider_usage` | Each AI call: model, purpose, ok, ms, HTTP status, retries, tokens, note (no prompts, no secrets) | id | ask-crux |
 | `bi.kb_doc` / `bi.kb_chunk` | Approved definitions and methods for RAG; chunk embeddings (vector 768) with model and dimension | doc / chunk | `bi_admin('kb')`, cron `bi-ai-embed-sync` |
+
+## Wave 15-Oct-2026
+| Object | Purpose | Key | Written by |
+|---|---|---|---|
+| `bi.mapping_correction` | History of mapping corrections: kind, source, alias, old → new target, effective date, reason, actor, affected counts | id | `bi_admin('mapping_retarget')` (admin key) |
+| `bi.api_drill(month, filters, level, p)` | Drawer data: selected, parent, children with ids, organic to date, 12-month history, branch rows (level = branch) | — | read via `bi_call('drill')` |
+| `bi.api_branch_detail(p)` | One client branch: master record, monthly Force1 cases, first/last month, peer median | — | read via `bi_call('branch_detail')` |

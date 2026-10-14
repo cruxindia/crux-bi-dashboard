@@ -39,7 +39,7 @@ Data quality → exceptions (status open/accepted/resolved), location aliases (c
 Pick location → group type → new value → WEF date → reason + your name → Preview impact → Save. Future-dated changes are applied to today's mapping by the daily job `bi-wef-sync`.
 
 ## Migrations
-All migrations through `bi_075` are applied (exported automatically to `supabase/migrations/`). When writing new ones, avoid top-level DROP/REVOKE/UPDATE/DELETE — the Supabase connector cancels them; use `create or replace` and guarded `do` blocks. After applying, run `select * from bi.run_acceptance_tests();` (27 tests) and `select * from bi.run_addendum_tests();` (8 tests). New functions in schema `bi` are not reachable by the public key (no schema access); expose them only through `bi_call` (read) or `bi_admin` (write, key required).
+All migrations through `bi_082b` are applied (exported automatically to `supabase/migrations/`). When writing new ones, avoid top-level DROP/REVOKE/UPDATE/DELETE — the Supabase connector cancels them; use `create or replace` and guarded `do` blocks. After applying, run `select * from bi.run_acceptance_tests();` (27 tests) `select * from bi.run_addendum_tests();` (8 tests) and `select * from bi.run_wave_tests();` (4 tests) — run each on its own (together they exceed the statement time limit). New functions in schema `bi` are not reachable by the public key (no schema access); expose them only through `bi_call` (read) or `bi_admin` (write, key required).
 
 ## Business tracker (Zonal Tracker view)
 Pick the month at the top, then the snapshot. Levels: Summary / Zones / Locations / All rows (like Excel outline). ▸/▾ collapses a zone or a location block. Click a column header to sort within blocks. "Compare" adds MTD-then, Δ and Δ% columns. "History" adds Actual MTD / Revenue / Billing per past month. "Export to Excel" downloads exactly the rows and columns on screen.
@@ -54,8 +54,8 @@ Pick the month at the top, then the snapshot. Levels: Summary / Zones / Location
 ## Rate change during the month (Upload centre → daily update table)
 Open "Rate changes from a date" → choose location (or all) and client (or all) → new rate, effective date, reason → **Preview impact** (nothing saved) → **Apply**. Cases reported before the date keep the old rate. "Undo" (with a reason) restores the previous rate. A rate typed in the table with "Edit target & rate" becomes a change from that report date.
 
-## Penalties (Business tracker → Penalties)
-Admins: date, location, client (optional), amount, reason (required), reference → Add. "Cancel" needs a reason; cancelled penalties stay in the audit trail. Viewers see amounts; reasons are admin-only.
+## Penalties (Upload centre → Penalties; Business tracker shows them read-only)
+Admins (admin key, checked on the server): date, location, client (optional), amount, reason (required), reference → Add. "Cancel" needs a reason; cancelled penalties stay in the audit trail. Viewers see amounts; reasons are admin-only.
 
 ## Organic benchmark
 Recomputed by the `bi-organic-refresh` job (every 10 minutes, only when data changed; < 1 s). Manual: `select bi.organic_refresh();`.
@@ -86,3 +86,19 @@ Run `remove_old_invoice_app.sql` (sent separately; not in the repo) in Supabase 
 - **Validation:** cron `bi-ai-validate` (2nd of each month) lists the models, runs a synthetic call and records the result in `bi.ai_model_check`; Data quality → "Ask Crux — AI status" shows the model, last check, calls and failures today.
 - **Knowledge base:** 77 approved definitions/methods; cron `bi-ai-embed-sync` embeds new or changed chunks daily. Add or edit documents with `bi_admin('kb', …)` (admin key).
 - **Privacy:** questions and answers are redacted (e-mails, phone numbers, IDs, long numbers) before they reach Google; answers naming a person never use AI wording; figures are masked.
+
+## Filters and drill-down (15-Oct-2026)
+- **Filters:** the "Filters" button in the header (shows the month and, on wide screens, the selection; the badge counts optional filters). Opens a popover (desktop) or bottom sheet (phone). Reset clears everything except the month; Done, Escape or a click outside closes it. The choice is kept while moving between sections and for the browser session.
+- **Drill-down:** click any KPI tile, chart bar/point, highlighted zone, opportunity or table row with a › marker. The drawer keeps the current filters, shows the selected value and its parent total, and a breakdown whose rows open the next level (zone → location → client → branch → branch detail). Back goes one level up, Reset to the first level, Close or Escape exits; "Ask Crux" asks about the open item. Sorting, searching, expanding tracker blocks and buttons inside tables do not open the drawer.
+- **Where figures come from:** business figures = Zonal Tracker (same as Overview and tracker); branch rows = Force1 cases; the drawer says which.
+
+## Mapping corrections (Data quality & mapping → Location aliases / Client aliases → Correct target)
+1. Unlock with the admin key. In the Location aliases or Client aliases table click **Correct target** on the row.
+2. Choose the new location/client and the effective date (01-Apr-2024 … today) → **Preview**: current and proposed target, tracker rows/snapshots and Force1 cases that would move. Nothing is saved.
+3. Enter a reason (5+ characters) → **Apply**. Records from the effective date move; earlier records stay; the alias now points to the new target for future uploads; the cache is refreshed and the visit table rebuild is queued.
+4. "History" lists every correction (who, when, from → to, effective date, reason, affected counts). To undo, apply a correction back to the old target.
+- File-group (Case Wise) location mappings are changed with the WEF group editor instead.
+
+## Storage housekeeping
+- `bi.branch_seen` has fillfactor 50 so monthly monitor updates do not grow its index. After large one-off loads, `vacuum (full, analyze)` on the loaded table reclaims space (takes a short lock; no data removed).
+- Check size: `select pg_database_size(current_database()), (select sum(pg_database_size(datname)) from pg_database);` — the free plan turns read-only at 500 MB.

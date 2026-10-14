@@ -1268,7 +1268,8 @@ const DDK={
   o.append(el('p',{class:'note'},`${mlabel(c.m)} · business figures up to ${ddmm(String((S.meta.freshness||{}).zonal_latest_snapshot||'').slice(0,10))} · filters: ${ctxTitle(c.f)}`));
   const tiles=el('div',{class:'tiles'},tile('Cases so far',fmt(s.mtd),pa?`${pct(share)} of ${fmt(pa.mtd)} (${ctxTitle(J.parent_filters||{})})`:'Pan India total'),
    tile('Target',fmt(s.target),s.target?pct(s.mtd/s.target)+' achieved':'no target'),tile('Likely month end',fmt(s.likely),s.low!=null?`range ${fmt(s.low)}–${fmt(s.high)}${s.target?' · '+pct(s.achievement_likely)+' of target':''}`:''),
-   tile('Organic expectation',fmt(s.organic),s.organic?`actual ${s.mtd>=s.organic?'+':'−'}${fmt(Math.abs(s.mtd-(s.organic||0)))} vs month organic`:''));
+   (()=>{const og=J.organic;return og&&og.organic_to_date!=null?tile('Organic expectation',fmt(og.organic_month),`so far ${fmt(og.organic_to_date)} → actual ${og.effort_to_date>=0?'+':'−'}${fmt(Math.abs(og.effort_to_date))}${sgnp(og.effort_pct)}`)
+    :tile('Organic expectation',fmt(s.organic),s.organic?'for the full month':'')})());
   o.append(tiles,el('p',{class:'note'},DEF[c.focus]||DEF.mtd));
   if(c.level==='branch'){const B=J.branches||[];o.append(el('h4',{},`Branches sending Force1 cases — ${mlabel(c.m)}`),el('p',{class:'note'},`${fmt(J.force1_cases_month)} Force1 cases this month in this selection; top ${B.length} branches by cases. ${DEF.force1}`));
    o.append(B.length?table(B,[{key:'branch',label:'Branch'},{key:'branch_code',label:'Code'},{key:'ifsc',label:'IFSC'},{key:'client_code',label:'Client'},{key:'cases_month',label:mlabel(c.m),num:1,fmt:fmt},{key:'cases_last3',label:'Last 3 months',num:1,fmt:fmt},{key:'in_master',label:'In verified list',fmt:v=>v?'Yes':'No'}],
