@@ -47,6 +47,19 @@ Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenu
 | `bi.run_acceptance_tests()` after load | 18/18 pass (T19 Jul field utilisation now 17.7%) |
 | Headless browser (desktop + 390 px): Overview top opportunities, Tracker branch lifecycle, Ask Crux answer + details + feedback buttons, Upload matrix loads 392 rows × 4 dates (1,568 cells), no horizontal overflow | Pass; only console errors = favicon 404 and the pending `groups` admin action (400) |
 | Ask Crux live: "Why is Pune lower than last month?" → "Not lower: up 47…" | Pass |
-| Ask Crux month in question ("in September") | **Fail** — answered October; fix written in bi_037 (pending) |
-| T20 WEF change across WEF date, history kept, overlap blocked | Written (bi_037); **not run** — migration pending |
+| Ask Crux month in question ("in September") | Pass after bi_037 (answers Sep 2026: 65.3% case-level, 19.8% field) |
+| T20 WEF change across WEF date, history kept, overlap blocked | Pass (rolled back; no residue: 111 seed rows, 0 changes) |
 | Matrix commit end-to-end in UI | Not run on live data (would create a real snapshot); DB path tested 12-Oct in a rolled-back block |
+
+## 14-Oct-2026 — tracker replica, compare, WEF (after bi_036–bi_040)
+| Check | Result |
+|---|---|
+| Regression: md5 of api_zonal/daily/monthly/overview/lfl/forecast/insights before vs after date-aware filters | Identical (7/7) |
+| `bi.run_acceptance_tests()` | 21/21 pass (new T20 WEF, T21 tracker totals, T22 compare) |
+| Tracker view vs Excel cached values, 9-Oct (rows 15, 28, 40, 158, 306, 331, 485, 528–535, 590): Target, MTD, Revenue Tgt, Revenue, % Achmt, Sep-26 history | All equal; Pan India 84,395 / 17,441 / 3,36,62,000 / 65,18,972 / 19%; daily 2,489 |
+| Non-leaf totals that differ from source | Only client-wise SBI (source includes SBI Car Loan+) — flagged ⚠ |
+| Filter Stakeholder = Shantanu Suravase → Pan India 6,299 (= tracker E590) | Pass |
+| Browser: 587 rows render; levels Summary 60 / Zones 88 / Locations 195 rows; zone collapse; sort within blocks; search "pune"; compare same day last month (+1,412, +8.8%); Excel export downloads; full screen; 390 px no overflow | Pass; only console error = favicon 404 |
+| Growth → Compare two periods (preset): totals, warning "9 vs 8 day", diverging bar chart, sortable table | Pass |
+| Data quality → WEF preview (stakeholder change, WEF 1-Nov) validates; Save enabled; not applied | Pass |
+| Collapsible section headings (fold/unfold, remembered) | Pass |

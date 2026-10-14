@@ -6,7 +6,7 @@
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
 
-**Status (14-Oct-2026).** Point Wise now Jan → Oct-2026 (Aug 104,710 · Sep 112,640 · Oct 43,257 points; Jul 107,100 after replacement files); 18/18 tests pass. **DB 388 MB of 500 MB — storage decision needed (L8).** Front end: daily matrix entry (Upload centre), branch lifecycle (Business tracker + Overview), like-for-like (Growth), Ask Crux floating panel, WEF group editor (Data quality). **Pending DB approval:** migrations `bi_036` (WEF mapping tables/functions) and `bi_037` (date-aware tracker filters, LFL endpoint, group admin actions, Ask Crux month parsing, test T20) are written and versioned in `supabase/pending/` but not applied — the connector cancelled the write. Until applied, the WEF editor and LFL block show "not available yet".
+**Status (14-Oct-2026).** Point Wise now Jan → Oct-2026 (Aug 104,710 · Sep 112,640 · Oct 43,257 points; Jul 107,100 after replacement files); 18/18 tests pass. **DB 388 MB of 500 MB — storage decision needed (L8).** Front end: daily matrix entry (Upload centre), branch lifecycle (Business tracker + Overview), like-for-like (Growth), Ask Crux floating panel, WEF group editor (Data quality). **14-Oct (afternoon):** `bi_036`–`bi_040` applied (WEF mapping, date-aware tracker reports, LFL, Ask Crux month parsing, Zonal Tracker replica API, period comparison API, tests T20–T22). 21/21 tests pass. Business tracker rebuilt as a row-for-row replica of the Main Tracker sheet; expense columns hidden by default and labelled "as entered".
 
 **Status (12-Oct-2026, evening).** Public dashboard live on GitHub Pages; DB 195 MB after compaction; 17/17 tests pass; no newer source files in Drive (Point Wise ends Jul-2026).
 
@@ -47,5 +47,14 @@
 | D28 | Ask Crux: SQL-computed answer first; optional Gemini rewording server-side only, rejected if it adds numbers | Brief; secrets server-side |
 | D29 | New Point Wise drop loaded by upsert on point_id; 884 July points present only in older files retained (not deleted) | Additive-only rule; no delete without evidence |
 
+| D30 | Business tracker = replica of the Main Tracker sheet (same rows, order, columns, colours); every subtotal recomputed from leaf rows; source total shown as ⚠ where it differs | User request 14-Oct (minimise change management); source has broken SUM ranges (e.g. client-wise E/F/G only summed rows 4–27) |
+| D31 | Expense columns L/M/N never used in KPIs; shown only in the tracker view, off by default, labelled "as entered — not verified" | Values not credible (Ahmedabad 225, Vadodara 412.5, Bengaluru 254% of revenue); user asked how they were derived |
+| D32 | Daily column = case change at every level (source shows revenue change on total rows); revenue change available as an optional column | Consistency |
+| D33 | Period comparison (snapshot or month, any two) with explicit like-for-like warnings | User request: comparative analysis |
+| D34 | Migrations avoid top-level DROP/REVOKE/UPDATE/DELETE (the Supabase connector cancels them); use guarded DO blocks | Six cancelled attempts on 14-Oct |
+
 ## Open questions (need business confirmation)
 2. Confirm the D18 reading of tracker columns M and N.
+
+3. What should tracker column L (Projected Expense) mean — monthly cost per zone or per location? Until confirmed it stays hidden/unverified.
+4. SBI Car Loan+ is counted inside SBI in the tracker's client-wise block (14,031) but kept separate in the dashboard (12,500 + 1,531). Confirm preferred treatment.

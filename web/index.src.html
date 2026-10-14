@@ -103,6 +103,33 @@ table.matrix input.cell.warn{border-color:var(--ochre);background:var(--warn-sof
 .datechips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 ol.opps{margin:0;padding-left:20px}ol.opps li{margin:4px 0}ol.opps small{color:var(--muted)}
 @media print{#askBtn,#askPanel{display:none!important}}
+h3.foldable{cursor:pointer;user-select:none}h3.foldable::before{content:'▾ ';color:var(--muted);font-size:.85em}h3.foldable.folded::before{content:'▸ '}
+.fold-hide{display:none!important}
+th[tabindex]{cursor:pointer;white-space:nowrap}th[tabindex]:hover{text-decoration:underline}
+.tablewrap.full{position:fixed;inset:0;z-index:60;max-height:none;border-radius:0}
+body.noscroll{overflow:hidden}
+.seg{display:inline-flex;gap:0}.seg .btn{border-radius:0}.seg .btn:first-child{border-radius:6px 0 0 6px}.seg .btn:last-child{border-radius:0 6px 6px 0}.seg .btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chk{display:inline-flex;gap:4px;align-items:center;font-size:13px}
+.zt-panel{background:var(--bg)}.zt-panel.zt-full{position:fixed;inset:0;z-index:60;padding:10px 14px;overflow:auto}
+.zt-wrap{overflow:auto;max-height:76vh;border:1px solid #9E9E9E;background:#fff;color:#111}
+.zt-panel.zt-full .zt-wrap{max-height:calc(100vh - 130px)}
+table.zt{border-collapse:separate;border-spacing:0;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12.5px;color:#111;background:#fff}
+table.zt th,table.zt td{border-right:1px solid #BFBFBF;border-bottom:1px solid #BFBFBF;padding:2px 6px;white-space:nowrap;color:#111}
+table.zt thead{position:sticky;top:0;z-index:4}
+table.zt thead th{background:#9FC5E8;font-weight:700;text-align:center;white-space:pre-line;line-height:1.15;vertical-align:middle;padding:4px 6px}
+table.zt tr.zt-g th{background:#fff;font-weight:700;font-size:11.5px;border-bottom:1px solid #BFBFBF}table.zt tr.zt-g th.g{background:#DDEBF7}
+table.zt td.num{text-align:center}table.zt td.bar{color:#00B050;text-align:left;letter-spacing:-1px;font-size:11px;min-width:120px}
+table.zt td.neg{color:#C00000}table.zt td.pos{color:#2D7A57}
+table.zt tr.tot td{font-weight:700}
+table.zt .stk0{position:sticky;left:0;z-index:2;background:inherit;min-width:230px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+table.zt thead .stk0{z-index:5;background:#9FC5E8}table.zt tr.zt-g .stk0{background:#fff}
+@media(min-width:760px){table.zt .stk1{position:sticky;left:230px;z-index:2;background:inherit;min-width:120px}table.zt thead .stk1{z-index:5;background:#9FC5E8}table.zt .stk0{width:230px;max-width:230px}}
+table.zt tr.zt-zh td{font-weight:700;font-size:13px}table.zt tr.zt-sec td{font-weight:700;background:#fff;padding-top:12px;font-size:13px;border-right:0}
+table.zt tr.zt-r:hover td{filter:brightness(.96)}
+.zt-tg{border:0;background:transparent;cursor:pointer;font-size:12px;padding:0 3px;color:#111}
+.zt-w{color:#B45309;cursor:help;margin-left:2px}
+@media(max-width:759px){table.zt .stk0{min-width:150px;max-width:170px}}
+.sorti{color:var(--muted);font-weight:400;font-size:.85em}
 </style>
 </head>
 <body>
@@ -144,7 +171,7 @@ function sqlFor(fn,a){const m=a.month,f=a.filters||{};const g=k=>{const v=a.grou
  case'zonal':return`bi.api_zonal(${dt(a.snapshot)},${js(f)})`;case'daily':return`bi.api_daily(${dt(m)},${js(f)})`;case'monthly':return`bi.api_monthly(${dt(a.from)},${dt(a.to)},${js(f)},${g('monthly')})`;
  case'force':return`bi.api_force(${dt(m)},${js(f)})`;case'force_trend':return`bi.api_force_trend(${js(f)})`;case'case_tat':return`bi.api_case_tat(${dt(m)},${js(f)},${g('case_tat')})`;
  case'point_tat':return`bi.api_point_tat(${dt(m)},${js(f)},${g('point_tat')})`;case'manual_tat':return`bi.api_manual_tat(${dt(m)},${js(f)})`;case'employees':return`bi.api_employees(${dt(m)},${js(f)})`;
- case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
+ case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
  throw new Error('unknown fn '+fn)}
 function parseSqlPayload(p){let rows=p;if(p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.result==='string')p=p.result;
  if(typeof p==='string'){const m=p.match(/<untrusted-data-[^>]+>\s*([\s\S]*?)\s*<\/untrusted-data-/);rows=JSON.parse(m?m[1]:p)}
@@ -204,10 +231,11 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
  const tw=el('div',{class:'tablewrap'});const info=el('span',{class:'note'});
  const tools=el('div',{class:'tools'},search?el('input',{type:'search',placeholder:'Search this table',oninput:e=>{q=e.target.value.toLowerCase();page=0;draw()},'aria-label':'Search table'}):null,
   el('button',{class:'btn',onclick:()=>csv(view(),cols.filter(c=>!hidden.has(c.key)),name)},'Export CSV'),
+  el('button',{class:'btn',title:'Show this table full screen (Esc to exit)',onclick:e=>{const on=!tw.classList.contains('full');tw.classList.toggle('full',on);document.body.classList.toggle('noscroll',on);e.target.textContent=on?'✕ Close':'⤢ Full screen';if(on){const x=ev=>{if(ev.key==='Escape'){tw.classList.remove('full');document.body.classList.remove('noscroll');e.target.textContent='⤢ Full screen';document.removeEventListener('keydown',x)}};document.addEventListener('keydown',x)}}},'⤢ Full screen'),
   el('details',{},el('summary',{class:'btn'},'Columns'),el('div',{class:'colpick'},cols.map(c=>{const cb=el('input',{type:'checkbox'});cb.checked=!hidden.has(c.key);cb.onchange=()=>{cb.checked?hidden.delete(c.key):hidden.add(c.key);draw()};return el('label',{},cb,' ',c.label)}))),info);
  function view(){let r=rows;if(q)r=r.filter(x=>cols.some(c=>String(c.raw?c.raw(x):x[c.key]??'').toLowerCase().includes(q)));if(sk){const c=cols.find(c=>c.key===sk);const v=x=>c.raw?c.raw(x):x[sk];r=[...r].sort((a,b)=>{const A=v(a),B=v(b);return(A==null)-(B==null)||(A>B?1:A<B?-1:0)*sd})}return r}
  function draw(){const r=view(),vc=cols.filter(c=>!hidden.has(c.key));const pages=Math.max(1,Math.ceil(r.length/pageSize));page=Math.min(page,pages-1);
-  const t=el('table',{},el('thead',{},el('tr',{},vc.map(c=>el('th',{class:c.num?'num':'',scope:'col',tabindex:0,onclick:()=>{sd=sk===c.key?-sd:(c.num?-1:1);sk=c.key;draw()},onkeydown:e=>{if(e.key==='Enter')e.target.click()}},c.label+(sk===c.key?(sd>0?' ▲':' ▼'):''))))),
+  const t=el('table',{},el('thead',{},el('tr',{},vc.map(c=>el('th',{class:c.num?'num':'',scope:'col',tabindex:0,onclick:()=>{sd=sk===c.key?-sd:(c.num?-1:1);sk=c.key;draw()},onkeydown:e=>{if(e.key==='Enter')e.currentTarget.click()},title:'Click to sort'},c.label,el('span',{class:'sorti'},sk===c.key?(sd>0?' ▲':' ▼'):' ↕'))))),
    el('tbody',{},r.slice(page*pageSize,(page+1)*pageSize).map(x=>el('tr',{},vc.map(c=>{const v=c.fmt?c.fmt(x[c.key],x):x[c.key];return el('td',{class:c.num?'num':''},v&&v.nodeType?v:(v??'–'))})))));
   tw.innerHTML='';tw.append(t);info.textContent=`${fmt(r.length)} rows`+(pages>1?` · page ${page+1}/${pages}`:'');pager.innerHTML='';if(pages>1){pager.append(el('button',{class:'btn',onclick:()=>{page=Math.max(0,page-1);draw()}},'Previous'),' ',el('button',{class:'btn',onclick:()=>{page=Math.min(pages-1,page+1);draw()}},'Next'))}}
  const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();return wrap}
@@ -268,28 +296,195 @@ const vForce1=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=awa
   {key:'f1_field_tat_hours',label:'Field TAT (exec)',num:1,fmt:hrs},{key:'manual_field_tat_hours',label:'Field TAT (manual)',num:1,fmt:hrs}],{name:`force1_${m}.csv`}));
 });
 
-/* ---------- Business tracker ---------- */
-const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const daily=await api('daily',{month:m,filters:{}});
- const snaps=daily.map(d=>d.date);s.append(el('h2',{},'Business tracker'),el('p',{class:'lede'},'The Main Tracker reorganised: every leaf row (location × client) from the selected snapshot. Subtotals and zone totals are excluded from sums and recomputed from leaves.'));
+/* ---------- Business tracker: Zonal Tracker replica ---------- */
+const ZTF={zh:'#BDD7EE',roll:'#DEEBF6',ztot:'#9CC3E5',single:'#D9E2F3',leaf:'#FBE5D5',ltot:'#F4B083',zab:'#A8D08D',reg:'#FFD966',roi:'#C9C9C9',pan:'#E2EFD9',hdr:'#9FC5E8',sec:'#FFFFFF'};
+const ZT={level:'all',zones:{},blocks:{},sort:null,q:'',hideZero:false,show:{rev:true,bd:true,sf:true,exp:false,dr:false},hist:6,cmp:'none',cmpDate:'',flat:false};
+try{Object.assign(ZT.show,JSON.parse(localStorage.getItem('crux_zt_show')||'{}'));const h=localStorage.getItem('crux_zt_hist');if(h!=null)ZT.hist=+h}catch{}
+const ztSave=()=>{try{localStorage.setItem('crux_zt_show',JSON.stringify(ZT.show));localStorage.setItem('crux_zt_hist',String(ZT.hist))}catch{}};
+const zn=v=>v==null||v===''||isNaN(v)?'':nf.format(Math.round(+v));
+const zp=v=>v==null||isNaN(v)?'':Math.round(v*100)+'%';
+const ddmm=d=>d?d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4):'';
+const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const monShort=m=>MON3[+m.slice(5,7)-1]+' '+m.slice(2,4);
+const monLong=m=>MON3[+m.slice(5,7)-1]+' '+m.slice(0,4);
+const addMonths=(d,n)=>{const t=new Date(d+'T00:00:00Z');const day=t.getUTCDate();t.setUTCDate(1);t.setUTCMonth(t.getUTCMonth()+n);const last=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+1,0)).getUTCDate();t.setUTCDate(Math.min(day,last));return t.toISOString().slice(0,10)};
+
+/* Turn API rows (sheet order) into display rows with zone/block membership. Presentation only — all totals come from the database. */
+function ztModel(J){const rows=J.rows||[];const pan=rows.find(r=>r.t==='summary'&&/^pan india$/i.test((r.loc||'').trim()));
+ const zoneHasZT={};rows.forEach(r=>{if(r.t==='zone_total')zoneHasZT[r.z]=true});
+ let blk=null;for(let i=rows.length-1;i>=0;i--){const r=rows[i];if(r.t==='location_total'){blk=r.r}else if(r.t==='zone_total'||['summary','client_summary','stakeholder_summary'].includes(r.t)){blk=null}if(r.t==='leaf')r.blk=blk}
+ rows.forEach(r=>{if(r.t==='location_total'){r.blk=r.r;if(!r.z){const l=rows.find(x=>x.t==='leaf'&&x.blk===r.r&&x.z);if(l)r.z=l.z}r.zoneLevel=!zoneHasZT[r.z]}});
+ rows.forEach(r=>{if(r.t==='leaf'){const tot=rows.find(x=>x.r===r.blk);r.single=!!(tot&&tot.zoneLevel)}});
+ const out=[];let zc=null,cs=false,sh=false,sm=false;
+ rows.forEach(r=>{const sumArea=['summary','client_summary','stakeholder_summary'].includes(r.t);
+  if(!sumArea&&r.z&&r.z!==zc){zc=r.z;out.push({kind:'zh',z:r.z})}
+  if(r.t==='summary'&&!sm){sm=true;zc=null;out.push({kind:'sec',title:'Region & Pan India summary'})}
+  if(r.t==='client_summary'&&!cs){cs=true;out.push({kind:'sec',title:'Client Wise Business Count'})}
+  if(r.t==='stakeholder_summary'&&!sh){sh=true;out.push({kind:'sec',title:'Stakeholder Wise'})}
+  if(r.t==='summary'&&pan&&pan.rtgt&&/zone$/i.test(r.loc||'')&&!/^zone [ab]$/i.test((r.loc||'').trim()))r.share=r.rtgt/pan.rtgt;
+  out.push({kind:'row',...r})});
+ return out}
+
+function ztVisible(x){const t=x.t;if(x.kind==='sec')return true;
+ const zClosed=x.z&&ZT.zones[x.z]==='closed';
+ if(ZT.level==='summary'&&(x.kind==='zh'||!['summary','client_summary','stakeholder_summary'].includes(t)))return false;
+ if(x.kind==='zh')return true;
+ if(['summary','client_summary','stakeholder_summary'].includes(t))return !(ZT.hideZero&&!x.tgt&&!x.mtd&&!x.cm);
+ if(zClosed)return t==='zone_total'||(t==='location_total'&&x.zoneLevel);
+ if(t==='leaf'){if(ZT.blocks[x.blk]==='closed')return false;if(ZT.hideZero&&!x.tgt&&!x.mtd&&!x.cm)return false}
+ if(t==='zone_client_rollup'&&ZT.hideZero&&!x.tgt&&!x.mtd&&!x.cm)return false;
+ return true}
+function ztSetLevel(model,l){ZT.level=l;ZT.zones={};ZT.blocks={};
+ model.forEach(x=>{if(x.kind==='zh')ZT.zones[x.z]=(l==='zones'||l==='summary')?'closed':'open';if(x.t==='location_total')ZT.blocks[x.blk]=(l==='all')?'open':'closed'})}
+
+function ztCols(J){const m=J.report_month,c=[];
+ c.push({k:'loc',h:'Location',cls:'stk0'},{k:'cli',h:'Client',cls:'stk1'},{k:'tgt',h:`Target\n${monShort(m)}`,n:1},{k:'mtd',h:'Actual\nMTD',n:1});
+ if(ZT.show.rev)c.push({k:'rtgt',h:`Revenue Tgt\n${monShort(m)}`,n:1},{k:'rev',h:'Actual\nRevenue',n:1});
+ c.push({k:'ach',h:'% Achmt Against\nAllocated Tgt',p:1},{k:'bar',h:'ACHIEVED\n(In Graph)',bar:1});
+ if(ZT.show.bd)c.push({k:'bd',h:`BD\nRevenue\nOf ${monLong(m)}`,n:1});
+ if(ZT.show.sf)c.push({k:'sf',h:'Shortfall',n:1,red:1});
+ if(ZT.show.exp)c.push({k:'exp',h:'Projected\nExpense ⓘ',n:1,asis:1},{k:'m',h:'Shortfall\n(Rev − Exp) ⓘ',n:1,asis:1,neg:1},{k:'n',h:'YTD\n(Rev − 2×Exp) ⓘ',n:1,asis:1,neg:1});
+ c.push({k:'d',h:ddmm(J.snapshot),n:1,grp:'Daily Counts',daily:1});
+ if(ZT.show.dr)c.push({k:'dr',h:'Revenue\nadded',n:1,grp:'Daily Counts'});
+ if(J.compare_snapshot){const g='Compare: '+ddmm(J.compare_snapshot);c.push({k:'cm',h:'MTD',n:1,grp:g},{k:'dd',h:'Δ cases',n:1,grp:g,delta:1},{k:'dp',h:'Δ %',grp:g,dp:1})}
+ (J.history_months||[]).forEach(mm=>{const mo=mm+'-01',g=monLong(mo);c.push({k:'h:'+mm+':0',h:'Actual\nMTD',n:1,grp:g},{k:'h:'+mm+':1',h:'Actual\nRevenue',n:1,grp:g},{k:'h:'+mm+':2',h:`Actual Billing\nAmount ${monShort(mo)}`,n:1,grp:g})});
+ return c}
+function ztVal(x,k){if(k.startsWith('h:')){const[,mm,i]=k.split(':');return x.h&&x.h[mm]?x.h[mm][+i]:null}
+ if(k==='dd')return x.cm==null?null:(x.mtd||0)-(x.cm||0);if(k==='dp')return x.cm?((x.mtd||0)-x.cm)/x.cm:null;return x[k]}
+function ztLabels(x){const t=x.t;
+ if(t==='leaf'||t==='zone_client_rollup')return[x.loc||'',x.cli||''];
+ if(t==='zone_total'||t==='location_total')return['Total '+(x.loc||''),x.cli||''];
+ if(t==='summary')return[x.loc||'',x.share!=null?zp(x.share)+' of target':''];
+ if(t==='client_summary')return['',x.loc||x.cli||''];
+ if(t==='stakeholder_summary')return[x.loc||'',''];return[x.loc||'',x.cli||'']}
+function ztFill(x){const t=x.t;if(t==='leaf')return x.single?ZTF.single:ZTF.leaf;if(t==='zone_client_rollup')return ZTF.roll;if(t==='zone_total')return ZTF.ztot;
+ if(t==='location_total')return x.zoneLevel?ZTF.ztot:ZTF.ltot;if(t==='summary'){const l=(x.loc||'').trim().toLowerCase();return l==='pan india'?ZTF.pan:l==='roi'?ZTF.roi:/^zone [ab]$/.test(l)?ZTF.zab:ZTF.reg}
+ if(t==='stakeholder_summary')return /^total$/i.test((x.loc||'').trim())?ZTF.pan:'#FFF2CC';return '#FFFFFF'}
+
+function ztSortRows(model){if(!ZT.sort)return model;const{k,dir}=ZT.sort;const key=x=>x.kind!=='row'?null:x.t==='leaf'?'L'+x.blk:x.t==='zone_client_rollup'?'R'+x.z:x.t==='client_summary'?'C':(x.t==='stakeholder_summary'&&!/^total$/i.test((x.loc||'').trim()))?'S':null;
+ const out=[];let i=0;while(i<model.length){const g=key(model[i]);if(!g){out.push(model[i]);i++;continue}let j=i;while(j<model.length&&key(model[j])===g)j++;
+  const part=model.slice(i,j);const v=x=>{if(k==='loc'||k==='cli')return(ztLabels(x)[k==='loc'?0:1]||'').toLowerCase();const a=ztVal(x,k==='bar'?'ach':k);return a==null?null:+a};
+  part.sort((a,b)=>{const A=v(a),B=v(b);if(A==null&&B==null)return 0;if(A==null)return 1;if(B==null)return -1;return(A>B?1:A<B?-1:0)*dir});out.push(...part);i=j}return out}
+
+function ztMatch(x,q){return[x.loc,x.cli,x.z].some(s=>String(s||'').toLowerCase().includes(q))}
+
+function ztRender(host,J,model){host.innerHTML='';const cols=ztCols(J);const grpCols=cols.some(c=>c.grp);
+ let rows=ztSortRows(model);
+ if(ZT.q){const q=ZT.q.toLowerCase();const keepBlk=new Set(),keepZone=new Set();rows.forEach(x=>{if(x.kind==='row'&&x.t==='leaf'&&ztMatch(x,q)){keepBlk.add(x.blk);keepZone.add(x.z)}if(x.kind==='row'&&x.t!=='leaf'&&ztMatch(x,q)&&x.z)keepZone.add(x.z)});
+  const summ=x=>['summary','client_summary','stakeholder_summary'].includes(x.t);
+  rows=rows.filter(x=>{if(x.kind==='sec')return true;if(x.kind==='zh')return keepZone.has(x.z);
+   if(summ(x))return ztMatch(x,q)||/^(pan india|total)$/i.test((x.loc||'').trim());
+   if(x.t==='leaf')return ztMatch(x,q);if(x.t==='zone_client_rollup')return keepZone.has(x.z)&&ztMatch(x,q);
+   if(x.t==='location_total')return keepBlk.has(x.blk)||(x.zoneLevel&&keepZone.has(x.z));return keepZone.has(x.z)})}
+ const t=el('table',{class:'zt'});const thead=el('thead');
+ if(grpCols){const tr=el('tr',{class:'zt-g'});let i=0;while(i<cols.length){const g=cols[i].grp||'';let j=i;while(j<cols.length&&(cols[j].grp||'')===g)j++;tr.append(el('th',{colspan:j-i,class:(i===0?'stk0 ':'')+(g?'g':'')},g));i=j}thead.append(tr)}
+ const hr=el('tr',{class:'zt-h'});cols.forEach(c=>{const s=ZT.sort&&ZT.sort.k===c.k;const th=el('th',{class:(c.cls||'')+(c.n||c.p?' num':''),tabindex:0,title:c.asis?'As entered in the tracker — not calculated or verified by the dashboard':'Click to sort within each block',scope:'col'},c.h+(s?(ZT.sort.dir>0?' ▲':' ▼'):''));
+  th.onclick=()=>{ZT.sort=s?(ZT.sort.dir<0?{k:c.k,dir:1}:null):{k:c.k,dir:(c.n||c.p||c.bar)?-1:1};ztRender(host,J,model)};th.onkeydown=e=>{if(e.key==='Enter')th.click()};hr.append(th)});thead.append(hr);t.append(thead);
+ const tb=el('tbody');const ncol=cols.length;
+ rows.forEach(x=>{if(!ztVisible(x))return;
+  if(x.kind==='sec'){tb.append(el('tr',{class:'zt-sec'},el('td',{colspan:ncol,class:'stk0'},x.title)));return}
+  if(x.kind==='zh'){const open=ZT.zones[x.z]!=='closed';const b=el('button',{class:'zt-tg','aria-expanded':String(open),'aria-label':(open?'Collapse ':'Expand ')+x.z},open?'▾':'▸');
+   b.onclick=()=>{ZT.zones[x.z]=open?'closed':'open';ztRender(host,J,model)};
+   tb.append(el('tr',{class:'zt-zh',style:`background:${ZTF.zh}`},el('td',{colspan:2,class:'stk0'},b,' ',x.z),el('td',{colspan:ncol-2})));return}
+  const [a,bl]=ztLabels(x);const tot=x.t!=='leaf';const bold=['zone_total','location_total','summary'].includes(x.t)||(x.t==='stakeholder_summary'&&/^total$/i.test((x.loc||'').trim()));const tr=el('tr',{class:'zt-r'+(bold?' tot':'')+(x.t==='leaf'?' leaf':''),style:`background:${ztFill(x)}`});
+  const c0=el('td',{class:'stk0'});
+  if(x.t==='location_total'&&!x.zoneLevel){const open=ZT.blocks[x.blk]!=='closed';const b=el('button',{class:'zt-tg','aria-expanded':String(open),'aria-label':(open?'Collapse ':'Expand ')+x.loc},open?'▾':'▸');b.onclick=e=>{e.stopPropagation();ZT.blocks[x.blk]=open?'closed':'open';ztRender(host,J,model)};c0.append(b,' ')}
+  c0.append(a);tr.append(c0,el('td',{class:'stk1'},bl));
+  cols.slice(2).forEach(c=>{let v=ztVal(x,c.k),txt='',cls=c.n||c.p?'num':'';
+   if(c.bar){const a2=x.ach==null?0:Math.max(0,Math.min(x.ach,1.5));txt=a2>0?'█'.repeat(Math.max(1,Math.round(a2*20))):'';cls='bar'}
+   else if(c.p)txt=v==null?'0%':zp(v);else if(c.dp)txt=v==null?'':(v>=0?'+':'')+(v*100).toFixed(1)+'%';else txt=c.delta&&v>0?'+'+zn(v):zn(v);
+   if((c.red&&v<0)||((c.neg||c.delta||c.dp)&&v<0))cls+=' neg';if(c.delta&&v>0||c.dp&&v>0)cls+=' pos';
+   const td=el('td',{class:cls},txt);
+   if((c.k==='mtd'||c.k==='tgt')&&tot&&x[c.k==='mtd'?'smtd':'stgt']!=null&&Math.abs((+x[c.k==='mtd'?'smtd':'stgt'])-(+v||0))>0.5){td.append(el('sup',{class:'zt-w',title:`Recomputed from client rows. The source sheet shows ${zn(x[c.k==='mtd'?'smtd':'stgt'])} (its formula ranges differ).`},'⚠'))}
+   if(x.t==='leaf'&&x.rate&&(c.k==='rev'||c.k==='rtgt'))td.title=`Rate ₹${zn(x.rate)} per case`;
+   tr.append(td)});
+  tb.append(tr)});
+ t.append(tb);host.append(el('div',{class:'zt-wrap'},t))}
+
+function ztExport(J,model){if(!window.XLSX){alert('Excel library not loaded.');return}const cols=ztCols(J);const rows=ztSortRows(model).filter(ztVisible);
+ const aoa=[cols.map(c=>(c.grp?c.grp+' — ':'')+c.h.replace(/\n/g,' ').replace(' ⓘ',''))];
+ rows.forEach(x=>{if(x.kind==='sec'){aoa.push([x.title]);return}if(x.kind==='zh'){aoa.push([x.z]);return}const[a,b]=ztLabels(x);
+  aoa.push([a,b,...cols.slice(2).map(c=>{if(c.bar)return x.ach==null?'':'█'.repeat(Math.max(0,Math.round(Math.min(x.ach,1.5)*20)));const v=ztVal(x,c.k);return v==null?'':+v})])});
+ const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=cols.map((c,i)=>({wch:i===0?38:i===1?18:12}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Main Tracker');
+ XLSX.writeFile(wb,`Zonal_Tracker_${J.snapshot}${J.compare_snapshot?'_vs_'+J.compare_snapshot:''}.xlsx`)}
+
+const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const daily=await api('daily',{month:m,filters:{}});const snaps=daily.map(d=>d.date);
+ s.append(el('h2',{},'Business tracker'),el('p',{class:'lede'},'The Zonal Tracker "Main Tracker" sheet, row for row: zone → location → client blocks, the same columns, colours and totals, plus collapse levels, comparisons and history. Filters at the top apply.'));
  if(!snaps.length){s.append(el('div',{class:'banner'},'No tracker snapshots for '+mlabel(m)+'.'));return}
- const pick=el('select',{'aria-label':'Snapshot'},snaps.slice().reverse().map(d=>el('option',{value:d},d)));const gsel=el('select',{'aria-label':'Group by'},['location','client','zone','stakeholder','region','none'].map(x=>el('option',{value:x},x==='none'?'No grouping (leaf rows)':'Group by '+x)));
- const holder=el('div');s.append(el('div',{class:'tools'},el('label',{},'Snapshot ',pick),gsel),holder);
- async function load(){holder.innerHTML='Loading…';const rows=await api('zonal',{snapshot:pick.value,filters:f});holder.innerHTML='';const g=gsel.value;
-  let data=rows;if(g!=='none'){const key={location:'location',client:'client',zone:'zone',stakeholder:'stakeholder',region:'region'}[g];const agg={};rows.forEach(r=>{const k=r[key]||'(none)';const a=agg[k]||(agg[k]={name:k,target:0,mtd:0,revenue:0,revenue_target:0,change:0,rows:0});a.target+=r.target||0;a.mtd+=r.mtd||0;a.revenue+=r.revenue||0;a.revenue_target+=r.revenue_target||0;a.change+=r.change||0;a.rows++});data=Object.values(agg).map(a=>({...a,achievement:a.target?a.mtd/a.target:null,shortfall:a.target?a.mtd-a.target:null}))}
-  const tot=rows.reduce((a,r)=>({t:a.t+(r.target||0),m:a.m+(r.mtd||0),rv:a.rv+(r.revenue||0),c:a.c+(r.change||0)}),{t:0,m:0,rv:0,c:0});
-  holder.append(el('div',{class:'tiles'},tile('Target',fmt(tot.t)),tile('MTD',fmt(tot.m),pct(tot.t?tot.m/tot.t:null)+' achieved'),tile('Revenue',inr(tot.rv)),tile('Change vs previous snapshot',fmt(tot.c),rows[0]?'since '+(rows[0].prev_snapshot||'month start'):'')));
-  const ach=v=>v==null?'–':el('span',{class:'chip '+(v>=.9?'good':v>=.6?'warn':'bad')},pct(v));
-  const cols=g==='none'?[{key:'stakeholder',label:'Stakeholder'},{key:'zone',label:'Zone'},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'change',label:'Change',num:1,fmt:(v,r)=>v==null?'–':el('span',{class:v<0?'bad':''},fmt(v))},{key:'change_basis',label:'Change basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'src_daily',label:'Source daily col',num:1,fmt:fmt},{key:'rate',label:'Rate ₹',num:1,fmt:fmt},{key:'revenue_target',label:'Revenue target',num:1,fmt:inr},{key:'revenue',label:'Revenue',num:1,fmt:inr},{key:'region',label:'Region'},{key:'tier',label:'Tier'}]
-   :[{key:'name',label:g[0].toUpperCase()+g.slice(1)},{key:'rows',label:'Rows',num:1},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'shortfall',label:'vs target',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'revenue_target',label:'Revenue target',num:1,fmt:inr},{key:'revenue',label:'Revenue',num:1,fmt:inr}];
-  holder.append(table(data,cols,{name:`tracker_${pick.value}_${g}.csv`,defaultHidden:g==='none'?['src_daily','region','tier','rate']:[]}),el('p',{class:'note'},'"Change" is computed by the database from consecutive snapshots; "Source daily col" is the tracker\'s own column O, kept for cross-checking. Negative changes are kept and flagged, never zeroed.'))}
- const ex=el('div');async function loadEx(){ex.innerHTML='';const e=await api('expense',{snapshot:pick.value});const st=v=>v==null?'–':el('span',{class:v<0?'bad':'good'},inr(v));
-  ex.append(el('h3',{},'Expense & margin (tracker columns L, M, N)'),el('div',{class:'tiles'},tile('All-India projected expense',inr(e.source_pan_india_expense),'Tracker total row for '+e.snapshot)),
-   table(e.rows.filter(r=>r.expense!=null),[{key:'level',label:'Level'},{key:'name',label:'Location / zone'},{key:'stakeholder',label:'Stakeholder'},{key:'revenue',label:'Revenue (MTD)',num:1,fmt:inr},{key:'expense',label:'Projected expense',num:1,fmt:inr},{key:'margin',label:'Revenue − expense',num:1,fmt:st},{key:'cover_2x',label:'Revenue − 2 × expense',num:1,fmt:st},{key:'expense_ratio',label:'Expense / revenue',num:1,fmt:pct},{key:'basis',label:'Taken from'}],{name:`expense_${e.snapshot}.csv`}),
-   el('p',{class:'note'},'Projected expense is the monthly cost entered in the tracker (salary + rent + other). Revenue is month-to-date, so margins improve through the month. Zone rows and their location rows overlap — do not add them together; the all-India figure is the tracker\'s own total.'))}
- pick.onchange=()=>{load();loadEx()};gsel.onchange=load;await load();s.append(ex);await loadEx();
- s.append(el('h3',{},'Snapshots this month'),table(daily,[{key:'date',label:'Snapshot'},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'basis',label:'Basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'gap_days',label:'Gap (days)',num:1},{key:'target',label:'Target',num:1,fmt:fmt},{key:'negative_rows',label:'Rows with negative change',num:1}],{name:'snapshots.csv',search:false}));
+ const pick=el('select',{'aria-label':'Snapshot'},snaps.slice().reverse().map(d=>el('option',{value:d},ddmm(d))));
+ const cmpSel=el('select',{'aria-label':'Compare with'},[['none','No comparison'],['prev','Previous snapshot'],['lm','Same day last month'],['ly','Same day last year'],['custom','Pick a date…']].map(([v,l])=>el('option',{value:v},l)));cmpSel.value=ZT.cmp;
+ const cmpDate=el('input',{type:'date','aria-label':'Compare date',value:ZT.cmpDate,class:ZT.cmp==='custom'?'':'hidden'});
+ const histSel=el('select',{'aria-label':'Monthly history columns'},[[0,'No history'],[3,'Last 3 months'],[6,'Last 6 months'],[12,'Last 12 months']].map(([v,l])=>el('option',{value:v},l)));histSel.value=String(ZT.hist);
+ const lvlBtns=el('div',{class:'seg',role:'group','aria-label':'Outline level'},[['summary','Summary'],['zones','Zones'],['locations','Locations'],['all','All rows']].map(([v,l])=>el('button',{class:'btn'+(ZT.level===v?' on':''),'data-l':v},l)));
+ const search=el('input',{type:'search',placeholder:'Find location or client','aria-label':'Find location or client',value:ZT.q});
+ const chk=(k,l,tip)=>{const cb=el('input',{type:'checkbox'});cb.checked=!!ZT.show[k];cb.onchange=()=>{ZT.show[k]=cb.checked;ztSave();draw()};return el('label',{class:'chk',title:tip||''},cb,' ',l)};
+ const zeroCb=el('input',{type:'checkbox'});zeroCb.checked=ZT.hideZero;
+ const xBtn=el('button',{class:'btn'},'Export to Excel'),fsBtn=el('button',{class:'btn'},'⤢ Full screen');
+ const info=el('div',{class:'note'});const host=el('div');const notes=el('details',{class:'note'},el('summary',{},'How this view is built'));
+ const panel=el('div',{class:'zt-panel'},el('div',{class:'tools'},el('label',{},'Snapshot ',pick),el('label',{},'Compare ',cmpSel,cmpDate),el('label',{},'History ',histSel),lvlBtns,search),
+  el('div',{class:'tools'},chk('rev','Revenue'),chk('bd','BD revenue'),chk('sf','Shortfall'),chk('dr','Daily revenue'),chk('exp','Expense L/M/N (as entered)','Columns L, M and N exactly as typed in the tracker — not calculated or verified'),
+   el('label',{class:'chk'},zeroCb,' Hide zero rows'),xBtn,fsBtn),info,host,notes);
+ s.append(panel);
+ let J=null,model=null;
+ const cmpTarget=()=>{const d=pick.value;if(ZT.cmp==='prev'){const i=snaps.indexOf(d);return i>0?snaps[i-1]:addMonths(d,-1)}if(ZT.cmp==='lm')return addMonths(d,-1);if(ZT.cmp==='ly')return addMonths(d,-12);if(ZT.cmp==='custom')return ZT.cmpDate||null;return null};
+ function draw(){if(!J)return;ztRender(host,J,model);
+  info.textContent=`Snapshot ${ddmm(J.snapshot)}`+(J.prev_snapshot?` · daily count vs ${ddmm(J.prev_snapshot)}`:' · first snapshot of the month (daily = MTD)')+(J.compare_snapshot?` · compared with ${ddmm(J.compare_snapshot)}`+(J.requested_compare&&J.requested_compare!==J.compare_snapshot?` (nearest snapshot on or before ${ddmm(J.requested_compare)})`:''):'')+(Object.keys(J.filters||{}).length?' · filtered: totals cover the filtered rows only':'')+(ZT.show.exp?' · Expense columns L/M/N are shown exactly as typed in the tracker — not calculated or verified':'');
+  lvlBtns.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===ZT.level))}
+ async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading tracker…'));
+  try{J=await api('tracker_sheet',{snapshot:pick.value,filters:f,compare:cmpTarget(),history:ZT.hist})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},'Could not load the tracker view: '+e.message));return}
+  if(!J||J.error){host.innerHTML='';host.append(el('div',{class:'banner'},(J&&J.error)||'The tracker view is not available from the server yet.'));return}
+  model=ztModel(J);ztSetLevel(model,ZT.level);notes.innerHTML='';notes.append(el('summary',{},'How this view is built'),...(J.notes||[]).map(n=>el('p',{},n)));draw()}
+ pick.onchange=load;histSel.onchange=()=>{ZT.hist=+histSel.value;ztSave();load()};
+ cmpSel.onchange=()=>{ZT.cmp=cmpSel.value;cmpDate.classList.toggle('hidden',ZT.cmp!=='custom');if(ZT.cmp!=='custom'||ZT.cmpDate)load()};cmpDate.onchange=()=>{ZT.cmpDate=cmpDate.value;load()};
+ lvlBtns.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(!model)return;ztSetLevel(model,b.dataset.l);draw()});
+ let st;search.oninput=()=>{clearTimeout(st);st=setTimeout(()=>{ZT.q=search.value.trim();draw()},200)};zeroCb.onchange=()=>{ZT.hideZero=zeroCb.checked;draw()};
+ xBtn.onclick=()=>J&&ztExport(J,model);
+ fsBtn.onclick=()=>{const on=!panel.classList.contains('zt-full');panel.classList.toggle('zt-full',on);fsBtn.textContent=on?'✕ Exit full screen':'⤢ Full screen';document.body.classList.toggle('noscroll',on)};
+ panel.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('zt-full'))fsBtn.click()});
+ await load();
+ // Intelligence below the sheet
  const br=el('div');s.append(br);await branchSection(br,f);
+ const pv=el('div');s.append(pv);pv.append(el('h3',{},'Pivot: group the snapshot by any dimension'));const gsel=el('select',{'aria-label':'Group by'},['location','client','zone','stakeholder','region','none'].map(x=>el('option',{value:x},'By '+x)));
+ const ph=el('div');pv.append(el('div',{class:'tools'},gsel),ph);
+ async function loadPivot(){ph.innerHTML='Loading…';const rows=await api('zonal',{snapshot:pick.value,filters:f});ph.innerHTML='';const g=gsel.value;let data=rows;
+  if(g!=='none'){const agg={};rows.forEach(r=>{const k=r[g]||'(none)';const a=agg[k]||(agg[k]={name:k,rows:0,target:0,mtd:0,revenue_target:0,revenue:0,change:0});a.rows++;a.target+=+r.target||0;a.mtd+=+r.mtd||0;a.revenue_target+=+r.revenue_target||0;a.revenue+=+r.revenue||0;a.change+=+r.change||0});
+   data=Object.values(agg).map(a=>({...a,achievement:a.target?a.mtd/a.target:null,shortfall:a.mtd-a.target}))}
+  const ach=v=>v==null?'–':el('span',{class:'chip '+(v>=.9?'good':v>=.6?'warn':'bad')},pct(v));
+  ph.append(table(data,g==='none'?[{key:'stakeholder',label:'Stakeholder'},{key:'zone',label:'Zone'},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'change',label:'Daily change',num:1,fmt:fmt},{key:'revenue',label:'Revenue',num:1,fmt:inr}]
+   :[{key:'name',label:g[0].toUpperCase()+g.slice(1)},{key:'rows',label:'Rows',num:1},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved (cases)',num:1,fmt:ach},{key:'shortfall',label:'vs target',num:1,fmt:fmt},{key:'change',label:'Daily change',num:1,fmt:fmt},{key:'revenue_target',label:'Revenue target',num:1,fmt:inr},{key:'revenue',label:'Revenue',num:1,fmt:inr}],{name:`pivot_${pick.value}_${g}.csv`}))}
+ gsel.onchange=loadPivot;pick.addEventListener('change',loadPivot);await loadPivot();
+ s.append(el('h3',{},'Snapshots this month'),table(daily,[{key:'date',label:'Snapshot'},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'basis',label:'Basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'gap_days',label:'Gap days',num:1},{key:'negative_rows',label:'Rows with negative change',num:1}],{name:'snapshots.csv',search:false}));
 });
+
+/* ---------- Compare two periods (Growth & trends) ---------- */
+function compareSection(box,f){const today=String((S.meta.freshness||{}).zonal_latest_snapshot||new Date().toISOString()).slice(0,10);
+ const kindSel=v=>{const s=el('select',{'aria-label':'Period type'},el('option',{value:'snapshot'},'MTD on date'),el('option',{value:'month'},'Whole month'));s.value=v;return s};
+ const ak=kindSel('snapshot'),bk=kindSel('snapshot'),ad=el('input',{type:'date',value:today,'aria-label':'Period A date'}),bd=el('input',{type:'date',value:addMonths(today,-1),'aria-label':'Period B date'});
+ const gs=el('select',{'aria-label':'Compare by'},[['location','Location'],['client','Client'],['client_family','Client family'],['stakeholder','Stakeholder'],['zone','Zone'],['region','Region'],['tier','Zone A / B'],['total','Total only']].map(([v,l])=>el('option',{value:v},l)));
+ const go=el('button',{class:'btn primary'},'Compare');const out=el('div');
+ const preset=(l,fn)=>el('button',{class:'btn',onclick:()=>{fn();run()}},l);
+ const lm=()=>{const d=new Date(today+'T00:00:00Z');return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()-1,1)).toISOString().slice(0,10)};
+ box.append(el('h3',{},'Compare two periods'),el('p',{class:'note'},'Pick any two periods and a breakdown. "MTD on date" uses the tracker snapshot on or before that date; "Whole month" uses the month-end figures (the current month is month-to-date and flagged).'),
+  el('div',{class:'tools'},preset('This MTD vs same day last month',()=>{ak.value='snapshot';bk.value='snapshot';ad.value=today;bd.value=addMonths(today,-1)}),
+   preset('This MTD vs same day last year',()=>{ak.value='snapshot';bk.value='snapshot';ad.value=today;bd.value=addMonths(today,-12)}),
+   preset('Last month vs same month last year',()=>{ak.value='month';bk.value='month';ad.value=lm();bd.value=addMonths(lm(),-12)}),
+   preset('Last month vs month before',()=>{ak.value='month';bk.value='month';ad.value=lm();bd.value=addMonths(lm(),-1)})),
+  el('div',{class:'tools'},el('strong',{},'A'),ak,ad,el('strong',{},'vs B'),bk,bd,el('label',{},'by ',gs),go),out);
+ async function run(){out.innerHTML='';out.append(el('p',{class:'note'},'Comparing…'));let r;
+  try{r=await api('compare',{a:{kind:ak.value,date:ad.value},b:{kind:bk.value,date:bd.value},group:gs.value,filters:f})}catch(e){out.innerHTML='';out.append(el('div',{class:'banner err'},e.message));return}
+  out.innerHTML='';if(!r||r.error){out.append(el('div',{class:'banner'},(r&&r.error)||'Comparison is not available from the server yet.'));return}
+  const T=r.totals||{};(r.warnings||[]).forEach(w=>out.append(el('div',{class:'banner'},'⚠ '+w)));
+  out.append(el('div',{class:'tiles'},tile('A · '+r.a.label,fmt(T.a_cases),'revenue '+inr(T.a_rev)),tile('B · '+r.b.label,fmt(T.b_cases),'revenue '+inr(T.b_rev)),
+   tile('Change in cases',(T.d_cases>0?'+':'')+fmt(T.d_cases),T.d_pct==null?'':(T.d_pct>0?'+':'')+(T.d_pct*100).toFixed(1)+'%',T.d_cases<0?'bad':'good'),tile('Change in revenue',(T.d_rev>0?'+':'')+inr(T.d_rev),'',T.d_rev<0?'bad':'good')));
+  const rows=r.rows||[];if(rows.length>1&&r.group!=='total'){const top=[...rows].sort((a,b)=>Math.abs(b.d_cases)-Math.abs(a.d_cases)).slice(0,15).sort((a,b)=>a.d_cases-b.d_cases);
+   const cv=el('canvas');out.append(el('div',{class:'card'},el('h4',{style:'margin:0 0 6px'},'Largest movements (cases, A − B)'),el('div',{class:'chartbox',style:'height:'+Math.max(220,top.length*22)+'px'},cv)));
+   const cc=C();chart(cv,{type:'bar',data:{labels:top.map(x=>x.key),datasets:[{label:'Change in cases',data:top.map(x=>x.d_cases),backgroundColor:top.map(x=>x.d_cases<0?cc.bad:cc.good)}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}}}})}
+  const dl=v=>v==null?'–':el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':'')+fmt(v));const dp=v=>v==null?'–':el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':'')+(v*100).toFixed(1)+'%');
+  out.append(table(rows,[{key:'key',label:gs.options[gs.selectedIndex].text},{key:'a_cases',label:'A cases',num:1,fmt:fmt},{key:'b_cases',label:'B cases',num:1,fmt:fmt},{key:'d_cases',label:'Δ cases',num:1,fmt:dl},{key:'d_pct',label:'Δ %',num:1,fmt:dp},
+   {key:'a_rev',label:'A revenue',num:1,fmt:inr},{key:'b_rev',label:'B revenue',num:1,fmt:inr},{key:'d_rev',label:'Δ revenue',num:1,fmt:v=>v==null?'–':el('span',{class:v<0?'bad':''},inr(v))},
+   {key:'a_tgt',label:'A target',num:1,fmt:fmt},{key:'b_tgt',label:'B target',num:1,fmt:fmt},{key:'a_ach',label:'A achieved',num:1,fmt:pct},{key:'b_ach',label:'B achieved',num:1,fmt:pct},{key:'a_bill',label:'A billing',num:1,fmt:inr},{key:'b_bill',label:'B billing',num:1,fmt:inr}],
+   {name:`compare_${r.a.date}_vs_${r.b.date}_${r.group}.csv`,defaultHidden:['a_tgt','b_tgt','a_bill','b_bill']}),el('p',{class:'note'},r.method||''))}
+ go.onclick=run}
 
 /* ---------- Growth ---------- */
 const vGrowth=guard(async s=>{const f=filters();const months=S.meta.months;const to=$('#fMonth').value;const from=months[Math.min(months.length-1,months.indexOf(to)+17)]||months[months.length-1];
@@ -304,7 +499,7 @@ const vGrowth=guard(async s=>{const f=filters();const months=S.meta.months;const
   const t=keys.map(k=>{const a=byKey[k];return{key:k,last:a[last]&&a[last].cases,prev:a[prev]&&a[prev].cases,ly:ly&&a[ly]&&a[ly].cases,mom_full:(a[prevFull]&&a[prev2]&&a[prev2].cases)?a[prevFull].cases/a[prev2].cases-1:null,rev_prev:a[prev]&&a[prev].revenue,billing_prev:a[prev]&&a[prev].billing,source:a[last]&&a[last].source}});
   box.append(el('h3',{},'Comparison'),table(t,[{key:'key',label:'Group'},{key:'last',label:mlabel(last)+(last===S.meta.months[0]?' (MTD)':''),num:1,fmt:fmt},{key:'prev',label:mlabel(prev),num:1,fmt:fmt},{key:'mom_full',label:`MoM ${mlabel(prevFull)} vs ${mlabel(prev2)}`,num:1,fmt:v=>v==null?'–':el('span',{class:v<0?'bad':'good'},pct(v))},{key:'ly',label:ly?mlabel(ly):'Same month last year',num:1,fmt:fmt},{key:'rev_prev',label:'Revenue '+mlabel(prev),num:1,fmt:inr},{key:'billing_prev',label:'Billing '+mlabel(prev),num:1,fmt:inr},{key:'source',label:'Source'}],{name:'growth.csv'}),
    el('p',{class:'note'},'Month-over-month compares two complete months, never a partial month with a full one. Billing is the tracker\'s "Actual Billing Amount" and is blank where the source has not filled it. Historical targets are not shown because the source does not hold them.'))}
- gsel.onchange=load;await load();const lf=el('div');s.append(lf);lflSection(lf,to,f)});
+ gsel.onchange=load;await load();const lf=el('div');s.append(lf);lflSection(lf,to,f);const cp=el('div');s.append(cp);compareSection(cp,f)});
 
 /* ---------- Force & reconciliation ---------- */
 const vForce=guard(async s=>{const m=$('#fMonth').value,f=filters();const [rows,trend,man]=await Promise.all([api('force',{month:m,filters:f}),api('force_trend',{filters:f}),api('manual_tat',{month:m,filters:f})]);
@@ -573,6 +768,17 @@ async function importOne(it,progress){const x=it.x;
  try{for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});const c=await ingest('commit',{batch_id:b.batch_id});for(const k in acc)acc[k]+=c[k]||0;progress(`${Math.min(i+n,x.rows.length)}/${x.rows.length} · new ${acc.new} · changed ${acc.changed}`)}
   await ingest('finalize',{batch_id:b.batch_id})}catch(e){try{await ingest('reject',{batch_id:b.batch_id,reason:'upload interrupted: '+e.message})}catch{}throw e}
  return`Imported: ${fmt(acc.new)} new · ${fmt(acc.changed)} changed · ${fmt(acc.unchanged)} unchanged`}
+
+/* ---------- Collapsible sections: every sub-heading in a page folds its content ---------- */
+const FOLD={};try{Object.assign(FOLD,JSON.parse(localStorage.getItem('crux_fold')||'{}'))}catch{}
+function foldKey(h){return (S.section||'')+'|'+h.textContent.replace(/[▾▸]/g,'').trim().slice(0,60)}
+function foldApply(h,closed){h.setAttribute('aria-expanded',String(!closed));h.classList.toggle('folded',closed);let n=h.nextElementSibling;while(n&&!/^H[23]$/.test(n.tagName)){n.classList.toggle('fold-hide',closed);n=n.nextElementSibling}}
+function makeFoldable(h){if(h.dataset.fold||h.closest('#askPanel,.zt-panel table'))return;h.dataset.fold='1';h.classList.add('foldable');h.tabIndex=0;h.setAttribute('role','button');h.title='Click to collapse or expand';
+ const k=foldKey(h);const toggle=()=>{const c=!h.classList.contains('folded');FOLD[k]=c;try{localStorage.setItem('crux_fold',JSON.stringify(FOLD))}catch{}foldApply(h,c)};
+ h.addEventListener('click',toggle);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
+ if(FOLD[k])setTimeout(()=>foldApply(h,true),0)}
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1)return;if(n.tagName==='H3')makeFoldable(n);n.querySelectorAll&&n.querySelectorAll('h3').forEach(makeFoldable);
+ if(n.tagName==='H3'||n.tagName==='H2')return;let p=n.previousElementSibling;while(p&&!/^H[23]$/.test(p.tagName))p=p.previousElementSibling;if(p&&p.tagName==='H3'&&p.classList.contains('folded'))n.classList.add('fold-hide')}))).observe(document.getElementById('view'),{childList:true,subtree:true});
 
 window.addEventListener('hashchange',()=>{const k=location.hash.slice(1);if(k&&k!==S.section&&SECTIONS.some(x=>x[0]===k))go(k)});
 boot();

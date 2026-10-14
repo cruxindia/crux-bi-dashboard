@@ -32,8 +32,11 @@ Data quality → exceptions (status open/accepted/resolved), location aliases (c
 2. Type or paste MTD values (paste a column from Excel into the first cell; several columns fill several dates). Red = not a number/negative; amber = below last MTD in the same month.
 3. Save draft → Validate → fix errors; tick "Accept warnings" + reason if needed → Commit. Use "Mark no report" for holidays.
 
-## WEF group changes (Data quality, after bi_036/bi_037 are applied)
+## WEF group changes (Data quality)
 Pick location → group type → new value → WEF date → reason + your name → Preview impact → Save. Future-dated changes are applied to today's mapping by the daily job `bi-wef-sync`.
 
-## Pending migrations
-Apply `supabase/pending/bi_036_wef_group_mapping.sql` then `bi_037_wef_reports_lfl_ask.sql` (Supabase SQL editor or MCP). Then run `select * from bi.run_acceptance_tests();` — expect 19 rows, all pass (T20 new).
+## Migrations
+All migrations through `bi_040` are applied (exported automatically to `supabase/migrations/`). When writing new ones, avoid top-level DROP/REVOKE/UPDATE/DELETE — the Supabase connector cancels them; use `create or replace` and guarded `do` blocks. After applying, run `select * from bi.run_acceptance_tests();` (21 tests).
+
+## Business tracker (Zonal Tracker view)
+Pick the month at the top, then the snapshot. Levels: Summary / Zones / Locations / All rows (like Excel outline). ▸/▾ collapses a zone or a location block. Click a column header to sort within blocks. "Compare" adds MTD-then, Δ and Δ% columns. "History" adds Actual MTD / Revenue / Billing per past month. "Export to Excel" downloads exactly the rows and columns on screen.

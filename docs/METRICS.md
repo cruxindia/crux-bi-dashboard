@@ -28,3 +28,8 @@
 | Branch status | insufficient_data (<6 covered months or <3 cases); new; dormant; reactivated; growing (L3 ≥ 1.2×P3 and +3); losing traction (L3 ≤ 0.7×P3 and −3); else stable | branch (Force1) | covered months only |
 | Branch opportunity (estimate) | peer median monthly cases (same client + location group, ≥5 active peers) − branch L3 average | branch | not confirmed leakage |
 | Matrix daily change | entered MTD total − previous snapshot MTD total (same month) | date | warnings: MTD decreased, large jump |
+| Tracker view subtotals | sum of leaf rows in the block (location block = rows between totals; zone = same zone label; zone client row = same zone + client name; Zone A/B = location tier; N/S/E/W = region; ROI = all except Mumbai; client-wise = client name; stakeholder = location owner on the snapshot date) | snapshot | mirrors the Excel SUM/SUMIF intent |
+| % Achmt (tracker view) | Actual revenue ÷ revenue target (Excel H = G/F), 0% when no target | row | |
+| ACHIEVED bar | █ × round(achievement × 20), capped at 150% | row | same as Excel REPT |
+| Daily count (tracker view) | MTD − previous snapshot's MTD in the same month; first snapshot of the month = MTD | row | |
+| Compare (Growth) | A − B and (A − B) ÷ B for cases and revenue; snapshot = MTD on/before date; month = month-end history | any grouping | warns when not like-for-like |
