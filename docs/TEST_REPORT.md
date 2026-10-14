@@ -39,3 +39,14 @@ Manual / partially verified
 | T17 | Live dashboard | Automated browser pass done (above). A human click-through on GitHub Pages is still recommended. |
 
 Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenue ₹6,518,972 ✓, daily change 2,489 ✓, Sep-26 month total 58,065 ✓.
+
+## 14-Oct-2026 update
+| Check | Result |
+|---|---|
+| 57 new Point Wise files: file rows − 1 blank row per file = DB rows (Aug 104,710; Sep 112,640; Oct 43,257) | Pass |
+| `bi.run_acceptance_tests()` after load | 18/18 pass (T19 Jul field utilisation now 17.7%) |
+| Headless browser (desktop + 390 px): Overview top opportunities, Tracker branch lifecycle, Ask Crux answer + details + feedback buttons, Upload matrix loads 392 rows × 4 dates (1,568 cells), no horizontal overflow | Pass; only console errors = favicon 404 and the pending `groups` admin action (400) |
+| Ask Crux live: "Why is Pune lower than last month?" → "Not lower: up 47…" | Pass |
+| Ask Crux month in question ("in September") | **Fail** — answered October; fix written in bi_037 (pending) |
+| T20 WEF change across WEF date, history kept, overlap blocked | Written (bi_037); **not run** — migration pending |
+| Matrix commit end-to-end in UI | Not run on live data (would create a real snapshot); DB path tested 12-Oct in a rolled-back block |

@@ -26,3 +26,14 @@ Data quality → exceptions (status open/accepted/resolved), location aliases (c
 * "not authorised": the signed-in email is not in `bi.app_user` or not confirmed.
 * Upload "Already imported": same file hash already committed.
 * Tracker control mismatch warning: the file's own Pan India row disagrees with its leaf rows; leaf rows are used and the mismatch is logged.
+
+## Daily matrix (Upload centre)
+1. Unlock with the admin key → Upload centre → "Daily tracker entry". Range defaults to the day after the last snapshot → today.
+2. Type or paste MTD values (paste a column from Excel into the first cell; several columns fill several dates). Red = not a number/negative; amber = below last MTD in the same month.
+3. Save draft → Validate → fix errors; tick "Accept warnings" + reason if needed → Commit. Use "Mark no report" for holidays.
+
+## WEF group changes (Data quality, after bi_036/bi_037 are applied)
+Pick location → group type → new value → WEF date → reason + your name → Preview impact → Save. Future-dated changes are applied to today's mapping by the daily job `bi-wef-sync`.
+
+## Pending migrations
+Apply `supabase/pending/bi_036_wef_group_mapping.sql` then `bi_037_wef_reports_lfl_ask.sql` (Supabase SQL editor or MCP). Then run `select * from bi.run_acceptance_tests();` — expect 19 rows, all pass (T20 new).

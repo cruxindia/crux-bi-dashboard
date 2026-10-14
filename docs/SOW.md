@@ -1,10 +1,12 @@
-# Statement of Work (living) — last updated 12-Oct-2026
+# Statement of Work (living) — last updated 14-Oct-2026
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
 **Scope.** In: the three source categories in the Drive folder; Supabase database; dashboard; upload centre; tests; docs. Out: other tracker sheets (`10 Days Analysis`, `Haque`, `June 2026 Target Sheet`, `Old Tracker till Feb 2026`) by instruction; the "BOM Testing Files" folder and the 83 MB zip (not one of the three categories).
 
-**Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026).
+**Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
+
+**Status (14-Oct-2026).** Point Wise now Jan → Oct-2026 (Aug 104,710 · Sep 112,640 · Oct 43,257 points; Jul 107,100 after replacement files); 18/18 tests pass. **DB 388 MB of 500 MB — storage decision needed (L8).** Front end: daily matrix entry (Upload centre), branch lifecycle (Business tracker + Overview), like-for-like (Growth), Ask Crux floating panel, WEF group editor (Data quality). **Pending DB approval:** migrations `bi_036` (WEF mapping tables/functions) and `bi_037` (date-aware tracker filters, LFL endpoint, group admin actions, Ask Crux month parsing, test T20) are written and versioned in `supabase/pending/` but not applied — the connector cancelled the write. Until applied, the WEF editor and LFL block show "not available yet".
 
 **Status (12-Oct-2026, evening).** Public dashboard live on GitHub Pages; DB 195 MB after compaction; 17/17 tests pass; no newer source files in Drive (Point Wise ends Jul-2026).
 
@@ -38,6 +40,12 @@
 | D21 | Force1 utilisation reported at two levels (cases; field points) with formulas on screen; field vs back office comparison | Business request 12-Oct; rule D17 confirmed by Ops |
 | D22 | Derived per-point facts materialised in `bi.point_derived`, rebuilt by pg_cron every 10 min when data changed (also re-runs classification) | api_force1 27.5 s → 2.6 s; anon limit 20 s |
 | D23 | Navigation as hamburger drawer (all screen sizes) | Business request 12-Oct |
+| D24 | Daily matrix replaces routine full-tracker upload; rows from latest snapshot; Mon–Sat expected; validate → acknowledge warnings → commit; full tracker upload kept | Master upgrade brief |
+| D25 | Branch lifecycle from Force1 Case Wise only, last 3 vs prior 3 covered months; opportunity = peer median (≥5 peers) − branch average; labelled estimate | No verified client branch master supplied |
+| D26 | Like-for-like = latest snapshot vs previous month's snapshot on/before the same day; growth "unattributed" (no organic rule approved) | Brief: never invent attribution |
+| D27 | Group changes are effective-dated rows (never overwritten); tracker reports use the mapping in force on each snapshot/month; Force1/TAT/People use today's mapping | Brief §11; tracker is the authoritative grouping |
+| D28 | Ask Crux: SQL-computed answer first; optional Gemini rewording server-side only, rejected if it adds numbers | Brief; secrets server-side |
+| D29 | New Point Wise drop loaded by upsert on point_id; 884 July points present only in older files retained (not deleted) | Additive-only rule; no delete without evidence |
 
 ## Open questions (need business confirmation)
 2. Confirm the D18 reading of tracker columns M and N.
