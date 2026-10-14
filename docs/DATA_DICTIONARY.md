@@ -61,3 +61,6 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | `bi.client` (`summary_under`, `product`) | Client hierarchy for client-wise totals (e.g. SBI Car Loan+ → SBI, product Car Loan) | client code | Data quality |
 | `bi.client_branch_master` | Verified client branch list: client, branch code/name, state, city, Crux location, status (active/closed/ineligible), opened/closed dates, source, verified on, confidence | client + branch code | Data quality → Master data |
 | `bi.workforce_master` | HR list: employee ID, name, role, classification, location, joining date, exit date, exit reason (admin only), source | employee ID (else name) | Data quality → Master data |
+| `bi.rate_change` | Rate per case for a location × client from a WEF date, with reason, who, undo trail | location × client × WEF | Daily update table → Rate changes from a date (or a rate typed in the table) |
+| `bi.penalty` | ₹ penalties by date × location (optional client), reason, reference, who; cancelled entries kept | id | Business tracker → Penalties (admin) |
+| `bi.organic_store` | Organic expectation and its inputs per month × location × client | month × location × client | Refreshed automatically every 10 minutes when data changed (`bi-organic-refresh`) |

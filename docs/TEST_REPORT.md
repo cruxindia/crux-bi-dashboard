@@ -86,3 +86,16 @@ Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenu
 | Browser (admin): templates download with 4 / 3 sheets (42 clients, 37 locations); check file shows 7 rows → 2 valid / 5 problems and 5 rows → 1 valid / 4 problems; Import sends 7 rows + editor (server response mocked so no test rows enter the live master) | Pass |
 | Browser (viewer, 390 px): master upload hidden behind admin gate; People and Business tracker show the "upload the list" banners; no horizontal overflow | Pass; only console error = favicon 404 |
 | `run_acceptance_tests()` | 23/23 pass |
+
+## 14-Oct-2026 (late evening) — rates, penalties, organic, potential, wording (bi_051–bi_064)
+| Check | Result |
+|---|---|
+| T25 rate change (rolled back): Delhi + Rajasthan SBI Car Loan+ ₹240 → ₹250 from 8-Oct: revenue ₹3,67,440 → ₹3,72,230 (= 1,052×240 + 251×250 + 228×250), revenue target ₹12,39,480 (= 3,72,230 + 3,469×250); undo restores ₹3,67,440; rate typed in the daily table for 10-Oct recorded as a change from 10-Oct (+3 cases × ₹260) | Pass |
+| T26 penalties (rolled back): reason required; ₹1,250.50 + ₹749.50 = ₹2,000; cancel → ₹1,250.50; public view hides reasons | Pass |
+| T27 organic: stored Pan India Oct-26 56,697 = independent recomputation 56,703 (seasonal-index rounding) = API total; zone rows add up | Pass |
+| T28 potential: Pan India likely 60,466 = Overview projection; range 58,390–62,198 = forecast range; needed per day formula | Pass |
+| Browser (viewer, desktop): Target / Achieved / Projection / Organic tiles; "Data up to 09.10.2026"; organic ? popover shows each step; 7 automatic ? hints; zone highlights (4 above / 4 below); tracker organic columns with ? on Pan India; no source markers; potential tiles; penalties grid; Growth organic tiles + 14 zone rows; no banned wording on Overview / Tracker / Growth | Pass; no console errors |
+| Browser (admin): rate change preview (no apply), penalty form shown; daily table on Sunday 11-Oct: type → save → validate (392/392, +5) → commit (mocked) → discard (no residue) | Pass (found and fixed: client list in the rate form, chosen date reset after "Fill blanks", save/commit messages not shown) |
+| Browser (390 px) | No horizontal overflow; date chip visible |
+| Public key vs retired invoice app after lock-down: reads empty, inserts/uploads refused, reset function disabled; dashboard unaffected | Pass |
+| `run_acceptance_tests()` | 27/27 pass |

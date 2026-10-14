@@ -39,7 +39,7 @@ Data quality → exceptions (status open/accepted/resolved), location aliases (c
 Pick location → group type → new value → WEF date → reason + your name → Preview impact → Save. Future-dated changes are applied to today's mapping by the daily job `bi-wef-sync`.
 
 ## Migrations
-All migrations through `bi_050` are applied (exported automatically to `supabase/migrations/`). When writing new ones, avoid top-level DROP/REVOKE/UPDATE/DELETE — the Supabase connector cancels them; use `create or replace` and guarded `do` blocks. After applying, run `select * from bi.run_acceptance_tests();` (23 tests). New functions in schema `bi` are not reachable by the public key (no schema access); expose them only through `bi_call` (read) or `bi_admin` (write, key required).
+All migrations through `bi_064` are applied (exported automatically to `supabase/migrations/`). When writing new ones, avoid top-level DROP/REVOKE/UPDATE/DELETE — the Supabase connector cancels them; use `create or replace` and guarded `do` blocks. After applying, run `select * from bi.run_acceptance_tests();` (27 tests). New functions in schema `bi` are not reachable by the public key (no schema access); expose them only through `bi_call` (read) or `bi_admin` (write, key required).
 
 ## Business tracker (Zonal Tracker view)
 Pick the month at the top, then the snapshot. Levels: Summary / Zones / Locations / All rows (like Excel outline). ▸/▾ collapses a zone or a location block. Click a column header to sort within blocks. "Compare" adds MTD-then, Δ and Δ% columns. "History" adds Actual MTD / Revenue / Billing per past month. "Export to Excel" downloads exactly the rows and columns on screen.
@@ -50,3 +50,15 @@ Pick the month at the top, then the snapshot. Levels: Summary / Zones / Location
 3. Choose the file → **Check file**. Nothing is saved; the result lists every problem with its sheet row (unknown client/location, missing or bad dates, exit before joining, repeated keys).
 4. Enter your name → **Import valid rows**. Rows with problems are skipped. Re-uploading updates rows with the same key; uploads never remove rows — mark branches `closed`/`ineligible` or give people an exit date instead.
 5. Results: Business tracker → "Branch coverage vs verified client branch list"; People → "Headcount & attrition". Leaver names are visible to admins only.
+
+## Rate change during the month (Upload centre → daily update table)
+Open "Rate changes from a date" → choose location (or all) and client (or all) → new rate, effective date, reason → **Preview impact** (nothing saved) → **Apply**. Cases reported before the date keep the old rate. "Undo" (with a reason) restores the previous rate. A rate typed in the table with "Edit target & rate" becomes a change from that report date.
+
+## Penalties (Business tracker → Penalties)
+Admins: date, location, client (optional), amount, reason (required), reference → Add. "Cancel" needs a reason; cancelled penalties stay in the audit trail. Viewers see amounts; reasons are admin-only.
+
+## Organic benchmark
+Recomputed by the `bi-organic-refresh` job (every 10 minutes, only when data changed; < 1 s). Manual: `select bi.organic_refresh();`.
+
+## One-time clean-up: retired invoice app
+Run `remove_old_invoice_app.sql` (sent separately; not in the repo) in Supabase → SQL Editor, then Storage → "bills" → Delete bucket. It touches only the old app's objects.

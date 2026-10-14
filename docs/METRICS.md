@@ -38,4 +38,13 @@
 | Opening / closing headcount | joined before month start and not exited before it / joined by month end and not exited by month end | month (workforce list) | needs the uploaded workforce list |
 | Attrition (month) | leavers in month ÷ ((opening + closing) ÷ 2) | month; by role; by location | not annualised |
 | Leaver workload | Point Wise points verified per month in the 3 months before the exit month | person | observed workload to reassign, not lost business; points after the exit month are flagged |
+| Revenue (with rate changes) | Σ over report days (cases added that day × rate in force that day) | location × client | equals MTD × rate when the rate never changed |
+| Revenue target (with rate changes) | if MTD < target: revenue so far + (target − MTD) × current rate; else target × revenue ÷ MTD | location × client | equals target × rate when the rate never changed |
+| Organic expectation (month) | (0.7·d₁ + 0.2·d₂ + 0.1·d₃) × SI(month) × working days; dₖ = cases k months back ÷ its working days ÷ SI(that month) | location × client, summed for any group | SI = Pan India seasonal index: month's cases per working day ÷ centred 12-month average, averaged over the previous two years |
+| Organic to date | organic month × share of a month normally done by this working day (average over past months with daily reports) | | same share as the Overview projection |
+| Effort | actual − organic (to date, or projected month end − organic month) | any group | > +5% "Effort growth", < −5% "Below organic" |
+| Back-test (organic choice) | Dec-2025 → Sep-2026, predicting each month from earlier months only: chosen method Pan India mean error 6.7%, location × client WAPE 21.5%, bias −5.6%; last month only 11.3% / 20.9%; seasonal 3-month average 9.1% / 24.4%; YoY momentum 15.8% / 45.5%; **previous rule (higher of last-year growth × 3-month avg and 3-month growth × last month) 25.5% / 38.3%, bias +25.2%** | | trend-extrapolating variants were unstable (Jan errors > 50%) |
+| Month-end potential (likely) | so far × 1 ÷ average share done by this working day (own history if ≥ 2 months and enough volume, else Pan India) | location / zone / client / stakeholder | low/high = strongest/weakest past month; Pan India = Overview projection |
+| Needed per day | (target − so far) ÷ working days left (Mon–Sat minus declared holidays) | | status: On track (likely ≥ target), Stretch (needed ≤ 1.25 × recent pace), At risk |
+| Penalty | Σ active penalties (₹) by date × location | | report only |
 | Compare (Growth) | A − B and (A − B) ÷ B for cases and revenue; snapshot = MTD on/before date; month = month-end history | any grouping | warns when not like-for-like |
