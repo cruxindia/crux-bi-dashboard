@@ -64,3 +64,21 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | `bi.rate_change` | Rate per case for a location × client from a WEF date, with reason, who, undo trail | location × client × WEF | Daily update table → Rate changes from a date (or a rate typed in the table) |
 | `bi.penalty` | ₹ penalties by date × location (optional client), reason, reference, who; cancelled entries kept | id | Business tracker → Penalties (admin) |
 | `bi.organic_store` | Organic expectation and its inputs per month × location × client | month × location × client | Refreshed automatically every 10 minutes when data changed (`bi-organic-refresh`) |
+
+## Branch intelligence and AI tables (addendum, 14-Oct-2026)
+| Table | Holds | Key | Written by |
+|---|---|---|---|
+| `bi.client_branch_master` (extended) | Plus: branch_uid (`IFSC:…`, `CANFH:…`, `GIC_HFL:…`, `TATA_CAP:…`, `UPLOAD:…`), client_family, IFSC, MICR, aliases, address, district, PIN, centre, branch_type, zone group, territory basis, source type/URL/version, first/last seen, verification status, research notes, row hash, `code_norm` (generated) | client × branch code; branch_uid unique | monthly monitor, research loads, client-list uploads |
+| `bi.client_branch_history` | Effective-dated changes: added, renamed, relocated, address/territory/status changed, reappeared, closed | id | monitor, review resolution, uploads |
+| `bi.branch_seen` | Last monitor run in which each branch was listed | branch_uid | monitor |
+| `bi.branch_review` | Review queue: duplicate candidates, no longer listed, source incomplete/unavailable/changed, conflicts | id; one open item per family × branch × issue | monitor, uploads; resolved by admins |
+| `bi.branch_source` | Hash and fetch date of each lender's official locator page | family | monitor |
+| `bi.client_family_research` | Research registry per client family: entity type, primary source, locator URL, status, notes, source version | family | research loads, monitor |
+| `bi.location_territory` | Territory rules: state + district (or PIN prefix, or state default) → Crux location, effective-dated | rule | admin (`territory_set`) |
+| `bi.job_run` | Background job runs: trigger, status, heartbeat, per-family stats, errors, summary | id | monitor |
+| `bi.branch_activity` | Force1 case activity per client family × normalised branch code (first/last month, totals, last 3 months) | family × code | cron `bi-branch-activity` |
+| `bi.branch_cov_mv` | Narrow materialized projection of the master used by coverage | — | refreshed after each monitor run and upload |
+| `bi.ai_config` | Non-secret AI settings | key | admin / validation job |
+| `bi.ai_model_check` | Model validation results (models.list + synthetic test) | id | cron `bi-ai-validate` |
+| `bi.ai_provider_usage` | Each AI call: model, purpose, ok, ms, HTTP status, retries, tokens, note (no prompts, no secrets) | id | ask-crux |
+| `bi.kb_doc` / `bi.kb_chunk` | Approved definitions and methods for RAG; chunk embeddings (vector 768) with model and dimension | doc / chunk | `bi_admin('kb')`, cron `bi-ai-embed-sync` |

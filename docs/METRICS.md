@@ -48,3 +48,18 @@
 | Needed per day | (target − so far) ÷ working days left (Mon–Sat minus declared holidays) | | status: On track (likely ≥ target), Stretch (needed ≤ 1.25 × recent pace), At risk |
 | Penalty | Σ active penalties (₹) by date × location | | report only |
 | Compare (Growth) | A − B and (A − B) ÷ B for cases and revenue; snapshot = MTD on/before date; month = month-end history | any grouping | warns when not like-for-like |
+
+## Branch master, coverage and research (addendum, 14-Oct-2026)
+| Metric | Definition |
+|---|---|
+| Verified active branches | Active branches (offices excluded) in `bi.client_branch_master` with verification `source_verified` (RBI IFSC directory or official locator) or a client-list upload |
+| Matchable by code | Verified active branches whose client list carries branch codes (banks); website-listed lenders are excluded |
+| Active with Crux (6 m) | Matchable branch with ≥1 Force1 case in the last 6 calendar months, matched by client family + branch code ignoring leading zeros (`bi.branch_activity`) |
+| Coverage | Active with Crux ÷ matchable by code |
+| Never activated | Matchable branch with no Force1 case since Jan-2026 (start of Force1 history) |
+| Gone quiet | Branch with Force1 history but no case in the last 6 months |
+| Indicative activation ceiling | Σ over never-activated branches of the median monthly cases (last 3 months) of active branches of the same client in the same Crux location, where ≥5 such branches exist. Upper bound, not a forecast |
+| Research combinations | Client families in scope × live Crux locations (business in the last 100 days) |
+| Research status per combination | verified (≥1 source-verified branch in territory) · researched, none in territory · not applicable (no branch network) · partial source · territory not established · not researched |
+| Researched % | (verified + researched-none + not applicable) ÷ combinations |
+| Monitor overdue | No succeeded `branch_monitor` run in 35 days |

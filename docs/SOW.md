@@ -6,6 +6,8 @@
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
 
+**Status (14-Oct-2026, night) — addendum a133084a.** (1) Client branch master built from official sources without waiting for lists: banks from the RBI IFSC directory (17 banks, 84,659 code-matchable branches in states with a live Crux location), housing-finance/NBFC lenders from their official locators where readable (849 branches; several sources blocked or partial — L13). Research completeness for 32 clients × 36 live locations is shown in Data quality. (2) Monthly monitor scheduled (Supabase Cron → protected Edge Function `branch-monitor`), resumable, idempotent (run 14: 0 new / 0 changed), failures visible. (3) Ask Crux uses Google Gemini (`gemini-2.5-flash`, fallback `gemini-3.5-flash-lite`) for a short, figure-free summary next to the calculated answer; key only in Edge Function secrets. (4) RAG over 77 approved definitions with `gemini-embedding-2`. (5) Storage audit: 428 → 413 MB, no data removed; **at ~40 MB/month growth the free 500 MB limit is reached around mid-December 2026 — plan decision needed (Q10)**. Tests: **27/27 SQL acceptance tests (T01–T28; T17 is the browser run) + 8/8 addendum tests (T29–T36) pass**; T24 was rewritten for the new master (see TEST_REPORT).
+
 **Status (14-Oct-2026, late evening).** Second round delivered: mid-month rate changes (revenue day-wise), Penalty sheet (admin-only, reason required), organic benchmark chosen by back-test and shown on Overview / Business tracker / Growth with a ? explanation on every organic figure, month-end potential (advanced 10-day analysis), plain-language ? help on technical terms, "Data up to" date in the header, Target / Achieved / Projection / Organic tiles, zone highlights, source/sheet references removed from the screens. Retired invoice app found in the same database (publicly writable with the dashboard key): 1,529 bill PDFs deleted, all its tables and functions locked; final table removal script handed to the owner. **27/27 automated tests pass** (T01–T28 except browser T17). Waiting on the owner for the Gemini details (Q8).
 
 **Status (14-Oct-2026, evening).** All requested items are built and deployed: Zonal Tracker replica, daily update table (daily counts or cumulative MTD, corrections), BUSINESS COUNT report, SBI Car Loan+ under SBI, expense columns removed, comparison, sort/expand/collapse/full screen. `bi_045`–`bi_050` add master-data uploads (client branch list, HR workforce list) with check-before-import, branch coverage (Business tracker) and headcount/attrition (People); both show an explanatory banner until a verified list is uploaded. **23/23 automated tests pass** (T01–T24; T17 is the browser check). DB 341 MB of 500 MB (L8). Tracker data: latest snapshot 9-Oct; 2-Oct, 10-Oct and 12–14-Oct are open in the daily update table.
@@ -79,16 +81,31 @@
 | D54 | Point-level facts are rebuilt only when imports or mappings change (not on daily-table saves, rates or penalties) | Found during testing: every save triggered a 30–50 s rebuild that briefly blocked Force1/People figures |
 | D55 | Retired invoice/bills app in the same project: files deleted through the storage API; tables emptied of access with deny-all policies and its functions disabled (the connector cannot run DROP/TRUNCATE); owner runs `remove_old_invoice_app.sql` once to remove the empty shells | Owner chose "Delete invoice app data"; anyone with the public key could read or wipe it |
 
+| D56 | Bank branch universe = RBI IFSC directory (NEFT/RTGS lists, as compiled by the open `razorpay/ifsc` release v2.0.62, 1-Sep-2026), states with a live Crux location; sub-member (sublet) codes and non-numeric codes excluded except Bank of Baroda; 4,801 sponsored-RRB / co-operative rows marked ineligible | Authoritative, complete, refreshed monthly; IFSC entries run above reported branch counts (SBI ~8%) — L12 |
+| D57 | Non-bank lenders from their own official branch locators only; no scraping behind authentication, no bypass of HTTP 406 / bot controls; unresolved sources reported, never filled in | Addendum §1.2, §1.4 |
+| D58 | Territory = exact district → PIN rule → state default (`bi.location_territory`, 751 current rules, effective-dated) | Branch counts per Crux location need a deterministic, auditable rule |
+| D59 | Monthly monitor: cron on the 2nd (every 10 min 01:00–03:50 UTC until complete) → `bi.call_edge` → Edge Function with a job-scoped token; quiet skip when the source version is unchanged; >15% unseen ⇒ "source incomplete", nothing marked missing; a failed run never refreshes "last successful run" | Addendum §2; free-plan 150 s wall clock → resumable batches |
+| D60 | Lean branch storage: `branch_seen` (one narrow row per branch) instead of per-run copies; master updated only on change; history only for material changes | DB hit 414 MB during the first load |
+| D61 | Coverage = active with Crux ÷ verified branches matchable by code; website-listed branches (no codes) count in the universe but not in coverage, never-activated or opportunity (`bi_074`) | They cannot be matched to Force1 cases, so calling them "never activated" was unsupported |
+| D62 | Activation opportunity = median monthly cases of active peers (same client, same location, ≥5 peers); shown as an upper bound, never a forecast | Addendum: existing methodology, no invented figures |
+| D63 | Gemini models chosen by `models.list` + synthetic call: stable `gemini-2.5-flash` (thinking off) first, `gemini-3.5-flash-lite` on 429/5xx (15-min cool-down after a quota 429), embeddings `gemini-embedding-2` at 768 dimensions; re-validated monthly | All 3.x Flash models returned 503 on 14-Oct; stable preferred over `-latest` aliases |
+| D64 | AI summary may not contain figures: figures are masked before the model sees them, direction facts (ahead/behind, above/below target) are computed in code, and any summary with a figure, placeholder, echoed prompt or contradicting direction is dropped; the calculated answer is always shown | Gemini relabelled figures in earlier versions (v7) |
+| D65 | RAG corpus = approved definitions and methods only (77 documents); no operational records or personal data are embedded or sent | Addendum §4; privacy |
+| D66 | Client branch-list uploads match existing branches by normalised code; official-source rows are never overwritten (a different status opens a review) (`bi_072`) | Prevents duplicate "011789"/"11789" branches and low-confidence overwrites |
+| D67 | Storage cleanup limited to VACUUM FULL here; index removals handed to the owner (`owner_storage_cleanup.sql`); no business history deleted | Addendum §5.5; connector refuses DROP/DELETE |
+
 ## Open questions (need business confirmation)
 2. Confirm the D18 reading of tracker columns M and N.
 
 3. ~~Expense column L~~ — resolved 14-Oct: ignore (data incorrect).
 4. ~~SBI Car Loan+~~ — resolved 14-Oct: count in SBI, product Car Loan.
 5. 2-Oct-2026 has no tracker snapshot (holiday?) — mark it "no report" in the daily update table or enter it.
-6. Client branch lists (per client, with source and verification date) and the HR workforce list (joining/exit dates) — needed to switch on coverage and attrition.
-8. Gemini AI agents — API key (set as Supabase secret `GEMINI_API_KEY`), free or paid tier + monthly cap, market-news agent now or later, who sees AI output (all / admins; e-mail alerts?), language(s).
-9. Run `remove_old_invoice_app.sql` in the Supabase SQL editor and delete the empty "bills" bucket (one-time).
-7. Organic-business rule, market-event source/budget, GEMINI_API_KEY, storage plan (L8) — unchanged from earlier.
+6. ~~Client branch lists~~ — superseded 14-Oct by the source-verified master (D56–D57); client lists can still be uploaded and are matched safely (D66). HR workforce list (joining/exit dates) still needed for attrition.
+8. ~~Gemini key~~ — set as an Edge Function secret 14-Oct. **Still open:** the key was pasted in chat — rotate it in Google AI Studio, check its recent usage, then update the secret; free vs paid tier (free-tier prompts may be used by Google to improve products); market-news agent later?
+9. ~~Run `remove_old_invoice_app.sql`~~ — done 14-Oct (verified). Still open: delete the `ocr` bucket (public, 10.5 MB) and the empty `bills` bucket.
+7. Organic-business rule, market-event source/budget — unchanged from earlier.
+10. **Storage plan (decide before December):** upgrade to Pro, or approve a design for archiving visit history older than N months (STORAGE_AUDIT §7). Optional now: run `owner_storage_cleanup.sql` (~24 MB).
+11. Branch research gaps needing a decision or access: LIC Housing Finance (locator API needs a login), PNB Housing (site refuses automated requests), Axis Finance (no public locator), Toyota Financial (no list), BRT (client identity unclear) — L13.
 
 ## Requirement audit (14-Oct-2026)
 | Requirement (user, 14-Oct) | Work performed | Evidence / verification | Result |
@@ -114,3 +131,17 @@
 | 4) Penalty sheet | Table, admin API, grid report, form, cancel, Excel | T26; browser (admin form, viewer read-only) | Done |
 | 5) Remove references; 10-day analysis | Wording pass; potential section | Browser check: no "Case Wise / Point Wise / source sheet / Main Tracker / Sheet row" on Overview, Tracker, Growth; T28 (likely = Overview projection) | Done |
 | User suggestions 1–5 | ? explanations (auto on technical terms), Target / Achieved / Projection / Organic tiles, "Data up to" chip, zone highlights | Browser (desktop + 390 px) | Done |
+
+## Requirement audit — addendum a133084a (14-Oct-2026, night)
+| Requirement | Work performed | Evidence / verification | Result |
+|---|---|---|---|
+| §1.1–1.2 Research universe = every client family × every live location, official sources, provenance | 32 families × 36 live locations; RBI IFSC directory for banks; official locators for lenders; source, URL/version and verification date on every row | `api_branch_research` (1,152 combinations); T33 | Done; 216 combinations not researched and 80 without an established territory are reported, not hidden (L13) |
+| §1.3 Authoritative master, history, duplicates, status distinctions | `client_branch_master` extended; `client_branch_history` (effective-dated); `branch_review` for duplicates/conflicts; statuses active/closed/ineligible + verification status | 91,675 rows; 1,052 open duplicate candidates (not merged); T29 | Done |
+| §1.4 Conservative auto-update, no invented data | High-confidence source rows added automatically; absence ⇒ "status uncertain" + review; uploads never overwrite official rows | T29, T30, T24 (bi_072) | Done |
+| §1.5 Completeness metrics in the dashboard | Data quality → Client branch research & monthly monitor (tiles, by client, by location, runs) | Browser test (desktop + 390 px) | Done |
+| Integration (no new tab) | Business tracker → coverage by client/location, never activated, gone quiet, opportunity ceiling; Ask Crux branches answer | Browser test; T32 | Done |
+| §2 Monthly monitoring via Supabase Cron + protected Edge Function | `bi-branch-monitor` cron → `branch-monitor` (job token); resumable; logged in `job_run`; failures in Data quality | Run 14: 99 s, 0 new / 0 changed; T30 | Done (first scheduled run 2-Nov-2026) |
+| §3 Real Gemini in Ask Crux | Provider-independent adapter, models.list validation, synthetic test, retries/timeouts/quota cool-down, usage log without secrets, deterministic fallback, figure/direction guard | 7-question end-to-end run (`ask_e2e_v10.txt`); browser test shows AI summary + calculated answer | Done; key rotation is the owner's step (Q8) |
+| §4 Embeddings / RAG | `gemini-embedding-2` (768-d), model + dimension stored per chunk, daily sync of new chunks | T35; retrieval similarity 0.74–0.81 on definitions | Done |
+| §5 Utilisation and space audit | Inventory, dependency matrix, classification, cleanup, before/after, growth forecast | STORAGE_AUDIT.md; 428 → 413 MB | Done; owner decision Q10 |
+| §6 Integrated report | Final report in the conversation + docs | — | Done |
