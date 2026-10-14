@@ -9,10 +9,10 @@ Project `czdjbbhxboweawqbjywr` (free plan). Measured on 14-Oct-2026 from the liv
 | Free-plan database limit | 500 MB. Over the limit the project becomes **read-only** and cron jobs stop ([Supabase docs](https://supabase.com/docs/guides/platform/database-size)) |
 | Database `postgres` before this audit | 428 MB (448,457,875 bytes) |
 | Database `postgres` after safe cleanup | 413 MB (432,958,611 bytes) — **15.5 MB reclaimed** |
-| All databases (Supabase's own measure sums `template0/1`, about 7 MB each) | about 427 MB |
+| All databases (Supabase's own measure sums `template0/1`, about 7 MB each) | about 427 MB right after cleanup; 450,187,441 bytes (429 MiB) at the end of the session |
 | Object storage | 10.5 MB in 6 files, all in the public bucket `ocr` (retired invoice app); bucket `bills` is empty |
 | Growth rate (measured) | Force1 visits about 105–113 k rows per month since Jun-2026 (`point_store` + `point_derived` ≈ 320 bytes per visit), plus about 30 k cases per month → **about 40 MB per month** |
-| Projected read-only date at current growth | **around mid-December 2026** (about 73 MB headroom ÷ 40 MB per month). The owner script in §6 adds about 3 weeks. |
+| Projected read-only date at current growth | **between mid-November and early December 2026**: about 50 MB of headroom if Supabase counts the limit as 500,000,000 bytes, about 74 MB if it counts 500 MiB, at roughly 43 million bytes per month. The owner script in §6 adds about two weeks. |
 
 The main pressure is not waste: 72% of the database is raw Force1 visit and case history plus one derived cache of it. Cleanup alone cannot keep the project on the free plan for long. A decision is needed (see §7).
 
@@ -49,8 +49,8 @@ Categories: 1 dashboard, 2 indirect/derived, 3 history/audit/recovery, 4 AI/RAG/
 
 | Index | MB | Scans | Backs a constraint | Finding |
 |---|---:|---:|---|---|
-| point_derived_pkey | 21.0 | 0 | primary key | Unused: table is rebuilt by TRUNCATE + INSERT and read by month/location filters. Safe to drop (§6) |
-| branch_cov_mv_key | 2.7 | 0 | no | Unused: refresh is not CONCURRENTLY. Safe to drop (§6) |
+| point_derived_pkey | 21.0 | 0 at audit time; 1 after the independent review's checks | primary key | No production lookup by `point_id` found in function source; the table is rebuilt by TRUNCATE + INSERT. Low-risk to drop after re-checking the counter (§6) |
+| branch_cov_mv_key | 2.7 | 0 at audit time; 4 after test runs | no | Used by test queries; only 2.7 MB — **keep** |
 | client_branch_history_pkey | 2.1 | 0 | primary key | Keep: row identity for history |
 | point_store_case_id_idx | 9.7 | 170 | no | Keep: low-frequency but used |
 | point_store_created_month_recon_unit_idx, point_store_verified_by_id_idx | 5.1 each | 72 / 187 | no | Keep: used by monthly refreshes |
@@ -86,8 +86,7 @@ Rows deleted by me: none. The database connector used for this work refuses any 
 
 | Item | Saving | Risk | Why not done here |
 |---|---:|---|---|
-| Drop `point_derived_pkey` | 21 MB | Low — uniqueness already guaranteed by `point_store` PK | needs DROP; owner script §6 |
-| Drop `branch_cov_mv_key` | 2.7 MB | Low | needs DROP; owner script §6 |
+| Drop `point_derived_pkey` | 21 MB | Low — uniqueness already guaranteed by `point_store` PK; re-check the scan counter first | needs DROP; owner script §6 |
 | Delete bucket `ocr` (public, retired app) and empty bucket `bills` | 10.5 MB object storage (not database) | Low — no code references either bucket | Dashboard action |
 | Compact the 91,675 "first observed" history rows into the master's `first_observed` column | about 12 MB | Medium — loses per-branch source version of the first sighting | history is an addendum requirement; only if pressure remains after §7 |
 
@@ -97,11 +96,11 @@ Raw `point_store` and `case_store` history, `zt_row`, `audit_log`, mappings, Ask
 
 ## 6. Owner script
 
-`owner_storage_cleanup.sql` (sent with this report) runs a dry-run check, drops the two unused indexes with rollback lines, and re-checks coverage and Force1 endpoints. Expected: about 24 MB.
+`owner_storage_cleanup.sql` (sent with this report) runs a dry-run check (including the index scan counter), drops the unused `point_derived` primary-key index with a rollback line, and re-checks the coverage and Force1 endpoints. Expected: about 21 MB.
 
 ## 7. Decision needed: staying under 500 MB
 
-At about 40 MB of new Force1 data per month, the project reaches the free-plan limit around mid-December 2026 even after §6. Options:
+At about 40 MB of new Force1 data per month, the project reaches the free-plan limit between mid-November and early December 2026 even after §6. Options:
 
 1. **Upgrade to Pro** — from $25 per month with 8 GB disk per project, then $0.125 per GB ([Supabase pricing](https://supabase.com/pricing)). No code change; removes the risk for several years at the current rate.
 2. **Archive raw visit history** older than a chosen window (for example 6 months) to a compressed file in Storage, keeping monthly aggregates in the database. Saves about 35 MB per archived month but loses drill-down to individual visits for archived months unless restored. Needs a design and a tested restore path before any data leaves the database.

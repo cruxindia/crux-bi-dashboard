@@ -120,6 +120,7 @@ Automated: `select * from bi.run_addendum_tests();` (8 tests, every write rolled
 **Defects found and fixed during this round**
 - T24 failed after the new master: client-list uploads created a second row for a branch already in the RBI list when the code differed only by leading zeros, and did not refresh coverage → `bi_072` (match by normalised code, official rows never overwritten, refresh after upload).
 - T32 failed: 849 website-listed lender branches (no branch codes) were counted as "never activated" although they cannot be matched to Force1 cases → `bi_074` (excluded from never-activated and opportunity; matchable denominator shown).
+- Ask Crux overview answers quoted the run-rate projection (58,863) while the Overview tile shows the historical-curve projection (60,466) → `bi_075` quotes the Overview figure and names the run-rate alongside.
 - Ask Crux (v7–v9): Gemini relabelled or echoed figures and once called a below-target projection "solid progress" → v10 masks every figure, adds calculated direction facts, rejects any summary with figures, placeholders, prompt echoes or a contradicting direction.
 
 **Ask Crux end-to-end (Edge Function v10, live Gemini, 14-Oct 22:40 IST)**
@@ -137,7 +138,7 @@ Synthetic test (earlier today): `gemini-2.5-flash`, "Explain how AI works in a f
 
 **Monthly monitor**: forced full run #14 (manual_test) completed in one invocation (99 s): 17 bank clients compared with RBI IFSC v2.0.62 — 0 new, 0 changed, 0 no longer listed; a normal call afterwards quiet-skips (same source version).
 
-**Browser (local build against the live database, desktop and 390 px)**
+**Browser (live site after deploy, desktop and 390 px; page checksum = build)**
 | Check | Result |
 |---|---|
 | Data quality (viewer): research tiles (1,152 combinations, 73.1% researched, last run 0 days ago, 1,052 open reviews), by client / by location / runs tables; AI status tiles | Pass |
@@ -147,4 +148,17 @@ Synthetic test (earlier today): `gemini-2.5-flash`, "Explain how AI works in a f
 | 390 px: no horizontal overflow on Data quality | Pass |
 | Console errors | none |
 
-**Storage**: 428 → 413 MB by VACUUM FULL (no rows removed); see STORAGE_AUDIT.md.
+**Independent review (separate agent, read-only)** confirmed every count above, both test suites, the cron jobs, the live checksum and the absence of secrets (no Google key pattern in repo, migrations, logs or config; only anon-role JWTs). It found guard weaknesses in Ask Crux v10, fixed in v11 + `bi_076`:
+| Finding | Fix | Re-test |
+|---|---|---|
+| Small numbers (≤12) and number words passed the figure check | any digit (ASCII, full-width, Devanagari) or number/ratio word rejects the summary | unit test 8/8 |
+| Contradiction word lists narrow; no check where no fact exists | per-axis check (last month / target); a direction on an axis without a calculated fact is rejected; wider word lists | unit test 17/17 phrases |
+| "change 0" masked as an increase | masked as "(no change)" | code review |
+| Names in the question could reach Google; spaced phone/Aadhaar numbers not redacted | gateway `scrub` replaces employee / stakeholder / HR name tokens with [name] in question and evidence (fails closed); spaced digit runs redacted | SQL test (3 name tokens replaced, place and client names kept); node test of redaction |
+| Index scan counters changed after audit | `branch_cov_mv_key` kept; owner script limited to `point_derived_pkey` with a counter check | — |
+| Deadline unit ambiguity (MB vs MiB) | stated as mid-November to early December | — |
+
+Ask Crux v11 end-to-end (9 questions incl. injection, spaced phone number, definition-only): all answered; 9/9 AI summaries passed the stricter checks and contain no figures; projection answer now quotes the Overview figure (`ask_e2e_v11.txt`).
+
+**Storage**: 428 → 413 MB by VACUUM FULL (no rows removed); 415 MB at the end of the session; see STORAGE_AUDIT.md.
+| Regression run (Overview, Business tracker, Growth, admin rate preview, penalty form, 390 px) | Pass; no console errors |
