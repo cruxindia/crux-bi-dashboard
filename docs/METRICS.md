@@ -32,4 +32,10 @@
 | % Achmt (tracker view) | Actual revenue ÷ revenue target (Excel H = G/F), 0% when no target | row | |
 | ACHIEVED bar | █ × round(achievement × 20), capped at 150% | row | same as Excel REPT |
 | Daily count (tracker view) | MTD − previous snapshot's MTD in the same month; first snapshot of the month = MTD | row | |
+| Branch coverage | verified active branches with ≥ 1 Force1 case in the last 6 months ÷ verified active branches | client (filters: location/zone/stakeholder via branch location; client family) | needs the uploaded client branch list; codes matched ignoring leading zeros; closed/ineligible excluded |
+| Never-activated branch | verified active branch with no Force1 case since 1-Apr-2024 | branch | |
+| Gone-quiet verified branch | verified active branch whose last Force1 case is older than 6 months | branch | |
+| Opening / closing headcount | joined before month start and not exited before it / joined by month end and not exited by month end | month (workforce list) | needs the uploaded workforce list |
+| Attrition (month) | leavers in month ÷ ((opening + closing) ÷ 2) | month; by role; by location | not annualised |
+| Leaver workload | Point Wise points verified per month in the 3 months before the exit month | person | observed workload to reassign, not lost business; points after the exit month are flagged |
 | Compare (Growth) | A − B and (A − B) ÷ B for cases and revenue; snapshot = MTD on/before date; month = month-end history | any grouping | warns when not like-for-like |

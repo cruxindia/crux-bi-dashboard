@@ -16,9 +16,9 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | I | Achieved (graph) | `REPT("█",H×20)` | text | Not stored (presentation only) | H |
 | J | BD Revenue | Business-development revenue | ₹ | Stored as-is | M |
 | K | Shortfall | `G − F` | ₹ | | H |
-| L | Projected Expense | Projected monthly cost (salary + rent + other) | ₹ | Per block: larger of total-row value and sum of client rows; all-India from tracker total | M |
-| M | Shortfall | Revenue − expense (surplus / deficit); Zone A/Pan India rows use `G − K` (source inconsistency) | ₹ | Recomputed as revenue − expense | M |
-| N | YTD | Actually `G − 2×L`: surplus after covering expense twice — **not year-to-date** | ₹ | Recomputed as revenue − 2 × expense | M |
+| L | Projected Expense | Projected monthly cost (salary + rent + other) | ₹ | **Ignored (D39: business confirmed incorrect)** — not loaded into reports | — |
+| M | Shortfall | Revenue − expense | ₹ | **Ignored (D39)** | — |
+| N | YTD | `G − 2×L` in the source | ₹ | **Ignored (D39)** | — |
 | O | `<dd.mm.yyyy>` | Leaf: `E − prev MTD` (case delta). Totals: `G − prev revenue` (revenue delta) | mixed | Kept as `src_daily_value`; database recomputes deltas | H |
 | P,Q,R | Location/Client/Region (history side) | Labels for the history block (e.g. `SBI HL`) | text | Used as alias evidence | H |
 | S… | Month blocks | Per month: cases (`Actual MTD`/`Target MTD`), revenue, billing | num | Row 1 marker: month = month, year = 2000 + day | H (2026) / M (2024–25) |
@@ -51,3 +51,13 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | Completed Date | Point completion | Document/tele TAT end | H |
 | Address (U) / Pincode (V) | Location of visit | Address → `has_address` only; PIN kept | H |
 | PAN, Aadhaar, Bank A/c, applicant name/mobile, other reference numbers | PII | **Not ingested** | — |
+
+## Dashboard-maintained tables (entered in the app, not from source files)
+| Table | Holds | Key | Written by |
+|---|---|---|---|
+| `bi.zt_matrix_draft` / `bi.zt_matrix_meta` | Daily update table drafts (cumulative MTD per row × date) and per-date state | snapshot date × location × client | Upload centre → daily update table |
+| `bi.zt_reopen` | Corrections: who reopened a committed date and why | date | ✎ on a committed date |
+| `bi.zt_snapshot_archive` | Previous leaf values replaced by a correction | date × row × version | commit of a correction |
+| `bi.client` (`summary_under`, `product`) | Client hierarchy for client-wise totals (e.g. SBI Car Loan+ → SBI, product Car Loan) | client code | Data quality |
+| `bi.client_branch_master` | Verified client branch list: client, branch code/name, state, city, Crux location, status (active/closed/ineligible), opened/closed dates, source, verified on, confidence | client + branch code | Data quality → Master data |
+| `bi.workforce_master` | HR list: employee ID, name, role, classification, location, joining date, exit date, exit reason (admin only), source | employee ID (else name) | Data quality → Master data |

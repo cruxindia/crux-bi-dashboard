@@ -6,6 +6,8 @@
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
 
+**Status (14-Oct-2026, evening).** All requested items are built and deployed: Zonal Tracker replica, daily update table (daily counts or cumulative MTD, corrections), BUSINESS COUNT report, SBI Car Loan+ under SBI, expense columns removed, comparison, sort/expand/collapse/full screen. `bi_045`–`bi_050` add master-data uploads (client branch list, HR workforce list) with check-before-import, branch coverage (Business tracker) and headcount/attrition (People); both show an explanatory banner until a verified list is uploaded. **23/23 automated tests pass** (T01–T24; T17 is the browser check). DB 341 MB of 500 MB (L8). Tracker data: latest snapshot 9-Oct; 2-Oct, 10-Oct and 12–14-Oct are open in the daily update table.
+
 **Status (14-Oct-2026).** Point Wise now Jan → Oct-2026 (Aug 104,710 · Sep 112,640 · Oct 43,257 points; Jul 107,100 after replacement files); 18/18 tests pass. **DB 388 MB of 500 MB — storage decision needed (L8).** Front end: daily matrix entry (Upload centre), branch lifecycle (Business tracker + Overview), like-for-like (Growth), Ask Crux floating panel, WEF group editor (Data quality). **14-Oct (afternoon):** `bi_036`–`bi_040` applied (WEF mapping, date-aware tracker reports, LFL, Ask Crux month parsing, Zonal Tracker replica API, period comparison API, tests T20–T22). 21/21 tests pass. Business tracker rebuilt as a row-for-row replica of the Main Tracker sheet; expense columns hidden by default and labelled "as entered".
 
 **Status (12-Oct-2026, evening).** Public dashboard live on GitHub Pages; DB 195 MB after compaction; 17/17 tests pass; no newer source files in Drive (Point Wise ends Jul-2026).
@@ -60,6 +62,12 @@
 | D39 | Tracker expense columns L/M/N ignored everywhere (not displayed, not used) | Business: "that data and calculation is incorrect" |
 | D40 | Entry-table values matched across snapshots by location/client codes (labels change, e.g. Rajasthan move on 3-Oct) | Found 27 relabelled rows on 3-Oct during testing |
 | D41 | Drafts and corrections never deleted: `committed_batch` / `active` flags instead (also required because the connector cancels DELETE) | Audit trail + tooling constraint |
+| D42 | Branch coverage and attrition are computed only from uploaded, verified lists (client branch master; HR workforce master). Until uploaded, the screens say so — nothing is inferred from Force1 activity | Brief: never fabricate; Point Wise cannot tell a resignation from a quiet month |
+| D43 | Master uploads: template → "Check file" (server dry run, row-level errors with sheet row numbers) → Import valid rows; upsert by key (client + branch code; employee ID, else name); uploads never remove rows; every import audited | Same governance as the daily update table |
+| D44 | Coverage = verified active branches with a Force1 case in the last 6 months ÷ verified active branches; branch codes matched ignoring leading zeros; closed/ineligible excluded | Standard coverage definition; leading zeros differ between bank lists and Force1 |
+| D45 | Attrition (month) = leavers ÷ average of opening and closing headcount; leaver workload = Point Wise points per month in the 3 months before exit (observed workload, not lost business) | Common HR definition; workload link uses the Point Wise "Verified By" name |
+| D46 | Leaver names and exit reasons are admin-only (HR data); the public view shows role, location, exit date and workload | Public dashboard (D20) + data minimisation |
+| D47 | A 3-hour session token was created for browser testing and the code stash (expires automatically); the 12-Oct admin key is unchanged and exists only as a hash | Plaintext keys are never stored |
 
 ## Open questions (need business confirmation)
 2. Confirm the D18 reading of tracker columns M and N.
@@ -67,3 +75,18 @@
 3. ~~Expense column L~~ — resolved 14-Oct: ignore (data incorrect).
 4. ~~SBI Car Loan+~~ — resolved 14-Oct: count in SBI, product Car Loan.
 5. 2-Oct-2026 has no tracker snapshot (holiday?) — mark it "no report" in the daily update table or enter it.
+6. Client branch lists (per client, with source and verification date) and the HR workforce list (joining/exit dates) — needed to switch on coverage and attrition.
+7. Organic-business rule, market-event source/budget, GEMINI_API_KEY, storage plan (L8) — unchanged from earlier.
+
+## Requirement audit (14-Oct-2026)
+| Requirement (user, 14-Oct) | Work performed | Evidence / verification | Result |
+|---|---|---|---|
+| Explain expenses; then "ignore, incorrect" | Explained source (L/M/N); removed from API and UI | API/UI check; D39, L5 | Done |
+| Admin key | Explained; key unchanged | T16 (privileged actions need key) | Done |
+| Sort, expand/collapse tables | Click-to-sort on every table; foldable sections; full screen; tracker outline levels | Browser tests 14-Oct | Done |
+| Comparative analysis | Growth → Compare two periods; tracker Compare columns; like-for-like | T22; browser test | Done |
+| Business tracker = exact feel of the Zonal Tracker | Row-for-row replica, same colours/columns, levels, Excel export | T21; equal to Excel cached values; 0 subtotal mismatches | Done |
+| SBI Car Loan+ under SBI, product Car Loan | `client.summary_under`, `client.product` | Client-wise SBI 14,031 = tracker | Done |
+| Daily update table (SOW item) | Tracker-ordered entry grid, daily/MTD toggle, paste, validate, commit, corrections, no-report | T23; reconciles to v_zt_daily by codes | Done |
+| Reproduce Test Details + BUSINESS COUNT; penalty ₹ report-only | Entry ledger = daily update table; BUSINESS COUNT report | Equal to Training workbook (9-Oct) | Done; Penalty sheet available on request |
+| Finish all remaining pending | Master uploads, coverage, attrition (ready for data); tests; docs | T24; browser test of templates/check/import (import mocked to avoid test data in live master) | Done — waiting on the two lists (Q6) |

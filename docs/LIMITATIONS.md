@@ -9,15 +9,17 @@
 | L5 | Tracker expense block (L/M/N) is incorrect (business confirmed 14-Oct) | Ignored everywhere — not displayed, not used | — |
 | L6 | Historical tracker targets not in source | No historical achievement % | — |
 | L7 | 2,425 negative case TATs (mostly Guwahati), 1,353 points without a Case Wise case | Excluded / counted at point level only | Logged in `bi.dq_exception` |
-| L8 | Storage: DB 338 MB of 500 MB after cleanup on 14-Oct (was 388 MB; VACUUM FULL of point_store and staging). Point Wise adds ~110k points ≈ 40 MB/month | ~4 months of headroom | Decide before Feb-2027: archive points older than 18 months, or move to Supabase Pro (8 GB) |
+| L8 | Storage: DB 341 MB of 500 MB on 14-Oct evening (388 MB before VACUUM FULL). Point Wise adds ~110k points ≈ 40 MB/month | ~4 months of headroom | Decide before Feb-2027: archive points older than 18 months, or move to Supabase Pro (8 GB) |
 | L9 | Dashboard is public (anyone with the link can read business figures and employee names) | Business decision | `noindex`; rotate the link by renaming the repo if it leaks; admin functions need the key |
 | L13 | Anonymous API calls can be repeated by anyone (no rate limit) | Possible load spikes | Result cache absorbs repeats; Supabase rate limits apply |
 | L10 | Browser upload uses SheetJS 0.20.3 (inlined in artifact build) | — | Keep pinned; files from trusted internal sources only |
 | L11 | 1-Jul, 1-Sep, 1-Oct snapshots have no targets yet; 6–17 Jul and 1/3/4/5-Sep source totals disagree with leaf rows | Pan-India totals in those files unreliable | Leaf rows used; mismatches logged |
 | L12 | Udyam classification conflicts with brief | Possible misclassification of 1,189 points | Admin review in Data quality |
-| L15 | Branch universe = branches seen in Force1; no verified branch master | No coverage %, no never-activated branches | Supply client branch master (bi.client_branch_master) |
-| L16 | No workforce master (joining/exit dates) | Attrition not computed | Supply HR master |
+| L15 | No verified client branch list uploaded yet | Branch lifecycle covers only branches seen in Force1; coverage % and never-activated list show a banner | **Ready for data:** Data quality → Master data → Client branch master (template, check, import) |
+| L16 | No workforce list (joining/exit dates) uploaded yet | People → Headcount & attrition shows a banner | **Ready for data:** Data quality → Master data → Workforce master. People are matched to Point Wise by name unless names are spelt the same way, so workload links may be partial |
 | L17 | Ask Crux narrative needs GEMINI_API_KEY (not set) | Answers are the deterministic SQL text | Set the Edge Function secret; budget cap via GEMINI_DAILY_CAP |
 | L18 | ~~Interrupted loader batches #361/#366~~ | Resolved 14-Oct (marked rejected, staging rows cleared) | — |
 | L19 | Tracker replica recomputes subtotals from leaf rows; the source BD-revenue/Shortfall (J/K) totals use broken ranges (e.g. Mumbai+Goa BD ₹2,400 vs ₹1,200) | Small differences in J/K totals only; all target/MTD/revenue totals match | Fix the Excel formulas or accept dashboard values |
+| L21 | Master uploads are additive (upsert); a branch or person wrongly uploaded cannot be removed from the dashboard | Wrong rows persist | Re-upload with status `closed`/`ineligible` (branches) or an exit date (people); deletion needs a governed admin function if required |
+| L22 | One person without an employee ID in one upload and with it in another becomes two records | Headcount overstated | Always include employee_id |
 | L20 | Daily update rows come from the latest tracker snapshot; a brand-new location or client row still needs one full tracker upload. Back-dating a date that falls before a label change (e.g. 2-Oct) may need a full-file upload instead | — | Add row management to the entry table if structure changes often |

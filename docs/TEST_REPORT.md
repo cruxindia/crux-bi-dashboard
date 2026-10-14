@@ -75,3 +75,14 @@ Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenu
 | Expense columns absent from API and UI | Pass |
 | `run_acceptance_tests()` | 22/22 pass |
 | Storage after VACUUM FULL | 388 → 338 MB |
+
+## 14-Oct-2026 (evening) — master data, coverage, attrition (bi_045–bi_050)
+| Check | Result |
+|---|---|
+| T24 (rolled back, no residue): branch import 4 rows (leading-zero match, DD-Mon-YYYY and Excel-serial dates), re-import updates 1; coverage deltas +3 verified / +1 active / +1 never; dormant branch listed; workforce 4 rows → opening 2, joined 1, left 1, closing 2, attrition 50%; leaver workload = independent count (5,546.3 points/month) | Pass |
+| Dry run row errors: unknown client, bad status, missing date, repeated key (both rows, with sheet row numbers), exit before joining, invalid classification | Pass (browser + SQL) |
+| Public `bi_call('attrition')` hides leaver names; admin view unchanged; headcount identical | Pass |
+| `bi_admin('master_import')` without key → "admin key required"; anon has no access to schema `bi` | Pass |
+| Browser (admin): templates download with 4 / 3 sheets (42 clients, 37 locations); check file shows 7 rows → 2 valid / 5 problems and 5 rows → 1 valid / 4 problems; Import sends 7 rows + editor (server response mocked so no test rows enter the live master) | Pass |
+| Browser (viewer, 390 px): master upload hidden behind admin gate; People and Business tracker show the "upload the list" banners; no horizontal overflow | Pass; only console error = favicon 404 |
+| `run_acceptance_tests()` | 23/23 pass |
