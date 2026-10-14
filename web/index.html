@@ -33,7 +33,20 @@ nav button[aria-current="page"]{border-left-color:var(--blue);background:var(--b
 nav button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 nav .fresh{margin:18px;font-size:12px;color:var(--muted);line-height:1.6}
 main{min-width:0}
-.filters{position:sticky;top:57px;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 22px;display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.fbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;min-width:0;max-width:46vw}
+.fbtn svg{flex:none}.fbtn #fSum{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fbtn .cnt{background:var(--blue);color:var(--panel);border-radius:999px;padding:0 7px;font-size:12px;font-weight:600}
+.fbtn .fl{display:none}.brand{white-space:nowrap}.fbtn[aria-expanded="true"]{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-soft)}
+.filters{position:fixed;top:calc(var(--hdr,57px) + 6px);right:12px;z-index:46;width:min(420px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:12px 14px;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;overflow-x:hidden}
+.filters label{min-width:0}.filters select{min-width:0;width:100%;max-width:100%}
+.filters.open{display:grid}.filters .fhead{grid-column:1/-1;display:flex;align-items:center;gap:8px}.filters .fhead strong{flex:1}.filters #fCur{grid-column:1/-1;margin:0;font-size:12px}
+.fscrim,.ddscrim{position:fixed;inset:0;background:rgba(0,0,0,.32);display:none}.fscrim{z-index:45}.ddscrim{z-index:49;top:var(--hdr,57px)}.fscrim.on,.ddscrim.on{display:block}
+#dd{position:fixed;top:var(--hdr,57px);right:0;bottom:0;width:min(660px,100vw);background:var(--panel);color:var(--ink);z-index:50;box-shadow:-10px 0 30px rgba(0,0,0,.22);display:flex;flex-direction:column;transform:translateX(105%);visibility:hidden;transition:transform .18s ease,visibility .18s}
+#dd.open{transform:none;visibility:visible}#dd .ddh{padding:10px 14px 8px;border-bottom:1px solid var(--line)}#dd .ddrow{display:flex;gap:6px;align-items:center}#dd h2{flex:1;margin:0;font-size:17px}
+#dd .crumbs{font-size:12.5px;color:var(--muted);margin-top:4px}#dd .ddb{flex:1;overflow:auto;padding:12px 14px calc(18px + env(safe-area-inset-bottom))}.lnk{background:none;border:0;padding:0;color:var(--blue);cursor:pointer;font:inherit;text-decoration:underline}
+.dd-row{cursor:pointer}.dd-row:hover>td,.dd-row:focus>td{box-shadow:inset 0 0 0 999px var(--blue-soft)}.dd-row:focus{outline:2px solid var(--blue);outline-offset:-2px}
+.tile.dd,.dd-li{cursor:pointer}.tile.dd:hover,.tile.dd:focus{border-color:var(--blue);outline:none}.tile.dd .k::after{content:' ›';color:var(--blue)}.dd-li:hover,.dd-li:focus{background:var(--blue-soft);outline:none}
+body.ddopen,body.fopen{overflow:hidden}
+@media (max-width:820px){.filters{top:auto;left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;grid-template-columns:minmax(0,1fr);max-height:85vh;padding-bottom:calc(14px + env(safe-area-inset-bottom))}.filters select{min-width:0;width:100%;padding:9px 8px}#fSum{display:none}.fbtn .fl{display:inline}#dd{width:100vw;top:0}#dd .ddh{padding-top:calc(10px + env(safe-area-inset-top))}.ddscrim{top:0}.fbtn{max-width:50vw}}
 .filters label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
 .filters select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);min-width:130px}
 .mode{margin-left:12px;font-size:12px;color:var(--muted)}
@@ -82,7 +95,7 @@ tr:hover td{background:var(--blue-soft)}
 .login{max-width:380px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:24px}
 .login input{width:100%;padding:8px;margin:6px 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .hidden{display:none!important}
-@media (max-width:820px){.grid2{grid-template-columns:1fr}.big{font-size:34px}.filters{position:static}.topbar .mode{display:none}}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}.big{font-size:34px}.topbar .mode{display:none}}
 .split{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:16px}
 .formula{font:500 13px/1.5 var(--fn);color:var(--muted);margin-top:4px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -146,7 +159,7 @@ th .qi{width:14px;height:14px;font-size:9px}
 <body>
 <div id="login" class="login hidden"><h2>Crux Business Intelligence</h2><p id="loginMsg" class="note"></p></div>
 <div class="app hidden" id="app">
-<header class="topbar"><button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">&#9776;</button><div class="brand">Crux BI<small id="secTitle">Overview</small></div><span class="asof" id="asof" style="margin-left:auto"></span><span class="mode" id="modeLbl"></span></header>
+<header class="topbar"><button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">&#9776;</button><div class="brand">Crux BI<small id="secTitle">Overview</small></div><button type="button" class="fbtn" id="fBtn" aria-haspopup="dialog" aria-controls="fpanel" aria-expanded="false" style="margin-left:auto"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18l-7 8v6l-4 2v-8z"/></svg><span id="fSum">Filters</span><span class="fl">Filters</span><span class="cnt" id="fCnt" hidden>0</span></button><span class="asof" id="asof"></span><span class="mode" id="modeLbl"></span></header>
 <div class="scrim" id="scrim"></div>
 <nav aria-label="Sections" id="drawer">
  <h1>Crux BI</h1><div class="sub">Zonal business &amp; operations</div>
@@ -154,7 +167,9 @@ th .qi{width:14px;height:14px;font-size:9px}
  <div class="fresh" id="fresh">Loading data freshness…</div>
 </nav>
 <main>
- <div class="filters" role="group" aria-label="Filters">
+ <div class="filters" id="fpanel" role="dialog" aria-label="Filters">
+  <div class="fhead"><strong>Filters</strong><button type="button" class="btn sm" id="fReset">Reset</button><button type="button" class="btn sm primary" id="fClose">Done</button></div>
+  <p class="note" id="fCur"></p>
   <label>Month<select id="fMonth"></select></label>
   <label>Stakeholder<select id="fStake"><option value="">All</option></select></label>
   <label>Region<select id="fRegion"><option value="">All</option></select></label>
@@ -164,6 +179,8 @@ th .qi{width:14px;height:14px;font-size:9px}
  </div>
  <div id="view"></div>
 </main>
+<div class="fscrim" id="fscrim"></div><div class="ddscrim" id="ddscrim"></div>
+<aside id="dd" role="dialog" aria-modal="true" aria-labelledby="ddTitle"><div class="ddh"><div class="ddrow"><button type="button" class="btn sm" id="ddBack" aria-label="Back">‹ Back</button><h2 id="ddTitle">Details</h2><button type="button" class="btn sm" id="ddAsk" title="Ask Crux about this selection">Ask Crux</button><button type="button" class="btn sm" id="ddReset" title="Back to the first level">Reset</button><button type="button" class="btn sm" id="ddClose" aria-label="Close details">✕</button></div><nav class="crumbs" id="ddCrumbs" aria-label="Drill-down path"></nav></div><div class="ddb" id="ddBody"></div></aside>
 </div>
 <script src="extract.js"></script>
 <script>
@@ -182,7 +199,7 @@ function sqlFor(fn,a){const m=a.month,f=a.filters||{};const g=k=>{const v=a.grou
  case'zonal':return`bi.api_zonal(${dt(a.snapshot)},${js(f)})`;case'daily':return`bi.api_daily(${dt(m)},${js(f)})`;case'monthly':return`bi.api_monthly(${dt(a.from)},${dt(a.to)},${js(f)},${g('monthly')})`;
  case'force':return`bi.api_force(${dt(m)},${js(f)})`;case'force_trend':return`bi.api_force_trend(${js(f)})`;case'case_tat':return`bi.api_case_tat(${dt(m)},${js(f)},${g('case_tat')})`;
  case'point_tat':return`bi.api_point_tat(${dt(m)},${js(f)},${g('point_tat')})`;case'manual_tat':return`bi.api_manual_tat(${dt(m)},${js(f)})`;case'employees':return`bi.api_employees(${dt(m)},${js(f)})`;
- case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
+ case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
  throw new Error('unknown fn '+fn)}
 function parseSqlPayload(p){let rows=p;if(p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.result==='string')p=p.result;
  if(typeof p==='string'){const m=p.match(/<untrusted-data-[^>]+>\s*([\s\S]*?)\s*<\/untrusted-data-/);rows=JSON.parse(m?m[1]:p)}
@@ -193,7 +210,7 @@ function mcpErr(e){const c=e&&e.code;const msg={server_not_connected:'The Supaba
  const er=new Error(msg||((c?c+': ':'')+(e&&e.message||e)));er.code=c;return er}
 async function api(fn,args={}){if(S.mode==='mcp')return mcpSql(`select ${sqlFor(fn,args)} as r`);
  const {data,error}=await S.sb.rpc('bi_call',{p_fn:fn,p_args:S.adminKey?{...args,admin_key:S.adminKey}:args});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);return data}
-async function adminCall(action,p){if(S.mode==='mcp'){if(action==='verify')return{ok:true};if(action==='mapping_update')return mcpSql(`select bi.api_mapping_update(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='refresh_employees')return mcpSql(`select jsonb_build_object('employees',bi.refresh_employee_classification()) as r`);if(action==='master_import')return mcpSql(`select bi.master_import(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='rate')return mcpSql(`select bi.rate_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='penalty')return mcpSql(`select bi.penalty_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='branch')return mcpSql(`select bi.branch_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`)}
+async function adminCall(action,p){if(S.mode==='mcp'){if(action==='verify')return{ok:true};if(action==='mapping_update')return mcpSql(`select bi.api_mapping_update(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='refresh_employees')return mcpSql(`select jsonb_build_object('employees',bi.refresh_employee_classification()) as r`);if(action==='master_import')return mcpSql(`select bi.master_import(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='rate')return mcpSql(`select bi.rate_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='penalty')return mcpSql(`select bi.penalty_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='branch')return mcpSql(`select bi.branch_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='mapping_retarget')return mcpSql(`select bi.mapping_retarget(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`)}
  const {data,error}=await S.sb.rpc('bi_admin',{p_action:action,p:{...p,admin_key:S.adminKey}});if(error)throw new Error(error.message);return data}
 async function ingest(action,payload){if(S.mode==='mcp')return mcpSql(`select bi.ingest_as(${lit('connector:'+(S.email||'owner'))},${lit(action)},${js(payload)}) as r`);
  const {data,error}=await S.sb.rpc('bi_ingest',{p_token:S.adminKey,p_action:action,p_payload:payload});if(error)throw new Error(error.message);return data}
@@ -206,7 +223,7 @@ async function boot(){
  try{S.meta=await api('meta')}catch(e){$('#login').classList.remove('hidden');showLoginMsg('Could not load data: '+e.message);return}
  if(S.mode==='supabase'){S.role=S.meta.role||'viewer'}
  $('#app').classList.remove('hidden');$('#modeLbl').textContent=S.mode==='mcp'?'Live via your Supabase connector':(S.role==='admin'?'Admin unlocked':'Read-only view');
- initFilters();renderFresh();buildNav();askInit();go(location.hash.slice(1)||'overview')}
+ initFilters();fpRestore();fpInit();ddInit();renderFresh();buildNav();askInit();go(location.hash.slice(1)||'overview')}
 function showLoginMsg(t){$('#loginMsg').textContent=t}
 
 
@@ -223,7 +240,7 @@ function initFilters(){const m=S.meta;const mo=$('#fMonth');m.months.forEach(x=>
  uniq(L.map(l=>l.stakeholder)).forEach(v=>$('#fStake').append(el('option',{value:v},v)));uniq(L.map(l=>l.region)).forEach(v=>$('#fRegion').append(el('option',{value:v},v)));
  const zones={};L.forEach(l=>zones[l.zone_group]=l.zone_label);Object.entries(zones).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,v])=>$('#fZone').append(el('option',{value:k},v)));
  fillLoc();m.client_families.forEach(v=>$('#fFam').append(el('option',{value:v},v)));
- ['#fMonth','#fStake','#fRegion','#fZone','#fLoc','#fFam'].forEach(s=>$(s).addEventListener('change',()=>{if(s!=='#fLoc'&&s!=='#fMonth'&&s!=='#fFam')fillLoc();render()}))}
+ ['#fMonth','#fStake','#fRegion','#fZone','#fLoc','#fFam'].forEach(s=>$(s).addEventListener('change',()=>{if(s!=='#fLoc'&&s!=='#fMonth'&&s!=='#fFam')fillLoc();fpSum();fpSave();render()}))}
 function fillLoc(){const f=filters(),cur=$('#fLoc').value,s=$('#fLoc');s.innerHTML='<option value="">All</option>';S.meta.locations.filter(l=>l.zone_group&&(!f.stakeholder||l.stakeholder===f.stakeholder)&&(!f.region||l.region===f.region)&&(!f.zone_group||l.zone_group===f.zone_group)).sort((a,b)=>a.label.localeCompare(b.label)).forEach(l=>s.append(el('option',{value:l.id},l.label)));if([...s.options].some(o=>o.value===cur))s.value=cur}
 function renderFresh(){const fr=S.meta.freshness;const d2=v=>v?ddmm(String(v).slice(0,10)):'–';
  const lines=[`Business figures: up to ${d2(fr.zonal_latest_snapshot)}`,`Force1 cases: up to ${d2(fr.case_latest_received_ist)}`,`Force1 visits: up to ${d2(fr.point_latest_created_ist)}`];
@@ -235,12 +252,12 @@ function noPointData(m){const lm=String(S.meta.freshness.point_latest_created_is
  return el('div',{class:'banner'},el('p',{style:'margin:0 0 8px'},`No Force1 visit data for ${mlabel(m)} yet. Visit data currently runs to ${mlabel(lm)}; an admin can add newer data in the Upload centre.`),
   has?el('button',{class:'btn primary',onclick:()=>{$('#fMonth').value=lm;render()}},'Show '+mlabel(lm)):null)}
 function kill(){S.charts.forEach(c=>c.destroy());S.charts=[]}
-function chart(canvas,cfg){const css=getComputedStyle(document.documentElement);Chart.defaults.color=css.getPropertyValue('--muted').trim();Chart.defaults.borderColor=css.getPropertyValue('--line').trim();Chart.defaults.font.family="'Archivo',system-ui";const c=new Chart(canvas,cfg);S.charts.push(c);return c}
+function chart(canvas,cfg){const css=getComputedStyle(document.documentElement);Chart.defaults.color=css.getPropertyValue('--muted').trim();Chart.defaults.borderColor=css.getPropertyValue('--line').trim();Chart.defaults.font.family="'Archivo',system-ui";if(cfg.drill){const dr=cfg.drill;cfg.options=cfg.options||{};cfg.options.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'};cfg.options.onClick=(e,els)=>{if(!els.length)return;const cx=dr(els[0].datasetIndex,els[0].index);if(cx)setTimeout(()=>DD.go(cx,canvas),0)};delete cfg.drill;canvas.setAttribute('aria-label','Chart — click a bar or point for details')}const c=new Chart(canvas,cfg);S.charts.push(c);return c}
 const C=()=>{const s=getComputedStyle(document.documentElement);return{blue:s.getPropertyValue('--blue').trim(),ochre:s.getPropertyValue('--ochre').trim(),bad:s.getPropertyValue('--bad').trim(),good:s.getPropertyValue('--good').trim(),muted:s.getPropertyValue('--muted').trim()}};
 function tile(k,v,n,cls){return el('div',{class:'tile'},el('div',{class:'k'},k),el('div',{class:'v '+(cls||'')},v),n?el('div',{class:'n'},n):null)}
 function csv(rows,cols,name){const esc=v=>{v=v==null?'':String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};const t=[cols.map(c=>esc(c.label)).join(','),...rows.map(r=>cols.map(c=>esc(c.raw?c.raw(r):r[c.key])).join(','))].join('\n');
  const save=async()=>{if(window.claude&&claude.use){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data:t});return}}catch(e){if(e&&e.code==='cancelled')return}}const a=el('a',{href:URL.createObjectURL(new Blob([t],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()};save()}
-function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[]}={}){
+function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[],rowAction=null}={}){
  const wrap=el('div');const hidden=new Set(defaultHidden);let q='',sk=null,sd=1,page=0;
  const tw=el('div',{class:'tablewrap'});const info=el('span',{class:'note'});
  const tools=el('div',{class:'tools'},search?el('input',{type:'search',placeholder:'Search this table',oninput:e=>{q=e.target.value.toLowerCase();page=0;draw()},'aria-label':'Search table'}):null,
@@ -250,7 +267,8 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
  function view(){let r=rows;if(q)r=r.filter(x=>cols.some(c=>String(c.raw?c.raw(x):x[c.key]??'').toLowerCase().includes(q)));if(sk){const c=cols.find(c=>c.key===sk);const v=x=>c.raw?c.raw(x):x[sk];r=[...r].sort((a,b)=>{const A=v(a),B=v(b);return(A==null)-(B==null)||(A>B?1:A<B?-1:0)*sd})}return r}
  function draw(){const r=view(),vc=cols.filter(c=>!hidden.has(c.key));const pages=Math.max(1,Math.ceil(r.length/pageSize));page=Math.min(page,pages-1);
   const t=el('table',{},el('thead',{},el('tr',{},vc.map(c=>el('th',{class:c.num?'num':'',scope:'col',tabindex:0,onclick:()=>{sd=sk===c.key?-sd:(c.num?-1:1);sk=c.key;draw()},onkeydown:e=>{if(e.key==='Enter')e.currentTarget.click()},title:'Click to sort'},c.label,el('span',{class:'sorti'},sk===c.key?(sd>0?' ▲':' ▼'):' ↕'))))),
-   el('tbody',{},r.slice(page*pageSize,(page+1)*pageSize).map(x=>el('tr',{},vc.map(c=>{const v=c.fmt?c.fmt(x[c.key],x):x[c.key];return el('td',{class:c.num?'num':''},v&&v.nodeType?v:(v??'–'))})))));
+   el('tbody',{},r.slice(page*pageSize,(page+1)*pageSize).map(x=>{const tr=el('tr',{},vc.map(c=>{const v=c.fmt?c.fmt(x[c.key],x):x[c.key];return el('td',{class:c.num?'num':''},v&&v.nodeType?v:(v??'–'))}));
+    if(rowAction){const cx=rowAction(x);if(cx)ddRow(tr,()=>cx,cx.title)}return tr})));
   tw.innerHTML='';tw.append(t);info.textContent=`${fmt(r.length)} rows`+(pages>1?` · page ${page+1}/${pages}`:'');pager.innerHTML='';if(pages>1){pager.append(el('button',{class:'btn',onclick:()=>{page=Math.max(0,page-1);draw()}},'Previous'),' ',el('button',{class:'btn',onclick:()=>{page=Math.min(pages-1,page+1);draw()}},'Next'))}}
  const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();return wrap}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
@@ -276,9 +294,10 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    tl('Achieved so far',fmt(ov.mtd_cases),`${pct(ov.achievement)} of target · up to ${ddmm(ov.as_of||'')}`,'',hint('achievement')),
    tl('Projection — month end',fc.available&&fc.curve_projection?fmt(fc.curve_projection):'–',fc.available&&fc.curve_range?`range ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} · ${pct(fc.curve_achievement)} of target`:'needs 2+ months of daily reports','',hint('projection')),
    og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null))}
+ {const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((fc,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:fc}))})}
  const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f);
  const f2=ov.force||{},ct=ov.case_tat||{};
- s.append(el('div',{class:'tiles'},tile('Achievement',pct(ov.achievement),`Shortfall ${fmt(ov.shortfall_cases)} cases`,ov.achievement<(wpace||0)?'bad':''),
+ s.append(el('div',{class:'tiles ovsec'},tile('Achievement',pct(ov.achievement),`Shortfall ${fmt(ov.shortfall_cases)} cases`,ov.achievement<(wpace||0)?'bad':''),
   tile('Latest daily change',fmt(ov.latest_change),`${ov.prev_snapshot||''} → ${ov.as_of||''} (${(ov.latest_change_basis||'').replace(/_/g,' ')})`),
   tile('Revenue (MTD)',inr(ov.revenue_actual),`${pct(ov.revenue_achievement)} of ${inr(ov.revenue_target)}`),
   tile('Same day last month',fmt(ov.prev_month_same_day&&ov.prev_month_same_day.mtd),ov.prev_month_same_day?'as of '+ov.prev_month_same_day.snapshot:''),
@@ -286,9 +305,12 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
   tile('Force1 utilisation (cases)',pct(f2.usage_pct),`${fmt(f2.force_cases)} of ${fmt(f2.tracker_cases_covered)} cases went through Force1; ${fmt(f2.tracker_cases_not_covered)} cases are in locations not yet on Force1 reports`),
   tile('Case TAT (median)',hrs(ct.median_hours),`P90 ${hrs(ct.p90_hours)} · ${fmt(ct.completed_valid)} completed`),
   tile('SLA met',pct(ct.sla_met_pct),`Against each case's due time in Force1; ${fmt(ct.open)} open`,ct.sla_met_pct<.8?'warn':'')));
+ {const st=s.querySelectorAll('.ovsec .tile');const lastD=daily[daily.length-1];const pm=S.meta.months[S.meta.months.indexOf(m)+1];
+  if(st[0])ddTile(st[0],()=>bizCtx(m,f,{focus:'mtd'}));if(st[1]&&lastD)ddTile(st[1],()=>({kind:'day',title:'Report '+ddmm(lastD.date),date:lastD.date,change:lastD.change,mtd:lastD.mtd,basis:lastD.basis,f}));
+  if(st[3])ddTile(st[3],()=>bizCtx(m,f,{focus:'previous'}));if(st[4]&&pm)ddTile(st[4],()=>bizCtx(pm,f,{title:ctxTitle(f)+' — '+mlabel(pm)}));if(st[5])ddTile(st[5],()=>({kind:'info',title:'Force1 utilisation',text:'Force1 utilisation is broken down by location group in the Force1 utilisation section; each group there opens its locations.'}))}
  const g=el('div',{class:'grid2'});const c1=el('canvas');g.append(el('div',{class:'card'},el('h3',{},'Daily additions and MTD'),el('div',{class:'chartbox'},c1),el('div',{class:'note'},'Daily change = cases added since the previous report. Orange bars cover more than one day (e.g. after a holiday).')));
  const insBox=el('div',{class:'card'},el('h3',{},'What needs attention'));(ins||[]).slice(0,10).forEach(i=>insBox.append(el('div',{class:'insight '+(i.type||'')},i.text,el('small',{},[i.type,i.evidence&&i.evidence.as_of].filter(Boolean).join(' · ')))));if(!(ins||[]).length)insBox.append(el('p',{class:'note'},'No material findings for this selection.'));g.append(insBox);s.append(g);
- const cc=C();chart(c1,{data:{labels:daily.map(d=>d.date.slice(5)),datasets:[{type:'bar',label:'Added since previous report',data:daily.map(d=>d.change),backgroundColor:daily.map(d=>d.basis==='one_working_day'||d.basis==='from_month_start'?cc.blue:cc.ochre),yAxisID:'y'},{type:'line',label:'MTD',data:daily.map(d=>d.mtd),borderColor:cc.muted,pointRadius:2,yAxisID:'y1'}]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
+ const cc=C();chart(c1,{drill:(ds,i)=>{const d=daily[i];return d?{kind:'day',title:'Report '+ddmm(d.date),date:d.date,change:d.change,mtd:d.mtd,basis:d.basis,f}:null},data:{labels:daily.map(d=>d.date.slice(5)),datasets:[{type:'bar',label:'Added since previous report',data:daily.map(d=>d.change),backgroundColor:daily.map(d=>d.basis==='one_working_day'||d.basis==='from_month_start'?cc.blue:cc.ochre),yAxisID:'y'},{type:'line',label:'MTD',data:daily.map(d=>d.mtd),borderColor:cc.muted,pointRadius:2,yAxisID:'y1'}]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
  const opp=el('div',{class:'card',style:'margin-top:14px'});s.append(opp);topOpportunities(opp,f);
 });
 
@@ -313,7 +335,7 @@ const vForce1=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=awa
  s.append(el('h3',{},'By location group'),table(d.by_unit,[{key:'recon_unit',label:'Location group'},{key:'tracker_cases',label:'Tracker cases',num:1,fmt:fmt},{key:'force1_cases',label:'Force1 cases',num:1,fmt:fmt},{key:'case_utilisation',label:'Case Force1 %',num:1,fmt:ch},
   {key:'f1_field',label:'Field by field execs',num:1,fmt:fmt},{key:'manual_field',label:'Field manual (back office)',num:1,fmt:fmt},{key:'field_utilisation',label:'Field Force1 %',num:1,fmt:ch},{key:'unverified_field',label:'Unverified',num:1,fmt:fmt},
   {key:'field_execs',label:'Field execs',num:1,fmt:fmt},{key:'back_office_staff',label:'Back office',num:1,fmt:fmt},{key:'field_points_per_exec',label:'Field pts / exec',num:1,fmt:fmt},{key:'back_office_points_per_person',label:'Pts / back-office person',num:1,fmt:fmt},
-  {key:'f1_field_tat_hours',label:'Field TAT (exec)',num:1,fmt:hrs},{key:'manual_field_tat_hours',label:'Field TAT (manual)',num:1,fmt:hrs}],{name:`force1_${m}.csv`}));
+  {key:'f1_field_tat_hours',label:'Field TAT (exec)',num:1,fmt:hrs},{key:'manual_field_tat_hours',label:'Field TAT (manual)',num:1,fmt:hrs}],{name:`force1_${m}.csv`,rowAction:r=>r.recon_unit?{kind:'unit',title:r.recon_unit+' (location group)',unit:r.recon_unit,m,f}:null}));
 });
 
 /* ---------- Business tracker: Zonal Tracker replica ---------- */
@@ -405,7 +427,7 @@ function ztRender(host,J,model){host.innerHTML='';const cols=ztCols(J);const grp
   if(x.kind==='sec'){tb.append(el('tr',{class:'zt-sec'},el('td',{colspan:ncol,class:'stk0'},x.title)));return}
   if(x.kind==='zh'){const open=ZT.zones[x.z]!=='closed';const b=el('button',{class:'zt-tg','aria-expanded':String(open),'aria-label':(open?'Collapse ':'Expand ')+x.z},open?'▾':'▸');
    b.onclick=()=>{ZT.zones[x.z]=open?'closed':'open';ztRender(host,J,model)};
-   tb.append(el('tr',{class:'zt-zh',style:`background:${ZTF.zh}`},el('td',{colspan:2,class:'stk0'},b,' ',x.z),el('td',{colspan:ncol-2})));return}
+   const zr=el('tr',{class:'zt-zh',style:`background:${ZTF.zh}`},el('td',{colspan:2,class:'stk0'},b,' ',x.z),el('td',{colspan:ncol-2}));{const cx=ztCtx(x,J,filters());if(cx)ddRow(zr,()=>cx)}tb.append(zr);return}
   const [a,bl]=ztLabels(x);const tot=x.t!=='leaf';const bold=['zone_total','location_total','summary'].includes(x.t)||(x.t==='stakeholder_summary'&&/^total$/i.test((x.loc||'').trim()));const tr=el('tr',{class:'zt-r'+(bold?' tot':'')+(x.t==='leaf'?' leaf':''),style:`background:${ztFill(x)}`});
   const c0=el('td',{class:'stk0'});
   if(x.t==='location_total'&&!x.zoneLevel){const open=ZT.blocks[x.blk]!=='closed';const b=el('button',{class:'zt-tg','aria-expanded':String(open),'aria-label':(open?'Collapse ':'Expand ')+x.loc},open?'▾':'▸');b.onclick=e=>{e.stopPropagation();ZT.blocks[x.blk]=open?'closed':'open';ztRender(host,J,model)};c0.append(b,' ')}
@@ -418,6 +440,7 @@ function ztRender(host,J,model){host.innerHTML='';const cols=ztCols(J);const grp
    if(c.orgq&&x.org!=null){const oc=ztOrgCell(J,x,'otd');if(oc)td.append(' ',oc.ex)}
    if(x.t==='leaf'&&x.rate&&(c.k==='rev'||c.k==='rtgt'))td.title=`Rate ₹${zn(x.rate)} per case`;
    tr.append(td)});
+  {const cx=ztCtx(x,J,filters());if(cx)ddRow(tr,()=>cx)}
   tb.append(tr)});
  t.append(tb);host.append(el('div',{class:'zt-wrap'},t))}
 
@@ -516,11 +539,11 @@ const vGrowth=guard(async s=>{const f=filters();const months=S.meta.months;const
  async function load(){box.innerHTML='Loading…';const rows=await api('monthly',{from,to,filters:f,group:gsel.value});box.innerHTML='';
   const ms=[...new Set(rows.map(r=>r.month))].sort();const keys=[...new Set(rows.map(r=>r.key))];const tot={};rows.forEach(r=>tot[r.key]=(tot[r.key]||0)+(r.cases||0));keys.sort((a,b)=>tot[b]-tot[a]);const top=keys.slice(0,8);
   const cv=el('canvas');box.append(el('div',{class:'card'},el('div',{class:'chartbox',style:'height:320px'},cv)));const pal=['#1E4F8F','#C2892B','#2D7A57','#B23A30','#6B5CA5','#3E8EA8','#8A6D3B','#5A6676'];
-  chart(cv,{type:'line',data:{labels:ms.map(mlabel),datasets:top.map((k,i)=>({label:k,data:ms.map(m=>{const r=rows.find(x=>x.key===k&&x.month===m);return r?r.cases:null}),borderColor:pal[i],backgroundColor:pal[i],pointRadius:2,spanGaps:false}))},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false}}});
+  chart(cv,{type:'line',drill:(ds,i)=>entityCtx(gsel.value,top[ds],ms[i],f),data:{labels:ms.map(mlabel),datasets:top.map((k,i)=>({label:k,data:ms.map(m=>{const r=rows.find(x=>x.key===k&&x.month===m);return r?r.cases:null}),borderColor:pal[i],backgroundColor:pal[i],pointRadius:2,spanGaps:false}))},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false}}});
   const byKey={};rows.forEach(r=>{(byKey[r.key]=byKey[r.key]||{})[r.month]=r});const last=ms[ms.length-1],prev=ms[ms.length-2];const ly=ms.find(m=>m===(+last.slice(0,4)-1)+last.slice(4));
   const prevFull=ms[ms.length-2],prev2=ms[ms.length-3];
   const t=keys.map(k=>{const a=byKey[k];return{key:k,last:a[last]&&a[last].cases,prev:a[prev]&&a[prev].cases,ly:ly&&a[ly]&&a[ly].cases,mom_full:(a[prevFull]&&a[prev2]&&a[prev2].cases)?a[prevFull].cases/a[prev2].cases-1:null,rev_prev:a[prev]&&a[prev].revenue,billing_prev:a[prev]&&a[prev].billing,source:a[last]&&a[last].source}});
-  box.append(el('h3',{},'Comparison'),table(t,[{key:'key',label:'Group'},{key:'last',label:mlabel(last)+(last===S.meta.months[0]?' (MTD)':''),num:1,fmt:fmt},{key:'prev',label:mlabel(prev),num:1,fmt:fmt},{key:'mom_full',label:`MoM ${mlabel(prevFull)} vs ${mlabel(prev2)}`,num:1,fmt:v=>v==null?'–':el('span',{class:v<0?'bad':'good'},pct(v))},{key:'ly',label:ly?mlabel(ly):'Same month last year',num:1,fmt:fmt},{key:'rev_prev',label:'Revenue '+mlabel(prev),num:1,fmt:inr},{key:'billing_prev',label:'Billing '+mlabel(prev),num:1,fmt:inr}],{name:'growth.csv'}),
+  box.append(el('h3',{},'Comparison'),table(t,[{key:'key',label:'Group'},{key:'last',label:mlabel(last)+(last===S.meta.months[0]?' (MTD)':''),num:1,fmt:fmt},{key:'prev',label:mlabel(prev),num:1,fmt:fmt},{key:'mom_full',label:`MoM ${mlabel(prevFull)} vs ${mlabel(prev2)}`,num:1,fmt:v=>v==null?'–':el('span',{class:v<0?'bad':'good'},pct(v))},{key:'ly',label:ly?mlabel(ly):'Same month last year',num:1,fmt:fmt},{key:'rev_prev',label:'Revenue '+mlabel(prev),num:1,fmt:inr},{key:'billing_prev',label:'Billing '+mlabel(prev),num:1,fmt:inr}],{name:'growth.csv',rowAction:r=>entityCtx(gsel.value,r.key,last,f)}),
    el('p',{class:'note'},'Month-over-month compares two complete months, never a partial month with a full one. Billing is blank where it has not been entered. Targets are available from the current month onward.'))}
  gsel.onchange=load;await load();const og=el('div');s.append(og);organicSection(og,to,f);const lf=el('div');s.append(lf);lflSection(lf,to,f);const cp=el('div');s.append(cp);compareSection(cp,f)});
 
@@ -569,12 +592,12 @@ const vQuality=guard(async s=>{s.append(el('h2',{},'Data quality & mapping'),el(
  const [ex,mq]=await Promise.all([api('exceptions'),api('mapping_queue')]);
  const act=(kind,idk,opts)=>(v,row)=>{const sel=el('select',{'aria-label':'Review status'},opts.map(o=>el('option',{value:o},o)));sel.value=v;sel.onchange=async()=>{try{await adminCall('mapping_update',{kind,[idk]:row[idk],status:sel.value})}catch(e){alert(e.message);sel.value=v}};return sel};
  s.append(el('h3',{},'Exceptions'),table(ex.recent||[],[{key:'id',label:'#',num:1},{key:'rule',label:'Rule'},{key:'severity',label:'Severity'},{key:'source_category',label:'Source'},{key:'record_key',label:'Record'},{key:'detail',label:'Evidence',fmt:v=>JSON.stringify(v).slice(0,160),raw:r=>JSON.stringify(r.detail)},{key:'status',label:'Status',fmt:act('dq','id',['open','accepted','resolved'])},{key:'created_at',label:'Logged',fmt:v=>String(v).slice(0,16)}],{name:'exceptions.csv'}));
- if(mq.locations)s.append(el('h3',{},'Location aliases'),table(mq.locations,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'location',label:'Maps to'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'evidence',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,120):'–',raw:r=>JSON.stringify(r.evidence)},{key:'status',label:'Review',fmt:act('location_alias','id',['auto','confirmed','rejected','needs_review'])}],{name:'location_aliases.csv'}));
+ if(mq.locations)s.append(el('h3',{},'Location aliases'),table(mq.locations,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'location',label:'Maps to'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'evidence',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,120):'–',raw:r=>JSON.stringify(r.evidence)},{key:'status',label:'Review',fmt:act('location_alias','id',['auto','confirmed','rejected','needs_review'])},{key:'id',label:'Correct',fmt:(v,row)=>mapFixBtn('location_alias',row),raw:r=>r.id}],{name:'location_aliases.csv'}));
  if(mq.point_types)s.append(el('h3',{},'Point type classification'),table(mq.point_types,[{key:'name',label:'Point type'},{key:'category',label:'Category',fmt:(v,row)=>{const sel=el('select',{'aria-label':'Category'},['field','document','tele','unknown'].map(o=>el('option',{value:o},o)));sel.value=v;sel.onchange=async()=>{try{await adminCall('mapping_update',{kind:'point_type',name:row.name,category:sel.value,status:'confirmed'})}catch(e){alert(e.message)}};return sel}},{key:'rule',label:'Rule'},{key:'evidence',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,120):'–'},{key:'review_status',label:'Review'},{key:'reviewed_by',label:'Reviewed by'}],{name:'point_types.csv'}));
  const gw=el('div');s.append(gw);groupUI(gw);
  const mdw=el('div');s.append(mdw);masterUI(mdw);
  const rvw=el('div');s.append(rvw);branchReviewSection(rvw);
- if(mq.clients)s.append(el('h3',{},'Client aliases'),table(mq.clients,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'client_code',label:'Client'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'status',label:'Review'}],{name:'client_aliases.csv'}));
+ if(mq.clients)s.append(el('h3',{},'Client aliases'),table(mq.clients,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'client_code',label:'Client'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'status',label:'Review'},{key:'alias',label:'Correct',fmt:(v,row)=>mapFixBtn('client_alias',row),raw:r=>''}],{name:'client_aliases.csv'}));
 });
 
 /* ---------- Admin key ---------- */
@@ -587,8 +610,8 @@ const ST={growing:'Growing',stable:'Stable',new:'New',reactivated:'Reactivated',
 const stLabel=v=>ST[v]||v;
 function topOpportunities(box,f){box.append(el('h3',{},'Top branch opportunities'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  api('branches',{filters:f}).then(b=>{msg.remove();const top=(b.priority||[]).slice(0,5);if(!top.length){box.append(el('p',{class:'note'},'No branch signals for this filter.'));return}
-  box.append(el('ol',{class:'opps'},top.map(p=>el('li',{},el('strong',{},`${p.client} · ${p.branch}`),` — ${stLabel(p.status)}, ${fmt(p.prior3m)} → ${fmt(p.last3m)} cases (prior vs last 3 months)`,
-   p.est_opportunity_monthly>0?` · est. +${fmt(p.est_opportunity_monthly)}/month vs peers`:'',el('small',{},' '+(p.recon_unit||p.location||''))))),
+  box.append(el('ol',{class:'opps'},top.map(p=>ddEl(el('li',{},el('strong',{},`${p.client} · ${p.branch}`),` — ${stLabel(p.status)}, ${fmt(p.prior3m)} → ${fmt(p.last3m)} cases (prior vs last 3 months)`,
+   p.est_opportunity_monthly>0?` · est. +${fmt(p.est_opportunity_monthly)}/month vs peers`:'',el('small',{},' '+(p.recon_unit||p.location||''))),()=>({kind:'branch',title:p.branch,fam:famOf(p.client)||p.client,code:p.branch_code}),p.branch))),
    el('p',{class:'note'},'Branches seen in Force1 cases only. Opportunity values are peer-based estimates, not confirmed leakage. Full list: Business tracker → Branch lifecycle.'))})
  .catch(e=>{msg.textContent='Branch data unavailable: '+e.message})}
 async function branchSection(box,f){box.append(el('h3',{},'Branch lifecycle & opportunities'));const msg=el('p',{class:'note'},'Loading branch signals…');box.append(msg);
@@ -598,7 +621,7 @@ async function branchSection(box,f){box.append(el('h3',{},'Branch lifecycle & op
  box.append(el('h4',{},'Priority list (largest recoverable volume first)'),table(b.priority||[],[{key:'client',label:'Client'},{key:'branch',label:'Branch'},{key:'branch_code',label:'Code'},{key:'recon_unit',label:'Location group'},{key:'stakeholder',label:'Stakeholder'},
   {key:'status',label:'Status',fmt:stc},{key:'prior3m',label:'Prior 3 m',num:1,fmt:fmt},{key:'last3m',label:'Last 3 m',num:1,fmt:fmt},{key:'peer_median_monthly',label:'Peer median / m',num:1,fmt:fmt},
   {key:'est_opportunity_monthly',label:'Est. opportunity / m',num:1,fmt:fmt},{key:'priority_cases_per_month',label:'Priority (cases / m)',num:1,fmt:fmt},{key:'confidence',label:'Confidence'},{key:'action',label:'Suggested action'},
-  {key:'first_seen',label:'First seen',fmt:mlabel},{key:'last_seen',label:'Last seen',fmt:mlabel}],{name:'branch_priority.csv',defaultHidden:['branch_code','peer_median_monthly','first_seen']}));
+  {key:'first_seen',label:'First seen',fmt:mlabel},{key:'last_seen',label:'Last seen',fmt:mlabel}],{name:'branch_priority.csv',defaultHidden:['branch_code','peer_median_monthly','first_seen'],rowAction:r=>r.branch_code?{kind:'branch',title:r.branch,fam:famOf(r.client)||r.client,code:r.branch_code}:null}));
  if(b.by_client)box.append(el('h4',{},'By client'),table(b.by_client,[{key:'client_code',label:'Client'},{key:'branches_seen',label:'Branches seen',num:1,fmt:fmt},{key:'active',label:'Active',num:1,fmt:fmt},{key:'growing',label:'Growing',num:1,fmt:fmt},
   {key:'losing',label:'Losing',num:1,fmt:fmt},{key:'dormant',label:'Dormant',num:1,fmt:fmt},{key:'verified_total',label:'Verified branch master',num:1,fmt:v=>v?fmt(v):'not supplied'}],{name:'branch_by_client.csv',search:false}));
  const me=b.method||{};box.append(el('details',{class:'note'},el('summary',{},'How these are calculated'),['universe','window','rules','opportunity'].filter(k=>me[k]).map(k=>el('p',{},me[k]))));
@@ -696,11 +719,11 @@ async function coverageSection(box,f){box.append(el('h3',{},'Branch coverage vs 
   tile('Coverage',pct(t.coverage_6m),`active with Crux ÷ ${fmt(t.verified_matchable??t.verified_active)} branches matchable by code`,t.coverage_6m!=null&&t.coverage_6m<0.5?'warn':''),tile('Never activated',fmt(t.never_activated),'code-matchable, no Force1 case in the available history',t.never_activated?'bad':''),
   o.indicative_cases_per_month!=null?tile('Indicative activation ceiling',fmt(o.indicative_cases_per_month)+' / month',`upper bound across ${fmt(o.never_activated_with_peer_benchmark)} never-activated branches — not a forecast`):null));
  box.append(el('h4',{},'By client'),table(c.by_client||[],[{key:'client_code',label:'Client'},{key:'matching',label:'Matched by'},{key:'verified_active',label:'Verified active',num:1,fmt:fmt},{key:'active_with_crux_6m',label:'Active with Crux (6 m)',num:1,fmt:fmt},{key:'coverage_6m',label:'Coverage',num:1,fmt:pct},
-  {key:'ever_with_crux',label:'Ever with Crux',num:1,fmt:fmt},{key:'never_activated',label:'Never activated',num:1,fmt:fmt},{key:'status_uncertain',label:'Status uncertain',num:1,fmt:fmt},{key:'closed_or_ineligible',label:'Closed / ineligible',num:1,fmt:fmt},{key:'last_verified',label:'List verified on'}],{search:false,name:'branch_coverage_by_client.csv'}));
- if((c.by_location||[]).length)box.append(el('h4',{},'By Crux location'),table(c.by_location,[{key:'location',label:'Crux location'},{key:'verified_active',label:'Verified active',num:1,fmt:fmt},{key:'verified_matchable',label:'Matchable by code',num:1,fmt:fmt},{key:'active_with_crux_6m',label:'Active with Crux (6 m)',num:1,fmt:fmt},{key:'coverage_6m',label:'Coverage',num:1,fmt:pct}],{search:false,name:'branch_coverage_by_location.csv'}));
+  {key:'ever_with_crux',label:'Ever with Crux',num:1,fmt:fmt},{key:'never_activated',label:'Never activated',num:1,fmt:fmt},{key:'status_uncertain',label:'Status uncertain',num:1,fmt:fmt},{key:'closed_or_ineligible',label:'Closed / ineligible',num:1,fmt:fmt},{key:'last_verified',label:'List verified on'}],{search:false,name:'branch_coverage_by_client.csv',rowAction:r=>entityCtx('client',r.client_code,$('#fMonth').value,f)}));
+ if((c.by_location||[]).length)box.append(el('h4',{},'By Crux location'),table(c.by_location,[{key:'location',label:'Crux location'},{key:'verified_active',label:'Verified active',num:1,fmt:fmt},{key:'verified_matchable',label:'Matchable by code',num:1,fmt:fmt},{key:'active_with_crux_6m',label:'Active with Crux (6 m)',num:1,fmt:fmt},{key:'coverage_6m',label:'Coverage',num:1,fmt:pct}],{search:false,name:'branch_coverage_by_location.csv',rowAction:r=>entityCtx('location',r.location,$('#fMonth').value,f)}));
  if((c.never_activated||[]).length)box.append(el('h4',{},'Never activated — verified branches with no Force1 case'+(c.never_activated.length>=500?' (largest 500 by peer benchmark)':'')),table(c.never_activated,[{key:'client',label:'Client'},{key:'branch_code',label:'Code'},{key:'ifsc',label:'IFSC'},{key:'branch',label:'Branch'},{key:'type',label:'Type'},{key:'city',label:'City'},{key:'district',label:'District'},{key:'state',label:'State'},{key:'location',label:'Crux location'},
-  {key:'peer_cases_per_month',label:'Peer benchmark (cases / m)',num:1,fmt:v=>v==null?'–':(+v).toFixed(1)},{key:'confidence',label:'List confidence'},{key:'verified_on',label:'Verified on'},{key:'opened_on',label:'Opened'}],{name:'never_activated_branches.csv',defaultHidden:['ifsc','type','district','opened_on']}));
- if((c.dormant_verified||[]).length)box.append(el('h4',{},'Gone quiet — verified branches with no case in the last 6 months'),table(c.dormant_verified,[{key:'client',label:'Client'},{key:'branch_code',label:'Code'},{key:'branch',label:'Branch'},{key:'location',label:'Crux location'},{key:'last_case_month',label:'Last case',fmt:mlabel},{key:'cases_total',label:'Cases in history',num:1,fmt:fmt}],{name:'dormant_verified_branches.csv'}));
+  {key:'peer_cases_per_month',label:'Peer benchmark (cases / m)',num:1,fmt:v=>v==null?'–':(+v).toFixed(1)},{key:'confidence',label:'List confidence'},{key:'verified_on',label:'Verified on'},{key:'opened_on',label:'Opened'}],{name:'never_activated_branches.csv',defaultHidden:['ifsc','type','district','opened_on'],rowAction:r=>({kind:'branch',title:r.branch,fam:r.client,code:r.branch_code})}));
+ if((c.dormant_verified||[]).length)box.append(el('h4',{},'Gone quiet — verified branches with no case in the last 6 months'),table(c.dormant_verified,[{key:'client',label:'Client'},{key:'branch_code',label:'Code'},{key:'branch',label:'Branch'},{key:'location',label:'Crux location'},{key:'last_case_month',label:'Last case',fmt:mlabel},{key:'cases_total',label:'Cases in history',num:1,fmt:fmt}],{name:'dormant_verified_branches.csv',rowAction:r=>({kind:'branch',title:r.branch,fam:r.client,code:r.branch_code})}));
  box.append(el('p',{class:'note'},`${fmt(c.force_branches_not_in_master)} branch codes seen in Force1 for these clients are not in the verified list — codes may be written differently in Force1, or the branch may be an office the source does not list.`),
   el('details',{class:'note'},el('summary',{},'How coverage is calculated, and its limits'),el('p',{},c.method||''),
    el('p',{},'The IFSC directory lists every office that has an IFSC, so for some banks it runs above the bank\'s own branch count (for SBI about 8% above a published branch count). Coverage is therefore a conservative figure.'),
@@ -845,8 +868,8 @@ function potentialSection(box,month,f){const gs=el('select',{'aria-label':'Poten
 async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance'));const host=el('div',{class:'grid2'});box.append(host);
  let O,P;try{[O,P]=await Promise.all([api('organic',{month,filters:f,group:'zone',measure:'cases'}),api('potential',{month,filters:f,group:'zone',measure:'cases'})])}catch(e){box.append(el('p',{class:'note'},'Zone view unavailable: '+e.message));return}
  const pz={};((P&&P.rows)||[]).forEach(r=>pz[r.group]=r);const rows=(O.rows||[]).filter(r=>r.organic_to_date>=100).map(r=>({...r,p:pz[r.group]||{}}));
- const line=r=>el('li',{},el('strong',{},r.group),` — ${fmt(r.actual)} so far vs organic ${fmt(r.organic_to_date)} → ${r.effort>=0?'+':'−'}${fmt(Math.abs(r.effort))}${sgnp(r.effort_pct)}`,
-  r.p.achievement_likely!=null?`; likely ${pct(r.p.achievement_likely)} of target`:'',' ',orgExplainRow(O,r));
+ const line=r=>ddEl(el('li',{},el('strong',{},r.group),` — ${fmt(r.actual)} so far vs organic ${fmt(r.organic_to_date)} → ${r.effort>=0?'+':'−'}${fmt(Math.abs(r.effort))}${sgnp(r.effort_pct)}`,
+  r.p.achievement_likely!=null?`; likely ${pct(r.p.achievement_likely)} of target`:'',' ',orgExplainRow(O,r)),()=>entityCtx('zone',r.group,month,f),r.group);
  const good=rows.filter(r=>r.status==='above').sort((a,b)=>b.effort_pct-a.effort_pct).slice(0,4),bad=rows.filter(r=>r.status==='below').sort((a,b)=>a.effort_pct-b.effort_pct).slice(0,4);
  host.append(el('div',{class:'card'},el('h4',{style:'margin:0 0 6px;color:var(--good)'},'Doing well — above organic'),good.length?el('ul',{class:'hl'},good.map(line)):el('p',{class:'note'},'No zone is more than 5% above its organic level yet.')),
   el('div',{class:'card'},el('h4',{style:'margin:0 0 6px;color:var(--bad)'},'Needs attention — below organic'),bad.length?el('ul',{class:'hl'},bad.map(line)):el('p',{class:'note'},'No zone is more than 5% below its organic level.')));
@@ -867,7 +890,7 @@ function lflSection(box,month,f){const lg=el('select',{'aria-label':'Like-for-li
   bx.append(el('div',{class:'tiles'},tile('MTD as of '+a.current_snapshot,fmt(a.total_current)),tile('Same point last month',fmt(a.total_previous),a.comparison_snapshot?'as of '+a.comparison_snapshot:'no comparable snapshot'),
     tile('Like-for-like change',d==null?'–':(d>=0?'+':'')+fmt(d),d!=null&&a.total_previous?pct(d/a.total_previous):'',d==null?'':d<0?'bad':'good')),
    table(a.rows||[],[{key:'group',label:lg.value[0].toUpperCase()+lg.value.slice(1)},{key:'previous',label:'Same point last month',num:1,fmt:fmt},{key:'current',label:'Current MTD',num:1,fmt:fmt},
-    {key:'change',label:'Change',num:1,fmt:v=>el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':'')+fmt(v))}],{name:`lfl_${month}_${lg.value}.csv`}),
+    {key:'change',label:'Change',num:1,fmt:v=>el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':'')+fmt(v))}],{name:`lfl_${month}_${lg.value}.csv`,rowAction:r=>entityCtx(lg.value,r.group,month,f)}),
    el('p',{class:'note'},'Latest report of the month vs last month\'s report on or before the same day; month-to-date values are compared, never summed. For effort vs business-as-usual, see "Organic vs actual" above.'))}
   catch(e){bx.innerHTML='';bx.append(el('p',{class:'note'},'Like-for-like unavailable: '+e.message))}}
  lg.onchange=load;load()}
@@ -1068,8 +1091,8 @@ function businessCountSection(box,month,f){let meas='revenue';const segB=el('div
  load()}
 
 /* ---------- Penalty sheet (date × location, ₹; admin entry with mandatory reason) ---------- */
-function penaltySection(box,month,f){const host=el('div'),form=el('div');const xb=el('button',{class:'btn'},'Export to Excel');let J=null;
- box.append(el('h3',{},'Penalties — by date and location'),el('p',{class:'note'},'₹ penalties charged to Crux. Only admins can add or cancel a penalty, and every entry needs a reason. For reporting only — revenue figures are not reduced.'),el('div',{class:'tools'},xb),host,form);
+function penaltySection(box,month,f,manage=false){const host=el('div'),form=el('div');const xb=el('button',{class:'btn'},'Export to Excel');let J=null;
+ box.append(el('h3',{},'Penalties — by date and location'),el('p',{class:'note'},manage?'Add or cancel ₹ penalties charged to Crux. Every entry needs a reason; cancelled entries stay in the audit trail. Revenue figures are not reduced.':'₹ penalties charged to Crux, for reporting only — revenue figures are not reduced.'),el('div',{class:'tools'},xb),host,form);
  async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading…'));
   try{J=await api('penalty',{month,filters:f})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},'Penalties unavailable: '+e.message));return}
   host.innerHTML='';if(!J||J.error){host.append(el('div',{class:'banner'},(J&&J.error)||'Not available yet.'));return}
@@ -1086,11 +1109,11 @@ function penaltySection(box,month,f){const host=el('div'),form=el('div');const x
   const E=J.entries||[];
   if(E.length)host.append(el('h4',{},'Penalty entries'),table(E,[{key:'date',label:'Date',fmt:ddmm},{key:'location',label:'Location'},{key:'client',label:'Client',fmt:v=>v||'—'},{key:'amount',label:'Amount',num:1,fmt:inr},
     ...(J.reasons_hidden?[]:[{key:'reason',label:'Reason'},{key:'reference',label:'Reference'},{key:'by',label:'Entered by'}]),
-    ...(S.role==='admin'?[{key:'id',label:'',fmt:v=>{const b=el('button',{class:'btn'},'Cancel');b.onclick=async()=>{const why=prompt('Cancel this penalty? It stays in the audit trail. Reason:');if(!why||why.trim().length<5){if(why!==null)alert('A reason of 5+ characters is required.');return}
+    ...(manage&&S.role==='admin'?[{key:'id',label:'',fmt:v=>{const b=el('button',{class:'btn'},'Cancel');b.onclick=async()=>{const why=prompt('Cancel this penalty? It stays in the audit trail. Reason:');if(!why||why.trim().length<5){if(why!==null)alert('A reason of 5+ characters is required.');return}
       try{await adminCall('penalty',{op:'void',id:v,reason:why.trim(),editor:(localStorage.getItem('crux_editor')||'').trim()});await load()}catch(e){alert(e.message)}};return b}}]:[])],{search:E.length>10,name:`penalties_${String(J.month).slice(0,7)}.csv`}),
    J.reasons_hidden?el('p',{class:'note'},'Reasons are visible to admins.'):null);
   else host.append(el('p',{class:'note'},'No penalties recorded for '+mlabel(J.month)+'.'))}
- function drawForm(){form.innerHTML='';if(S.role!=='admin'){form.append(el('p',{class:'note'},'Admins can add penalties after unlocking with the admin key (Data quality or Upload centre).'));return}
+ function drawForm(){form.innerHTML='';if(!manage){form.append(el('p',{class:'note'},'Read-only report. Penalties are added and cancelled in Upload centre → Penalties (admin key required).'));return}if(S.role!=='admin'){form.append(el('p',{class:'note'},'Unlock with the admin key to add or cancel penalties.'));return}
   const today=new Date(Date.now()+19800000).toISOString().slice(0,10);
   const dI=el('input',{type:'date','aria-label':'Penalty date',value:today,max:today});
   const lS=el('select',{'aria-label':'Location'},el('option',{value:''},'Choose location'),S.meta.locations.filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label)).map(l=>el('option',{value:l.id},l.label)));
@@ -1159,6 +1182,148 @@ async function groupUI(box){box.append(el('h3',{},'Groups & mappings (WEF-dated)
   :el('p',{class:'note'},'No changes yet. The mappings loaded on 1-Apr-2024 are the starting point.'))}catch(e){hist.textContent='Error: '+e.message}}
  loadHist()}
 
+function ddEl(n,fn,label){n.classList.add('dd-li');n.tabIndex=0;n.setAttribute('role','button');if(label)n.setAttribute('aria-label',label+' — open details');
+ n.onclick=e=>{if(e.target.closest('button,a,input,select,.qpop'))return;DD.go(fn(),n)};n.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target===n){e.preventDefault();DD.go(fn(),n)}};return n}
+function ddRow(tr,fn){tr.classList.add('dd-row');tr.tabIndex=0;tr.title='Open details';
+ tr.onclick=e=>{if(e.target.closest('button,a,input,select,textarea,summary,label,details,.qi,.qpop'))return;DD.go(fn(),tr)};tr.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target===tr){e.preventDefault();DD.go(fn(),tr)}};return tr}
+// Business tracker adapter: a tracker row → drill-down context (rows without a matching entity stay plain)
+function ztCtx(x,J,f){const m=J.report_month||$('#fMonth').value;const L=S.meta.locations||[];const lid=x.lid||((L.find(l=>l.label===x.loc)||{}).id);
+ if(x.kind==='zh'){const a=entityFilter('zone',x.z);return a?bizCtx(m,{...f,...a}):null}
+ switch(x.t){case 'leaf':{if(!lid)return null;const fam=famOf(x.cc||x.cli);return fam?bizCtx(m,{...f,location_id:lid,client_family:fam},{p:{client_code:x.cc},clientLabel:x.cli}):bizCtx(m,{...f,location_id:lid})}
+  case 'location_total':return lid?bizCtx(m,{...f,location_id:lid}):null;
+  case 'zone_total':{const a=entityFilter('zone',x.z||x.loc);return a?bizCtx(m,{...f,...a}):null}
+  case 'zone_client_rollup':{const a=entityFilter('zone',x.z),fam=famOf(x.cc||x.cli);return a&&fam?bizCtx(m,{...f,...a,client_family:fam},{clientLabel:x.cli}):null}
+  case 'summary':{const lab=(x.loc||'').trim();if(/^pan india$/i.test(lab))return bizCtx(m,f);const a=entityFilter('zone',lab)||entityFilter('region',lab);return a&&Object.keys(a).length?bizCtx(m,{...f,...a}):null}
+  case 'client_summary':{const fam=famOf(x.cc||x.loc||x.cli);return fam?bizCtx(m,{...f,client_family:fam},{clientLabel:x.loc}):null}
+  case 'stakeholder_summary':{const lab=(x.loc||'').trim();if(/^total$/i.test(lab))return bizCtx(m,f);const a=entityFilter('stakeholder',lab);return a?bizCtx(m,{...f,...a}):null}}
+ return null}
+/* ---------- Floating filter control (header button + popover / bottom sheet) ---------- */
+const FKEYS=['#fStake','#fRegion','#fZone','#fLoc','#fFam'];
+function fpSheet(){return matchMedia('(max-width:820px)').matches}
+function fpSet(o){const p=$('#fpanel'),b=$('#fBtn');if(!p)return;p.classList.toggle('open',o);b.setAttribute('aria-expanded',String(o));$('#fscrim').classList.toggle('on',o&&fpSheet());
+ if(o){S.fpAt=JSON.stringify([$('#fMonth').value,filters()]);DD.suspend();const s=p.querySelector('select');if(s)s.focus()}
+ else{const changed=S.fpAt&&S.fpAt!==JSON.stringify([$('#fMonth').value,filters()]);S.fpAt=null;DD.resume(changed)}}
+function fpSum(){const f=filters(),n=Object.keys(f).length,txt=s=>{const o=$(s).selectedOptions[0];return o?o.textContent:''};
+ const bits=[mlabel($('#fMonth').value)];if(f.stakeholder)bits.push(f.stakeholder);if(f.region)bits.push(f.region);if(f.zone_group)bits.push(txt('#fZone'));if(f.location_id)bits.push(txt('#fLoc'));if(f.client_family)bits.push(f.client_family);
+ $('#fSum').textContent=bits.join(' · ');const c=$('#fCnt');c.textContent=n;c.hidden=!n;$('#fBtn').setAttribute('aria-label','Filters: '+bits.join(', ')+(n?` (${n} active)`:''));
+ $('#fCur').textContent=n?`${n} filter${n>1?'s':''} active: `+bits.slice(1).join(' · '):'Showing all locations and clients'}
+function fpSave(){try{sessionStorage.setItem('crux_filters',JSON.stringify({m:$('#fMonth').value,s:$('#fStake').value,r:$('#fRegion').value,z:$('#fZone').value,l:$('#fLoc').value,c:$('#fFam').value}))}catch{}}
+function fpRestore(){let o=null;try{o=JSON.parse(sessionStorage.getItem('crux_filters')||'null')}catch{}if(!o)return;
+ const put=(s,v)=>{const e=$(s);if(v!=null&&[...e.options].some(x=>x.value===String(v)))e.value=String(v)};put('#fMonth',o.m);put('#fStake',o.s);put('#fRegion',o.r);put('#fZone',o.z);fillLoc();put('#fLoc',o.l);put('#fFam',o.c)}
+function fpInit(){const p=$('#fpanel'),b=$('#fBtn');b.onclick=()=>fpSet(!p.classList.contains('open'));$('#fClose').onclick=()=>{fpSet(false);b.focus()};$('#fscrim').onclick=()=>fpSet(false);
+ $('#fReset').onclick=()=>{FKEYS.forEach(s=>$(s).value='');fillLoc();fpSum();fpSave();render()};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&p.classList.contains('open')){fpSet(false);b.focus()}});
+ document.addEventListener('pointerdown',e=>{if(p.classList.contains('open')&&!p.contains(e.target)&&!b.contains(e.target)&&!fpSheet())fpSet(false)});fpSum()}
+
+/* ---------- Shared drill-down drawer ---------- */
+const LV={zone:'Zone',location:'Location',client:'Client',branch:'Branch (Force1 cases)'};
+function nextLevel(f){return f.location_id?(f.client_family?'branch':'client'):f.zone_group?'location':'zone'}
+function locById(id){return (S.meta.locations||[]).find(l=>String(l.id)===String(id))}
+function zoneLabel(code){const l=(S.meta.locations||[]).find(x=>x.zone_group===code);return l?l.zone_label:code}
+function famOf(code){const c=(S.meta.clients||[]).find(x=>x.code===code||x.label===code);return c?c.family:null}
+function ctxTitle(f,extra){const p=[];if(f.stakeholder)p.push(f.stakeholder);if(f.region)p.push(f.region+' region');if(f.zone_group&&!f.location_id)p.push(zoneLabel(f.zone_group));
+ if(f.location_id){const l=locById(f.location_id);p.push(l?l.label:'Location '+f.location_id)}if(f.client_family)p.push(extra||f.client_family);return p.length?p.join(' · '):'Pan India'}
+// a business-performance context; base = global filters at the moment of the click
+function bizCtx(m,f,o={}){const ff={...f};return{kind:'biz',m,f:ff,level:o.level||nextLevel(ff),p:o.p||{},focus:o.focus||'mtd',title:o.title||ctxTitle(ff,o.clientLabel)}}
+// group label (as returned by monthly / lfl / potential APIs) → filter addition
+function entityFilter(group,label){if(!label||label==='Total'||label==='Pan India')return{};const L=S.meta.locations||[];
+ if(group==='zone'){const l=L.find(x=>x.zone_label===label||x.zone_group===label);return l?{zone_group:l.zone_group}:null}
+ if(group==='location'){const l=L.find(x=>x.label===label);return l?{location_id:l.id}:null}
+ if(group==='client'){const fm=famOf(label);return fm?{client_family:fm}:null}
+ if(group==='stakeholder')return L.some(x=>x.stakeholder===label)?{stakeholder:label}:null;
+ if(group==='region')return L.some(x=>x.region===label)?{region:label}:null;return null}
+function entityCtx(group,label,m,f){const add=entityFilter(group,label);if(add==null)return{kind:'info',title:label,text:`"${label}" cannot be matched to a ${group} in the location or client lists, so it has no breakdown.`};
+ return bizCtx(m,{...f,...add},{clientLabel:group==='client'?label:null})}
+const DD={stack:[],sus:false,charts:[],ret:null,
+ isOpen(){return $('#dd').classList.contains('open')},
+ open(c,from){if(!c)return;if($('#fpanel').classList.contains('open'))fpSet(false);this.ret=from||document.activeElement;this.stack=[c];this.show()},
+ push(c){if(c){this.stack.push(c);this.show()}},
+ back(){if(this.stack.length>1){this.stack.pop();this.show()}},
+ to(i){this.stack=this.stack.slice(0,i+1);this.show()},
+ close(){this.stack=[];this.sus=false;this.kill();$('#dd').classList.remove('open');$('#ddscrim').classList.remove('on');document.body.classList.remove('ddopen');const r=this.ret;this.ret=null;if(r&&r.isConnected&&r.focus)r.focus()},
+ suspend(){if(this.isOpen()){this.sus=true;$('#dd').classList.remove('open');$('#ddscrim').classList.remove('on')}},
+ resume(changed){if(!this.sus)return;this.sus=false;if(changed){this.stack=[];this.kill();return}if(this.stack.length){$('#dd').classList.add('open');$('#ddscrim').classList.add('on')}},
+ kill(){this.charts.forEach(c=>c.destroy());this.charts=[]},
+ go(c,src){if(!c)return;src&&src.closest&&src.closest('#dd')?this.push(c):this.open(c,src)},
+ async show(){const d=$('#dd'),b=$('#ddBody'),c=this.stack[this.stack.length-1];this.kill();d.classList.add('open');$('#ddscrim').classList.add('on');document.body.classList.add('ddopen');
+  $('#ddTitle').textContent=c.title||'Details';$('#ddBack').disabled=this.stack.length<2;
+  const cr=$('#ddCrumbs');cr.innerHTML='';this.stack.forEach((x,i)=>{if(i)cr.append(' › ');cr.append(i<this.stack.length-1?el('button',{type:'button',class:'lnk',onclick:()=>this.to(i)},x.title):el('span',{'aria-current':'true'},x.title))});
+  b.innerHTML='';b.append(el('p',{class:'note'},'Loading…'));const tok=this.tok=Symbol();
+  try{const out=el('div');await (DDK[c.kind]||DDK.info)(out,c);if(tok!==this.tok)return;b.innerHTML='';b.append(out)}catch(e){if(tok!==this.tok)return;b.innerHTML='';b.append(el('div',{class:'banner err'},e.message||String(e)))}
+  b.scrollTop=0;$('#ddClose').focus({preventScroll:true})}};
+function ddInit(){const setH=()=>{const h=$('header.topbar');if(h)document.documentElement.style.setProperty('--hdr',h.offsetHeight+'px')};setH();addEventListener('resize',setH);$('#ddClose').onclick=()=>DD.close();$('#ddBack').onclick=()=>DD.back();$('#ddReset').onclick=()=>{if(DD.stack.length)DD.to(0)};$('#ddscrim').onclick=()=>DD.close();
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&DD.isOpen()&&!$('#fpanel').classList.contains('open')){e.stopPropagation();DD.close()}});
+ $('#ddAsk').onclick=()=>{const c=DD.stack[DD.stack.length-1];if(!c)return;askAbout(c.kind==='branch'?`How is branch ${c.title} doing?`:`How is ${c.title} doing in ${mlabel(c.m||$('#fMonth').value)}?`,c.m,c.f)}}
+// make a KPI tile open a context
+function ddTile(t,fn,label){t.classList.add('dd');t.tabIndex=0;t.setAttribute('role','button');t.setAttribute('aria-label',(label||t.querySelector('.k').textContent.replace('?','').trim())+' — open details');
+ t.onclick=e=>{if(e.target.closest('button,a,.qpop'))return;DD.go(fn(),t)};t.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();DD.go(fn(),t)}};return t}
+const DEF={mtd:'Cases so far = month-to-date cases from the latest Zonal Tracker report of the month.',target:'Target = monthly target cases from the Zonal Tracker.',
+ likely:'Likely month end = the Overview projection: cases so far ÷ the share of a month normally done by this working day (range = weakest to strongest recent month).',
+ organic:'Organic expectation = cases expected from recent levels, seasonality and working days without extra effort.',previous:'Same point last month = last month\'s report on or before the same day.',
+ force1:'Force1 cases = cases recorded in the Force1 operational system (by branch). They are counted differently from tracker figures.'};
+const DDK={
+ info:async(o,c)=>{o.append(el('p',{},c.text||'No further detail is available for this item.'),el('p',{class:'note'},'This is the lowest level the data supports here.'))},
+ biz:async(o,c)=>{const J=await api('drill',{month:c.m,filters:c.f,level:c.level,p:c.p});const s=J.selected||{},pa=J.parent;
+  const share=pa&&pa.mtd?s.mtd/pa.mtd:null;const kids=J.children||[];
+  o.append(el('p',{class:'note'},`${mlabel(c.m)} · business figures up to ${ddmm(String((S.meta.freshness||{}).zonal_latest_snapshot||'').slice(0,10))} · filters: ${ctxTitle(c.f)}`));
+  const tiles=el('div',{class:'tiles'},tile('Cases so far',fmt(s.mtd),pa?`${pct(share)} of ${fmt(pa.mtd)} (${ctxTitle(J.parent_filters||{})})`:'Pan India total'),
+   tile('Target',fmt(s.target),s.target?pct(s.mtd/s.target)+' achieved':'no target'),tile('Likely month end',fmt(s.likely),s.low!=null?`range ${fmt(s.low)}–${fmt(s.high)}${s.target?' · '+pct(s.achievement_likely)+' of target':''}`:''),
+   tile('Organic expectation',fmt(s.organic),s.organic?`actual ${s.mtd>=s.organic?'+':'−'}${fmt(Math.abs(s.mtd-(s.organic||0)))} vs month organic`:''));
+  o.append(tiles,el('p',{class:'note'},DEF[c.focus]||DEF.mtd));
+  if(c.level==='branch'){const B=J.branches||[];o.append(el('h4',{},`Branches sending Force1 cases — ${mlabel(c.m)}`),el('p',{class:'note'},`${fmt(J.force1_cases_month)} Force1 cases this month in this selection; top ${B.length} branches by cases. ${DEF.force1}`));
+   o.append(B.length?table(B,[{key:'branch',label:'Branch'},{key:'branch_code',label:'Code'},{key:'ifsc',label:'IFSC'},{key:'client_code',label:'Client'},{key:'cases_month',label:mlabel(c.m),num:1,fmt:fmt},{key:'cases_last3',label:'Last 3 months',num:1,fmt:fmt},{key:'in_master',label:'In verified list',fmt:v=>v?'Yes':'No'}],
+    {name:'branches.csv',pageSize:50,defaultHidden:['ifsc'],rowAction:r=>({kind:'branch',title:r.branch,fam:r.client_family,code:r.branch_code,m:c.m,f:c.f})}):el('p',{class:'note'},'No Force1 cases with a branch code in this selection.'))}
+  else if(kids.length){const sum=kids.reduce((a,k)=>a+(+k.mtd||0),0);
+   o.append(el('h4',{},'Breakdown by '+(LV[c.level]||c.level).toLowerCase()),
+    table(kids.map(k=>({...k,share:s.mtd?k.mtd/s.mtd:null})),[{key:'group',label:LV[c.level]||'Group'},{key:'mtd',label:'So far',num:1,fmt:fmt},{key:'share',label:'Share',num:1,fmt:pct},{key:'target',label:'Target',num:1,fmt:fmt},
+     {key:'likely',label:'Likely month end',num:1,fmt:fmt},{key:'achievement_likely',label:'Likely % of target',num:1,fmt:pct},{key:'change',label:'vs same point last month',num:1,fmt:v=>v==null?'–':el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':'')+fmt(v))}],
+     {name:'breakdown.csv',search:kids.length>12,pageSize:60,rowAction:k=>{const add=c.level==='zone'?{zone_group:k.id}:c.level==='location'?{location_id:+k.id}:{client_family:k.id};if(!k.id)return{kind:'info',title:k.group,text:`"${k.group}" could not be matched to the master list, so it cannot be opened.`};
+      const nf={...c.f,...add};return bizCtx(c.m,nf,{p:c.level==='client'&&k.client_code?{client_code:k.client_code}:{},clientLabel:c.level==='client'?k.group:null,focus:c.focus})}}),
+    el('p',{class:'note '+(sum===s.mtd?'':'bad')},sum===s.mtd?`Check: breakdown adds up to ${fmt(sum)} = cases so far ✓`:`Breakdown adds up to ${fmt(sum)}, selection shows ${fmt(s.mtd)} — rows that cannot be assigned are excluded.`))}
+  else o.append(el('p',{class:'note'},'No breakdown available for this selection.'));
+  const H=(J.history||[]).filter(h=>h.month);if(H.length>1){const cv=el('canvas');o.append(el('h4',{},'Last 12 months'),el('div',{class:'chartbox',style:'height:200px'},cv),el('p',{class:'note'},'Click a month to open the same selection for that month.'));const cc=C();
+   DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Cases',data:H.map(h=>h.cases),backgroundColor:H.map(h=>h.month===c.m?cc.ochre:cc.blue)},{type:'line',label:'Target',data:H.map(h=>h.target),borderColor:cc.muted,pointRadius:2}]},
+    options:{maintainAspectRatio:false,onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},onClick:(e,els)=>{if(!els.length)return;const h=H[els[0].index];if(h.month!==c.m)setTimeout(()=>DD.push(bizCtx(h.month,c.f,{title:c.title+' — '+mlabel(h.month),level:c.level,p:c.p})),0)}}}))}
+  o.append(el('details',{class:'note'},el('summary',{},'Method and data status'),el('p',{},J.method||''),el('p',{},'Figures come from the same database calculations as the dashboard; nothing here changes the global filters.')))},
+ branch:async(o,c)=>{const J=await api('branch_detail',{p:{client_family:c.fam,branch_code:c.code}});const M=J.master||{},A=J.activity||{};
+  o.append(el('div',{class:'tiles'},tile('Client',J.client_family||'–',J.location||''),tile('Cases (last 3 months)',fmt(A.cases_last3),A.last_month?'last case '+mlabel(A.last_month):'no Force1 cases'),
+   tile('Peer median / month',J.peer_median_per_month==null?'–':String(J.peer_median_per_month),J.peers?`${fmt(J.peers)} active peers in this location`:'too few peers'),tile('Since',A.first_month?mlabel(A.first_month):'–',fmt(A.cases_total)+' cases in history')));
+  o.append(el('h4',{},'Verified branch record'),M.name?table([{k:'Name',v:M.name},{k:'IFSC',v:M.ifsc},{k:'Address',v:M.address},{k:'District / state',v:[M.district,M.state,M.pincode].filter(Boolean).join(', ')},{k:'Status',v:[M.status,M.verification].filter(Boolean).join(' · ')},{k:'Source',v:[M.source,M.source_version].filter(Boolean).join(' · ')},{k:'Verified on',v:M.verified_on}],[{key:'k',label:'Field'},{key:'v',label:'Value'}],{search:false,name:'branch.csv'}):el('p',{class:'note'},'This code is not in the verified branch list (it may be an office or written differently in Force1).'));
+  const H=J.months||[];if(H.length){const cv=el('canvas');o.append(el('h4',{},'Force1 cases by month'),el('div',{class:'chartbox',style:'height:200px'},cv));const cc=C();DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Force1 cases',data:H.map(h=>h.cases),backgroundColor:cc.blue}]},options:{maintainAspectRatio:false}}))}
+  o.append(el('p',{class:'note'},'Lowest level: individual cases are not listed here because they carry applicant details. '+(J.note||'')))},
+ day:async(o,c)=>{const R=await api('zonal',{snapshot:c.date,filters:c.f});const lvl=nextLevel(c.f);const key=lvl==='zone'?'zone':lvl==='location'?'location':'client';const g={};
+  (R||[]).forEach(r=>{const k=r[key]||'—';(g[k]=g[k]||{group:k,change:0,mtd:0,id:lvl==='zone'?null:lvl==='location'?r.location_id:r.family,code:r.client_code});g[k].change+=+r.change||0;g[k].mtd+=+r.mtd||0});
+  const rows=Object.values(g).sort((a,b)=>b.change-a.change);const tot=rows.reduce((a,r)=>a+r.change,0);
+  o.append(el('p',{class:'note'},`Report of ${ddmm(c.date)} · ${(c.basis||'').replace(/_/g,' ')} · ${ctxTitle(c.f)}`),el('div',{class:'tiles'},tile('Added in this report',fmt(c.change),c.basis&&c.basis!=='one_working_day'?'covers more than one day':'one working day'),tile('Month to date',fmt(c.mtd),'as of '+ddmm(c.date))),
+   el('h4',{},'Where the additions came from'),table(rows,[{key:'group',label:LV[lvl]||'Group'},{key:'change',label:'Added',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt}],{name:'day.csv',search:false,rowAction:r=>entityCtx(lvl,r.group,String(c.date).slice(0,8)+'01',c.f)}),
+   el('p',{class:'note '+(tot===c.change?'':'bad')},tot===c.change?`Check: rows add up to ${fmt(tot)} ✓`:`Rows add up to ${fmt(tot)} (report total ${fmt(c.change)}).`))},
+ unit:async(o,c)=>{const L=(S.meta.locations||[]).filter(l=>l.recon_unit===c.unit&&l.zone_group);
+  o.append(el('p',{},'Force1 utilisation is reported per location group, because Force1 files are uploaded per group. Open a location in this group for its business detail.'),
+   L.length?table(L.map(l=>({id:l.id,label:l.label,zone:l.zone_label})),[{key:'label',label:'Location'},{key:'zone',label:'Zone'}],{search:false,name:'group.csv',rowAction:r=>bizCtx(c.m,{...c.f,location_id:r.id})}):el('p',{class:'note'},'No locations are linked to this group.'))}};
+// Ask Crux about the open context (uses that context's month and filters for this one question)
+function askAbout(q,m,f){if(!document.getElementById('askBtn'))return;ASK.ctx={month:m||$('#fMonth').value,filters:f||filters()};DD.close();const p=$('#askPanel');if(p.classList.contains('hidden'))$('#askBtn').click();const t=p.querySelector('textarea');t.value=q;t.focus()}
+
+// Mapping correction (Data quality, admin): choose the correct canonical target, preview the impact, apply from an effective date
+DDK.mapfix=async(o,c)=>{const r=c.row,isLoc=c.mk==='location_alias';
+ const opts=isLoc?(S.meta.locations||[]).filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label)).map(l=>[l.id,l.label]):(S.meta.clients||[]).map(x=>[x.code,x.label+' ('+x.code+')']);
+ const sel=el('select',{'aria-label':'Correct target'},el('option',{value:''},isLoc?'Choose the correct location':'Choose the correct client'),opts.map(([v,t])=>el('option',{value:v},t)));
+ const today=new Date(Date.now()+19800000).toISOString().slice(0,10);const wef=el('input',{type:'date','aria-label':'Effective from',min:'2024-04-01',max:today,value:today.slice(0,8)+'01'});
+ const why=el('input',{type:'text','aria-label':'Reason for the correction',placeholder:'Reason for the correction (required)',style:'min-width:240px;flex:1'});
+ const out=el('div');const pv=el('button',{class:'btn'},'Preview impact');const ap=el('button',{class:'btn primary',disabled:''},'Apply correction');
+ const body=()=>({kind:c.mk,...(isLoc?{id:r.id}:{source:r.source,alias:r.alias}),target:isLoc?+sel.value:sel.value,effective_from:wef.value,reason:why.value.trim(),editor:(localStorage.getItem('crux_editor')||'').trim()||'admin'});
+ const lab=x=>isLoc?(x.label||x.id):x.id;
+ const showRes=(x,done)=>{out.innerHTML='';const A=x.affected||{};out.append(el('div',{class:'tiles'},tile('Current mapping',lab(x.current),'used today'),tile('Proposed mapping',lab(x.proposed),'from '+ddmm(x.effective_from)),
+   tile('Tracker rows affected',fmt(A.tracker_rows),fmt(A.tracker_snapshots)+' report dates'),tile('Force1 cases affected',A.force1_cases==null?'not traceable':fmt(A.force1_cases))),el('p',{class:'note'},x.note||''),
+   done?el('div',{class:'banner'},'Correction applied and recorded in the history. Figures refresh within a few minutes.'):el('p',{class:'note'},'Preview only — nothing changed yet.'))};
+ pv.onclick=async()=>{if(!sel.value){out.textContent='Choose the correct target first.';return}pv.disabled=true;try{showRes(await adminCall('mapping_retarget',body()),false);ap.disabled=false}catch(e){out.textContent=e.message;ap.disabled=true}finally{pv.disabled=false}};
+ ap.onclick=async()=>{if(why.value.trim().length<5){out.append(el('p',{class:'bad'},'A reason (5+ characters) is required.'));return}if(!confirm('Apply this mapping correction? Records from the effective date move to the new target.'))return;ap.disabled=true;
+  try{showRes(await adminCall('mapping_retarget',{...body(),apply:true}),true);try{S.meta=await api('meta')}catch{}}catch(e){out.append(el('p',{class:'bad'},e.message));ap.disabled=false}};
+ sel.onchange=()=>{ap.disabled=true};wef.onchange=()=>{ap.disabled=true};
+ o.append(el('p',{},`"${r.alias}" (${r.source}) currently maps to `,el('strong',{},isLoc?(r.location||r.location_id):r.client_code),'.'),el('div',{class:'tools'},sel,el('label',{},'Effective from ',wef)),el('div',{class:'tools'},why,pv,ap),out);
+ try{const H=await adminCall('mapping_retarget',{kind:'history'});if((H||[]).length)o.append(el('h4',{},'Correction history'),table(H,[{key:'created_at',label:'When',fmt:v=>String(v).slice(0,16).replace('T',' ')},{key:'kind',label:'Kind'},{key:'alias',label:'Alias'},{key:'old_target',label:'From'},{key:'new_target',label:'To'},{key:'effective_from',label:'Effective'},{key:'reason',label:'Reason'},{key:'actor',label:'By'}],{name:'mapping_corrections.csv',search:false}))}catch{}};
+function mapFixBtn(mk,row){const b=el('button',{type:'button',class:'btn sm'},'Correct target');if(mk==='location_alias'&&row.source==='case_file'){b.disabled=true;b.title='File-group mappings set the location group; use the WEF group editor'}
+ b.onclick=()=>DD.open({kind:'mapfix',title:'Correct mapping — '+row.alias,mk,row},b);return b}
+
 /* ---------- Ask Crux (floating, every section) ---------- */
 const ASK={url:'https://czdjbbhxboweawqbjywr.supabase.co/functions/v1/ask-crux',
  jwt:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGpiYmh4Ym93ZWF3cWJqeXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjkyNDgsImV4cCI6MjEwMDU0NTI0OH0.NSiSksxZiMVrVG6h4Wt2ZPhS4P4mbgv3XaAlGSqYIzM',conv:null};
@@ -1177,8 +1342,8 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
  q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask()}});send.onclick=ask;
  async function ask(){const text=q.value.trim();if(text.length<3)return;q.value='';log.append(el('div',{class:'msg me'},text));const wait=el('div',{class:'msg bot note'},'Working it out…');log.append(wait);log.scrollTop=log.scrollHeight;send.disabled=true;
   try{const r=await fetch(ASK.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ASK.jwt,apikey:ASK.jwt},
-    body:JSON.stringify({question:text,conversation_id:ASK.conv,context:{month:$('#fMonth').value,filters:filters()}})});
-   const a=await r.json().catch(()=>({error:'unreadable response'}));wait.remove();if(!r.ok||a.error)throw new Error(a.error||('HTTP '+r.status));
+    body:JSON.stringify({question:text,conversation_id:ASK.conv,context:ASK.ctx||{month:$('#fMonth').value,filters:filters()}})});
+   ASK.ctx=null;const a=await r.json().catch(()=>({error:'unreadable response'}));wait.remove();if(!r.ok||a.error)throw new Error(a.error||('HTTP '+r.status));
    ASK.conv=a.conversation_id;try{sessionStorage.setItem('crux_ask_conv',a.conversation_id)}catch{}
    const fb=el('span',{class:'note'});const vote=async h=>{const c=h?null:prompt('What was wrong or missing? (optional)');fb.textContent='Thanks for the feedback.';
     try{if(S.sb)await S.sb.rpc('bi_feedback',{p_message:a.message_id,p_helpful:h,p_correction:c||null})}catch{}};
@@ -1194,7 +1359,7 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
 const vUpload=guard(async s=>{s.append(el('h2',{},'Upload centre'));if(!adminGate(s,'Uploading data'))return;
- const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, or a full Zonal Tracker (backfill / recovery)'));
+ const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);const pnA=el('div',{class:'card',style:'margin-bottom:18px'});s.append(pnA);penaltySection(pnA,$('#fMonth').value,{},true);s.append(el('h3',{},'File upload — Case Wise, Point Wise, or a full Zonal Tracker (backfill / recovery)'));
  s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
  const list=el('div');const inp=el('input',{type:'file',multiple:'',accept:'.xlsx,.xls',class:'hidden',id:'fin'});
  const drop=el('div',{class:'drop',tabindex:0,role:'button','aria-label':'Choose files to upload'},el('p',{},el('strong',{},'Drop .xlsx files here'),' or ',el('button',{class:'btn',onclick:()=>inp.click()},'choose files')),el('p',{class:'note'},'Personal data (applicant names, mobile, PAN, Aadhaar, account numbers, addresses) is removed in your browser before upload.'),inp);
