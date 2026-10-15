@@ -62,7 +62,7 @@ Recomputed by the `bi-organic-refresh` job (every 10 minutes, only when data cha
 
 ## Lumen bill extractor (shares this project)
 - **What:** the bill-extraction app at cruxindia.github.io/lumen_billextractor uses the `public` schema (12 tables: invoices, applicant_lines, checks, field_confidence, ingest_log, failed_uploads, payments, branches, clients, district_codes, crux_identity, review_progress), its functions (sync_invoice, lookup_branch, …) and the storage buckets `ocr` (OCR engine, public) and `bills` (bill files, private). **Do not delete any of these; never run `remove_old_invoice_app.sql` again** (SOW D84).
-- **Rebuild files** (kept outside this repo; copies in the Lumen folder on Drive): `lumen_restore_v1.sql` (tables, access, functions), `lumen_restore_v1_data.sql` (masters from 12-Aug), `lumen_owner_step.sql` (functions that remove rows — owner runs it in the SQL Editor).
+- **Rebuild files** (kept outside this repo, in the Lumen folder on Drive next to `reset_data.sql`): `lumen_restore_v1.sql` (tables, access, functions) and `lumen_owner_step.sql` (functions that remove rows — owner runs it in the SQL Editor; done 15-Oct). Master data (branches, district codes, CRUX identity) reloads from the 12-Aug `*_rows.csv` exports in the same folder.
 - **Health check:** in the app, the database pill is green, "realtime connected" appears in the diagnostic log, and Branch master shows 570+ branches.
 
 ## Client branch master and monthly monitor

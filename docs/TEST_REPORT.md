@@ -201,3 +201,15 @@ Ask Crux v11 end-to-end (9 questions incl. injection, spaced phone number, defin
 | T48 | Branch detail status = branch list status; branch TAT counts its last-3-month cases | Pass | SBI 64058: growing in both; 1,677 cases |
 
 Browser against the live site https://cruxindia.github.io/crux-bi-dashboard/ (`test_drill2.py live`, after deployment): **22 / 22 pass**, no console errors — K1–K3 TAT expand (Overview tile, drawer), K4 RAG / like-for-like / revenue, K5 Force1, K6–K7 branch statuses, action list, attention, K8 breakdown columns, K9–K12 compare (rows, tray, grid with Δ and charts, previous month), K13–K15 branch list status + TAT, branch detail, branch compare, K16–K20 TAT expand in TAT section, Force1, People (global state), M8–M9 390 px. Regression on the live site: wave suite 43 / 43; UI suites 2 and 3 pass on the local build. SQL: acceptance 27 / 27, addendum 8 / 8, wave 4 / 4, drill ops 6 / 6. Database after this change: 442.4 MB (cache table 4.8 MB, 439 cached panels). Timings with warm cache: Pan India drawer 0.8 s business / 1.8 s all sections; compare of two zones 1.8–2.7 s (cold, before the warm-up job: 6.4 s / 18.5 s / 23.5 s).
+
+## Lumen rebuild (15-Oct-2026) — SOW D84
+| Test | Result |
+|---|---|
+| Schema + functions on live = locally tested copy (function source fingerprints, column list, 22 table access rules + 1 storage rule) | Pass |
+| Branch-matching functions identical to the August migrations on record (5 bodies; `_branch_tokens` differs only by one comment word) | Pass |
+| Masters reloaded = 12-Aug export (content fingerprints: branches 570, district codes 52, CRUX identity 1) | Pass |
+| Owner step on live (4 functions, 3 cascade foreign keys; same source as tested, Windows line endings only) | Pass |
+| Local behaviour suite as the app's role: insert / unchanged / updated with history, settlement and reviewer edits kept on re-push, batch with bad items, app table writes allowed, ingest log / clients / confidences / payments not writable by the public key, reconcile, write-off, reviewer tally, client learn + whole-word match, branch exact + tolerant match, failed-upload resolve, cascade removal, wipe button | 19/19 Pass |
+| Live app (cruxindia.github.io/lumen_billextractor): page, realtime, masters 52/1/570, branch lookup, OCR bucket; synthetic Excel bill through Add files → Start → uploader dialog: saved for review with lines (2), checks (15), confidences (21), ingest log, client learned, branch GSTIN filled from master, review file stored + opens via signed link; re-push = unchanged; correction PATCH; bulk write-off; failed bill saved → viewed → resolved; test rows and files removed through the app's own calls; no failed database/storage calls | 19/19 Pass |
+| Left behind by the tests (public key cannot remove them): 7 ingest-log lines (invoice numbers ZZT-…), client "AXIS BANK" (bill count 4) | Noted |
+
