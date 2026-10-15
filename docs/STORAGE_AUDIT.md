@@ -10,7 +10,7 @@ Project `czdjbbhxboweawqbjywr` (free plan). Measured on 14-Oct-2026 from the liv
 | Database `postgres` before this audit | 428 MB (448,457,875 bytes) |
 | Database `postgres` after safe cleanup | 413 MB (432,958,611 bytes) — **15.5 MB reclaimed** |
 | All databases (Supabase's own measure sums `template0/1`, about 7 MB each) | about 427 MB right after cleanup; 450,187,441 bytes (429 MiB) at the end of the session |
-| Object storage | 10.5 MB in 6 files, all in the public bucket `ocr` (retired invoice app); bucket `bills` is empty |
+| Object storage | 10.5 MB in 6 files in the public bucket `ocr` (OCR engine of the Lumen bill extractor — in use); bucket `bills` holds Lumen's bill files (empty after the 14-Oct clean-up) |
 | Growth rate (measured) | Force1 visits about 105–113 k rows per month since Jun-2026 (`point_store` + `point_derived` ≈ 320 bytes per visit), plus about 30 k cases per month → **about 40 MB per month** |
 | Projected read-only date at current growth | **between mid-November and early December 2026**: about 50 MB of headroom if Supabase counts the limit as 500,000,000 bytes, about 74 MB if it counts 500 MiB, at roughly 43 million bytes per month. The owner script in §6 adds about two weeks. |
 
@@ -87,7 +87,7 @@ Rows deleted by me: none. The database connector used for this work refuses any 
 | Item | Saving | Risk | Why not done here |
 |---|---:|---|---|
 | Drop `point_derived_pkey` | 21 MB | Low — uniqueness already guaranteed by `point_store` PK; re-check the scan counter first | needs DROP; owner script §6 |
-| Delete bucket `ocr` (public, retired app) and empty bucket `bills` | 10.5 MB object storage (not database) | Low — no code references either bucket | Dashboard action |
+| ~~Delete buckets `ocr` and `bills`~~ | — | **Withdrawn 15-Oct: both are used by the Lumen bill extractor** (SOW D84); the earlier "no code references" check only looked at the BI code | Do not delete |
 | Compact the 91,675 "first observed" history rows into the master's `first_observed` column | about 12 MB | Medium — loses per-branch source version of the first sighting | history is an addendum requirement; only if pressure remains after §7 |
 
 ## 5. Not recommended
@@ -119,7 +119,7 @@ Option 1 or 3 is recommended. Nothing irreversible is done until the owner choos
 
 **Safe actions taken (no rows removed):** `VACUUM FULL` on `zt_row` (−1.2 MB) and `api_cache` (−2.6 MB); `branch_seen` set to fillfactor 50 then `VACUUM FULL` (−3.0 MB; later monitor runs update in place, so the index stops growing) — `bi_081`. Total **−6.8 MB**. Row counts checked before/after (58,905 / 236 / 92,239); all SQL suites and browser suites re-run afterwards.
 
-**Owner items — status 15-Oct:** `owner_storage_cleanup.sql` **not run** (`point_derived_pkey` still present, 21 MB; its scan counter now shows 1 scan, so re-check before dropping); bucket `ocr` (public, 6 files, 10.5 MB) and empty bucket `bills` **still exist**.
+**Owner items — status 15-Oct:** `owner_storage_cleanup.sql` **not run** (`point_derived_pkey` still present, 21 MB; its scan counter now shows 1 scan, so re-check before dropping); buckets `ocr` and `bills` belong to the Lumen bill extractor and must stay (D84).
 
 **Forecast:** at about 40 MB of Force1 data per month the database reaches 500,000,000 bytes around **mid-November 2026** (early December if the limit is 500 MiB or after the owner script). The §7 decision (Pro plan or archive design) is now urgent.
 
@@ -127,7 +127,7 @@ Option 1 or 3 is recommended. Nothing irreversible is done until the owner choos
 | Option | Gain | Risk / recovery |
 |---|---:|---|
 | Owner script: drop `point_derived_pkey` | ~21 MB | Low; script has a dry-run check and a re-create line |
-| Delete buckets `ocr`, `bills` | 10.5 MB object storage (not the DB limit) | Low; download the 6 files first if wanted |
+| ~~Delete buckets `ocr`, `bills`~~ | — | Withdrawn: used by the Lumen app (D84) |
 | Compact `client_branch_history` first-observed rows | ~12 MB | Medium; loses per-row source version of first sighting |
 | Archive visit history older than 6 months | ~35 MB per month archived | Needs design + tested restore before any data leaves |
 | Upgrade to Pro (8 GB) | removes the limit | Cost; no data risk |

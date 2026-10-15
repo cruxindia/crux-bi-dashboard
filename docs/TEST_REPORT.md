@@ -97,7 +97,7 @@ Reconciliation to source (9-Oct-2026): MTD 17,441 ✓, target 84,395 ✓, revenu
 | Browser (viewer, desktop): Target / Achieved / Projection / Organic tiles; "Data up to 09.10.2026"; organic ? popover shows each step; 7 automatic ? hints; zone highlights (4 above / 4 below); tracker organic columns with ? on Pan India; no source markers; potential tiles; penalties grid; Growth organic tiles + 14 zone rows; no banned wording on Overview / Tracker / Growth | Pass; no console errors |
 | Browser (admin): rate change preview (no apply), penalty form shown; daily table on Sunday 11-Oct: type → save → validate (392/392, +5) → commit (mocked) → discard (no residue) | Pass (found and fixed: client list in the rate form, chosen date reset after "Fill blanks", save/commit messages not shown) |
 | Browser (390 px) | No horizontal overflow; date chip visible |
-| Public key vs retired invoice app after lock-down: reads empty, inserts/uploads refused, reset function disabled; dashboard unaffected | Pass |
+| ~~Public key vs retired invoice app after lock-down~~ — superseded 15-Oct: the app (Lumen) is in use and was rebuilt (SOW D84); its tests are recorded under "Lumen rebuild" | Superseded |
 | `run_acceptance_tests()` | 27/27 pass |
 
 ## 14-Oct-2026 (night) — addendum: branch master, monitor, Gemini, RAG, storage (bi_065–bi_074)
