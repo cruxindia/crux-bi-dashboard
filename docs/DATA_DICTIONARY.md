@@ -89,3 +89,7 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | `bi.mapping_correction` | History of mapping corrections: kind, source, alias, old → new target, effective date, reason, actor, affected counts | id | `bi_admin('mapping_retarget')` (admin key) |
 | `bi.api_drill(month, filters, level, p)` | Drawer data: selected, parent, children with ids, organic to date, 12-month history, branch rows (level = branch) | — | read via `bi_call('drill')` |
 | `bi.api_branch_detail(p)` | One client branch: master record, monthly Force1 cases, first/last month, peer median | — | read via `bi_call('branch_detail')` |
+| `bi.api_drill_ops(month, filters, level, part)` | Drawer parts: tat, force1, coverage, lifecycle, revenue, penalty — selection total and per child | — | read via `bi_call('drill_ops')` |
+| `bi.tat_summary(month, filters, group)` | Case, document, field and tele TAT by total / zone / location / client / unit / branch | — | read via `bi_call('tat_summary')` |
+| `bi.branch_lifecycle_rows(units)` | Branch lifecycle classification (same rules as the priority list) | — | internal |
+| `bi.cache_warm` | Last cache warm-up: data version, start / finish, calls, seconds | id = 1 | cron `bi-warm-drill-cache` |

@@ -187,3 +187,17 @@ Ask Crux v11 end-to-end (9 questions incl. injection, spaced phone number, defin
 **Ask Crux v12 (15-Oct):** same question twice → second answer `cached: true`, no Gemini or embedding call, usage row `ask_cached`; a question repeated after a data change (version 3006 → 3010) was answered fresh. 0 HTTP 429 since v12 (3 live calls — too few to show the shared cool-down working under load).
 
 **Storage:** 446.5 → 439.7 MB (VACUUM FULL `zt_row`, `api_cache`, `branch_seen`; fillfactor 50 on `branch_seen`); row counts unchanged; all SQL suites re-run afterwards.
+
+## 15-Oct-2026 (morning) — drill-down enrichment, TAT expand, compare (bi_083–bi_085)
+`select * from bi.run_drill_ops_tests();` — **6 / 6 pass** (Oct-2026, Gujarat zone):
+
+| # | Test | Result | Evidence |
+|---|---|---|---|
+| T43 | Drawer TAT (case, document, field, tele) = TAT section per location; total case TAT = Overview tile | Pass | 6 locations equal on medians, counts, points; total case median 23.2 h, P90 75.9 h, 2,419 completed, 570 open = Overview |
+| T44 | Drawer Force1 utilisation = Force1 utilisation section (12 measures); children add up | Pass | case 99.5% (2,870 / 2,885), field 15.3% (719 / 4,716) |
+| T45 | Drawer branch coverage = Business tracker coverage; children add up | Pass | 5,005 verified, 584 active, 4,292 never activated, coverage 11.8% |
+| T46 | Drawer lifecycle counts = branch priority list; children add up | Pass | new 37, reactivated 25, growing 252, stable 108, losing 57, dormant 112, too little history 212 |
+| T47 | Drawer revenue = Overview revenue; penalties = penalty report; like-for-like current = cases so far | Pass | ₹7,88,320 both; 2,885 vs 1,894 on 08-Sep |
+| T48 | Branch detail status = branch list status; branch TAT counts its last-3-month cases | Pass | SBI 64058: growing in both; 1,677 cases |
+
+Browser, local build against the live database (`test_drill2.py`): **22 / 22 pass**, no console errors — K1–K3 TAT expand (Overview tile, drawer), K4 RAG / like-for-like / revenue, K5 Force1, K6–K7 branch statuses, action list, attention, K8 breakdown columns, K9–K12 compare (rows, tray, grid with Δ and charts, previous month), K13–K15 branch list status + TAT, branch detail, branch compare, K16–K20 TAT expand in TAT section, Force1, People (global state), M8–M9 390 px. Regression: wave suite 43 / 43, UI suites 2 and 3 pass. Timings with warm cache: Pan India drawer 0.8 s business / 1.8 s all sections; compare of two zones 1.8–2.7 s (cold, before the warm-up job: 6.4 s / 18.5 s / 23.5 s).

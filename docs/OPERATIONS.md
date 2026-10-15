@@ -102,3 +102,10 @@ Run `remove_old_invoice_app.sql` (sent separately; not in the repo) in Supabase 
 ## Storage housekeeping
 - `bi.branch_seen` has fillfactor 50 so monthly monitor updates do not grow its index. After large one-off loads, `vacuum (full, analyze)` on the loaded table reclaims space (takes a short lock; no data removed).
 - Check size: `select pg_database_size(current_database()), (select sum(pg_database_size(datname)) from pg_database);` — the free plan turns read-only at 500 MB.
+
+## Drill-down detail, TAT expand and compare (15-Oct-2026)
+- **Drawer sections:** business tiles (incl. Status RAG, vs same point last month, revenue, penalties), breakdown (tick rows to compare; Columns adds TAT / Force1 / branch / revenue / penalty columns), 12-month history, Turnaround time, Force1 utilisation, Branches (status and coverage, top-10 actions), What needs attention, Daily additions. KPI tiles on the Overview (incl. Revenue, Force1, Case TAT, SLA) open the drawer at the matching section.
+- **TAT expand:** "▸ Show document & field TAT" anywhere TAT appears; the choice applies everywhere and is remembered in this browser.
+- **Compare:** tick rows, use "＋ Add to compare" on any drawer item or branch, then "Compare n" in the tray at the bottom of the drawer (up to 6). "Compare with previous month / last year" opens a two-column comparison directly. Export CSV from the grid.
+- **Warm-up job:** cron `bi-warm-drill-cache` (every 10 min) pre-computes Pan India and zone panels for the latest month after a data change; status in `bi.cache_warm`. Manual: `select bi.warm_drill_cache(240);`.
+- **Tests:** `select * from bi.run_drill_ops_tests();` (6 tests) — run on its own.

@@ -75,3 +75,15 @@
 | vs same point last month | Like-for-like: last month's report on or before the same day (`api_lfl`) |
 | Branch rows | Force1 cases by client branch code for the month and the last 3 months; Force1 counts differ from tracker counts |
 | Branch peer median | Median monthly cases (last 3 months) of active branches of the same client in the same location, shown when ≥ 5 peers |
+
+## Drawer operations, branch status and compare (15-Oct-2026)
+| Metric | Definition |
+|---|---|
+| Case TAT / SLA met | Median and P90 hours from case received to completed (Force1 Case Wise, cases received in the month); SLA met = share completed by the due time. ⚠ when < 30 completed |
+| Document / field / tele TAT | Point Wise: document completed − created; field reviewed − assigned; tele completed − created (points created in the month) |
+| Force1 utilisation | Cases: Force1 cases ÷ tracker cases for location groups with Case Wise data (per location group; a single location shows it only if it is its group's only location). Field visits: by field executives ÷ (field executives + back office) |
+| Verified / active (6 m) / coverage | Source-verified active client branches in the territory; active = Force1 case in last 6 months; coverage = active ÷ code-matchable |
+| Never activated / gone quiet (6 m) | No Force1 case since Jan-2026 / had cases but none in the last 6 months |
+| Lifecycle (new, reactivated, growing, stable, losing traction, dormant) | Branch priority rules on complete covered months: last 3 vs prior 3 months of the branch's location group; dormant = no case in the last 2 covered months |
+| Status (RAG) | On track = likely month end ≥ target; Stretch = required daily pace within 25% of the recent pace; At risk = more than that |
+| Compare Δ | Value minus the first column (percentage points for percentages, hours for TAT) |

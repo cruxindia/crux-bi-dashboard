@@ -43,6 +43,11 @@ main{min-width:0}
 #dd{position:fixed;top:var(--hdr,57px);right:0;bottom:0;width:min(660px,100vw);background:var(--panel);color:var(--ink);z-index:50;box-shadow:-10px 0 30px rgba(0,0,0,.22);display:flex;flex-direction:column;transform:translateX(105%);visibility:hidden;transition:transform .18s ease,visibility .18s}
 #dd.open{transform:none;visibility:visible}#dd .ddh{padding:10px 14px 8px;border-bottom:1px solid var(--line)}#dd .ddrow{display:flex;gap:6px;align-items:center}#dd h2{flex:1;margin:0;font-size:17px}
 #dd .crumbs{font-size:12.5px;color:var(--muted);margin-top:4px}#dd .ddb{flex:1;overflow:auto;padding:12px 14px calc(18px + env(safe-area-inset-bottom))}.lnk{background:none;border:0;padding:0;color:var(--blue);cursor:pointer;font:inherit;text-decoration:underline}
+.ddact{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px}.ddsec{margin-top:16px}.ddsec>h4{margin:0 0 8px}.ddsec h5{margin:12px 0 6px;font-size:13px}
+.tatx{margin:2px 0 10px}.tile .tatx{display:block;margin:6px 0 0}.tatlines div{font-size:12px}.tatmore[hidden]{display:none}.lifebar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.ddtray{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--panel);font-size:13px;max-height:30vh;overflow:auto}.ddtray[hidden]{display:none}.ddtray .trayk{font-weight:600}
+#dd section.ddsec{padding:0;max-width:none}.cmpgrid th,.cmpgrid td{white-space:normal}.cmpgrid th{min-width:88px;vertical-align:bottom}.cmpgrid th:not(:first-child){max-width:150px}.cmpgrid td:first-child,.cmpgrid th:first-child{min-width:118px;max-width:42vw;position:sticky;left:0;background:var(--panel);z-index:1}.cmpgrid th:first-child{z-index:2}
+.cmpcb{display:inline-flex;padding:4px;cursor:pointer}.cmpcb input{width:18px;height:18px;margin:0}.best{font-weight:700}
 .dd-row{cursor:pointer}.dd-row:hover>td,.dd-row:focus>td{box-shadow:inset 0 0 0 999px var(--blue-soft)}.dd-row:focus{outline:2px solid var(--blue);outline-offset:-2px}
 .tile.dd,.dd-li{cursor:pointer}.tile.dd:hover,.tile.dd:focus{border-color:var(--blue);outline:none}.tile.dd .k::after{content:' ›';color:var(--blue)}.dd-li:hover,.dd-li:focus{background:var(--blue-soft);outline:none}
 body.ddopen,body.fopen{overflow:hidden}
@@ -180,7 +185,7 @@ th .qi{width:14px;height:14px;font-size:9px}
  <div id="view"></div>
 </main>
 <div class="fscrim" id="fscrim"></div><div class="ddscrim" id="ddscrim"></div>
-<aside id="dd" role="dialog" aria-modal="true" aria-labelledby="ddTitle"><div class="ddh"><div class="ddrow"><button type="button" class="btn sm" id="ddBack" aria-label="Back">‹ Back</button><h2 id="ddTitle">Details</h2><button type="button" class="btn sm" id="ddAsk" title="Ask Crux about this selection">Ask Crux</button><button type="button" class="btn sm" id="ddReset" title="Back to the first level">Reset</button><button type="button" class="btn sm" id="ddClose" aria-label="Close details">✕</button></div><nav class="crumbs" id="ddCrumbs" aria-label="Drill-down path"></nav></div><div class="ddb" id="ddBody"></div></aside>
+<aside id="dd" role="dialog" aria-modal="true" aria-labelledby="ddTitle"><div class="ddh"><div class="ddrow"><button type="button" class="btn sm" id="ddBack" aria-label="Back">‹ Back</button><h2 id="ddTitle">Details</h2><button type="button" class="btn sm" id="ddAsk" title="Ask Crux about this selection">Ask Crux</button><button type="button" class="btn sm" id="ddReset" title="Back to the first level">Reset</button><button type="button" class="btn sm" id="ddClose" aria-label="Close details">✕</button></div><nav class="crumbs" id="ddCrumbs" aria-label="Drill-down path"></nav></div><div class="ddb" id="ddBody"></div><div class="ddtray" id="ddTray" hidden></div></aside>
 </div>
 <script src="extract.js"></script>
 <script>
@@ -199,7 +204,7 @@ function sqlFor(fn,a){const m=a.month,f=a.filters||{};const g=k=>{const v=a.grou
  case'zonal':return`bi.api_zonal(${dt(a.snapshot)},${js(f)})`;case'daily':return`bi.api_daily(${dt(m)},${js(f)})`;case'monthly':return`bi.api_monthly(${dt(a.from)},${dt(a.to)},${js(f)},${g('monthly')})`;
  case'force':return`bi.api_force(${dt(m)},${js(f)})`;case'force_trend':return`bi.api_force_trend(${js(f)})`;case'case_tat':return`bi.api_case_tat(${dt(m)},${js(f)},${g('case_tat')})`;
  case'point_tat':return`bi.api_point_tat(${dt(m)},${js(f)},${g('point_tat')})`;case'manual_tat':return`bi.api_manual_tat(${dt(m)},${js(f)})`;case'employees':return`bi.api_employees(${dt(m)},${js(f)})`;
- case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
+ case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'drill_ops':return`bi.api_drill_ops(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'none')},${lit(['tat','force1','coverage','lifecycle','revenue','penalty'].includes(a.part)?a.part:'tat')})`;case'tat_summary':return`bi.tat_summary(${dt(m)},${js(f)},${lit(['total','zone','location','client','unit','branch'].includes(a.group)?a.group:'total')})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
  throw new Error('unknown fn '+fn)}
 function parseSqlPayload(p){let rows=p;if(p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.result==='string')p=p.result;
  if(typeof p==='string'){const m=p.match(/<untrusted-data-[^>]+>\s*([\s\S]*?)\s*<\/untrusted-data-/);rows=JSON.parse(m?m[1]:p)}
@@ -257,20 +262,22 @@ const C=()=>{const s=getComputedStyle(document.documentElement);return{blue:s.ge
 function tile(k,v,n,cls){return el('div',{class:'tile'},el('div',{class:'k'},k),el('div',{class:'v '+(cls||'')},v),n?el('div',{class:'n'},n):null)}
 function csv(rows,cols,name){const esc=v=>{v=v==null?'':String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};const t=[cols.map(c=>esc(c.label)).join(','),...rows.map(r=>cols.map(c=>esc(c.raw?c.raw(r):r[c.key])).join(','))].join('\n');
  const save=async()=>{if(window.claude&&claude.use){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data:t});return}}catch(e){if(e&&e.code==='cancelled')return}}const a=el('a',{href:URL.createObjectURL(new Blob([t],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()};save()}
-function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[],rowAction=null}={}){
- const wrap=el('div');const hidden=new Set(defaultHidden);let q='',sk=null,sd=1,page=0;
+function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[],rowAction=null,expand=null}={}){
+ const wrap=el('div');const hidden=new Set(defaultHidden);let q='',sk=null,sd=1,page=0,drawn=false;const cbs=[];
+ const ex=expand&&expand.keys?expand.keys.filter(k=>cols.some(c=>c.key===k)):[];if(ex.length&&!TATX.on)ex.forEach(k=>hidden.add(k));
  const tw=el('div',{class:'tablewrap'});const info=el('span',{class:'note'});
  const tools=el('div',{class:'tools'},search?el('input',{type:'search',placeholder:'Search this table',oninput:e=>{q=e.target.value.toLowerCase();page=0;draw()},'aria-label':'Search table'}):null,
   el('button',{class:'btn',onclick:()=>csv(view(),cols.filter(c=>!hidden.has(c.key)),name)},'Export CSV'),
   el('button',{class:'btn',title:'Show this table full screen (Esc to exit)',onclick:e=>{const on=!tw.classList.contains('full');tw.classList.toggle('full',on);document.body.classList.toggle('noscroll',on);e.target.textContent=on?'✕ Close':'⤢ Full screen';if(on){const x=ev=>{if(ev.key==='Escape'){tw.classList.remove('full');document.body.classList.remove('noscroll');e.target.textContent='⤢ Full screen';document.removeEventListener('keydown',x)}};document.addEventListener('keydown',x)}}},'⤢ Full screen'),
-  el('details',{},el('summary',{class:'btn'},'Columns'),el('div',{class:'colpick'},cols.map(c=>{const cb=el('input',{type:'checkbox'});cb.checked=!hidden.has(c.key);cb.onchange=()=>{cb.checked?hidden.delete(c.key):hidden.add(c.key);draw()};return el('label',{},cb,' ',c.label)}))),info);
+  ex.length?tatToggle():null,el('details',{},el('summary',{class:'btn'},'Columns'),el('div',{class:'colpick'},cols.map(c=>{const cb=el('input',{type:'checkbox'});cbs.push([cb,c.key]);cb.checked=!hidden.has(c.key);cb.onchange=()=>{cb.checked?hidden.delete(c.key):hidden.add(c.key);draw()};return el('label',{},cb,' ',c.label)}))),info);
  function view(){let r=rows;if(q)r=r.filter(x=>cols.some(c=>String(c.raw?c.raw(x):x[c.key]??'').toLowerCase().includes(q)));if(sk){const c=cols.find(c=>c.key===sk);const v=x=>c.raw?c.raw(x):x[sk];r=[...r].sort((a,b)=>{const A=v(a),B=v(b);return(A==null)-(B==null)||(A>B?1:A<B?-1:0)*sd})}return r}
- function draw(){const r=view(),vc=cols.filter(c=>!hidden.has(c.key));const pages=Math.max(1,Math.ceil(r.length/pageSize));page=Math.min(page,pages-1);
+ function draw(){drawn=true;cbs.forEach(([cb,k])=>{cb.checked=!hidden.has(k)});const r=view(),vc=cols.filter(c=>!hidden.has(c.key));const pages=Math.max(1,Math.ceil(r.length/pageSize));page=Math.min(page,pages-1);
   const t=el('table',{},el('thead',{},el('tr',{},vc.map(c=>el('th',{class:c.num?'num':'',scope:'col',tabindex:0,onclick:()=>{sd=sk===c.key?-sd:(c.num?-1:1);sk=c.key;draw()},onkeydown:e=>{if(e.key==='Enter')e.currentTarget.click()},title:'Click to sort'},c.label,el('span',{class:'sorti'},sk===c.key?(sd>0?' ▲':' ▼'):' ↕'))))),
    el('tbody',{},r.slice(page*pageSize,(page+1)*pageSize).map(x=>{const tr=el('tr',{},vc.map(c=>{const v=c.fmt?c.fmt(x[c.key],x):x[c.key];return el('td',{class:c.num?'num':''},v&&v.nodeType?v:(v??'–'))}));
     if(rowAction){const cx=rowAction(x);if(cx)ddRow(tr,()=>cx,cx.title)}return tr})));
   tw.innerHTML='';tw.append(t);info.textContent=`${fmt(r.length)} rows`+(pages>1?` · page ${page+1}/${pages}`:'');pager.innerHTML='';if(pages>1){pager.append(el('button',{class:'btn',onclick:()=>{page=Math.max(0,page-1);draw()}},'Previous'),' ',el('button',{class:'btn',onclick:()=>{page=Math.min(pages-1,page+1);draw()}},'Next'))}}
- const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();return wrap}
+ const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();
+ if(ex.length)tatOnToggle(wrap,v=>{ex.forEach(k=>v?hidden.delete(k):hidden.add(k));if(drawn)draw()});return wrap}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
 function render(){({overview:vOverview,force1:vForce1,tracker:vTracker,growth:vGrowth,force:vForce,tat:vTat,people:vPeople,quality:vQuality,upload:vUpload}[S.section]||vOverview)()}
 
@@ -303,11 +310,11 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
   tile('Same day last month',fmt(ov.prev_month_same_day&&ov.prev_month_same_day.mtd),ov.prev_month_same_day?'as of '+ov.prev_month_same_day.snapshot:''),
   tile('Last month final',fmt(ov.prev_month_final),'Same month last year '+fmt(ov.same_month_last_year)),
   tile('Force1 utilisation (cases)',pct(f2.usage_pct),`${fmt(f2.force_cases)} of ${fmt(f2.tracker_cases_covered)} cases went through Force1; ${fmt(f2.tracker_cases_not_covered)} cases are in locations not yet on Force1 reports`),
-  tile('Case TAT (median)',hrs(ct.median_hours),`P90 ${hrs(ct.p90_hours)} · ${fmt(ct.completed_valid)} completed`),
+  tatTile(ct,m,f),
   tile('SLA met',pct(ct.sla_met_pct),`Against each case's due time in Force1; ${fmt(ct.open)} open`,ct.sla_met_pct<.8?'warn':'')));
  {const st=s.querySelectorAll('.ovsec .tile');const lastD=daily[daily.length-1];const pm=S.meta.months[S.meta.months.indexOf(m)+1];
   if(st[0])ddTile(st[0],()=>bizCtx(m,f,{focus:'mtd'}));if(st[1]&&lastD)ddTile(st[1],()=>({kind:'day',title:'Report '+ddmm(lastD.date),date:lastD.date,change:lastD.change,mtd:lastD.mtd,basis:lastD.basis,f}));
-  if(st[3])ddTile(st[3],()=>bizCtx(m,f,{focus:'previous'}));if(st[4]&&pm)ddTile(st[4],()=>bizCtx(pm,f,{title:ctxTitle(f)+' — '+mlabel(pm)}));if(st[5])ddTile(st[5],()=>({kind:'info',title:'Force1 utilisation',text:'Force1 utilisation is broken down by location group in the Force1 utilisation section; each group there opens its locations.'}))}
+  if(st[3])ddTile(st[3],()=>bizCtx(m,f,{focus:'previous'}));if(st[4]&&pm)ddTile(st[4],()=>bizCtx(pm,f,{title:ctxTitle(f)+' — '+mlabel(pm)}));if(st[2])ddTile(st[2],()=>bizCtx(m,f,{focus:'revenue'}),'Revenue');if(st[5])ddTile(st[5],()=>bizCtx(m,f,{focus:'force1'}),'Force1 utilisation');if(st[6])ddTile(st[6],()=>bizCtx(m,f,{focus:'tat'}),'Case TAT');if(st[7])ddTile(st[7],()=>bizCtx(m,f,{focus:'sla'}),'SLA met')}
  const g=el('div',{class:'grid2'});const c1=el('canvas');g.append(el('div',{class:'card'},el('h3',{},'Daily additions and MTD'),el('div',{class:'chartbox'},c1),el('div',{class:'note'},'Daily change = cases added since the previous report. Orange bars cover more than one day (e.g. after a holiday).')));
  const insBox=el('div',{class:'card'},el('h3',{},'What needs attention'));(ins||[]).slice(0,10).forEach(i=>insBox.append(el('div',{class:'insight '+(i.type||'')},i.text,el('small',{},[i.type,i.evidence&&i.evidence.as_of].filter(Boolean).join(' · ')))));if(!(ins||[]).length)insBox.append(el('p',{class:'note'},'No material findings for this selection.'));g.append(insBox);s.append(g);
  const cc=C();chart(c1,{drill:(ds,i)=>{const d=daily[i];return d?{kind:'day',title:'Report '+ddmm(d.date),date:d.date,change:d.change,mtd:d.mtd,basis:d.basis,f}:null},data:{labels:daily.map(d=>d.date.slice(5)),datasets:[{type:'bar',label:'Added since previous report',data:daily.map(d=>d.change),backgroundColor:daily.map(d=>d.basis==='one_working_day'||d.basis==='from_month_start'?cc.blue:cc.ochre),yAxisID:'y'},{type:'line',label:'MTD',data:daily.map(d=>d.mtd),borderColor:cc.muted,pointRadius:2,yAxisID:'y1'}]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
@@ -315,7 +322,7 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
 });
 
 /* ---------- Force1 utilisation ---------- */
-const vForce1=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=await api('force1',{month:m,filters:f});const t=d.totals||{};
+const vForce1=guard(async s=>{const m=$('#fMonth').value,f=filters();const [d,TU]=await Promise.all([api('force1',{month:m,filters:f}),api('tat_summary',{month:m,filters:f,group:'unit'}).catch(()=>[])]);const t=d.totals||{};const TUM=byId(TU);
  s.append(el('h2',{},'Force1 utilisation — '+mlabel(m)),el('p',{class:'lede'},'How much of the work is done in Force1. Two measures: cases (Force1 cases vs all business cases) and field visits (submitted by field executives vs entered by back office).'));
  const cu=t.case_utilisation,fu=t.field_utilisation,hasPts=(t.field_points||0)>0;
  s.append(el('div',{class:'split'},
@@ -332,10 +339,11 @@ const vForce1=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=awa
  const cv=el('canvas');s.append(el('div',{class:'card',style:'margin-top:14px'},el('h3',{},'Monthly trend'),el('div',{class:'chartbox'},cv),el('div',{class:'note'},'Field-level utilisation is shown only for months with Force1 visit data.')));
  const cc=C();chart(cv,{type:'line',data:{labels:d.trend.map(x=>mlabel(x.month)),datasets:[{label:'Case-level Force1 %',data:d.trend.map(x=>x.case_utilisation==null?null:x.case_utilisation*100),borderColor:cc.blue,backgroundColor:cc.blue},{label:'Field-level Force1 %',data:d.trend.map(x=>x.field_utilisation==null?null:x.field_utilisation*100),borderColor:cc.ochre,backgroundColor:cc.ochre}]},options:{maintainAspectRatio:false,scales:{y:{min:0,max:100,title:{display:true,text:'%'}}}}});
  const ch=v=>v==null?'–':el('span',{class:'chip '+(v>=.8?'good':v>=.4?'warn':'bad')},pct(v));
- s.append(el('h3',{},'By location group'),table(d.by_unit,[{key:'recon_unit',label:'Location group'},{key:'tracker_cases',label:'Tracker cases',num:1,fmt:fmt},{key:'force1_cases',label:'Force1 cases',num:1,fmt:fmt},{key:'case_utilisation',label:'Case Force1 %',num:1,fmt:ch},
+ {const tb=el('div');s.append(el('h3',{},'Turnaround time — this selection'),tb);api('tat_summary',{month:m,filters:f,group:'total'}).then(r=>tb.append(tatBox((r||[])[0]))).catch(()=>{})}
+ s.append(el('h3',{},'By location group'),table((d.by_unit||[]).map(r=>({...r,...tatFlat(TUM[r.recon_unit])})),[{key:'recon_unit',label:'Location group'},{key:'tracker_cases',label:'Tracker cases',num:1,fmt:fmt},{key:'force1_cases',label:'Force1 cases',num:1,fmt:fmt},{key:'case_utilisation',label:'Case Force1 %',num:1,fmt:ch},
   {key:'f1_field',label:'Field by field execs',num:1,fmt:fmt},{key:'manual_field',label:'Field manual (back office)',num:1,fmt:fmt},{key:'field_utilisation',label:'Field Force1 %',num:1,fmt:ch},{key:'unverified_field',label:'Unverified',num:1,fmt:fmt},
   {key:'field_execs',label:'Field execs',num:1,fmt:fmt},{key:'back_office_staff',label:'Back office',num:1,fmt:fmt},{key:'field_points_per_exec',label:'Field pts / exec',num:1,fmt:fmt},{key:'back_office_points_per_person',label:'Pts / back-office person',num:1,fmt:fmt},
-  {key:'f1_field_tat_hours',label:'Field TAT (exec)',num:1,fmt:hrs},{key:'manual_field_tat_hours',label:'Field TAT (manual)',num:1,fmt:hrs}],{name:`force1_${m}.csv`,rowAction:r=>r.recon_unit?{kind:'unit',title:r.recon_unit+' (location group)',unit:r.recon_unit,m,f}:null}));
+  {key:'f1_field_tat_hours',label:'Field TAT (exec)',num:1,fmt:hrs},{key:'manual_field_tat_hours',label:'Field TAT (manual)',num:1,fmt:hrs},...tatCols()],{name:`force1_${m}.csv`,defaultHidden:['sla'],expand:{keys:TATXK},rowAction:r=>r.recon_unit?{kind:'unit',title:r.recon_unit+' (location group)',unit:r.recon_unit,m,f}:null}));
 });
 
 /* ---------- Business tracker: Zonal Tracker replica ---------- */
@@ -561,15 +569,20 @@ const vForce=guard(async s=>{const m=$('#fMonth').value,f=filters();const [rows,
 /* ---------- TAT & operations ---------- */
 const vTat=guard(async s=>{const m=$('#fMonth').value,f=filters();
  const cg=el('select',{'aria-label':'Case TAT grouping'},GROUPS.case_tat.map(x=>el('option',{value:x},'Case TAT by '+x.replace('_',' '))));const pg=el('select',{'aria-label':'Point TAT grouping'},GROUPS.point_tat.map(x=>el('option',{value:x},'Point TAT by '+x.replace('_',' '))));
- const a=el('div'),b=el('div');s.append(el('h2',{},'TAT & operations — '+mlabel(m)),el('p',{class:'lede'},'Case TAT = Completed − Received. Field TAT = Field reviewed − Assigned, field point types only. Document TAT = Completed − Created, document types only. Timestamps converted from UTC to IST.'),
-  el('div',{class:'tools'},cg),a,el('div',{class:'tools'},pg),b);
+ const a=el('div'),b=el('div'),tb=el('div'),sm=el('div');const sg=el('select',{'aria-label':'TAT summary grouping'},['zone','location','client','unit'].map(x=>el('option',{value:x},'Summary by '+x)));s.append(el('h2',{},'TAT & operations — '+mlabel(m)),el('p',{class:'lede'},'Case TAT = Completed − Received. Field TAT = Field reviewed − Assigned, field point types only. Document TAT = Completed − Created, document types only. Timestamps converted from UTC to IST.'),
+  tb,el('h3',{},'TAT summary — case, document and field'),el('div',{class:'tools'},sg),sm,el('h3',{},'Case TAT detail'),el('div',{class:'tools'},cg),a,el('h3',{},'Point TAT detail'),el('div',{class:'tools'},pg),b);
+ async function ls(){sm.innerHTML='Loading…';const g=sg.value;const r=await api('tat_summary',{month:m,filters:f,group:g});sm.innerHTML='';
+  const nm=id=>id==null?'Not identified (location-group records)':g==='zone'?zoneLabel(id):g==='location'?((locById(id)||{}).label||'Location '+id):id;
+  sm.append(table((r||[]).map(x=>({key:nm(x.id),id:x.id,...tatFlat(x),cases:(x.case||{}).cases,points:x.points})),[{key:'key',label:g[0].toUpperCase()+g.slice(1)},{key:'cases',label:'Cases',num:1,fmt:fmt},...tatCols(),{key:'points',label:'Points',num:1,fmt:fmt}],
+   {name:`tat_summary_${g}.csv`,expand:{keys:TATXK},rowAction:g==='unit'?null:x=>{if(x.id==null)return null;const add=g==='zone'?{zone_group:x.id}:g==='location'?{location_id:+x.id}:{client_family:x.id};return bizCtx(m,{...f,...add},{focus:'tat'})}}))}
+ api('tat_summary',{month:m,filters:f,group:'total'}).then(r=>{tb.append(tatBox((r||[])[0],{note:'This selection, '+mlabel(m)+'. ⚠ = fewer than 30 completed items.'}))}).catch(()=>{});
  const lowS=(v,r)=>r.low_sample?el('span',{title:'Fewer than 30 completed — treat with caution'},hrs(v)+' ⚠'):hrs(v);
  async function lc(){a.innerHTML='Loading…';const r=await api('case_tat',{month:m,filters:f,group:cg.value});a.innerHTML='';a.append(table(r,[{key:'key',label:cg.value},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'completed_valid',label:'Completed (valid)',num:1,fmt:fmt},{key:'open',label:'Open',num:1,fmt:fmt},{key:'median_hours',label:'Median',num:1,fmt:lowS},{key:'avg_hours',label:'Average',num:1,fmt:hrs},{key:'p90_hours',label:'P90',num:1,fmt:hrs},{key:'sla_met_pct',label:'SLA met',num:1,fmt:v=>v==null?'–':el('span',{class:'chip '+(v>=.9?'good':v>=.7?'warn':'bad')},pct(v))},{key:'negative',label:'Negative durations (excluded)',num:1}],{name:`case_tat_${cg.value}.csv`}))}
  async function lp(){b.innerHTML='Loading…';const r=await api('point_tat',{month:m,filters:f,group:pg.value});b.innerHTML='';
   if(!r.length){b.append(noPointData(m));return}
   b.append(table(r,[{key:'key',label:pg.value.replace('_',' ')},{key:'points',label:'Points',num:1,fmt:fmt},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'field_points',label:'Field points',num:1,fmt:fmt},{key:'field_median_hours',label:'Field TAT median',num:1,fmt:lowS},{key:'field_p90_hours',label:'Field TAT P90',num:1,fmt:hrs},{key:'field_tat_n',label:'Field TAT n',num:1,fmt:fmt},{key:'field_invalid_dates',label:'Invalid field dates',num:1,fmt:fmt},{key:'doc_points',label:'Document points',num:1,fmt:fmt},{key:'doc_median_hours',label:'Document TAT median',num:1,fmt:hrs},{key:'tele_points',label:'Tele points',num:1,fmt:fmt},{key:'tele_median_hours',label:'Tele TAT median',num:1,fmt:hrs},{key:'route_in_force',label:'Field: by field executive (Force)',num:1,fmt:fmt},{key:'route_backoffice',label:'Field: manual by back office',num:1,fmt:fmt},{key:'route_unknown',label:'Field: not verified',num:1,fmt:fmt}],{name:`point_tat_${pg.value}.csv`,defaultHidden:['tele_points','tele_median_hours']}),
    el('p',{class:'note'},'Route rule (business definition): field executives submit only field points. A field point submitted by anyone who also creates cases or handles non-field points is a manual submission by back office.'))}
- cg.onchange=lc;pg.onchange=lp;await Promise.all([lc(),lp()])});
+ cg.onchange=lc;pg.onchange=lp;sg.onchange=ls;await Promise.all([ls(),lc(),lp()])});
 
 /* ---------- People ---------- */
 const vPeople=guard(async s=>{const m=$('#fMonth').value,f=filters();const r=await api('employees',{month:m,filters:f});
@@ -580,7 +593,7 @@ const vPeople=guard(async s=>{const m=$('#fMonth').value,f=filters();const r=awa
  const atb=el('div');if(!r.length){s.append(noPointData(m),atb);await attritionSection(atb,m,f);return}
  const csel=el('select',{'aria-label':'Show'},el('option',{value:''},'All employees'),el('option',{value:'field_executive'},'Field executives only'),el('option',{value:'back_office'},'Back office only'));
  const cnt=k=>r.filter(x=>x.classification===k).length;s.append(el('div',{class:'tiles'},tile('Field executives',fmt(cnt('field_executive')),'Verified points in '+mlabel(m)),tile('Back office',fmt(cnt('back_office')),'Verified points in '+mlabel(m)),tile('Unclassified',fmt(r.length-cnt('field_executive')-cnt('back_office')))),el('div',{class:'tools'},csel));
- const holder=el('div');s.append(holder);const draw2=()=>{holder.innerHTML='';const rr=csel.value?r.filter(x=>x.classification===csel.value):r;holder.append(table(rr,[{key:'name',label:'Employee'},{key:'classification',label:'Classification',fmt:cls},{key:'points',label:'Points verified',num:1,fmt:fmt},{key:'field',label:'Field',num:1,fmt:fmt},{key:'document',label:'Document',num:1,fmt:fmt},{key:'tele',label:'Tele',num:1,fmt:fmt},{key:'field_median_hours',label:'Field TAT median',num:1,fmt:hrs},{key:'field_tat_n',label:'Field TAT n',num:1,fmt:fmt},{key:'verified_for_other_assignee',label:'Verified others\' field points',num:1,fmt:fmt},{key:'units',label:'Location groups'}],{name:`employees_${m}.csv`}))};csel.onchange=draw2;draw2();s.append(
+ const holder=el('div');s.append(holder);const draw2=()=>{holder.innerHTML='';const rr=csel.value?r.filter(x=>x.classification===csel.value):r;holder.append(table(rr,[{key:'name',label:'Employee'},{key:'classification',label:'Classification',fmt:cls},{key:'points',label:'Points verified',num:1,fmt:fmt},{key:'field',label:'Field',num:1,fmt:fmt},{key:'document',label:'Document',num:1,fmt:fmt},{key:'tele',label:'Tele',num:1,fmt:fmt},{key:'field_median_hours',label:'Field TAT median',num:1,fmt:hrs},{key:'field_tat_n',label:'Field TAT n',num:1,fmt:fmt},{key:'doc_median_hours',label:'Document TAT median',num:1,fmt:hrs},{key:'doc_tat_n',label:'Document TAT n',num:1,fmt:fmt},{key:'tele_median_hours',label:'Tele TAT median',num:1,fmt:hrs},{key:'verified_for_other_assignee',label:'Verified others\' field points',num:1,fmt:fmt},{key:'units',label:'Location groups'}],{name:`employees_${m}.csv`,expand:{keys:['doc_median_hours','doc_tat_n','tele_median_hours']}}))};csel.onchange=draw2;draw2();s.append(
   el('p',{class:'note'},'Rule: field executives submit only field points. Anyone who creates cases/points or verifies any document or tele point is back office. Admins can override; overrides persist.'),atb);await attritionSection(atb,m,f)});
 
 /* ---------- Data quality ---------- */
@@ -1251,7 +1264,7 @@ const DD={stack:[],sus:false,charts:[],ret:null,
   b.innerHTML='';b.append(el('p',{class:'note'},'Loading…'));const tok=this.tok=Symbol();
   try{const out=el('div');await (DDK[c.kind]||DDK.info)(out,c);if(tok!==this.tok)return;b.innerHTML='';b.append(out)}catch(e){if(tok!==this.tok)return;b.innerHTML='';b.append(el('div',{class:'banner err'},e.message||String(e)))}
   b.scrollTop=0;$('#ddClose').focus({preventScroll:true})}};
-function ddInit(){const setH=()=>{const h=$('header.topbar');if(h)document.documentElement.style.setProperty('--hdr',h.offsetHeight+'px')};setH();addEventListener('resize',setH);$('#ddClose').onclick=()=>DD.close();$('#ddBack').onclick=()=>DD.back();$('#ddReset').onclick=()=>{if(DD.stack.length)DD.to(0)};$('#ddscrim').onclick=()=>DD.close();
+function ddInit(){CMP.paint();const setH=()=>{const h=$('header.topbar');if(h)document.documentElement.style.setProperty('--hdr',h.offsetHeight+'px')};setH();addEventListener('resize',setH);$('#ddClose').onclick=()=>DD.close();$('#ddBack').onclick=()=>DD.back();$('#ddReset').onclick=()=>{if(DD.stack.length)DD.to(0)};$('#ddscrim').onclick=()=>DD.close();
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&DD.isOpen()&&!$('#fpanel').classList.contains('open')){e.stopPropagation();DD.close()}});
  $('#ddAsk').onclick=()=>{const c=DD.stack[DD.stack.length-1];if(!c)return;askAbout(c.kind==='branch'?`How is branch ${c.title} doing?`:`How is ${c.title} doing in ${mlabel(c.m||$('#fMonth').value)}?`,c.m,c.f)}}
 // make a KPI tile open a context
@@ -1263,35 +1276,6 @@ const DEF={mtd:'Cases so far = month-to-date cases from the latest Zonal Tracker
  force1:'Force1 cases = cases recorded in the Force1 operational system (by branch). They are counted differently from tracker figures.'};
 const DDK={
  info:async(o,c)=>{o.append(el('p',{},c.text||'No further detail is available for this item.'),el('p',{class:'note'},'This is the lowest level the data supports here.'))},
- biz:async(o,c)=>{const J=await api('drill',{month:c.m,filters:c.f,level:c.level,p:c.p});const s=J.selected||{},pa=J.parent;
-  const share=pa&&pa.mtd?s.mtd/pa.mtd:null;const kids=J.children||[];
-  o.append(el('p',{class:'note'},`${mlabel(c.m)} · business figures up to ${ddmm(String((S.meta.freshness||{}).zonal_latest_snapshot||'').slice(0,10))} · filters: ${ctxTitle(c.f)}`));
-  const tiles=el('div',{class:'tiles'},tile('Cases so far',fmt(s.mtd),pa?`${pct(share)} of ${fmt(pa.mtd)} (${ctxTitle(J.parent_filters||{})})`:'Pan India total'),
-   tile('Target',fmt(s.target),s.target?pct(s.mtd/s.target)+' achieved':'no target'),tile('Likely month end',fmt(s.likely),s.low!=null?`range ${fmt(s.low)}–${fmt(s.high)}${s.target?' · '+pct(s.achievement_likely)+' of target':''}`:''),
-   (()=>{const og=J.organic;return og&&og.organic_to_date!=null?tile('Organic expectation',fmt(og.organic_month),`so far ${fmt(og.organic_to_date)} → actual ${og.effort_to_date>=0?'+':'−'}${fmt(Math.abs(og.effort_to_date))}${sgnp(og.effort_pct)}`)
-    :tile('Organic expectation',fmt(s.organic),s.organic?'for the full month':'')})());
-  o.append(tiles,el('p',{class:'note'},DEF[c.focus]||DEF.mtd));
-  if(c.level==='branch'){const B=J.branches||[];o.append(el('h4',{},`Branches sending Force1 cases — ${mlabel(c.m)}`),el('p',{class:'note'},`${fmt(J.force1_cases_month)} Force1 cases this month in this selection; top ${B.length} branches by cases. ${DEF.force1}`));
-   o.append(B.length?table(B,[{key:'branch',label:'Branch'},{key:'branch_code',label:'Code'},{key:'ifsc',label:'IFSC'},{key:'client_code',label:'Client'},{key:'cases_month',label:mlabel(c.m),num:1,fmt:fmt},{key:'cases_last3',label:'Last 3 months',num:1,fmt:fmt},{key:'in_master',label:'In verified list',fmt:v=>v?'Yes':'No'}],
-    {name:'branches.csv',pageSize:50,defaultHidden:['ifsc'],rowAction:r=>({kind:'branch',title:r.branch,fam:r.client_family,code:r.branch_code,m:c.m,f:c.f})}):el('p',{class:'note'},'No Force1 cases with a branch code in this selection.'))}
-  else if(kids.length){const sum=kids.reduce((a,k)=>a+(+k.mtd||0),0);
-   o.append(el('h4',{},'Breakdown by '+(LV[c.level]||c.level).toLowerCase()),
-    table(kids.map(k=>({...k,share:s.mtd?k.mtd/s.mtd:null})),[{key:'group',label:LV[c.level]||'Group'},{key:'mtd',label:'So far',num:1,fmt:fmt},{key:'share',label:'Share',num:1,fmt:pct},{key:'target',label:'Target',num:1,fmt:fmt},
-     {key:'likely',label:'Likely month end',num:1,fmt:fmt},{key:'achievement_likely',label:'Likely % of target',num:1,fmt:pct},{key:'change',label:'vs same point last month',num:1,fmt:v=>v==null?'–':el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':'')+fmt(v))}],
-     {name:'breakdown.csv',search:kids.length>12,pageSize:60,rowAction:k=>{const add=c.level==='zone'?{zone_group:k.id}:c.level==='location'?{location_id:+k.id}:{client_family:k.id};if(!k.id)return{kind:'info',title:k.group,text:`"${k.group}" could not be matched to the master list, so it cannot be opened.`};
-      const nf={...c.f,...add};return bizCtx(c.m,nf,{p:c.level==='client'&&k.client_code?{client_code:k.client_code}:{},clientLabel:c.level==='client'?k.group:null,focus:c.focus})}}),
-    el('p',{class:'note '+(sum===s.mtd?'':'bad')},sum===s.mtd?`Check: breakdown adds up to ${fmt(sum)} = cases so far ✓`:`Breakdown adds up to ${fmt(sum)}, selection shows ${fmt(s.mtd)} — rows that cannot be assigned are excluded.`))}
-  else o.append(el('p',{class:'note'},'No breakdown available for this selection.'));
-  const H=(J.history||[]).filter(h=>h.month);if(H.length>1){const cv=el('canvas');o.append(el('h4',{},'Last 12 months'),el('div',{class:'chartbox',style:'height:200px'},cv),el('p',{class:'note'},'Click a month to open the same selection for that month.'));const cc=C();
-   DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Cases',data:H.map(h=>h.cases),backgroundColor:H.map(h=>h.month===c.m?cc.ochre:cc.blue)},{type:'line',label:'Target',data:H.map(h=>h.target),borderColor:cc.muted,pointRadius:2}]},
-    options:{maintainAspectRatio:false,onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},onClick:(e,els)=>{if(!els.length)return;const h=H[els[0].index];if(h.month!==c.m)setTimeout(()=>DD.push(bizCtx(h.month,c.f,{title:c.title+' — '+mlabel(h.month),level:c.level,p:c.p})),0)}}}))}
-  o.append(el('details',{class:'note'},el('summary',{},'Method and data status'),el('p',{},J.method||''),el('p',{},'Figures come from the same database calculations as the dashboard; nothing here changes the global filters.')))},
- branch:async(o,c)=>{const J=await api('branch_detail',{p:{client_family:c.fam,branch_code:c.code}});const M=J.master||{},A=J.activity||{};
-  o.append(el('div',{class:'tiles'},tile('Client',J.client_family||'–',J.location||''),tile('Cases (last 3 months)',fmt(A.cases_last3),A.last_month?'last case '+mlabel(A.last_month):'no Force1 cases'),
-   tile('Peer median / month',J.peer_median_per_month==null?'–':String(J.peer_median_per_month),J.peers?`${fmt(J.peers)} active peers in this location`:'too few peers'),tile('Since',A.first_month?mlabel(A.first_month):'–',fmt(A.cases_total)+' cases in history')));
-  o.append(el('h4',{},'Verified branch record'),M.name?table([{k:'Name',v:M.name},{k:'IFSC',v:M.ifsc},{k:'Address',v:M.address},{k:'District / state',v:[M.district,M.state,M.pincode].filter(Boolean).join(', ')},{k:'Status',v:[M.status,M.verification].filter(Boolean).join(' · ')},{k:'Source',v:[M.source,M.source_version].filter(Boolean).join(' · ')},{k:'Verified on',v:M.verified_on}],[{key:'k',label:'Field'},{key:'v',label:'Value'}],{search:false,name:'branch.csv'}):el('p',{class:'note'},'This code is not in the verified branch list (it may be an office or written differently in Force1).'));
-  const H=J.months||[];if(H.length){const cv=el('canvas');o.append(el('h4',{},'Force1 cases by month'),el('div',{class:'chartbox',style:'height:200px'},cv));const cc=C();DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Force1 cases',data:H.map(h=>h.cases),backgroundColor:cc.blue}]},options:{maintainAspectRatio:false}}))}
-  o.append(el('p',{class:'note'},'Lowest level: individual cases are not listed here because they carry applicant details. '+(J.note||'')))},
  day:async(o,c)=>{const R=await api('zonal',{snapshot:c.date,filters:c.f});const lvl=nextLevel(c.f);const key=lvl==='zone'?'zone':lvl==='location'?'location':'client';const g={};
   (R||[]).forEach(r=>{const k=r[key]||'—';(g[k]=g[k]||{group:k,change:0,mtd:0,id:lvl==='zone'?null:lvl==='location'?r.location_id:r.family,code:r.client_code});g[k].change+=+r.change||0;g[k].mtd+=+r.mtd||0});
   const rows=Object.values(g).sort((a,b)=>b.change-a.change);const tot=rows.reduce((a,r)=>a+r.change,0);
@@ -1301,6 +1285,226 @@ const DDK={
  unit:async(o,c)=>{const L=(S.meta.locations||[]).filter(l=>l.recon_unit===c.unit&&l.zone_group);
   o.append(el('p',{},'Force1 utilisation is reported per location group, because Force1 files are uploaded per group. Open a location in this group for its business detail.'),
    L.length?table(L.map(l=>({id:l.id,label:l.label,zone:l.zone_label})),[{key:'label',label:'Location'},{key:'zone',label:'Zone'}],{search:false,name:'group.csv',rowAction:r=>bizCtx(c.m,{...c.f,location_id:r.id})}):el('p',{class:'note'},'No locations are linked to this group.'))}};
+/* ---------- TAT: one headline figure, expandable to document / field / tele TAT — the same control everywhere ---------- */
+const TATX={get on(){try{return localStorage.getItem('crux_tatx')==='1'}catch{return false}},
+ set(v){try{localStorage.setItem('crux_tatx',v?'1':'0')}catch{}document.querySelectorAll('[data-tatx]').forEach(n=>n.dispatchEvent(new CustomEvent('tatx',{detail:v})))}};
+const TATXK=['tat_case_p90','tat_doc','tat_doc_n','tat_field','tat_field_n','tat_tele'];
+const lowH=(v,low)=>v==null?'–':hrs(v)+(low?' ⚠':'');
+function tatToggle(){const b=el('button',{type:'button',class:'btn sm tatx','data-tatx':'1'});
+ const lab=()=>{b.textContent=(TATX.on?'▾ Hide':'▸ Show')+' document & field TAT';b.setAttribute('aria-expanded',String(TATX.on))};lab();
+ b.addEventListener('tatx',lab);b.onclick=e=>{e.stopPropagation();e.preventDefault();TATX.set(!TATX.on)};return b}
+function tatOnToggle(n,fn){n.setAttribute('data-tatx','1');n.addEventListener('tatx',e=>fn(e.detail));fn(TATX.on);return n}
+const slaChip=v=>v==null?'–':el('span',{class:'chip '+(v>=.9?'good':v>=.7?'warn':'bad')},pct(v));
+// t = {case:{median,p90,completed,open,sla_met_pct,low_sample}, document:{median,p90,n,points}, field:{…}, tele:{…}}
+function tatBox(t,o={}){t=t||{};const c=t.case||{},d=t.document||{},fl=t.field||{},te=t.tele||{};
+ const more=el('div',{class:'tiles tatmore'},
+  tile('Document TAT (median)',lowH(d.median,d.low_sample),d.n?`P90 ${hrs(d.p90)} · ${fmt(d.n)} completed of ${fmt(d.points)} document points`:'no document points with times'),
+  tile('Field TAT (median)',lowH(fl.median,fl.low_sample),fl.n?`P90 ${hrs(fl.p90)} · ${fmt(fl.n)} of ${fmt(fl.points)} field visits with valid times`:'no field visits with times'),
+  tile('Tele TAT (median)',lowH(te.median,te.n>0&&te.n<30),te.n?`${fmt(te.n)} completed of ${fmt(te.points)} tele points`:'no tele points with times'));
+ const box=el('div',{class:'tatbox'},el('div',{class:'tiles'},
+   tile('Case TAT (median)',lowH(c.median,c.low_sample),c.completed?`P90 ${hrs(c.p90)} · ${fmt(c.completed)} completed · ${fmt(c.open)} open`:'no completed cases with times'),
+   el('div',{class:'tile'},el('div',{class:'k'},'SLA met'),el('div',{class:'v'},slaChip(c.sla_met_pct)),el('div',{class:'n'},'against each case\'s due time in Force1'))),
+  tatToggle(),more,o.note?el('p',{class:'note'},o.note):null);
+ return tatOnToggle(box,v=>{more.hidden=!v})}
+// a KPI tile with the case TAT and an inline expand for document / field / tele (Overview)
+function tatTile(ct,m,f){const more=el('div',{class:'n tatlines'},'Loading…');
+ const t=tile('Case TAT (median)',hrs(ct.median_hours),`P90 ${hrs(ct.p90_hours)} · ${fmt(ct.completed_valid)} completed`);t.append(tatToggle(),more);tatOnToggle(t,v=>{more.hidden=!v});
+ api('tat_summary',{month:m,filters:f,group:'total'}).then(r=>{const x=(r||[])[0]||{},d=x.document||{},fl=x.field||{},te=x.tele||{};more.innerHTML='';
+  more.append(el('div',{},`Document ${lowH(d.median,d.low_sample)} · n ${fmt(d.n)}`),el('div',{},`Field ${lowH(fl.median,fl.low_sample)} · n ${fmt(fl.n)}`),el('div',{},`Tele ${hrs(te.median)} · n ${fmt(te.n)}`))})
+  .catch(()=>{more.textContent='Document and field TAT could not be loaded.'});return t}
+// flatten a TAT record onto a table row; columns for any table that shows TAT
+function tatFlat(x){x=x||{};const c=x.case||{},d=x.document||{},fl=x.field||{},te=x.tele||{};
+ return{tat_case:c.median,tat_case_low:c.low_sample,tat_case_p90:c.p90,sla:c.sla_met_pct,tat_cases:c.cases,tat_doc:d.median,tat_doc_low:d.low_sample,tat_doc_n:d.n,tat_field:fl.median,tat_field_low:fl.low_sample,tat_field_n:fl.n,tat_tele:te.median}}
+function tatCols(o={}){return[{key:'tat_case',label:'Case TAT',num:1,fmt:(v,r)=>lowH(v,r.tat_case_low)},...(o.sla===false?[]:[{key:'sla',label:'SLA met',num:1,fmt:slaChip}]),
+ {key:'tat_case_p90',label:'Case TAT P90',num:1,fmt:hrs},{key:'tat_doc',label:'Document TAT',num:1,fmt:(v,r)=>lowH(v,r.tat_doc_low)},{key:'tat_doc_n',label:'Document n',num:1,fmt:fmt},
+ {key:'tat_field',label:'Field TAT',num:1,fmt:(v,r)=>lowH(v,r.tat_field_low)},{key:'tat_field_n',label:'Field n',num:1,fmt:fmt},{key:'tat_tele',label:'Tele TAT',num:1,fmt:hrs}]}
+
+/* ---------- labels and chips shared by the drawer ---------- */
+const RAG={on_track:['On track','good'],stretch:['Stretch','warn'],at_risk:['At risk','bad'],no_target:['No target','']};
+const LIFE=[['new','New','good'],['reactivated','Reactivated','good'],['growing','Growing','good'],['stable','Stable',''],['losing_traction','Losing traction','warn'],['dormant','Dormant','bad'],['insufficient_data','Too little history','']];
+const LIFEM=Object.fromEntries(LIFE.map(x=>[x[0],[x[1],x[2]]]));
+const COVM={active_6m:['Active (6 months)','good'],gone_quiet_6m:['Gone quiet (6 months)','warn'],never_activated:['Never activated','bad']};
+const utilChip=v=>v==null?'–':el('span',{class:'chip '+(v>=.8?'good':v>=.4?'warn':'bad')},pct(v));
+const signed=(v,f=fmt)=>v==null||isNaN(v)?'–':el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':v<0?'−':'')+f(Math.abs(v)));
+function normCode(c){const s=String(c||'').toUpperCase().replace(/^[A-Z_]+-/,'').replace(/[^0-9A-Z]/g,'').replace(/^0+/,'');return s||null}
+function ddSec(title,id){const body=el('div',{class:'note'},'Loading…');const s=el('section',{class:'ddsec','data-sec':id},el('h4',{},title),body);s.fill=(...n)=>{body.className='';body.innerHTML='';body.append(...n.flat().filter(Boolean))};s.fail=e=>{body.className='note bad';body.textContent='Could not load: '+(e&&e.message||e)};return s}
+const OPS=['tat','force1','coverage','lifecycle','revenue','penalty'];
+function opsLoad(m,f,level){const o={};OPS.forEach(p=>{o[p]=api('drill_ops',{month:m,filters:f,level,part:p})});return o}
+const byId=a=>Object.fromEntries((a||[]).filter(x=>x&&x.id!=null).map(x=>[String(x.id),x]));
+function prevMonth(m){const M=S.meta.months||[];return M[M.indexOf(m)+1]||null}
+function lastYear(m){const d=new Date(m+'T00:00:00Z');d.setUTCFullYear(d.getUTCFullYear()-1);const k=d.toISOString().slice(0,10);return (S.meta.months||[]).includes(k)?k:null}
+
+/* ---------- compare list: any two or more drawer items (entities, months, branches) ---------- */
+const CMP={max:6,items:(()=>{try{return JSON.parse(sessionStorage.getItem('crux_cmp')||'[]')}catch{return[]}})(),msg:'',
+ key(i){return[i.kind,i.m,JSON.stringify(i.f||{}),i.fam||'',i.code||''].join('|')},
+ has(i){const k=this.key(i);return this.items.some(x=>this.key(x)===k)},
+ add(i){if(this.has(i))return true;if(this.items.length>=this.max){this.msg=`Up to ${this.max} items can be compared — remove one first.`;this.paint();return false}this.items.push(i);this.msg='';this.save();this.paint();return true},
+ remove(i){const k=this.key(i);this.items=this.items.filter(x=>this.key(x)!==k);this.msg='';this.save();this.paint()},
+ toggle(i){this.has(i)?this.remove(i):this.add(i)},
+ clear(){this.items=[];this.msg='';this.save();this.paint()},
+ save(){try{sessionStorage.setItem('crux_cmp',JSON.stringify(this.items))}catch{}},
+ paint(){const t=$('#ddTray');if(t){t.innerHTML='';t.hidden=!this.items.length&&!this.msg;
+   if(this.items.length)t.append(el('span',{class:'trayk'},'Compare:'),...this.items.map(i=>el('span',{class:'chip'},cmpLabel(i),' ',el('button',{type:'button',class:'lnk',
+      'aria-label':'Remove '+cmpLabel(i)+' from compare',onclick:()=>this.remove(i)},'×'))),
+     el('button',{type:'button',class:'btn sm primary',disabled:this.items.length<2?'':null,title:this.items.length<2?'Add at least two items':'',onclick:()=>DD.go({kind:'compare',title:`Compare (${this.items.length})`,items:this.items.map(x=>({...x}))},$('#ddBody'))},`Compare ${this.items.length}`),
+     el('button',{type:'button',class:'btn sm',onclick:()=>this.clear()},'Clear'));
+   if(this.msg)t.append(el('span',{class:'note bad'},this.msg))}
+  document.querySelectorAll('[data-cmpk]').forEach(n=>{const on=this.items.some(x=>this.key(x)===n.dataset.cmpk);if(n.type==='checkbox')n.checked=on;else{n.textContent=on?'✓ In compare list':'＋ Add to compare';n.setAttribute('aria-pressed',String(on))}})}};
+function cmpLabel(i){return i.kind==='branch'?`${i.title} (${i.fam})`:`${i.title.replace(/ — .*$/,'')} · ${mlabel(i.m)}`}
+function cmpItem(c){return c.kind==='branch'?{kind:'branch',m:c.m,f:c.f||{},title:c.title,fam:c.fam,code:c.code}:{kind:'biz',m:c.m,f:c.f||{},title:c.title}}
+function cmpBtn(i){const b=el('button',{type:'button',class:'btn sm','data-cmpk':CMP.key(i)});b.onclick=e=>{e.stopPropagation();CMP.toggle(i)};const on=CMP.has(i);b.textContent=on?'✓ In compare list':'＋ Add to compare';b.setAttribute('aria-pressed',String(on));return b}
+function cmpCheck(i,label){const cb=el('input',{type:'checkbox','data-cmpk':CMP.key(i),'aria-label':'Compare '+label});cb.checked=CMP.has(i);cb.onchange=e=>{e.stopPropagation();cb.checked?CMP.add(i)||(cb.checked=false):CMP.remove(i)};return el('label',{class:'cmpcb'},cb)}
+
+/* ---------- drawer: business selection ---------- */
+function childCtx(c,k){if(!k.id)return null;const add=c.level==='zone'?{zone_group:k.id}:c.level==='location'?{location_id:+k.id}:{client_family:k.id};
+ return bizCtx(c.m,{...c.f,...add},{p:c.level==='client'&&k.client_code?{client_code:k.client_code}:{},clientLabel:c.level==='client'?k.group:null,focus:c.focus})}
+function kidRows(c,kids,s,O){const T=byId(O.tat&&O.tat.children),F=byId(O.force1&&O.force1.children),V=byId(O.coverage&&O.coverage.children),L=byId(O.lifecycle&&O.lifecycle.children),R=byId(O.revenue&&O.revenue.children),P=byId(O.penalty&&O.penalty.children);
+ return kids.map(k=>{const id=String(k.id),f1=F[id]||{},cv=V[id]||{},lc=L[id]||{},rv=R[id]||{},pe=P[id]||{};
+  return{...k,share:s.mtd?k.mtd/s.mtd:null,rag:k.status,...tatFlat(T[id]),f1c:f1.case_utilisation,f1f:f1.field_utilisation,rev:rv.mtd,rev_target:rv.target,
+   cov:cv.coverage_6m,br_active:cv.active_6m,never:cv.never_activated,quiet:cv.gone_quiet_6m,verified:cv.verified_active,dormant:lc.dormant,losing:lc.losing_traction,newb:lc.new,pen:pe.amount}})}
+function kidCols(c,withOps){const cols=[{key:'_cmp',label:'Compare',fmt:(v,r)=>{const x=childCtx(c,r);return x?cmpCheck(cmpItem(x),r.group):''}},{key:'group',label:LV[c.level]||'Group'},{key:'mtd',label:'So far',num:1,fmt:fmt},{key:'share',label:'Share',num:1,fmt:pct},{key:'target',label:'Target',num:1,fmt:fmt},
+  {key:'likely',label:'Likely month end',num:1,fmt:fmt},{key:'achievement_likely',label:'Likely % of target',num:1,fmt:pct},{key:'rag',label:'Status (RAG)',fmt:v=>chipS(RAG,v)},
+  {key:'change',label:'vs same point last month',num:1,fmt:v=>signed(v)}];
+ if(withOps)cols.push({key:'rev',label:'Revenue so far',num:1,fmt:inr},...tatCols(),{key:'f1c',label:'Force1 case %',num:1,fmt:utilChip},{key:'f1f',label:'Field by field execs %',num:1,fmt:utilChip},
+  {key:'verified',label:'Verified branches',num:1,fmt:fmt},{key:'br_active',label:'Active branches (6 m)',num:1,fmt:fmt},{key:'cov',label:'Branch coverage',num:1,fmt:pct},{key:'never',label:'Never activated',num:1,fmt:fmt},
+  {key:'quiet',label:'Gone quiet (6 m)',num:1,fmt:fmt},{key:'newb',label:'New branches',num:1,fmt:fmt},{key:'losing',label:'Losing traction',num:1,fmt:fmt},{key:'dormant',label:'Dormant branches',num:1,fmt:fmt},{key:'pen',label:'Penalties ₹',num:1,fmt:v=>v?inr(v):'–'});
+ return cols}
+function kidTable(c,kids,s,O){const withOps=!!O;const rows=kidRows(c,kids,s,O||{});
+ return table(rows,kidCols(c,withOps),{name:'breakdown.csv',search:kids.length>12,pageSize:60,defaultHidden:['likely','rev','sla','verified','br_active','never','quiet','newb','losing','dormant','pen','f1f'],expand:withOps?{keys:TATXK}:null,
+  rowAction:k=>childCtx(c,k)||{kind:'info',title:k.group,text:`"${k.group}" could not be matched to the master list, so it cannot be opened.`}})}
+function f1Tiles(t){t=t||{};return el('div',{class:'tiles'},
+ el('div',{class:'tile'},el('div',{class:'k'},'Force1 utilisation — cases'),el('div',{class:'v'},utilChip(t.case_utilisation)),el('div',{class:'n'},t.tracker_cases?`${fmt(t.force1_cases)} Force1 cases of ${fmt(t.tracker_cases)} business cases (location groups with Force1 case data)`:'measured per location group — open the location group or zone')),
+ el('div',{class:'tile'},el('div',{class:'k'},'Force1 utilisation — field visits'),el('div',{class:'v'},utilChip(t.field_utilisation)),el('div',{class:'n'},t.field_points?`${fmt(t.f1_field)} by field executives · ${fmt(t.manual_field)} manual by back office · ${fmt(t.unverified_field)} unverified`:'no Force1 visit data this month')),
+ tile('People active',`${fmt(t.field_execs)} · ${fmt(t.back_office_staff)}`,'field executives · back office (Force1 visits)'),
+ tile('Field TAT (median)',`${hrs(t.f1_field_tat_hours)} · ${hrs(t.manual_field_tat_hours)}`,'field executives · manual by back office'))}
+function brTiles(cv,lc,ob){cv=cv||{};lc=lc||{};const out=[el('div',{class:'tiles'},
+ tile('Verified branches',fmt(cv.verified_active),cv.website_listed?`${fmt(cv.website_listed)} website-listed (no codes, not in coverage)`:'source-verified client branches in this territory'),
+ tile('Active with Crux (6 months)',fmt(cv.active_6m),cv.matchable?`coverage ${pct(cv.coverage_6m)} of ${fmt(cv.matchable)} code-matchable`:''),
+ tile('Never activated',fmt(cv.never_activated),cv.opportunity_branches?`${fmt(cv.opportunity_branches)} with a peer benchmark · indicative ${fmt(cv.indicative_cases_per_month)} cases / month`:'no Force1 case since Jan-2026'),
+ tile('Gone quiet (6 months)',fmt(cv.gone_quiet_6m),'had Force1 cases, none in the last 6 months'+(cv.closed_or_ineligible?` · ${fmt(cv.closed_or_ineligible)} closed / ineligible`:'')))];
+ out.push(el('p',{class:'lifebar'},el('strong',{},'Branch status (complete months): '),...LIFE.map(([k,lab,cls])=>el('span',{class:'chip '+cls},`${lab} ${fmt(lc[k]||0)}`))));
+ if(ob)out.push(el('p',{class:'note'},`This month (Force1): ${fmt(ob.new_branches)} new branches (${fmt(ob.new_cases)} cases) · ${fmt(ob.reactivated_branches)} reactivated (${fmt(ob.reactivated_cases)}) · ${fmt(ob.continuing_branches)} continuing (${fmt(ob.continuing_cases)}).`));
+ return out}
+function prioTable(P,c){return P&&P.length?table(P,[{key:'branch',label:'Branch'},{key:'client',label:'Client'},{key:'location',label:'Location'},{key:'status',label:'Status',fmt:v=>chipS(LIFEM,v)},{key:'last3m',label:'Last 3 m',num:1,fmt:fmt},{key:'prior3m',label:'Prior 3 m',num:1,fmt:fmt},
+  {key:'priority_cases_per_month',label:'Cases / month at stake',num:1,fmt:fmt},{key:'action',label:'Suggested action'}],{name:'branch_actions.csv',search:false,pageSize:10,defaultHidden:['prior3m'],
+  rowAction:r=>r.branch_code&&r.client_family?{kind:'branch',title:r.branch||r.branch_code,fam:r.client_family,code:r.branch_code,m:c.m,f:c.f}:null}):el('p',{class:'note'},'No branch needs action by these rules.')}
+function focusSec(o,c){const id={tat:'tat',sla:'tat',force1:'force1',branches:'branches',revenue:'business'}[c.focus];if(!id)return;const n=o.querySelector(`[data-sec="${id}"]`);if(n)setTimeout(()=>n.scrollIntoView({block:'start',behavior:'smooth'}),60)}
+
+async function ddBiz(o,c){const J=await api('drill',{month:c.m,filters:c.f,level:c.level,p:c.p});const s=J.selected||{},pa=J.parent;const share=pa&&pa.mtd?s.mtd/pa.mtd:null;const kids=J.children||[];
+ const lvlOps=c.level==='branch'?'branch':c.level;const O=opsLoad(c.m,c.f,lvlOps);const INS=api('insights',{month:c.m,filters:c.f}).catch(()=>[]),DAY=api('daily',{month:c.m,filters:c.f}).catch(()=>[]);
+ const me=cmpItem(c),pm=prevMonth(c.m),ly=lastYear(c.m);const base=c.title.replace(/ — .*$/,'');
+ o.append(el('p',{class:'note'},`${mlabel(c.m)} · business figures up to ${ddmm(String((S.meta.freshness||{}).zonal_latest_snapshot||'').slice(0,10))} · filters: ${ctxTitle(c.f)}`),
+  el('div',{class:'ddact'},cmpBtn(me),
+   el('button',{type:'button',class:'btn sm',disabled:pm?null:'',title:pm?'':'No earlier month loaded',onclick:()=>DD.push({kind:'compare',title:'Compare months',items:[me,{kind:'biz',m:pm,f:c.f,title:base}]})},'Compare with previous month'),
+   el('button',{type:'button',class:'btn sm',disabled:ly?null:'',title:ly?'':'Same month last year is not loaded',onclick:()=>DD.push({kind:'compare',title:'Compare years',items:[me,{kind:'biz',m:ly,f:c.f,title:base}]})},'Compare with last year')));
+ const L=J.lfl||{};const lc=L.current!=null&&L.previous!=null?L.current-L.previous:null;
+ const revT=el('div',{class:'tile'},el('div',{class:'k'},'Revenue so far'),el('div',{class:'v'},'…'),el('div',{class:'n'},'loading'));
+ const sec0=el('section',{class:'ddsec','data-sec':'business'},el('div',{class:'tiles'},
+  tile('Cases so far',fmt(s.mtd),pa?`${pct(share)} of ${fmt(pa.mtd)} (${ctxTitle(J.parent_filters||{})})`:'Pan India total'),
+  tile('Target',fmt(s.target),s.target?pct(s.mtd/s.target)+' achieved':'no target'),
+  tile('Likely month end',fmt(s.likely),s.low!=null?`range ${fmt(s.low)}–${fmt(s.high)}${s.target?' · '+pct(s.achievement_likely)+' of target':''}`:''),
+  el('div',{class:'tile'},el('div',{class:'k'},'Status (RAG)'),el('div',{class:'v'},chipS(RAG,s.status)),el('div',{class:'n'},s.required_per_day!=null?`needs ${fmt(s.required_per_day)} / working day · recent ${fmt(s.recent_per_day)} / day`:'')),
+  (()=>{const og=J.organic;return og&&og.organic_to_date!=null?tile('Organic expectation',fmt(og.organic_month),`so far ${fmt(og.organic_to_date)} → actual ${og.effort_to_date>=0?'+':'−'}${fmt(Math.abs(og.effort_to_date))}${sgnp(og.effort_pct)}`)
+   :tile('Organic expectation',fmt(s.organic),s.organic?'for the full month':'')})(),
+  el('div',{class:'tile'},el('div',{class:'k'},'vs same point last month'),el('div',{class:'v'},signed(lc)),el('div',{class:'n'},L.previous!=null?`${fmt(L.previous)} on ${ddmm(String(L.comparison_snapshot||''))} → ${fmt(L.current)} on ${ddmm(String(L.current_snapshot||''))}`:'no comparable report last month')),
+  revT),el('p',{class:'note'},DEF[c.focus]||DEF.mtd));
+ o.append(sec0);
+ // breakdown first with business columns; operational columns are added when they arrive
+ const bk=el('div');
+ if(c.level==='branch'){const B=J.branches||[];o.append(el('h4',{},`Branches sending Force1 cases — ${mlabel(c.m)}`),el('p',{class:'note'},`${fmt(J.force1_cases_month)} Force1 cases this month in this selection; top ${B.length} branches by cases. ${DEF.force1}`),bk);
+  const brCols=withOps=>[{key:'_cmp',label:'Compare',fmt:(v,r)=>cmpCheck({kind:'branch',m:c.m,f:c.f,title:r.branch,fam:r.client_family,code:r.branch_code},r.branch)},{key:'branch',label:'Branch'},{key:'branch_code',label:'Code'},{key:'ifsc',label:'IFSC'},{key:'client_code',label:'Client'},
+    {key:'cases_month',label:mlabel(c.m),num:1,fmt:fmt},{key:'cases_last3',label:'Last 3 months',num:1,fmt:fmt},...(withOps?[{key:'life',label:'Status',fmt:v=>v?chipS(LIFEM,v):'–'},...tatCols()]:[]),{key:'in_master',label:'In verified list',fmt:v=>v?'Yes':'No'}];
+  const draw=(rows,withOps)=>{bk.innerHTML='';bk.append(B.length?table(rows,brCols(withOps),{name:'branches.csv',pageSize:50,defaultHidden:['ifsc','sla'],expand:withOps?{keys:TATXK}:null,rowAction:r=>({kind:'branch',title:r.branch,fam:r.client_family,code:r.branch_code,m:c.m,f:c.f})}):el('p',{class:'note'},'No Force1 cases with a branch code in this selection.'))};
+  draw(B,false);
+  Promise.allSettled([O.lifecycle,O.tat]).then(([lc2,tt])=>{const LM={};((lc2.value||{}).branches||[]).forEach(x=>{const k=x.client_code+'|'+x.code_norm;if(!LM[k]||(+x.last3m||0)>(+LM[k].last3m||0))LM[k]=x});const TM=byId(tt.value&&tt.value.children);
+   if(DD.stack[DD.stack.length-1]!==c)return;draw(B.map(r=>({...r,life:(LM[r.client_code+'|'+normCode(r.branch_code)]||{}).status,...tatFlat(TM[(r.client_family||'')+'|'+(normCode(r.branch_code)||'')])})),true)})}
+ else if(kids.length){const sum=kids.reduce((a,k)=>a+(+k.mtd||0),0);
+  o.append(el('h4',{},'Breakdown by '+(LV[c.level]||c.level).toLowerCase()),el('p',{class:'note'},'Tick rows to compare them; more columns (TAT, Force1, branches, revenue, penalties) appear as they load — use Columns to show or hide.'),bk,
+   el('p',{class:'note '+(sum===s.mtd?'':'bad')},sum===s.mtd?`Check: breakdown adds up to ${fmt(sum)} = cases so far ✓`:`Breakdown adds up to ${fmt(sum)}, selection shows ${fmt(s.mtd)} — rows that cannot be assigned are excluded.`));
+  bk.append(kidTable(c,kids,s,null));
+  Promise.allSettled(OPS.map(p=>O[p])).then(rs=>{if(DD.stack[DD.stack.length-1]!==c)return;const R={};OPS.forEach((p,i)=>{R[p]=rs[i].value||null});bk.innerHTML='';bk.append(kidTable(c,kids,s,R))})}
+ else o.append(el('p',{class:'note'},'No breakdown available for this selection.'));
+ const H=(J.history||[]).filter(h=>h.month);if(H.length>1){const cv=el('canvas',{class:'histc'});o.append(el('h4',{},'Last 12 months'),el('div',{class:'chartbox',style:'height:200px'},cv),el('p',{class:'note'},'Click a month to open the same selection for that month.'));const cc=C();
+  DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Cases',data:H.map(h=>h.cases),backgroundColor:H.map(h=>h.month===c.m?cc.ochre:cc.blue)},{type:'line',label:'Target',data:H.map(h=>h.target),borderColor:cc.muted,pointRadius:2}]},
+   options:{maintainAspectRatio:false,onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},onClick:(e,els)=>{if(!els.length)return;const h=H[els[0].index];if(h.month!==c.m)setTimeout(()=>DD.push(bizCtx(h.month,c.f,{title:base+' — '+mlabel(h.month),level:c.level,p:c.p})),0)}}}))}
+ // operational sections
+ const sT=ddSec('Turnaround time (TAT)','tat'),sF=ddSec('Force1 utilisation','force1'),sB=ddSec('Branches — status and coverage','branches'),sA=ddSec('What needs attention','attention'),sD=ddSec('Daily additions','daily');
+ o.append(sT,sF,sB,sA,sD);
+ O.revenue.then(r=>{const t=r.total||{};revT.querySelector('.v').textContent=inr(t.mtd);revT.querySelector('.n').innerHTML='';revT.querySelector('.n').append(t.target?`${pct(t.mtd/t.target)} of ${inr(t.target)} · likely ${inr(t.likely)} `:'no revenue target ',t.status?chipS(RAG,t.status):'')}).catch(()=>{revT.querySelector('.v').textContent='–';revT.querySelector('.n').textContent='not available'});
+ O.tat.then(r=>sT.fill(tatBox(r.total,{note:r.method}))).catch(sT.fail);
+ O.force1.then(r=>sF.fill(f1Tiles(r.total),el('p',{class:'note'},r.method))).catch(sF.fail);
+ Promise.all([O.coverage,O.lifecycle]).then(([cv,lc])=>sB.fill(brTiles(cv.total,lc.total,(J.organic||{}).branches),el('h5',{},'Branches needing action (top 10)'),prioTable(lc.priority,c),
+  el('details',{class:'note'},el('summary',{},'How branch status is worked out'),el('p',{},cv.method),el('p',{},lc.method)))).catch(sB.fail);
+ O.penalty.then(r=>{const t=r.total||{};if(t.count)sec0.querySelector('.tiles').append(tile('Penalties this month',inr(t.amount),`${fmt(t.count)} entries · report only`))}).catch(()=>{});
+ INS.then(ins=>{const I=(ins||[]).slice(0,8);sA.fill(I.length?I.map(i=>el('div',{class:'insight '+(i.type||'')},i.text,el('small',{},[i.type,i.evidence&&i.evidence.as_of].filter(Boolean).join(' · ')))):el('p',{class:'note'},'No material findings for this selection.'))});
+ DAY.then(daily=>{if(!daily||!daily.length){sD.fill(el('p',{class:'note'},'No daily reports for this month.'));return}const cv=el('canvas');sD.fill(el('div',{class:'chartbox',style:'height:190px'},cv),el('p',{class:'note'},'Click a bar to see where that report\'s additions came from.'));const cc=C();
+  DD.charts.push(new Chart(cv,{data:{labels:daily.map(d=>d.date.slice(5)),datasets:[{type:'bar',label:'Added since previous report',data:daily.map(d=>d.change),backgroundColor:daily.map(d=>d.basis==='one_working_day'||d.basis==='from_month_start'?cc.blue:cc.ochre),yAxisID:'y'},{type:'line',label:'MTD',data:daily.map(d=>d.mtd),borderColor:cc.muted,pointRadius:2,yAxisID:'y1'}]},
+   options:{maintainAspectRatio:false,scales:{y1:{position:'right',grid:{drawOnChartArea:false}}},onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},onClick:(e,els)=>{if(!els.length)return;const d=daily[els[0].index];setTimeout(()=>DD.push({kind:'day',title:'Report '+ddmm(d.date),date:d.date,change:d.change,mtd:d.mtd,basis:d.basis,f:c.f}),0)}}}))});
+ o.append(el('details',{class:'note'},el('summary',{},'Method and data status'),el('p',{},J.method||''),el('p',{},'Status (RAG): On track = likely month end reaches the target; Stretch = the required daily pace is within 25% of the recent pace; At risk = needs more than that (same rule as Growth → month-end potential).'),
+  el('p',{},'Every figure in this panel comes from the same database calculations as the dashboard sections; nothing here changes the global filters.')));
+ focusSec(o,c)}
+
+/* ---------- drawer: one client branch ---------- */
+async function ddBranch(o,c){const J=await api('branch_detail',{p:{client_family:c.fam,branch_code:c.code}});const M=J.master||{},A=J.activity||{},LC=J.lifecycle||{},T=J.tat||{};
+ o.append(el('div',{class:'ddact'},cmpBtn(cmpItem(c))));
+ o.append(el('div',{class:'tiles'},tile('Client',J.client_family||'–',J.location||''),
+  el('div',{class:'tile'},el('div',{class:'k'},'Status'),el('div',{class:'v'},LC.status?chipS(LIFEM,LC.status):'–'),el('div',{class:'n'},J.coverage_status?chipS(COVM,J.coverage_status):'',LC.status?` last 3 m ${fmt(LC.last3m)} vs prior 3 m ${fmt(LC.prior3m)}`:'')),
+  tile('Cases (last 3 months)',fmt(A.cases_last3),A.last_month?'last case '+mlabel(A.last_month):'no Force1 cases'),
+  tile('Peer median / month',J.peer_median_per_month==null?'–':String(J.peer_median_per_month),J.peers?`${fmt(J.peers)} active peers in this location`:'too few peers'),tile('Since',A.first_month?mlabel(A.first_month):'–',fmt(A.cases_total)+' cases in history')));
+ o.append(el('section',{class:'ddsec','data-sec':'tat'},el('h4',{},`Turnaround time — cases received since ${mlabel(T.since)}`),tatBox(T)));
+ o.append(el('h4',{},'Verified branch record'),M.name?table([{k:'Name',v:M.name},{k:'IFSC',v:M.ifsc},{k:'Address',v:M.address},{k:'District / state',v:[M.district,M.state,M.pincode].filter(Boolean).join(', ')},{k:'Status',v:[M.status,M.verification].filter(Boolean).join(' · ')},{k:'Source',v:[M.source,M.source_version].filter(Boolean).join(' · ')},{k:'Verified on',v:M.verified_on}],[{key:'k',label:'Field'},{key:'v',label:'Value'}],{search:false,name:'branch.csv'}):el('p',{class:'note'},'This code is not in the verified branch list (it may be an office or written differently in Force1).'));
+ const H=J.months||[];if(H.length){const cv=el('canvas');o.append(el('h4',{},'Force1 cases by month'),el('div',{class:'chartbox',style:'height:200px'},cv));const cc=C();DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Force1 cases',data:H.map(h=>h.cases),backgroundColor:cc.blue}]},options:{maintainAspectRatio:false}}))}
+ o.append(el('p',{class:'note'},'Lowest level: individual cases are not listed here because they carry applicant details. '+(J.note||'')));focusSec(o,c)}
+
+/* ---------- drawer: compare two or more items side by side ---------- */
+const CMPM=[ // metric rows for business items: [label, getter, format, delta format, better]
+ ['Month',x=>x.i.m,v=>mlabel(v),null,null],
+ ['Cases so far',x=>x.s.mtd,fmt,fmt,'high'],['Target',x=>x.s.target,fmt,fmt,null],['Achieved so far',x=>x.s.target?x.s.mtd/x.s.target:null,pct,'pp','high'],
+ ['Likely month end',x=>x.s.likely,fmt,fmt,'high'],['Likely % of target',x=>x.s.achievement_likely,pct,'pp','high'],['Status (RAG)',x=>x.s.status,v=>chipS(RAG,v),null,null],
+ ['Needed per working day',x=>x.s.required_per_day,fmt,fmt,'low'],['Recent per day',x=>x.s.recent_per_day,fmt,fmt,'high'],
+ ['Organic to date',x=>(x.d.organic||{}).organic_to_date,fmt,fmt,null],['Actual vs organic to date',x=>(x.d.organic||{}).effort_to_date,v=>signed(v),fmt,'high'],
+ ['vs same point last month',x=>{const l=x.d.lfl||{};return l.current!=null&&l.previous!=null?l.current-l.previous:null},v=>signed(v),fmt,'high'],
+ ['Revenue so far',x=>(x.rv||{}).mtd,inr,inr,'high'],['Revenue likely month end',x=>(x.rv||{}).likely,inr,inr,'high'],
+ ['Case TAT (median)',x=>((x.t||{}).case||{}).median,hrs,'h','low'],['SLA met',x=>((x.t||{}).case||{}).sla_met_pct,v=>slaChip(v),'pp','high'],
+ ['Case TAT P90',x=>((x.t||{}).case||{}).p90,hrs,'h','low','x'],['Document TAT (median)',x=>((x.t||{}).document||{}).median,hrs,'h','low','x'],['Field TAT (median)',x=>((x.t||{}).field||{}).median,hrs,'h','low','x'],['Tele TAT (median)',x=>((x.t||{}).tele||{}).median,hrs,'h','low','x'],
+ ['Force1 utilisation — cases',x=>(x.f1||{}).case_utilisation,v=>utilChip(v),'pp','high'],['Force1 utilisation — field visits',x=>(x.f1||{}).field_utilisation,v=>utilChip(v),'pp','high'],
+ ['Field executives · back office',x=>x.f1?`${fmt(x.f1.field_execs)} · ${fmt(x.f1.back_office_staff)}`:null,v=>v||'–',null,null],
+ ['Verified branches',x=>(x.cv||{}).verified_active,fmt,fmt,null],['Active branches (6 months)',x=>(x.cv||{}).active_6m,fmt,fmt,'high'],['Branch coverage',x=>(x.cv||{}).coverage_6m,pct,'pp','high'],
+ ['Never activated',x=>(x.cv||{}).never_activated,fmt,fmt,'low'],['Gone quiet (6 months)',x=>(x.cv||{}).gone_quiet_6m,fmt,fmt,'low'],
+ ...LIFE.map(([k,lab])=>['Branches: '+lab.toLowerCase(),x=>(x.lc||{})[k],fmt,fmt,['new','reactivated','growing'].includes(k)?'high':['losing_traction','dormant'].includes(k)?'low':null])];
+function cmpDelta(v,b,kind){if(v==null||b==null||typeof v!=='number'||typeof b!=='number')return null;const d=v-b;if(!d)return el('small',{class:'note'},' (=)');
+ const t=kind==='pp'?(d>0?'+':'−')+(Math.abs(d)*100).toFixed(1)+' pp':kind==='h'?(d>0?'+':'−')+hrs(Math.abs(d)):(d>0?'+':'−')+(typeof kind==='function'?kind(Math.abs(d)):fmt(Math.abs(d)));return el('small',{class:'note'},` (${t})`)}
+function cmpGrid(items,rowsDef,vals,name){const wrap=el('div',{class:'cmpgrid'});
+ const draw=()=>{wrap.innerHTML='';const on=TATX.on;const R=rowsDef.filter(r=>!r[5]||on).map(r=>{const o={metric:r[0]};vals.forEach((x,i)=>{o['c'+i]=x?r[1](x):null});o._def=r;return o});
+  const cols=[{key:'metric',label:'Measure'},...items.map((it,i)=>({key:'c'+i,label:cmpLabel(it),num:1,raw:r=>{const v=r['c'+i];return typeof v==='number'?v:v==null?'':String(v)},
+   fmt:(v,r)=>{const d=r._def;if(v==null)return'–';const vv=d[2](v);const best=d[4]&&typeof v==='number'&&R.length&&(()=>{const nums=vals.map((x,j)=>r['c'+j]).filter(z=>typeof z==='number');return nums.length>1&&v===(d[4]==='high'?Math.max(...nums):Math.min(...nums))})();
+    const n=el('span',{class:best?'best':''},vv&&vv.nodeType?vv:String(vv));const dl=i>0&&d[3]?cmpDelta(v,r.c0,d[3]):null;return dl?el('span',{},n,dl):n}}))];
+  wrap.append(table(R,cols,{name,search:false,pageSize:200}))};
+ return tatOnToggle(wrap,()=>draw())}
+async function ddCompare(o,c){const items=(c.items||[]).slice(0,CMP.max);if(items.length<2){o.append(el('p',{class:'note'},'Add at least two items to compare.'));return}
+ o.append(el('div',{class:'ddact'},el('span',{class:'note'},'Δ = difference from the first column. Best value in a row is bold.'),tatToggle(),
+  el('button',{type:'button',class:'btn sm',onclick:()=>{items.forEach(i=>CMP.add(i))}},'Keep these in the compare list')));
+ const biz=items.filter(i=>i.kind==='biz'),brs=items.filter(i=>i.kind==='branch');
+ if(biz.length){o.append(el('p',{class:'note'},'Loading '+biz.length+' selections…'));const ld=o.lastChild;
+  const vals=await Promise.all(biz.map(async i=>{const g=p=>api('drill_ops',{month:i.m,filters:i.f,level:'none',part:p}).then(r=>r.total).catch(()=>null);
+   const [d,t,f1,cv,lc,rv]=await Promise.all([api('drill',{month:i.m,filters:i.f,level:'none'}),g('tat'),g('force1'),g('coverage'),g('lifecycle'),g('revenue')]);return{i,d,s:d.selected||{},t,f1,cv,lc,rv}}));
+  ld.remove();o.append(el('h4',{},'Business, operations and branches'),cmpGrid(biz,CMPM,vals,'compare.csv'));
+  const months=[...new Set(vals.flatMap(v=>(v.d.history||[]).map(h=>h.month)))].filter(Boolean).sort();
+  if(months.length>1){const cv=el('canvas');o.append(el('h4',{},'Cases by month'),el('div',{class:'chartbox',style:'height:220px'},cv));const pal=[C().blue,C().ochre,C().good,C().bad,C().muted,'#7b5ea7'];
+   DD.charts.push(new Chart(cv,{type:'line',data:{labels:months.map(mlabel),datasets:vals.map((v,i)=>{const H=Object.fromEntries((v.d.history||[]).map(h=>[h.month,h.cases]));return{label:cmpLabel(v.i),data:months.map(m=>H[m]??null),borderColor:pal[i%pal.length],backgroundColor:pal[i%pal.length],spanGaps:true}})},options:{maintainAspectRatio:false}}));
+   const cv2=el('canvas');o.append(el('h4',{},'Achievement'),el('div',{class:'chartbox',style:'height:200px'},cv2));
+   DD.charts.push(new Chart(cv2,{type:'bar',data:{labels:vals.map(v=>cmpLabel(v.i)),datasets:[{label:'Achieved so far %',data:vals.map(v=>v.s.target?v.s.mtd/v.s.target*100:null),backgroundColor:C().blue},{label:'Likely % of target',data:vals.map(v=>v.s.achievement_likely==null?null:v.s.achievement_likely*100),backgroundColor:C().ochre}]},options:{maintainAspectRatio:false,scales:{y:{min:0,title:{display:true,text:'%'}}}}}))}}
+ if(brs.length){o.append(el('p',{class:'note'},'Loading '+brs.length+' branches…'));const ld=o.lastChild;
+  const vals=await Promise.all(brs.map(async i=>{const J=await api('branch_detail',{p:{client_family:i.fam,branch_code:i.code}});return{i,J}}));ld.remove();
+  const BRM=[['Client',x=>x.J.client_family,v=>v,null,null],['Location',x=>x.J.location,v=>v||'–',null,null],['Status',x=>(x.J.lifecycle||{}).status,v=>chipS(LIFEM,v),null,null],['Activity',x=>x.J.coverage_status,v=>chipS(COVM,v),null,null],
+   ['Cases (last 3 months)',x=>(x.J.activity||{}).cases_last3,fmt,fmt,'high'],['Peer median / month',x=>x.J.peer_median_per_month,v=>String(v),null,null],['Cases in history',x=>(x.J.activity||{}).cases_total,fmt,fmt,null],
+   ['Case TAT (median)',x=>((x.J.tat||{}).case||{}).median,hrs,'h','low'],['SLA met',x=>((x.J.tat||{}).case||{}).sla_met_pct,v=>slaChip(v),'pp','high'],
+   ['Document TAT (median)',x=>((x.J.tat||{}).document||{}).median,hrs,'h','low','x'],['Field TAT (median)',x=>((x.J.tat||{}).field||{}).median,hrs,'h','low','x'],['Tele TAT (median)',x=>((x.J.tat||{}).tele||{}).median,hrs,'h','low','x']];
+  o.append(el('h4',{},'Branches'),cmpGrid(brs,BRM,vals,'compare_branches.csv'));
+  const months=[...new Set(vals.flatMap(v=>(v.J.months||[]).map(h=>h.month)))].sort();if(months.length>1){const cv=el('canvas');o.append(el('h4',{},'Force1 cases by month'),el('div',{class:'chartbox',style:'height:220px'},cv));const pal=[C().blue,C().ochre,C().good,C().bad,C().muted,'#7b5ea7'];
+   DD.charts.push(new Chart(cv,{type:'line',data:{labels:months.map(mlabel),datasets:vals.map((v,i)=>{const H=Object.fromEntries((v.J.months||[]).map(h=>[h.month,h.cases]));return{label:cmpLabel(v.i),data:months.map(m=>H[m]??0),borderColor:pal[i%pal.length],backgroundColor:pal[i%pal.length]}})},options:{maintainAspectRatio:false}}))}}
+ o.append(el('p',{class:'note'},'Each column uses the same calculations as the dashboard for that selection and month. Business figures: Zonal Tracker; TAT, Force1 and branches: Force1 data; branch status uses complete months.'))}
+Object.assign(DDK,{biz:ddBiz,branch:ddBranch,compare:ddCompare});
 // Ask Crux about the open context (uses that context's month and filters for this one question)
 function askAbout(q,m,f){if(!document.getElementById('askBtn'))return;ASK.ctx={month:m||$('#fMonth').value,filters:f||filters()};DD.close();const p=$('#askPanel');if(p.classList.contains('hidden'))$('#askBtn').click();const t=p.querySelector('textarea');t.value=q;t.focus()}
 
