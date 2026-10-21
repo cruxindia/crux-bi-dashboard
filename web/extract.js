@@ -34,7 +34,8 @@
   // ---------- finance workbooks ----------
   // collection  = bank-statement credits tagged with location / client / invoice (one sheet per bank account, plus a consolidated "Main")
   // outstanding = dated snapshot of the open invoice ledger (one sheet per location group, plus a "Pvt" summary)
-  // Only business fields are emitted. Applicant names, phone numbers, bank contact names, GST numbers and narration text never leave the browser
+  // Only business fields are emitted. Applicant names, phone numbers, bank contact names, GST numbers, branch-name text (it sometimes holds a
+  // borrower's name) and narration text never leave the browser; the "br" column is kept empty so the row layout stays stable
   // (narration is reduced to an 8-character fingerprint used only to spot the same credit entered twice).
   const lc = (v) => (v == null ? '' : String(v).replace(/\s+/g, ' ').trim().toLowerCase());
   const pad2 = (n) => String(n).padStart(2, '0');
@@ -114,7 +115,7 @@
         const iv = c.inv >= 0 ? invParse(row[c.inv]) : null; const colYm = c.im >= 0 ? finMonth(row[c.im]) : null;
         let ym = null, ims = null; if (iv && iv.ym) { ym = iv.ym; ims = 'n'; if (colYm && colYm !== iv.ym) ctl.ym_number_vs_column_differ++; } else if (colYm) { ym = colYm; ims = 'c'; }
         const fp = fnv([c.nar >= 0 ? lc(row[c.nar]) : '', c.chq >= 0 ? lc(row[c.chq]) : '', c.bc >= 0 ? lc(row[c.bc]) : '', d || lc(row[c.d]), amt].join('|'));
-        out.push([r + 1, cut(row[c.loc], 40), cut(row[c.bank], 30), rm, d, amt, cut(row[c.cl], 30), cut(row[c.br], 40), iv ? cut(iv.raw, 40) : null, c.basic >= 0 ? num(row[c.basic]) : null, ym, ims, fp]);
+        out.push([r + 1, cut(row[c.loc], 40), cut(row[c.bank], 30), rm, d, amt, cut(row[c.cl], 30), null, iv ? cut(iv.raw, 40) : null, c.basic >= 0 ? num(row[c.basic]) : null, ym, ims, fp]);
         ctl.rows++; ctl.credit += amt; if (rm) ctl.by_month[rm] = (ctl.by_month[rm] || 0) + amt; else ctl.no_receipt_month++;
         if (d) { if (!ctl.min_date || d < ctl.min_date) ctl.min_date = d; if (!ctl.max_date || d > ctl.max_date) ctl.max_date = d; }
         if (iv) { ctl.with_invoice++; ctl.invoice_credit += amt; if (iv.odd) ctl.odd_invoice++; if (iv.multi) ctl.multi_invoice++; }
@@ -169,7 +170,7 @@
           const iv = invParse(row[inv]); const colYm = finMonth(row[mo]); let im = null, ims = null;
           if (iv && iv.ym) { im = iv.ym; ims = 'n'; ctl.month_from_number++; if (colYm && colYm !== iv.ym) ctl.month_differs_from_number++; }
           else if (colYm) { im = colYm; ims = 'c'; }
-          const line = [r + 1, cut(row[0], 40), im, ims, cut(row[cl], 40), cut(row[br], 40), iv ? cut(iv.raw, 40) : null, num(row[basic]), num(row[gross]), num(row[tds]), num(row[net]), num(row[pr]) || 0, osv == null ? 0 : osv, cut(row[rk], 40)];
+          const line = [r + 1, cut(row[0], 40), im, ims, cut(row[cl], 40), null, iv ? cut(iv.raw, 40) : null, num(row[basic]), num(row[gross]), num(row[tds]), num(row[net]), num(row[pr]) || 0, osv == null ? 0 : osv, cut(row[rk], 40)];
           out.push(line); ctl.rows++; ctl.basic += line[7] || 0; ctl.net += line[10] || 0; ctl.partial += line[11] || 0; ctl.os += line[12];
           if (line[12] < 0) ctl.negative_rows++; if (!iv) ctl.no_invoice_rows++;
           continue;
