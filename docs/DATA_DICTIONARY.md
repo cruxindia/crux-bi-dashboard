@@ -93,3 +93,18 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | `bi.tat_summary(month, filters, group)` | Case, document, field and tele TAT by total / zone / location / client / unit / branch | — | read via `bi_call('tat_summary')` |
 | `bi.branch_lifecycle_rows(units)` | Branch lifecycle classification (same rules as the priority list) | — | internal |
 | `bi.cache_warm` | Last cache warm-up: data version, start / finish, calls, seconds | id = 1 | cron `bi-warm-drill-cache` |
+
+## Finance workbooks (21-Oct-2026)
+**Collection workbook** (`Crux PanIndia Collection Sheet - till Sep26.xlsx`): one sheet per bank account (BOM, ICICI Bank, SBI - Ghatkopar, SBI - PBB Aundh, SBI - CIT, CANARA, AXIS) — Location, Bank, receipt Month, Date, Branch Code, Narration, Credit, invoice Month, Client, Branch, Invoice, Basic, Invoice Date; "Main" = April-only consolidation (cross-check); "Pvt Location" / "Pvt Client" = pivots of Main. Imported: sheet row, location label, bank, receipt month, receipt date, credit, client, branch, invoice number as written, basic, invoice month and its source, and an 8-character fingerprint of narration + cheque + branch code + date + amount (the narration itself is not imported).
+**Outstanding workbook** (`Crux Pan India Outstanding Sheet till Oct26.xlsx`): one sheet per location group — Location, Month, Client, Branch, Invoice No., Basic, GST, Gross, TDS, Net, Remark, Partial Received, Actual Outstanding (+ Date, Zone, Applicant Name, bank contact, GST no. on some sheets — **not imported**); a totals row, "Less Unadj" lines and "Total Outstanding" at the foot; "Pvt" = location summary. Imported per line: sheet row, location label, invoice month and its source, client, branch, invoice number, basic, gross, TDS, net, partial received, actual outstanding, remark; per sheet: totals row, unadjusted lines, net control.
+
+| Table | Content |
+|---|---|
+| bi.fin_upload | One row per imported workbook: kind, file hash (idempotency), as-of date and basis, period, status (staging / committed / superseded / rejected), control totals and file checks |
+| bi.fin_part | Normalised rows as compressed arrays per sheet chunk (no personal data) |
+| bi.fin_os_agg | Outstanding by upload × location × client family × invoice month (incl. ex-GST open value, negatives, possible duplicates) |
+| bi.fin_unadj | Unadjusted receipt lines by upload and sheet label |
+| bi.fin_rcpt_agg | Receipts by upload × location × client family × bank sheet × receipt month, with ledger match status and collection lag |
+| bi.fin_inv_month | Identified invoices by location × client family × invoice month: value, settled, open, collected |
+| bi.fin_review | Admin review queue (kind, key, amount, evidence, status, note) |
+| bi.fin_loc_map / bi.fin_client_map / bi.fin_config | Admin-editable location rules (prefix / label / sheet), client families, settings |

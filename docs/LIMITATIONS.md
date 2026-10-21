@@ -43,3 +43,12 @@
 | L40 | Branch status uses complete months only and Force1 Case Wise coverage of the branch's location group; the current month is not classified yet | A branch that restarted this month still shows its last complete-month status | "This month (Force1)" line shows new / reactivated branches of the current month |
 | L41 | Points and cases without an identified location (location-group records) count in totals but not in any location row | Location rows can add up to less than the zone total for TAT and Force1 | Shown as "Not identified" in the TAT section summary |
 | L42 | Panels other than Pan India and zones (locations, clients, branches, other months) are calculated on first open (≈3–8 s) and then cached until the next data change | First click on a deep level waits | Warm-up job covers the most-opened panels |
+
+## Finance (21-Oct-2026)
+- One outstanding snapshot (as at 15-Oct-2026, inferred from the file date) — trends in the outstanding balance need more snapshots.
+- Receipts cover 1-Apr to 13-Oct-2026 only; realisation for invoice months before April 2026 is not measured.
+- 4,832 receipts (₹1.69 cr) carry no invoice number and cannot be matched; 1,344 receipt rows (₹58.3 L) have no identifiable location (mostly "Unadj" / blank).
+- Amounts whose city is not stated are shown on zone lines (Gujarat Zone, Bhopal MP Zone, Lucknow/ROUP Zone, Rest of Maharashtra Zone, Patna Zone).
+- No payment terms, so no "overdue"; age is counted from the end of the invoice month because invoice dates are unreliable.
+- Receipts include GST and are after TDS; revenue excludes GST — cash cover is therefore not a realisation rate.
+- A receipt that quotes several invoices is matched on the first one (56 cases, listed).

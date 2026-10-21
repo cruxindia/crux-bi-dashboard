@@ -87,3 +87,21 @@
 | Lifecycle (new, reactivated, growing, stable, losing traction, dormant) | Branch priority rules on complete covered months: last 3 vs prior 3 months of the branch's location group; dormant = no case in the last 2 covered months |
 | Status (RAG) | On track = likely month end ≥ target; Stretch = required daily pace within 25% of the recent pace; At risk = more than that |
 | Compare Δ | Value minus the first column (percentage points for percentages, hours for TAT) |
+
+## Revenue & collections (21-Oct-2026)
+| Measure | Definition |
+|---|---|
+| Outstanding | Sum of "Actual Outstanding" on every invoice line of the latest outstanding workbook (gross of GST, after TDS and part-receipts), as at its snapshot date. Snapshots are never added together |
+| Unadjusted receipts | Receipts listed at the foot of each location sheet that are not yet matched to invoices |
+| Net receivable | Outstanding − unadjusted receipts (not shown under a client filter: unadjusted receipts are recorded per location) |
+| Age / ageing bucket | Days from the last day of the invoice month (month in the invoice number) to the snapshot date; 0–30, 31–60, 61–90, 91–180, over 180 (setting `ageing_buckets`). "Overdue" only when `credit_days` is set |
+| Collected | Bank-account credits in the receipt month (incl. GST, after TDS); "Main" sheet excluded (cross-check only) |
+| Cash cover (3 months) | Collected ÷ reported revenue over the last three months complete in both sources |
+| Realisation | For invoices raised in a month: settled invoice value ÷ identified invoice value (both ex-GST basic). Settled = basic × (1 − open ÷ net) for invoices still in the ledger; full basic for invoices only seen in receipts. Headline = invoices at least a month old at the snapshot |
+| Identified invoice value | Distinct invoices (canonical number) from the ledger snapshot and receipts quoting an invoice; identical repeated ledger lines counted once here |
+| Not traced | Reported revenue for the month − identified invoice value (if positive) |
+| Months of revenue outstanding | Open invoice value restated ex-GST ÷ average monthly reported revenue (same three months as cash cover) |
+| Average days to collect | Amount-weighted days from the end of the invoice month to the receipt date (receipts quoting an invoice) |
+| Receipts not in the ledger | Receipts dated at least `recon_grace_days` (7) before the snapshot against invoices the snapshot still shows with no part-receipt |
+| Revenue / invoiced / collected per case | Reported revenue, identified invoice value and settled value (ex-GST) ÷ tracker cases of the month; tracker rate = case-weighted leaf rate on the month's last snapshot; billing gap = invoiced per case ÷ rate − 1 |
+| Smart alerts | Rules in setting `alert_rules`: >30 % of a location's balance over 180 days (≥ ₹1 L); unadjusted > 20 % of balance; cash cover < 60 %; collections down > 25 % month on month; receipts not in ledger; possible duplicates; billing gap > 10 %; stale snapshot (> 35 days) or receipts (> 20 days); balance on invoices before Apr-2024 |

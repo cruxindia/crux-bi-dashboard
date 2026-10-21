@@ -111,3 +111,11 @@ Recomputed by the `bi-organic-refresh` job (every 10 minutes, only when data cha
 - **Compare:** tick rows, use "＋ Add to compare" on any drawer item or branch, then "Compare n" in the tray at the bottom of the drawer (up to 6). "Compare with previous month / last year" opens a two-column comparison directly. Export CSV from the grid.
 - **Warm-up job:** cron `bi-warm-drill-cache` (every 10 min) pre-computes Pan India and zone panels for the latest month after a data change; status in `bi.cache_warm`. Manual: `select bi.warm_drill_cache(240);`.
 - **Tests:** `select * from bi.run_drill_ops_tests();` (6 tests) — run on its own.
+
+## Finance workbooks (Admin → Upload; Data health → Finance review)
+1. Drop the collection and/or outstanding workbook into the upload area. The browser reads it, removes personal fields, and shows a summary: sheets, rows, totals, receipt period or snapshot date, and the file's own checks (e.g. a summary sheet that does not add up).
+2. For the outstanding workbook, check the snapshot date (pre-filled from the file date and the "till Mon-YY" label) and correct it if needed.
+3. Press Import. Rows are staged in chunks, the row count per sheet is checked against the file, and the figures are rebuilt (or within 10 minutes by job `bi-fin-derive`). Re-importing the same file changes nothing.
+4. A later collection workbook for the same financial year replaces the earlier one (it is cumulative); outstanding workbooks are kept by snapshot date and never added.
+5. Data health → Finance review queue: set each item to accepted / resolved / ignored with a note; correct a location mapping (invoice series, location name or sheet) — figures are rebuilt immediately.
+6. Admin records: Revenue & collections → "Invoice and receipt records" (or click a location row) lists the invoices or receipts behind a figure.

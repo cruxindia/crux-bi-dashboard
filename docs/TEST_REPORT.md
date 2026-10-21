@@ -1,4 +1,4 @@
-# Acceptance test report — updated 15-Oct-2026
+# Acceptance test report — updated 21-Oct-2026
 
 Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload). Result: **18 / 18 passed** (T17 is a browser check, listed separately) (after fixing one defect in test T07's case selection).
 
@@ -213,3 +213,16 @@ Browser against the live site https://cruxindia.github.io/crux-bi-dashboard/ (`t
 | Live app (cruxindia.github.io/lumen_billextractor): page, realtime, masters 52/1/570, branch lookup, OCR bucket; synthetic Excel bill through Add files → Start → uploader dialog: saved for review with lines (2), checks (15), confidences (21), ingest log, client learned, branch GSTIN filled from master, review file stored + opens via signed link; re-push = unchanged; correction PATCH; bulk write-off; failed bill saved → viewed → resolved; test rows and files removed through the app's own calls; no failed database/storage calls | 19/19 Pass |
 | Left behind by the tests (public key cannot remove them): 7 ingest-log lines (invoice numbers ZZT-…), client "AXIS BANK" (bill count 4) | Noted |
 
+## 21-Oct-2026 — reaudit wave (A1–A15), Revenue & collections, Data health, six-area navigation
+All browser suites run against the **live** site (https://cruxindia.github.io/crux-bi-dashboard/) after deployment, at 1366 px and 390 px.
+
+| Suite | Result | What it checks |
+|---|---|---|
+| SQL acceptance (`bi.run_acceptance_tests()`) | 26 / 27 | T21 fails: the 19-Oct workbook's three stakeholder summary rows differ from the leaf rows grouped by the location master (same overall sum; one summary shows 0) — source issue, logged as dq 1433 (A14). All other tests pass, incl. T06 leaf = control (111 of 113 snapshots; the 2 known corrupt controls logged) |
+| Finance reconciliation (SQL, production) | pass | Outstanding ₹11,28,16,964.44 / 40,000 lines = location sheets' totals; unadjusted ₹2,73,15,945.77 = sheet foot lines; receipts ₹11,77,91,328.65 / 28,430 rows = bank sheets; monthly receipts Apr ₹1,75,44,623.71 … Oct (to 13-Oct) ₹50,88,962.76 = extraction controls; re-import of both files reported "Already imported" and wrote nothing |
+| Ask Crux evaluation (`test_ask3.py`, 30 questions via `bi_ask3`) | 30 / 30 | Intent, scope (Pune, SBI, Gujarat, Delhi), period (Sep 2026), findings, well-formed actions, next questions, method, no utilisation > 100 %, premise check ("Not lower: … Sep ₹2.67 cr, 32.8 % up on Aug"), collections answers cite both workbooks and the snapshot date |
+| Ask Crux UI (`test_ask_ui.py live`) | 12 / 12 | Section-aware suggestions, structured answer, findings + actions tables, chart, clickable next question, drill link opens the drawer, page context on TAT, phone layout, no console errors |
+| Force1 + TAT (`test_stage2.py live`) | 13 / 13 | Force1 ≤ 100 % everywhere, validated-case formula, reconciliation labels, three TAT measures with count / average / median / P90 and the document rule, levels to branch / PIN / employee, trend |
+| Finance + navigation (`test_fin_ui.py live`) | 21 / 21 | Six areas + Admin in the menu; Ask Crux menu item; Overview cash and data-health strip; Revenue & collections tiles, dates, 4 charts, alerts, 4 tables, headline ₹11.28 cr, method and limitations, no invoice records for viewers; Data health page; admin unlock; upload recognises both workbooks with summaries and checks; snapshot date editable; identical re-import changes nothing; admin review queue; admin invoice records for a location; no horizontal scroll on a phone; no console errors |
+
+Defect found and fixed during testing: A15 (`grp` ambiguous in bi.ask_tat_stats once stored TAT statistics existed) — fixed in bi_089l and retested (Ask UI 12/12).

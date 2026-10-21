@@ -469,9 +469,18 @@ function ztExport(J,model){if(!window.XLSX){alert('Excel library not loaded.');r
  const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=cols.map((c,i)=>({wch:i===0?38:i===1?18:12}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Main Tracker');
  XLSX.writeFile(wb,`Zonal_Tracker_${J.snapshot}${J.compare_snapshot?'_vs_'+J.compare_snapshot:''}.xlsx`)}
 
+// layer A/B for the tracker: where each zone (or location / client under the current filter) stands vs target, before the full sheet
+async function trackerZoneChart(box,m,f){try{const lv=f.location_id?'client':f.zone_group?'location':'zone';const d=await api('drill',{month:m,filters:f,level:lv,p:{}});
+ const R=(d.children||[]).filter(r=>(r.target||0)>0||(r.mtd||0)>0).sort((a,b)=>(b.target||0)-(a.target||0)).slice(0,16);if(!R.length)return;
+ const cv=el('canvas');box.append(el('h3',{},`${lv==='zone'?'Zones':lv==='location'?'Locations':'Clients'} — achieved so far, likely month end and target`),el('div',{class:'chartbox',style:`height:${Math.max(240,R.length*30+60)}px`},cv),
+  el('div',{class:'note'},'Likely month end = the projection used on the Overview (cases so far scaled by how much of a month is normally done by this working day). Click a bar for the breakdown.'));
+ const c=C();chart(cv,{type:'bar',drill:(ds,i)=>{const r=R[i];if(!r)return null;const ff={...f};if(lv==='zone')ff.zone_group=r.id;else if(lv==='location')ff.location_id=+r.id;else return null;return bizCtx(m,ff,{title:r.group})},
+  data:{labels:R.map(r=>r.group),datasets:[{label:'Achieved so far',data:R.map(r=>r.mtd),backgroundColor:c.blue},{label:'Likely month end',data:R.map(r=>r.likely),backgroundColor:c.ochre+'aa'},{label:'Target',data:R.map(r=>r.target),backgroundColor:c.muted+'66'}]},
+  options:{indexAxis:'y',maintainAspectRatio:false,scales:{x:{title:{display:true,text:'cases'}}},plugins:{tooltip:{callbacks:{afterBody:x=>{const r=R[x[0].dataIndex];return r.target?`Likely ${pct(r.achievement_likely)} of target`:''}}}}}})}catch(e){box.remove()}}
 const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const daily=await api('daily',{month:m,filters:{}});const snaps=daily.map(d=>d.date);
  s.append(el('h2',{},'Business tracker'),el('p',{class:'lede'},'Month-to-date business by zone → location → client, with every total worked out for you. Collapse to zones or locations, compare with another date, add monthly history or the organic benchmark, and export to Excel. Filters at the top apply.'));
  if(!snaps.length){s.append(el('div',{class:'banner'},'No business reports yet for '+mlabel(m)+'.'));return}
+ {const zc=el('div',{class:'card',style:'margin-bottom:14px'});s.append(zc);trackerZoneChart(zc,m,f)}
  const pick=el('select',{'aria-label':'Report date'},snaps.slice().reverse().map(d=>el('option',{value:d},ddmm(d))));
  const cmpSel=el('select',{'aria-label':'Compare with'},[['none','No comparison'],['prev','Previous report'],['lm','Same day last month'],['ly','Same day last year'],['custom','Pick a date…']].map(([v,l])=>el('option',{value:v},l)));cmpSel.value=ZT.cmp;
  const cmpDate=el('input',{type:'date','aria-label':'Compare date',value:ZT.cmpDate,class:ZT.cmp==='custom'?'':'hidden'});
@@ -742,6 +751,10 @@ const vHealth=guard(async s=>{const m=$('#fMonth').value,f=filters();
  else{const bk=col.review&&col.review.by_kind||{};fin.append(el('p',{class:'note'},`Outstanding workbook as at ${ddmm(col.snapshot.as_of)}; receipts to ${ddmm(col.receipts.data_through)}.`),
   table(Object.entries(bk).map(([kk,n])=>({kind:FINK[kk]||kk,n})),[{key:'kind',label:'Check'},{key:'n',label:'Open items',num:1,fmt:fmt}],{search:false,name:'finance_checks.csv'}),
   el('button',{class:'btn',style:'margin-top:8px',onclick:()=>go('collections')},'Open Revenue & collections →'))}
+ const RV='Listed for review in Data quality & mapping';const DQL={source_total_mismatch:['A source file\'s own total differs from the sum of its rows','The rows are used; the file total is kept as a check'],snapshot_date_mismatch:['Report date in the file name differs from the sheet',RV],
+  history_header_month_conflict:['Monthly history column headers disagree',RV],branch_outside_file_unit:['Branch outside the location group of its file',RV],
+  case_in_multiple_location_files:['Same case in more than one location file','Stored once (one record per case ID)'],point_in_multiple_location_files:['Same point in more than one location file','Stored once (one record per point ID)'],new_location_created:['New location name found during import',RV],location_alias_auto_matched:['Location name matched automatically',RV]};
+ const dq=S.meta.dq_open||{};if(Object.keys(dq).length)s.append(el('h3',{},'Import checks still open'),table(Object.entries(dq).map(([k,v])=>({rule:(DQL[k]||[k.replace(/_/g,' ')])[0],how:(DQL[k]||[,RV])[1],n:v})).sort((a,b)=>b.n-a.n),[{key:'rule',label:'What the check found'},{key:'how',label:'How the dashboard treats it'},{key:'n',label:'Open',num:1,fmt:fmt}],{search:false,name:'import_checks.csv'}));
  s.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('quality')},'Data quality & mapping (detail) →')));
  if(S.role!=='admin'){s.append(el('p',{class:'note'},'Admins can review and resolve each finance check here.'));return}
  const rv=el('div',{class:'card',style:'margin-top:14px'});s.append(rv);finReviewUI(rv)});
