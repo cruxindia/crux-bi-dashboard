@@ -29,6 +29,7 @@ nav{background:var(--panel);border-right:1px solid var(--line);padding:18px 0 ca
 nav.open{transform:none;box-shadow:0 0 40px rgba(0,0,0,.18)}
 nav h1{font:700 17px/1.2 var(--f);margin:0 18px 4px}nav .sub{color:var(--muted);font-size:12px;margin:0 18px 16px}
 nav button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 18px;cursor:pointer;border-left:3px solid transparent}
+nav .navgrp{margin:0 0 6px}nav .navh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 18px 2px;font-weight:600}nav button.sub{padding-left:28px}
 nav button[aria-current="page"]{border-left-color:var(--blue);background:var(--blue-soft);font-weight:600}
 nav button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 nav .fresh{margin:18px;font-size:12px;color:var(--muted);line-height:1.6}
@@ -206,7 +207,7 @@ function sqlFor(fn,a){const m=a.month,f=a.filters||{};const g=k=>{const v=a.grou
  case'zonal':return`bi.api_zonal(${dt(a.snapshot)},${js(f)})`;case'daily':return`bi.api_daily(${dt(m)},${js(f)})`;case'monthly':return`bi.api_monthly(${dt(a.from)},${dt(a.to)},${js(f)},${g('monthly')})`;
  case'force':return`bi.api_force(${dt(m)},${js(f)})`;case'force_trend':return`bi.api_force_trend(${js(f)})`;case'case_tat':return`bi.api_case_tat(${dt(m)},${js(f)},${g('case_tat')})`;
  case'point_tat':return`bi.api_point_tat(${dt(m)},${js(f)},${g('point_tat')})`;case'manual_tat':return`bi.api_manual_tat(${dt(m)},${js(f)})`;case'employees':return`bi.api_employees(${dt(m)},${js(f)})`;
- case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'drill_ops':return`bi.api_drill_ops(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'none')},${lit(['tat','force1','coverage','lifecycle','revenue','penalty'].includes(a.part)?a.part:'tat')})`;case'tat_summary':return`bi.tat_summary(${dt(m)},${js(f)},${lit(['total','zone','location','client','unit','branch','pin','employee'].includes(a.group)?a.group:'total')})`;case'tat_trend':return`bi.tat_trend(${js(f)},${Math.min(24,Math.max(2,parseInt(a.months)||12))})`;case'force1_recon':return`bi.api_force1_recon(${dt(m)},${js(f)})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
+ case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'collections':return`bi.api_collections(${dt(m)},${js(f)})`;case'fin_review':return`bi.api_fin_review(${js(a.p||{})})`;case'fin_records':return`bi.api_fin_records(${js(a.p||{})})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'drill_ops':return`bi.api_drill_ops(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'none')},${lit(['tat','force1','coverage','lifecycle','revenue','penalty'].includes(a.part)?a.part:'tat')})`;case'tat_summary':return`bi.tat_summary(${dt(m)},${js(f)},${lit(['total','zone','location','client','unit','branch','pin','employee'].includes(a.group)?a.group:'total')})`;case'tat_trend':return`bi.tat_trend(${js(f)},${Math.min(24,Math.max(2,parseInt(a.months)||12))})`;case'force1_recon':return`bi.api_force1_recon(${dt(m)},${js(f)})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
  throw new Error('unknown fn '+fn)}
 function parseSqlPayload(p){let rows=p;if(p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.result==='string')p=p.result;
  if(typeof p==='string'){const m=p.match(/<untrusted-data-[^>]+>\s*([\s\S]*?)\s*<\/untrusted-data-/);rows=JSON.parse(m?m[1]:p)}
@@ -234,8 +235,13 @@ async function boot(){
 function showLoginMsg(t){$('#loginMsg').textContent=t}
 
 
-const SECTIONS=[['overview','Overview'],['force1','Force1 utilisation'],['tracker','Business tracker'],['growth','Growth & trends'],['force','Force1 reconciliation'],['tat','TAT & operations'],['people','People'],['quality','Data quality'],['upload','Upload centre']];
-function buildNav(){const n=$('#navbtns');n.innerHTML='';SECTIONS.forEach(([k,l])=>{n.append(el('button',{'data-k':k,onclick:()=>go(k)},l))})}
+const AREAS=[['Executive overview',[['overview','Executive overview']]],['Business performance',[['tracker','Business tracker'],['growth','Growth & trends'],['people','People']]],
+ ['Operations & TAT',[['tat','TAT & operations'],['force1','Force1 utilisation']]],['Revenue & collections',[['collections','Revenue & collections']]],
+ ['Data health',[['health','Data health'],['force','Force1 reconciliation'],['quality','Data quality & mapping']]],['Ask Crux',[['ask','Ask Crux']]],['Admin',[['upload','Upload & admin']]]];
+const SECTIONS=AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask');
+function buildNav(){const n=$('#navbtns');n.innerHTML='';AREAS.forEach(([lab,items])=>{const g=el('div',{class:'navgrp',role:'group','aria-label':lab});
+ if(items.length>1)g.append(el('div',{class:'navh'},lab));
+ items.forEach(([k,l])=>g.append(el('button',{'data-k':k,class:items.length>1?'sub':'',onclick:()=>{if(k==='ask'){if($('#drawer').classList.contains('open'))drawer(false);const p=$('#askPanel');if(!p||p.classList.contains('hidden'))$('#askBtn').click();return}go(k)}},items.length>1?l:lab)));n.append(g)})}
 function drawer(open){const d=$('#drawer'),b=$('#burger'),sc=$('#scrim');d.classList.toggle('open',open);sc.classList.toggle('open',open);b.setAttribute('aria-expanded',String(open));b.setAttribute('aria-label',open?'Close menu':'Open menu');
  if(open){const c=d.querySelector('button[aria-current="page"]')||d.querySelector('button');c&&c.focus()}else b.focus()}
 document.addEventListener('click',e=>{if(e.target.closest('#burger'))drawer(!$('#drawer').classList.contains('open'));else if(e.target.id==='scrim')drawer(false)});
@@ -281,7 +287,7 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
  const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();
  if(ex.length)tatOnToggle(wrap,v=>{ex.forEach(k=>v?hidden.delete(k):hidden.add(k));if(drawn)draw()});return wrap}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
-function render(){({overview:vOverview,force1:vForce1,tracker:vTracker,growth:vGrowth,force:vForce,tat:vTat,people:vPeople,quality:vQuality,upload:vUpload}[S.section]||vOverview)()}
+function render(){({overview:vOverview,force1:vForce1,tracker:vTracker,growth:vGrowth,force:vForce,tat:vTat,people:vPeople,quality:vQuality,upload:vUpload,collections:vCollections,health:vHealth}[S.section]||vOverview)()}
 
 /* ---------- Overview ---------- */
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
@@ -305,6 +311,7 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null))}
  {const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((fc,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:fc}))})}
  const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f);
+ const ovx=el('div',{class:'split'});s.append(ovx);ovStrip(ovx,m,f);
  const f2=ov.force||{},ct=ov.case_tat||{};
  s.append(el('div',{class:'tiles ovsec'},tile('Achievement',pct(ov.achievement),`Shortfall ${fmt(ov.shortfall_cases)} cases`,ov.achievement<(wpace||0)?'bad':''),
   tile('Latest daily change',fmt(ov.latest_change),`${ov.prev_snapshot||''} → ${ov.as_of||''} (${(ov.latest_change_basis||'').replace(/_/g,' ')})`),
@@ -636,6 +643,152 @@ const vQuality=guard(async s=>{s.append(el('h2',{},'Data quality & mapping'),el(
  const rvw=el('div');s.append(rvw);branchReviewSection(rvw);
  if(mq.clients)s.append(el('h3',{},'Client aliases'),table(mq.clients,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'client_code',label:'Client'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'status',label:'Review'},{key:'alias',label:'Correct',fmt:(v,row)=>mapFixBtn('client_alias',row),raw:r=>''}],{name:'client_aliases.csv'}));
 });
+
+/* ---------- Revenue & collections ---------- */
+const fmtL=v=>v==null||isNaN(v)?'–':(Math.abs(v)>=1e7?'₹'+(v/1e7).toFixed(2)+' cr':Math.abs(v)>=1e5?'₹'+(v/1e5).toFixed(2)+' L':'₹'+nf.format(Math.round(v)));
+const calPrevMonth=m=>{if(!m)return null;const d=new Date(m.slice(0,10)+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()-1);return d.toISOString().slice(0,10)};
+const sevChip=s=>el('span',{class:'chip '+(s==='high'?'bad':s==='warn'?'warn':'')},s==='high'?'High':s==='warn'?'Check':'Note');
+function finAlerts(box,alerts,{limit=8}={}){if(!(alerts||[]).length){box.append(el('p',{class:'note'},'No alerts on the current thresholds.'));return}
+ alerts.slice(0,limit).forEach(a=>box.append(el('div',{class:'insight '+(a.severity==='high'?'risk':'')},el('div',{},sevChip(a.severity),' ',el('strong',{},a.title)),
+  el('small',{},[a.detail,a.action?'Action: '+a.action:null,a.owner?'Owner: '+a.owner:null].filter(Boolean).join(' · ')),
+  a.location_id?el('button',{class:'btn sm',style:'margin-top:6px',onclick:()=>finFocusLoc(a.location_id)},'Show this location'):null)))}
+function finFocusLoc(id){const L=S.meta.locations.find(l=>l.id===id);if(L&&L.zone_group){$('#fZone').value='';$('#fStake').value='';$('#fRegion').value='';fillLoc();$('#fLoc').value=String(id);fpSum();fpSave();render();return}
+ const z=(S.meta.locations.find(l=>l.id===id)||{}).rollup_zone;if(z){$('#fLoc').value='';$('#fZone').value=z;fillLoc();fpSum();fpSave();render()}}
+const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=await api('collections',{month:m,filters:f});
+ s.append(el('h2',{},'Revenue & collections'));
+ if(!d||!d.available){s.append(el('div',{class:'banner'},(d&&d.message)||'No finance data yet.'));return}
+ const k=d.kpi||{},sn=d.snapshot||{},rc=d.receipts||{},cm=d.comparison_months||[];
+ s.append(el('p',{class:'lede'},`Outstanding as at ${ddmm(sn.as_of)} (latest outstanding workbook). Receipts up to ${ddmm(rc.data_through)}${rc.partial_month?` — ${mlabel(rc.partial_month)} is a part month`:''}. Revenue is the Zonal Tracker reported revenue (excluding GST). The month selector does not change the outstanding snapshot.`));
+ if(f.client_family)s.append(el('div',{class:'banner'},'Client filter: unadjusted receipts are recorded per location, not per client, so the net receivable is not shown.'));
+ // A — headline position
+ s.append(el('div',{class:'tiles kpi4'},
+  tile('Outstanding',fmtL(k.outstanding),k.net_receivable!=null?`Net of unadjusted receipts: ${fmtL(k.net_receivable)}`:'As recorded on the open invoices'),
+  tile('Over 180 days',fmtL(k.over_180),k.over_180_share!=null?`${pct(k.over_180_share)} of outstanding · over 90 days ${fmtL(k.over_90)}`:'',k.over_180_share>0.3?'bad':''),
+  tile('Collected — '+mlabel(rc.last_complete_month),fmtL(k.collected_last_month),k.collected_prev_month!=null?`${mlabel(calPrevMonth(rc.last_complete_month))}: ${fmtL(k.collected_prev_month)} · this financial year ${fmtL(k.collected_fytd)}`:''),
+  tile('Realisation',pct(k.realisation),k.realisation_basis||'')));
+ s.append(el('div',{class:'tiles'},
+  tile('Cash cover (3 months)',pct(k.cash_cover_3m),cm.length?`Cash received ÷ reported revenue, ${mlabel(cm[0])}–${mlabel(cm[cm.length-1])}. Receipts include GST.`:''),
+  tile('Months of revenue outstanding',k.months_outstanding==null?'–':(+k.months_outstanding).toFixed(1),'Open invoice value (ex-GST) ÷ average monthly revenue'),
+  tile('Average days to collect',k.avg_days_to_collect==null?'–':k.avg_days_to_collect+' days','From the end of the invoice month to the receipt, weighted by amount'),
+  tile('Receipts not in the ledger',fmtL(k.receipts_not_in_ledger),`${fmt(k.receipts_not_in_ledger_n)} receipts against invoices still shown fully unpaid`,k.receipts_not_in_ledger>0?'warn':''),
+  tile('Unallocated receipts (this year)',fmtL(k.unallocated_fytd),'Received without an invoice number'),
+  tile('Open before April 2024',fmtL(k.pre_apr_2024),'Kept in the outstanding balance as recorded')));
+ const al=el('div',{class:'card',style:'margin-bottom:14px'},el('h3',{},'What needs attention'));finAlerts(al,d.alerts);s.append(al);
+ // B — explanation charts
+ const g=el('div',{class:'grid2'});const c1=el('canvas'),c2=el('canvas'),c3=el('canvas'),c4=el('canvas');
+ g.append(el('div',{class:'card'},el('h3',{},'Outstanding by age'),el('div',{class:'chartbox'},c1),el('div',{class:'note'},d.method&&d.method.ageing)),
+  el('div',{class:'card'},el('h3',{},'Collected vs reported revenue'),el('div',{class:'chartbox'},c2),el('div',{class:'note'},'Bars: cash received in the month (incl. GST, after TDS). Line: reported revenue (ex-GST). '+(rc.partial_month?mlabel(rc.partial_month)+' is a part month.':''))),
+  el('div',{class:'card'},el('h3',{},'From revenue to cash, by invoice month (ex-GST)'),el('div',{class:'chartbox'},c3),el('div',{class:'note'},'Each bar is the invoice value identified for that month: settled, still open, and reported revenue not yet traced to an invoice. '+(d.method&&d.method.not_traced||''))),
+  el('div',{class:'card'},el('h3',{},'Value per case (ex-GST)'),el('div',{class:'chartbox'},c4),el('div',{class:'note'},d.method&&d.method.revenue_per_case)));
+ s.append(g);
+ const cc=C(),L=v=>v==null?null:Math.round(v/1e3)/100;
+ const AG=(d.ageing||[]).filter(a=>a.from!=null);
+ chart(c1,{type:'bar',data:{labels:AG.map(a=>a.bucket),datasets:[{label:'₹ lakh',data:AG.map(a=>L(a.amount)),backgroundColor:AG.map((a,i)=>i>=AG.length-2?cc.bad:i>=AG.length-3?cc.ochre:cc.blue)}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>`${fmtL(AG[x.dataIndex].amount)} · ${fmt(AG[x.dataIndex].invoices)} invoice lines · ${pct(AG[x.dataIndex].share)}`}}},scales:{y:{title:{display:true,text:'₹ lakh'}}}}});
+ const T=d.trend||[];
+ chart(c2,{data:{labels:T.map(t=>mlabel(t.month)+(t.partial?' (part)':'')),datasets:[{type:'bar',label:'Collected',data:T.map(t=>L(t.collected)),backgroundColor:T.map(t=>t.partial?cc.muted:cc.blue)},{type:'line',label:'Reported revenue',data:T.map(t=>L(t.revenue)),borderColor:cc.ochre,pointRadius:3}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ lakh'}}}}});
+ const F=d.flow||[];
+ chart(c3,{data:{labels:F.map(x=>mlabel(x.month)),datasets:[{type:'bar',label:'Settled',data:F.map(x=>L(x.settled)),backgroundColor:cc.good,stack:'v'},{type:'bar',label:'Still open',data:F.map(x=>L(x.open)),backgroundColor:cc.ochre,stack:'v'},{type:'bar',label:'Revenue not traced to an invoice',data:F.map(x=>L(x.not_traced)),backgroundColor:cc.muted,stack:'v'},{type:'line',label:'Reported revenue',data:F.map(x=>L(x.revenue)),borderColor:cc.blue,pointRadius:3}]},options:{maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'₹ lakh'}}}}});
+ const P=d.per_case||[];
+ chart(c4,{type:'line',data:{labels:P.map(p=>mlabel(p.month)),datasets:[{label:'Reported revenue per case',data:P.map(p=>p.revenue_per_case),borderColor:cc.blue},{label:'Tracker rate',data:P.map(p=>p.tracker_rate),borderColor:cc.muted,borderDash:[4,4]},{label:'Invoiced per case',data:P.map(p=>p.invoiced_per_case),borderColor:cc.ochre},{label:'Collected per case (so far)',data:P.map(p=>p.collected_per_case),borderColor:cc.good}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ per case'}}}}});
+ // C — detail tables
+ s.append(el('h3',{},'By location'),el('p',{class:'note'},'Zone lines (for example "Gujarat Zone") hold amounts whose city is not stated in the workbook. '+(S.role==='admin'?'Click a row for its open invoices.':'')),
+  table(d.by_location||[],[{key:'location',label:'Location'},{key:'zone',label:'Zone'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_90',label:'Over 90 days',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},
+   {key:'over_180_share',label:'Share over 180',num:1,fmt:v=>v==null?'–':el('span',{class:v>0.3?'bad':''},pct(v))},{key:'unadjusted',label:'Unadjusted receipts',num:1,fmt:fmtL},{key:'net_receivable',label:'Net receivable',num:1,fmt:fmtL},
+   {key:'collected_last_month',label:'Collected '+mlabel(rc.last_complete_month),num:1,fmt:fmtL},{key:'collected_fytd',label:'Collected this year',num:1,fmt:fmtL},{key:'cash_cover_3m',label:'Cash cover (3 m)',num:1,fmt:pct},
+   {key:'months_outstanding',label:'Months outstanding',num:1,fmt:v=>v==null?'–':(+v).toFixed(1)},{key:'avg_days_to_collect',label:'Days to collect',num:1,fmt:fmt},{key:'receipts_not_in_ledger',label:'Receipts not in ledger',num:1,fmt:fmtL}],
+   {name:'collections_by_location.csv',defaultHidden:['zone','over_90','collected_fytd'],rowAction:S.role==='admin'?(r=>({kind:'fin_records',title:'Open invoices — '+r.location,location_id:r.location_id})):null}));
+ s.append(el('h3',{},'By client'),table(d.by_client||[],[{key:'family',label:'Client'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},{key:'collected_3m',label:'Collected (3 m)',num:1,fmt:fmtL},{key:'revenue_3m',label:'Reported revenue (3 m)',num:1,fmt:fmtL},{key:'cash_cover_3m',label:'Cash cover (3 m)',num:1,fmt:pct},{key:'collected_fytd',label:'Collected this year',num:1,fmt:fmtL}],{name:'collections_by_client.csv',search:false}));
+ s.append(el('h3',{},'Realisation by invoice month'),table(F,[{key:'month',label:'Invoice month',fmt:mlabel},{key:'revenue',label:'Reported revenue',num:1,fmt:fmtL},{key:'identified',label:'Invoice value identified',num:1,fmt:fmtL},{key:'coverage',label:'Identified ÷ revenue',num:1,fmt:pct},{key:'settled',label:'Settled',num:1,fmt:fmtL},{key:'open',label:'Still open',num:1,fmt:fmtL},{key:'realisation',label:'Realisation',num:1,fmt:pct},{key:'age_days',label:'Age at snapshot (days)',num:1,fmt:fmt}],{name:'realisation_by_month.csv',search:false}));
+ s.append(el('h3',{},'Revenue per case'),table(P,[{key:'month',label:'Month',fmt:mlabel},{key:'cases',label:'Cases (tracker)',num:1,fmt:fmt},{key:'revenue_per_case',label:'Reported revenue per case',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'tracker_rate',label:'Tracker rate',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'invoiced_per_case',label:'Invoiced per case',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'billing_gap',label:'Invoiced vs rate',num:1,fmt:pct},{key:'collected_per_case',label:'Collected per case (so far)',num:1,fmt:v=>v==null?'–':'₹'+v}],{name:'per_case.csv',search:false}));
+ s.append(el('details',{class:'card',style:'margin-top:14px'},el('summary',{},'How these figures are calculated, and their limits'),
+  el('ul',{},Object.entries(d.method||{}).map(([kk,v])=>el('li',{},el('strong',{},kk.replace(/_/g,' ')+': '),v))),el('h4',{},'Limitations'),el('ul',{},(d.limitations||[]).map(v=>el('li',{},v))),
+  el('p',{class:'note'},`Sources: ${sn.file} (as at ${ddmm(sn.as_of)}; ${sn.as_of_basis||''}) · ${rc.file} (receipts to ${ddmm(rc.data_through)}) · Zonal Tracker.`)));
+ if(S.role==='admin'){const rb=el('div',{class:'card',style:'margin-top:14px'});s.append(rb);finRecordsUI(rb)}
+});
+async function finRecordsUI(box,pre={}){box.innerHTML='';box.append(el('h3',{},'Invoice and receipt records (admin)'),el('p',{class:'note'},'Individual invoices and receipts behind the figures. Applicant names, phone numbers and narrations are never imported.'));
+ const kind=el('select',{'aria-label':'Record type'},el('option',{value:'outstanding'},'Open invoices'),el('option',{value:'receipts'},'Receipts'));kind.value=pre.kind||'outstanding';
+ const loc=el('select',{'aria-label':'Location'},el('option',{value:''},'All locations'),el('option',{value:'0'},'Not identified'),S.meta.locations.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(l=>el('option',{value:l.id},l.label)));loc.value=pre.location_id!=null?String(pre.location_id):'';
+ const age=el('select',{'aria-label':'Age'},[['','Any age'],['0-30','0–30 days'],['31-60','31–60 days'],['61-90','61–90 days'],['91-180','91–180 days'],['181-','Over 180 days']].map(([v,t])=>el('option',{value:v},t)));
+ const st=el('select',{'aria-label':'Ledger status'},[['','Any status'],['open','Receipt but invoice still fully open'],['partial','Invoice part-paid'],['closed','Invoice no longer open'],['none','No invoice number']].map(([v,t])=>el('option',{value:v},t)));
+ const inv=el('input',{type:'search',placeholder:'Invoice number','aria-label':'Invoice number'});const out=el('div');
+ const go2=async()=>{out.innerHTML='';out.append(el('p',{class:'note'},'Loading…'));const p={kind:kind.value,limit:500};if(loc.value!=='')p.location_id=+loc.value;if(inv.value.trim())p.invoice=inv.value.trim();
+  if(kind.value==='outstanding'&&age.value){const [a,b]=age.value.split('-');p.age_from=+a;if(b)p.age_to=+b}if(kind.value==='receipts'&&st.value)p.status=st.value;
+  try{const r=await api('fin_records',{p});out.innerHTML='';const rows=r.rows||[];
+   out.append(kind.value==='outstanding'?table(rows,[{key:'invoice',label:'Invoice'},{key:'location',label:'Location'},{key:'family',label:'Client'},{key:'branch',label:'Branch'},{key:'invoice_month',label:'Invoice month',fmt:mlabel},{key:'age_days',label:'Age (days)',num:1,fmt:fmt},{key:'basic',label:'Basic',num:1,fmt:inr},{key:'net',label:'Net',num:1,fmt:inr},{key:'received',label:'Part received',num:1,fmt:inr},{key:'open_amount',label:'Open',num:1,fmt:inr},{key:'remark',label:'Remark'},{key:'sheet',label:'Sheet'},{key:'sheet_row',label:'Row',num:1}],{name:'open_invoices.csv'})
+    :table(rows,[{key:'receipt_date',label:'Date',fmt:ddmm},{key:'amount',label:'Amount',num:1,fmt:inr},{key:'bank_sheet',label:'Bank account sheet'},{key:'location',label:'Location'},{key:'family',label:'Client'},{key:'invoice',label:'Invoice'},{key:'invoice_month',label:'Invoice month',fmt:mlabel},{key:'ledger_status',label:'Ledger status'},{key:'days_after_invoice_month',label:'Days after invoice month',num:1,fmt:fmt},{key:'sheet_row',label:'Row',num:1}],{name:'receipts.csv'}));
+   if(rows.length>=500)out.append(el('p',{class:'note'},'Showing the first 500 — narrow the filters to see others.'))}catch(e){out.innerHTML='';out.append(el('div',{class:'banner err'},e.message))}};
+ const sync=()=>{age.hidden=kind.value!=='outstanding';st.hidden=kind.value!=='receipts'};kind.onchange=sync;sync();
+ box.append(el('div',{class:'tools'},kind,loc,age,st,inv,el('button',{class:'btn primary',onclick:go2},'Show records')),out);if(pre.location_id!=null)go2()}
+
+/* ---------- Data health ---------- */
+const FINK={map_location:'Location not identified',receipt_still_open:'Receipt recorded, invoice still fully open',duplicate_line:'Possible double entry in the ledger',negative_balance:'Negative open balance',receipt_duplicate:'Same credit entered twice',odd_invoice_ref:'Unreadable invoice reference',multi_invoice_ref:'One receipt quotes several invoices',control:'Workbook control-total check'};
+const vHealth=guard(async s=>{const m=$('#fMonth').value,f=filters();
+ s.append(el('h2',{},'Data health'),el('p',{class:'lede'},'Is the data current, complete and consistent? Each check states what it compares. Nothing is corrected silently: differences are listed here for review.'));
+ const [col,rec]=await Promise.all([api('collections',{month:m,filters:{}}).catch(()=>null),api('force1_recon',{month:m,filters:f}).catch(()=>null)]);
+ const fr=S.meta.freshness||{},today=new Date().toISOString().slice(0,10),age=d=>d?Math.round((Date.parse(today)-Date.parse(String(d).slice(0,10)))/864e5):null;
+ const src=[{s:'Zonal Tracker (business figures)',d:fr.zonal_latest_snapshot,lim:3},{s:'Force1 Case Wise',d:fr.case_latest_received_ist,lim:3},{s:'Force1 Point Wise',d:fr.point_latest_created_ist,lim:3},
+  {s:'Outstanding workbook',d:col&&col.available?col.snapshot.as_of:null,lim:35},{s:'Collection workbook (receipts)',d:col&&col.available?col.receipts.data_through:null,lim:20}].map(x=>({...x,age:age(x.d)}));
+ const dqOpen=Object.values(S.meta.dq_open||{}).reduce((a,b)=>a+(+b||0),0),R=(rec&&rec.rows)||[],over=R.filter(r=>r.status==='over'),finOpen=col&&col.review?col.review.open:0;
+ s.append(el('div',{class:'tiles kpi4'},tile('Sources up to date',`${src.filter(x=>x.age!=null&&x.age<=x.lim).length} of ${src.length}`,'Within the expected update interval',src.some(x=>x.age==null||x.age>x.lim)?'warn':'good'),
+  tile('Force1 above the business count',fmt(over.length)+' groups',`${fmt(over.reduce((a,r)=>a+(r.excess_cases||0),0))} Force1 cases more than the tracker — kept out of utilisation`,over.length?'warn':'good'),
+  tile('Finance checks to review',fmt(finOpen),'Receipts, ledger lines and mappings',finOpen?'warn':'good'),tile('Data exceptions logged',fmt(dqOpen),'From imports of tracker, case and point files')));
+ s.append(el('h3',{},'Freshness of each source'),table(src,[{key:'s',label:'Source'},{key:'d',label:'Data up to',fmt:v=>v?ddmm(String(v).slice(0,10)):el('span',{class:'chip warn'},'not loaded')},{key:'age',label:'Days old',num:1,fmt:fmt},{key:'lim',label:'Expected within (days)',num:1},{key:'s',label:'Status',fmt:(v,r)=>el('span',{class:'chip '+(r.age==null?'warn':r.age<=r.lim?'good':'bad')},r.age==null?'missing':r.age<=r.lim?'current':'stale'),raw:r=>r.age==null?'missing':r.age<=r.lim?'current':'stale'}],{search:false,name:'freshness.csv'}));
+ const g=el('div',{class:'grid2'});s.append(g);
+ const fc=el('div',{class:'card'},el('h3',{},'Force1 vs business count — '+mlabel(m)),el('p',{class:'note'},'Where Force1 has more cases than the tracker for a location group and client, the extra cases are not counted in utilisation (it can never exceed 100%). These groups need checking: the case may have been booked under a different location or client, or the tracker may be incomplete.'));
+ fc.append(over.length?table(over.slice(0,30),[{key:'recon_unit',label:'Location group'},{key:'client_family',label:'Client'},{key:'tracker_cases',label:'Tracker',num:1,fmt:fmt},{key:'force1_cases',label:'Force1',num:1,fmt:fmt},{key:'excess_cases',label:'Excess',num:1,fmt:fmt}],{search:false,name:'force1_over_tracker.csv'}):el('p',{},'No group has more Force1 cases than the tracker.'),
+  el('button',{class:'btn',style:'margin-top:8px',onclick:()=>go('force')},'Open Force1 reconciliation →'));g.append(fc);
+ const fin=el('div',{class:'card'},el('h3',{},'Finance workbook checks'));g.append(fin);
+ if(!col||!col.available)fin.append(el('p',{class:'note'},'No finance workbook imported yet.'));
+ else{const bk=col.review&&col.review.by_kind||{};fin.append(el('p',{class:'note'},`Outstanding workbook as at ${ddmm(col.snapshot.as_of)}; receipts to ${ddmm(col.receipts.data_through)}.`),
+  table(Object.entries(bk).map(([kk,n])=>({kind:FINK[kk]||kk,n})),[{key:'kind',label:'Check'},{key:'n',label:'Open items',num:1,fmt:fmt}],{search:false,name:'finance_checks.csv'}),
+  el('button',{class:'btn',style:'margin-top:8px',onclick:()=>go('collections')},'Open Revenue & collections →'))}
+ s.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('quality')},'Data quality & mapping (detail) →')));
+ if(S.role!=='admin'){s.append(el('p',{class:'note'},'Admins can review and resolve each finance check here.'));return}
+ const rv=el('div',{class:'card',style:'margin-top:14px'});s.append(rv);finReviewUI(rv)});
+async function finReviewUI(box){box.innerHTML='';box.append(el('h3',{},'Finance review queue (admin)'));
+ const kind=el('select',{'aria-label':'Check'},el('option',{value:''},'All checks'),Object.entries(FINK).map(([k,v])=>el('option',{value:k},v)));const st=el('select',{'aria-label':'Status'},['open','accepted','resolved','ignored','cleared'].map(v=>el('option',{value:v},v)));
+ const out=el('div');const load=async()=>{out.innerHTML='';out.append(el('p',{class:'note'},'Loading…'));try{const r=await api('fin_review',{p:{status:st.value,kind:kind.value||null,limit:500}});out.innerHTML='';
+  const set=(row)=>{const sel=el('select',{'aria-label':'Set status'},['open','accepted','resolved','ignored'].map(o=>el('option',{value:o},o)));sel.value=row.status==='cleared'?'open':row.status;
+   sel.onchange=async()=>{const note=sel.value==='open'?'':(prompt('Note for this decision (optional)')||'');try{await finIngest('admin',{op:'review_set',id:row.id,status:sel.value,note})}catch(e){alert(e.message);sel.value=row.status}};return sel};
+  out.append(table(r.items||[],[{key:'kind',label:'Check',fmt:v=>FINK[v]||v},{key:'title',label:'What was found'},{key:'location',label:'Location'},{key:'amount',label:'Amount',num:1,fmt:inr},{key:'n',label:'Rows',num:1,fmt:fmt},
+   {key:'detail',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,140):'–',raw:r=>JSON.stringify(r.detail)},{key:'status',label:'Status',fmt:(v,row)=>set(row)},{key:'note',label:'Note'}],{name:'finance_review.csv'}))}catch(e){out.innerHTML='';out.append(el('div',{class:'banner err'},e.message))}};
+ kind.onchange=load;st.onchange=load;box.append(el('div',{class:'tools'},kind,st),out);await load();
+ const mp=el('details',{style:'margin-top:12px'},el('summary',{},'Correct a location mapping'));box.append(mp);
+ const kt=el('select',{'aria-label':'Key type'},[['label','Location name as written'],['prefix','Invoice series (e.g. NAG)'],['sheet','Sheet name']].map(([v,t])=>el('option',{value:v},t)));const key=el('input',{type:'text',placeholder:'e.g. nagpur','aria-label':'Key'});
+ const loc=el('select',{'aria-label':'Maps to'},el('option',{value:''},'No location (leave unresolved)'),S.meta.locations.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(l=>el('option',{value:l.id},l.label)));const msg=el('span',{class:'note'});
+ mp.append(el('p',{class:'note'},'Order used: invoice series first, then the location name on the row, then the sheet. Saving re-runs the finance figures.'),el('div',{class:'tools'},kt,key,loc,el('button',{class:'btn primary',onclick:async()=>{msg.textContent='Saving…';try{const r=await finIngest('admin',{op:'map_set',key_type:kt.value,key:key.value,location_id:loc.value||null});msg.textContent='Saved · figures rebuilt in '+((r.derive&&r.derive.ms)||'?')+' ms';load()}catch(e){msg.textContent=e.message}}},'Save mapping'),msg))}
+
+/* ---------- Executive overview: cash and data-health strip ---------- */
+async function ovStrip(box,m,f){try{const d=await api('collections',{month:m,filters:f});box.innerHTML='';
+  const fr=S.meta.freshness||{};const h=el('div',{class:'card'},el('h3',{},'Data health'),el('div',{class:'note'},`Business figures to ${ddmm(String(fr.zonal_latest_snapshot||'').slice(0,10))} · Force1 cases to ${ddmm(String(fr.case_latest_received_ist||'').slice(0,10))} · visits to ${ddmm(String(fr.point_latest_created_ist||'').slice(0,10))}`+(d&&d.available?` · outstanding as at ${ddmm(d.snapshot.as_of)} · receipts to ${ddmm(d.receipts.data_through)}`:'')),
+   el('button',{class:'btn sm',style:'margin-top:8px',onclick:()=>go('health')},'Open data health →'));
+  if(!d||!d.available){box.append(h);return}const k=d.kpi||{};
+  const c=el('div',{class:'card'},el('h3',{},'Cash and receivables'),el('div',{class:'tiles',style:'margin:0'},tile('Outstanding',fmtL(k.outstanding),'as at '+ddmm(d.snapshot.as_of)),tile('Over 180 days',pct(k.over_180_share),fmtL(k.over_180),k.over_180_share>0.3?'bad':''),tile('Collected '+mlabel(d.receipts.last_complete_month),fmtL(k.collected_last_month),'Realisation '+pct(k.realisation))),
+   el('button',{class:'btn sm',onclick:()=>go('collections')},'Open revenue & collections →'));box.append(c,h)}catch(e){box.innerHTML=''}}
+
+/* ---------- finance upload (collection / outstanding workbooks) ---------- */
+async function finIngest(action,payload){if(S.mode==='mcp')return mcpSql(`select bi.fin_ingest_as(${lit('connector:'+(S.email||'owner'))},${lit(action)},${js(payload)}) as r`);
+ const {data,error}=await S.sb.rpc('bi_fin_ingest',{p_token:S.adminKey,p_action:action,p_payload:payload});if(error)throw new Error(error.message);return data}
+function finPrepare(it,x,file){const L=x.sheets.filter(s=>s.rows.length);const n=L.reduce((a,s)=>a+s.rows.length,0);
+ if(x.kind==='collection'){const bank=L.filter(s=>s.role==='bank');const tot=bank.reduce((a,s)=>a+s.controls.credit,0);
+  it.summary=`${bank.length} bank-account sheets · ${fmt(bank.reduce((a,s)=>a+s.rows.length,0))} receipts · ${fmtL(tot)} · ${ddmm(x.period_from)} to ${ddmm(x.data_through)}`+(L.some(s=>s.role==='main')?' · "Main" kept as a cross-check only':'');it.period=x.data_through;it.status=x.data_through?'Ready':'No receipt dates found'}
+ else{const led=L.filter(s=>s.role==='ledger');const os=led.reduce((a,s)=>a+s.controls.os,0),un=led.reduce((a,s)=>a+s.controls.unadj.reduce((b,u)=>b+u.amount,0),0);
+  const nm=x.name_period,lm=new Date(file.lastModified||Date.now()).toISOString().slice(0,10),today=new Date().toISOString().slice(0,10);
+  const endOf=ym=>{const d=new Date(ym+'-01T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+1);d.setUTCDate(0);return d.toISOString().slice(0,10)};
+  if(!it.asof){if(nm&&lm.slice(0,7)===nm){it.asof=lm;it.asofBasis=`Inferred from the file date ${ddmm(lm)}; workbook labelled ${mlabel(nm+'-01')}`}else if(nm){const e=endOf(nm);it.asof=e<today?e:today;it.asofBasis=`Inferred from the workbook label ${mlabel(nm+'-01')}`}else{it.asof=lm;it.asofBasis='Inferred from the file date'}}
+  it.summary=`${led.length} location sheets · ${fmt(n)} invoice lines · outstanding ${fmtL(os)} · unadjusted receipts ${fmtL(un)} · snapshot date ${ddmm(it.asof)} (check)`;it.period=it.asof;it.status='Ready'}
+ it.issues=x.issues||[]}
+async function finImport(it,progress){const x=it.x;const data=x.sheets.filter(s=>s.rows.length);
+ const controls={sheets:Object.fromEntries(x.sheets.map(s=>[s.sheet,{role:s.role,...s.controls}])),issues:x.issues};
+ const b=await finIngest('begin',{kind:x.kind,file_name:it.file.name,file_hash:it.hash,source_ref:'upload:'+it.file.name,as_of:x.kind==='collection'?x.data_through:it.asof,
+  as_of_basis:x.kind==='collection'?'last receipt date in the file':(it.asofBasis||'entered at upload'),period_from:x.period_from||null,period_to:x.period_to||null,name_period:x.name_period?x.name_period+'-01':null,controls});
+ if(b.duplicate)return'Already imported (identical file) — unchanged';
+ const N=S.mode==='mcp'?400:2000;let done=0;const tot=data.reduce((a,s)=>a+s.rows.length,0);
+ try{for(const sh of data)for(let i=0,seq=0;i<sh.rows.length;i+=N,seq++){await finIngest('stage',{upload_id:b.upload_id,sheet:sh.sheet,seq,role:sh.role,cols:sh.cols,rows:sh.rows.slice(i,i+N)});done+=Math.min(N,sh.rows.length-i);progress(`Staging ${fmt(done)}/${fmt(tot)}`)}
+  const c=await finIngest('commit',{upload_id:b.upload_id,expected:Object.fromEntries(data.map(s=>[s.sheet,s.rows.length]))});
+  progress('Rebuilding finance figures…');let dv=null;try{dv=await finIngest('derive',{})}catch(e){}
+  return`Imported ${fmt(tot)} rows`+(c.status==='superseded'?' (kept; a file with later receipts is current)':'')+(dv?' · figures rebuilt':' · figures refresh within 10 minutes')}
+ catch(e){try{await finIngest('reject',{upload_id:b.upload_id,reason:'upload interrupted: '+e.message})}catch{}throw e}}
 
 /* ---------- Admin key ---------- */
 function adminGate(s,what){if(S.role==='admin')return true;const inp=el('input',{type:'password',placeholder:'Admin key','aria-label':'Admin key',autocomplete:'off',style:'padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);min-width:260px'});const msg=el('span',{class:'note'});
@@ -1545,6 +1698,7 @@ Object.assign(DDK,{biz:ddBiz,branch:ddBranch,compare:ddCompare});
 function askAbout(q,m,f){if(!document.getElementById('askBtn'))return;ASK.ctx={month:m||$('#fMonth').value,filters:f||filters()};DD.close();const p=$('#askPanel');if(p.classList.contains('hidden'))$('#askBtn').click();const t=p.querySelector('textarea');t.value=q;t.focus()}
 
 // Mapping correction (Data quality, admin): choose the correct canonical target, preview the impact, apply from an effective date
+DDK.fin_records=async(o,c)=>finRecordsUI(o,{kind:'outstanding',location_id:c.location_id});
 DDK.mapfix=async(o,c)=>{const r=c.row,isLoc=c.mk==='location_alias';
  const opts=isLoc?(S.meta.locations||[]).filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label)).map(l=>[l.id,l.label]):(S.meta.clients||[]).map(x=>[x.code,x.label+' ('+x.code+')']);
  const sel=el('select',{'aria-label':'Correct target'},el('option',{value:''},isLoc?'Choose the correct location':'Choose the correct client'),opts.map(([v,t])=>el('option',{value:v},t)));
@@ -1592,14 +1746,16 @@ function askRender(a,askNext){const box=el('div',{class:'msg bot askans'});
   try{if(S.sb)await S.sb.rpc('bi_feedback',{p_message:a.message_id,p_helpful:h,p_correction:c||null})}catch{}};
  fb.append(el('button',{class:'btn sm','aria-label':'Helpful',onclick:()=>vote(true)},'👍'),' ',el('button',{class:'btn sm','aria-label':'Not helpful',onclick:()=>vote(false)},'👎'));box.append(fb);
  return box}
-const SECMAP={};
+const SECMAP={data_health:'health',revenue:'collections',finance:'collections'};
 function askSuggest(){const k=S.section;
  const by={tat:['Where is TAT increasing?','Which location groups have unreliable TAT?','What are the five most important issues?'],
   force1:['What is Force1 utilisation by location group?','Why is Force1 above the tracker for some locations?','Is Force1 utilisation improving?'],
   force:['Why is Force1 above the tracker for some locations?','What is Force1 utilisation by location group?','What data issues need attention?'],
   quality:['What data issues need attention?','Why is Force1 above the tracker for some locations?'],
   tracker:['Which locations contribute most to the shortfall?','Which locations are behind last month?','Which branches are dormant or losing traction?'],
-  growth:['Which locations are behind last month?','How did last month close against target?','Which branches are dormant or losing traction?']};
+  growth:['Which locations are behind last month?','How did last month close against target?','Which branches are dormant or losing traction?'],
+  collections:['Which locations have the oldest outstanding?','What is the realisation by invoice month?','Why did collections fall?','Revenue per case vs rate?'],
+  health:['What data issues need attention?','Why is Force1 above the tracker for some locations?','Which locations have the oldest outstanding?']};
  return by[k]||['How are we doing this month?','What are the five most important issues?','Which locations contribute most to the shortfall?','Will we reach the target this month?']}
 function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sessionStorage.getItem('crux_ask_conv')}catch{}
  const btn=el('button',{id:'askBtn',class:'btn primary','aria-haspopup':'dialog','aria-controls':'askPanel','aria-expanded':'false'},'Ask Crux');
@@ -1628,7 +1784,7 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
 const vUpload=guard(async s=>{s.append(el('h2',{},'Upload centre'));if(!adminGate(s,'Uploading data'))return;
- const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);const pnA=el('div',{class:'card',style:'margin-bottom:18px'});s.append(pnA);penaltySection(pnA,$('#fMonth').value,{},true);s.append(el('h3',{},'File upload — Case Wise, Point Wise, or a full Zonal Tracker (backfill / recovery)'));
+ const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);const pnA=el('div',{class:'card',style:'margin-bottom:18px'});s.append(pnA);penaltySection(pnA,$('#fMonth').value,{},true);s.append(el('h3',{},'File upload — Case Wise, Point Wise, Zonal Tracker, Collection or Outstanding workbook'));
  s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
  const list=el('div');const inp=el('input',{type:'file',multiple:'',accept:'.xlsx,.xls',class:'hidden',id:'fin'});
  const drop=el('div',{class:'drop',tabindex:0,role:'button','aria-label':'Choose files to upload'},el('p',{},el('strong',{},'Drop .xlsx files here'),' or ',el('button',{class:'btn',onclick:()=>inp.click()},'choose files')),el('p',{class:'note'},'Personal data (applicant names, mobile, PAN, Aadhaar, account numbers, addresses) is removed in your browser before upload.'),inp);
@@ -1637,18 +1793,19 @@ const vUpload=guard(async s=>{s.append(el('h2',{},'Upload centre'));if(!adminGat
  const items=[];const runBtn=el('button',{class:'btn primary',disabled:''},'Import validated files');list.append(el('div',{class:'tools'},runBtn));const tb=el('div');list.append(tb);
  async function handle(files){for(const file of files){const it={file,status:'Reading…'};items.push(it);draw();try{const buf=await file.arrayBuffer();it.hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');
    const wb=XLSX.read(buf,{type:'array',cellFormula:true,sheets:undefined});const x=CruxExtract.extractWorkbook(wb,file.name);it.x=x;it.kind=x.kind;
-   if(!x.kind){it.status='Not recognised';it.err=true}else if(x.kind==='zonal'){it.snapshot=x.snapshot_date;it.period=x.report_month;const leaf=x.rows.filter(r=>r.row_type==='leaf');const t=leaf.reduce((a,r)=>a+(r.mtd_cases||0),0);it.summary=`${leaf.length} leaf rows · MTD ${fmt(t)}`+(x.control?` · file's own Pan India total ${fmt(x.control.mtd)}`+(Math.abs(t-x.control.mtd)>0.5?' (differs — will be logged)':' ✓'):'');it.status=x.snapshot_date?'Ready':'Needs snapshot date'}
+   if(!x.kind){it.status='Not recognised';it.err=true}else if(x.kind==='collection'||x.kind==='outstanding'){finPrepare(it,x,file)}else if(x.kind==='zonal'){it.snapshot=x.snapshot_date;it.period=x.report_month;const leaf=x.rows.filter(r=>r.row_type==='leaf');const t=leaf.reduce((a,r)=>a+(r.mtd_cases||0),0);it.summary=`${leaf.length} leaf rows · MTD ${fmt(t)}`+(x.control?` · file's own Pan India total ${fmt(x.control.mtd)}`+(Math.abs(t-x.control.mtd)>0.5?' (differs — will be logged)':' ✓'):'');it.status=x.snapshot_date?'Ready':'Needs snapshot date'}
    else{const base=file.name.replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)$/,'');const tok=base.replace(/_[A-Za-z]+$/,'').toUpperCase().replace(/[^A-Z]/g,'');it.group=UNITS[tok]||null;
     const months={};x.rows.forEach(r=>{const d=r.received_at||r.created_at;if(d){const ist=new Date(Date.parse(d)+19800000).toISOString().slice(0,7);months[ist]=(months[ist]||0)+1}});const top=Object.entries(months).sort((a,b)=>b[1]-a[1])[0];it.period=top?top[0]+'-01':null;
     it.summary=`${fmt(x.rows.length)} rows`+(x.issues.length?` · ${x.issues.length} issue(s)`:'');it.status=(it.group&&it.period)?'Ready':'Needs location group / month'}}catch(e){it.status='Failed: '+e.message;it.err=true}draw()}}
  function draw(){tb.innerHTML='';runBtn.disabled=!items.some(i=>i.status==='Ready');
-  tb.append(table(items.map((i,ix)=>({...i,ix})),[{key:'name',label:'File',fmt:(v,r)=>r.file.name},{key:'kind',label:'Type',fmt:v=>({zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise'})[v]||'–'},
+  tb.append(table(items.map((i,ix)=>({...i,ix})),[{key:'name',label:'File',fmt:(v,r)=>r.file.name},{key:'kind',label:'Type',fmt:v=>({zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise',collection:'Collection workbook',outstanding:'Outstanding workbook'})[v]||'–'},
    {key:'group',label:'Location group',fmt:(v,r)=>r.kind==='case'||r.kind==='point'?(()=>{const sel=el('select',{'aria-label':'Location group'},el('option',{value:''},'Choose…'),[...new Set(Object.values(UNITS))].sort().map(u=>el('option',{value:u},u)));sel.value=v||'';sel.onchange=()=>{items[r.ix].group=sel.value||null;items[r.ix].status=(items[r.ix].group&&items[r.ix].period)?'Ready':'Needs location group / month';draw()};return sel})():'–'},
-   {key:'period',label:'Period / snapshot',fmt:(v,r)=>{const i2=el('input',{type:r.kind==='zonal'?'date':'month',value:r.kind==='zonal'?(r.snapshot||''):(v||'').slice(0,7),'aria-label':'Period'});i2.onchange=()=>{const it=items[r.ix];if(r.kind==='zonal')it.snapshot=i2.value;else it.period=i2.value?i2.value+'-01':null;it.status=(r.kind==='zonal'?it.snapshot:(it.group&&it.period))?'Ready':it.status;draw()};return i2}},
-   {key:'summary',label:'Preview'},{key:'status',label:'Status',fmt:v=>el('span',{class:'chip '+(/^Ready|^Imported|unchanged/.test(v)?'good':/Fail|Not rec|rejected/.test(v)?'bad':'warn')},v)}],{search:false,pageSize:100}))}
+   {key:'period',label:'Period / snapshot',fmt:(v,r)=>{if(r.kind==='collection')return'Receipts to '+ddmm(r.period||'');if(r.kind==='outstanding'){const i3=el('input',{type:'date',value:r.asof||'','aria-label':'Snapshot date'});i3.onchange=()=>{const it=items[r.ix];it.asof=i3.value;it.asofBasis='Entered at upload';it.status=i3.value?'Ready':'Needs snapshot date';finPrepare(it,it.x,it.file);draw()};return i3}const i2=el('input',{type:r.kind==='zonal'?'date':'month',value:r.kind==='zonal'?(r.snapshot||''):(v||'').slice(0,7),'aria-label':'Period'});i2.onchange=()=>{const it=items[r.ix];if(r.kind==='zonal')it.snapshot=i2.value;else it.period=i2.value?i2.value+'-01':null;it.status=(r.kind==='zonal'?it.snapshot:(it.group&&it.period))?'Ready':it.status;draw()};return i2}},
+   {key:'summary',label:'Preview'},{key:'status',label:'Status',fmt:v=>el('span',{class:'chip '+(/^Ready|^Imported|unchanged/.test(v)?'good':/Fail|Not rec|rejected/.test(v)?'bad':'warn')},v)}],{search:false,pageSize:100}));
+  items.filter(i=>(i.issues||[]).length).forEach(i=>tb.append(el('details',{class:'card',style:'margin-top:8px'},el('summary',{},`Checks for ${i.file.name} (${i.issues.length})`),el('ul',{},i.issues.map(x=>el('li',{},(x.sheet?x.sheet+': ':'')+(x.detail||x.rule)))))))}
  runBtn.onclick=async()=>{runBtn.disabled=true;for(const it of items.filter(i=>i.status==='Ready')){try{it.status='Uploading…';draw();it.status=await importOne(it,p=>{it.status=p;draw()})}catch(e){it.status='Failed: '+e.message}draw()}S.meta=await api('meta');renderFresh()};
 });
-async function importOne(it,progress){const x=it.x;
+async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.kind==='outstanding')return finImport(it,progress);
  if(x.kind==='zonal'){const b=await ingest('begin',{category:'zonal',file_name:it.file.name,file_hash:it.hash,snapshot_date:it.snapshot,period_month:x.report_month});if(b.duplicate)return'Already imported (identical file) — unchanged';
   await ingest('stage',{batch_id:b.batch_id,seq_start:0,rows:[{snapshot_date:it.snapshot,report_month:x.report_month,control:x.control,issues:x.issues}]});const n=S.mode==='mcp'?40:150;
   for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});progress(`Staging ${Math.min(i+n,x.rows.length)}/${x.rows.length}`)}
