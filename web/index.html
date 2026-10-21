@@ -118,6 +118,7 @@ tr:hover td{background:var(--blue-soft)}
 #askPanel .askin{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line)}
 #askPanel textarea{flex:1;resize:vertical;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 #askPanel>.note{padding:0 12px 8px;font-size:11px;margin:0}
+#askPanel.wide{width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 90px)}#askPanel .askans h4{margin:10px 0 4px;font-size:13px}#askPanel .askdirect{font-weight:600}#askPanel .asktbl{font-size:12px;width:100%;border-collapse:collapse}#askPanel .asktbl th,#askPanel .asktbl td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askchart{height:220px;position:relative}#askPanel .askchips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}#askPanel .asksug{padding:6px 12px 0}#askPanel ul{margin:2px 0 4px 18px;padding:0;font-size:13px}#askPanel ul.risk li{color:var(--bad)}.btn.ghost{background:transparent;border:1px dashed var(--line)}
 .btn.sm{padding:2px 8px;font-size:13px}
 table.matrix input.cell{width:76px;text-align:right;padding:3px 5px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);font:inherit}
 table.matrix input.cell.bad{border-color:var(--bad);background:var(--bad-soft)}
@@ -1567,32 +1568,60 @@ function mapFixBtn(mk,row){const b=el('button',{type:'button',class:'btn sm'},'C
 /* ---------- Ask Crux (floating, every section) ---------- */
 const ASK={url:'https://czdjbbhxboweawqbjywr.supabase.co/functions/v1/ask-crux',
  jwt:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGpiYmh4Ym93ZWF3cWJqeXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjkyNDgsImV4cCI6MjEwMDU0NTI0OH0.NSiSksxZiMVrVG6h4Wt2ZPhS4P4mbgv3XaAlGSqYIzM',conv:null};
+// Ask Crux v3 answer: direct answer, findings table, drivers, risks, opportunities, actions, chart, drill links, next questions, method
+function askRender(a,askNext){const box=el('div',{class:'msg bot askans'});
+ if(a.narrative)box.append(el('p',{},el('span',{class:'note'},'AI summary (wording only): '),a.narrative));
+ box.append(el('p',{class:'askdirect'},a.answer||''));
+ if(a.notes)box.append(el('p',{class:'note'},a.notes));
+ box.append(el('p',{class:'note'},`${a.scope||''} · ${a.period||''}${a.confidence?' · confidence '+a.confidence:''}`));
+ const F=a.findings;if(F&&(F.rows||[]).length){const t=el('table',{class:'asktbl'},el('thead',{},el('tr',{},(F.columns||[]).map(c=>el('th',{},c)))),el('tbody',{},F.rows.map(r=>el('tr',{},(Array.isArray(r)?r:[r]).map(c=>el('td',{},c==null?'–':String(c)))))));
+  box.append(el('h4',{},'Key findings'),el('div',{class:'tablewrap'},t))}
+ const ch=a.chart;if(ch&&(ch.labels||[]).length&&(ch.series||[]).length){const cv=el('canvas');box.append(el('h4',{},ch.title||'Chart'),el('div',{class:'askchart'},cv));
+  setTimeout(()=>{try{const c=C(),cols=[c.blue,c.ochre,c.bad,c.good];const hb=ch.type==='hbar',st=ch.type==='stacked';
+   chart(cv,{type:ch.type==='line'?'line':'bar',data:{labels:ch.labels,datasets:ch.series.map((x,k)=>({label:x.name,data:x.values,borderColor:cols[k%4],backgroundColor:ch.type==='line'?cols[k%4]:cols[k%4]+'cc',borderDash:ch.type==='line'&&k>0?[5,4]:undefined,pointRadius:ch.type==='line'?2:undefined}))},
+    options:{maintainAspectRatio:false,indexAxis:hb?'y':'x',plugins:{legend:{display:ch.series.length>1}},scales:{x:{stacked:st,ticks:{autoSkip:true,maxRotation:0}},y:{stacked:st,beginAtZero:!hb||true,title:{display:!hb,text:ch.unit||''}}}}})}catch(e){}},0)}
+ const li=(h,arr,cls)=>{if(!(arr||[]).length)return;box.append(el('h4',{},h),el('ul',{class:cls||''},arr.map(x=>el('li',{},String(x)))))};
+ li('Drivers',a.drivers);li('Risks',a.risks,'risk');li('Opportunities',a.opportunities);
+ if((a.actions||[]).length)box.append(el('h4',{},'Recommended actions'),el('div',{class:'tablewrap'},el('table',{class:'asktbl'},el('thead',{},el('tr',{},['Priority','Action','Reason','Owner','Expected benefit'].map(c=>el('th',{},c)))),
+  el('tbody',{},a.actions.map(x=>el('tr',{},el('td',{},el('span',{class:'chip '+(x.priority==='High'?'bad':x.priority==='Medium'?'warn':'')},x.priority||'')),el('td',{},x.action||''),el('td',{},x.reason||''),el('td',{},x.owner_level||''),el('td',{},x.expected_benefit||'')))))));
+ if((a.drill||[]).length){const d=el('div',{class:'askchips'});a.drill.forEach(x=>d.append(el('button',{type:'button',class:'btn sm',onclick:()=>{if(x.section){go(SECMAP[x.section]||x.section);return}DD.open(bizCtx(a.month||$('#fMonth').value,x.f||{},{focus:x.focus,level:x.level}))}},'↗ '+x.label)));box.append(d)}
+ if((a.next||[]).length&&askNext){const d=el('div',{class:'askchips'},el('span',{class:'note'},'Ask next: '));a.next.forEach(x=>d.append(el('button',{type:'button',class:'btn sm ghost',onclick:()=>askNext(x)},x)));box.append(d)}
+ box.append(el('details',{},el('summary',{},'How this was calculated'),a.method?el('p',{},'Method: '+a.method):null,a.limitations?el('p',{},'Limitations: '+a.limitations):null,
+  (a.sources||[]).length?el('p',{},'Based on: '+a.sources.join('; ')):null,a.provider_note?el('p',{},a.provider_note):null,el('p',{},a.provider==='gemini'?`Summary by ${a.model} (Google Gemini), checked for figures and direction before display.`:'No AI wording used for this answer.')));
+ const fb=el('span',{class:'note'});const vote=async h=>{const c=h?null:prompt('What was wrong or missing? (optional)');fb.textContent='Thanks for the feedback.';
+  try{if(S.sb)await S.sb.rpc('bi_feedback',{p_message:a.message_id,p_helpful:h,p_correction:c||null})}catch{}};
+ fb.append(el('button',{class:'btn sm','aria-label':'Helpful',onclick:()=>vote(true)},'👍'),' ',el('button',{class:'btn sm','aria-label':'Not helpful',onclick:()=>vote(false)},'👎'));box.append(fb);
+ return box}
+const SECMAP={};
+function askSuggest(){const k=S.section;
+ const by={tat:['Where is TAT increasing?','Which location groups have unreliable TAT?','What are the five most important issues?'],
+  force1:['What is Force1 utilisation by location group?','Why is Force1 above the tracker for some locations?','Is Force1 utilisation improving?'],
+  force:['Why is Force1 above the tracker for some locations?','What is Force1 utilisation by location group?','What data issues need attention?'],
+  quality:['What data issues need attention?','Why is Force1 above the tracker for some locations?'],
+  tracker:['Which locations contribute most to the shortfall?','Which locations are behind last month?','Which branches are dormant or losing traction?'],
+  growth:['Which locations are behind last month?','How did last month close against target?','Which branches are dormant or losing traction?']};
+ return by[k]||['How are we doing this month?','What are the five most important issues?','Which locations contribute most to the shortfall?','Will we reach the target this month?']}
 function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sessionStorage.getItem('crux_ask_conv')}catch{}
  const btn=el('button',{id:'askBtn',class:'btn primary','aria-haspopup':'dialog','aria-controls':'askPanel','aria-expanded':'false'},'Ask Crux');
- const log=el('div',{class:'asklog',role:'log','aria-live':'polite'},el('div',{class:'msg bot note'},'Ask about business, Force1 utilisation, branches, TAT, people or forecasts — e.g. "Why is Pune lower than last month?" Your current month and filters are used.'));
+ const log=el('div',{class:'asklog',role:'log','aria-live':'polite'},el('div',{class:'msg bot note'},'Ask about business vs target, the gap by location, change vs last month, Force1, TAT, branches or data health. Your current month, filters and page are used.'));
  const q=el('textarea',{rows:2,placeholder:'Type a question…','aria-label':'Your question',maxlength:500});const send=el('button',{class:'btn primary'},'Ask');
  const close=el('button',{class:'btn sm','aria-label':'Close Ask Crux'},'×');const fresh=el('button',{class:'btn sm',title:'Start a new conversation'},'New');
- const panel=el('div',{id:'askPanel',role:'dialog','aria-label':'Ask Crux',class:'hidden'},el('div',{class:'askhead'},el('strong',{},'Ask Crux'),el('p',{class:'note'},'Answers use the same calculations as the dashboard.'),fresh,close),log,
+ const wide=el('button',{class:'btn sm',title:'Wider panel','aria-label':'Toggle wide panel'},'⤢');const sug=el('div',{class:'askchips asksug'});
+ const panel=el('div',{id:'askPanel',role:'dialog','aria-label':'Ask Crux',class:'hidden'},el('div',{class:'askhead'},el('strong',{},'Ask Crux'),el('p',{class:'note'},'Answers use the same calculations as the dashboard.'),wide,fresh,close),sug,log,
   el('div',{class:'askin'},q,send),el('p',{class:'note'},'No personal data is sent to the AI. Every number comes from the database; the AI summary never contains figures (any that do are blocked) and the calculated answer is always shown.'));
  document.body.append(btn,panel);
- const open=o=>{panel.classList.toggle('hidden',!o);btn.setAttribute('aria-expanded',String(o));if(o)q.focus()};
+ const open=o=>{panel.classList.toggle('hidden',!o);btn.setAttribute('aria-expanded',String(o));if(o){sug.innerHTML='';sug.append(el('span',{class:'note'},'Try: '),...askSuggest().map(x=>el('button',{type:'button',class:'btn sm ghost',onclick:()=>{q.value=x;ask()}},x)));q.focus()}};
+ wide.onclick=()=>panel.classList.toggle('wide');
  btn.onclick=()=>open(panel.classList.contains('hidden'));close.onclick=()=>{open(false);btn.focus()};
  fresh.onclick=()=>{ASK.conv=null;try{sessionStorage.removeItem('crux_ask_conv')}catch{}log.innerHTML='';log.append(el('div',{class:'msg bot note'},'New conversation started.'))};
  panel.addEventListener('keydown',e=>{if(e.key==='Escape'){open(false);btn.focus()}});
  q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask()}});send.onclick=ask;
  async function ask(){const text=q.value.trim();if(text.length<3)return;q.value='';log.append(el('div',{class:'msg me'},text));const wait=el('div',{class:'msg bot note'},'Working it out…');log.append(wait);log.scrollTop=log.scrollHeight;send.disabled=true;
   try{const r=await fetch(ASK.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ASK.jwt,apikey:ASK.jwt},
-    body:JSON.stringify({question:text,conversation_id:ASK.conv,context:ASK.ctx||{month:$('#fMonth').value,filters:filters()}})});
+    body:JSON.stringify({question:text,conversation_id:ASK.conv,context:{...(ASK.ctx||{month:$('#fMonth').value,filters:filters()}),section:S.section}})});
    ASK.ctx=null;const a=await r.json().catch(()=>({error:'unreadable response'}));wait.remove();if(!r.ok||a.error)throw new Error(a.error||('HTTP '+r.status));
    ASK.conv=a.conversation_id;try{sessionStorage.setItem('crux_ask_conv',a.conversation_id)}catch{}
-   const fb=el('span',{class:'note'});const vote=async h=>{const c=h?null:prompt('What was wrong or missing? (optional)');fb.textContent='Thanks for the feedback.';
-    try{if(S.sb)await S.sb.rpc('bi_feedback',{p_message:a.message_id,p_helpful:h,p_correction:c||null})}catch{}};
-   fb.append(el('button',{class:'btn sm','aria-label':'Helpful',onclick:()=>vote(true)},'👍'),' ',el('button',{class:'btn sm','aria-label':'Not helpful',onclick:()=>vote(false)},'👎'));
-   const fl=Object.entries(a.filters||{});
-   log.append(el('div',{class:'msg bot'},a.narrative?el('p',{},el('span',{class:'note'},'AI summary (wording only): '),a.narrative):null,el('p',{},a.narrative?el('strong',{},'Calculated answer: '):null,a.answer),a.next_steps?el('p',{class:'note'},a.next_steps):null,
-    el('details',{},el('summary',{},'How this was calculated'),el('p',{},`Period: ${a.period||'–'} · Confidence: ${a.confidence||'–'}`+(fl.length?' · Filters: '+fl.map(([k,v])=>k+'='+v).join(', '):'')),
-     a.method?el('p',{},'Method: '+a.method):null,a.limitations?el('p',{},'Limitations: '+a.limitations):null,(a.sources||[]).length?el('p',{},'Based on: '+a.sources.join('; ')):null,a.provider_note?el('p',{},a.provider_note):null,el('p',{},a.provider==='gemini'?`Summary by ${a.model} (Google Gemini), checked for figures and direction before display.`:'No AI wording used for this answer.')),
-    (a.related||[]).length?el('p',{class:'note'},'Asked before: '+a.related.map(x=>`"${x.question}" (${x.asked})`).join('; ')):null,fb))}
+   const bx=askRender(a,qq=>{q.value=qq;ask()});log.append(bx);send.disabled=false;setTimeout(()=>{log.scrollTop=Math.max(0,bx.offsetTop-log.offsetTop-60)},30);return}
   catch(e){wait.remove();log.append(el('div',{class:'msg bot'},el('p',{class:'bad'},'Sorry — '+e.message+'. The dashboard itself still works.')))}
   send.disabled=false;log.scrollTop=log.scrollHeight}}
 

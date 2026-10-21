@@ -1,4 +1,4 @@
-// Ask Crux v2 — every number comes from SQL (public.bi_ask); Gemini only rewords the validated answer and may
+// Ask Crux v3 — every number comes from SQL (public.bi_ask3: structured answer, findings, actions, chart); Gemini only rewords the validated answer and may
 // explain terms from the approved knowledge base (RAG). Deterministic answer whenever the AI step is unavailable.
 // Secrets (Edge Function secrets only): GEMINI_API_KEY. Non-secret settings live in bi.ai_config
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
@@ -56,15 +56,20 @@ const TG_BAD = /\b(?:below|short of|under|miss\w*|behind|falls? short|fall\w* sh
 function directions(answer: string): { text: string[]; check: (t: string) => boolean } {
   const n = (x: string) => Number(x.replace(/,/g, ''));
   const text: string[] = []; let lmDir = '', tgDir = '';
-  const lm = answer.match(/:\s*(\d[\d,]*),?\s+vs\s+(\d[\d,]*)\s+at the same point last month/);
+  // v2 wording, then v3 wording (overview: "N cases month to date … Same working day last month (d): M"; growth: "N cases month to date (…) vs M on the same working day")
+  const lm = answer.match(/:\s*(\d[\d,]*),?\s+vs\s+(\d[\d,]*)\s+at the same point last month/)
+    ?? answer.match(/(\d[\d,]*) cases month to date \([^)]*\)\s+vs\s+(\d[\d,]*) on the same working day last month/)
+    ?? answer.match(/(\d[\d,]*) cases month to date[\s\S]*?Same working day last month \([^)]*\):\s*(\d[\d,]*)/);
   if (lm) {
     const a = n(lm[1]), b = n(lm[2]);
     lmDir = a > b ? 'up' : a < b ? 'down' : 'level';
     text.push(`Month to date is ${lmDir === 'up' ? 'AHEAD of' : lmDir === 'down' ? 'BEHIND' : 'LEVEL with'} the same point last month.`);
   }
   const tg = answer.match(/Target\s+(\d[\d,]*)[^;]*?projected month-end\s+(\d[\d,]*)/);
-  if (tg) {
-    tgDir = n(tg[2]) < n(tg[1]) ? 'below' : 'at_or_above';
+  const tg3 = answer.match(/of the (\d[\d,]*) target\. Projected month end (\d[\d,]*)/) ?? answer.match(/projected at (\d[\d,]*) cases \([^)]*? of the (\d[\d,]*) target/);
+  if (tg || tg3) {
+    const [t, p] = tg ? [n(tg[1]), n(tg[2])] : (tg3![0].startsWith('of the') ? [n(tg3![1]), n(tg3![2])] : [n(tg3![2]), n(tg3![1])]);
+    tgDir = p < t ? 'below' : 'at_or_above';
     text.push(`The month-end projection is ${tgDir === 'below' ? 'BELOW' : 'AT OR ABOVE'} target.`);
   }
   // true = the wording states something the calculation does not support
@@ -162,9 +167,10 @@ Deno.serve(async (req) => {
   }
 
   // ---- ask ----
-  const question = String(body?.question ?? '').slice(0, 500);
+  // 'drop' is read as 'decline' (same meaning for the analysis)
+  const question = String(body?.question ?? '').slice(0, 500).replace(/\bdrop\b/gi, 'decline');
   let base: any;
-  try { base = await rpc('bi_ask', { p_question: question, p_context: body?.context ?? {}, p_conversation: body?.conversation_id ?? null }, ANON); }
+  try { base = await rpc('bi_ask3', { p_question: question, p_context: body?.context ?? {}, p_conversation: body?.conversation_id ?? null }, ANON); }
   catch (e) { return json({ error: 'Database unavailable: ' + (e as Error).message }, 502); }
   const det = (note?: string) => json({ ...base, provider: 'deterministic', ...(note ? { provider_note: note } : {}) });
   if (base?.error || !base?.answer) return det();
