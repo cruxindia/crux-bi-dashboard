@@ -119,3 +119,16 @@ Recomputed by the `bi-organic-refresh` job (every 10 minutes, only when data cha
 4. A later collection workbook for the same financial year replaces the earlier one (it is cumulative); outstanding workbooks are kept by snapshot date and never added.
 5. Data health → Finance review queue: set each item to accepted / resolved / ignored with a note; correct a location mapping (invoice series, location name or sheet) — figures are rebuilt immediately.
 6. Admin records: Revenue & collections → "Invoice and receipt records" (or click a location row) lists the invoices or receipts behind a figure.
+
+## Admin workspace (22-Oct-2026)
+- **Sign in:** top bar → **Admin login** → admin key → Unlock. The button becomes **Admin workspace** (green dot) and opens a menu of eight groups. The key is checked by the server on every admin call and is kept only in this browser tab (sessionStorage).
+- **Groups:** File uploads & daily tracker corrections · Master data & mapping (aliases with effective dates, WEF groups, point types, client branch list) · Data-quality exceptions & reconciliation (import checks, exceptions with evidence, data coverage, Force1 vs business count) · Branch research & monitor · HR / workforce master data (workforce list, employee classification) · Finance review & records · Penalties (entry, cancellation, audit history) · Database health & maintenance (size vs limit, largest tables, jobs, storage, AI status).
+- **Session end:** **Lock admin** in the menu; automatic lock when the key expires (expiry from the server), when the server answers "admin key required", and on the 5-minute re-check. Admin pages then return to Executive overview and admin controls disappear.
+- **Old links:** #upload → Admin › uploads; #quality and #force → Admin pages for admins, Data readiness for everyone else.
+- **Business pages are read-only for everyone** (People classification overrides moved to HR / workforce master data; penalty entry and cancellation only in Admin › Penalties; invoice records only in Admin › Finance).
+
+## Storage (22-Oct-2026)
+- Live figures: Admin workspace → Database health. The 500 MB Free-plan limit applies to the sum of all databases.
+- Re-imports no longer rewrite unchanged rows (trigger `zz_skip_noop_update`). To roll back: `alter table bi.point_store disable trigger zz_skip_noop_update; alter table bi.case_store disable trigger zz_skip_noop_update;`
+- Owner step: `supabase/owner/owner_storage_cleanup.sql` (about 23 MB). Upgrade or archive decision: SOW Q10/Q19.
+- If space is needed again after many re-imports: `vacuum (full, analyze) bi.point_store, bi.case_store;` at a quiet time (locks the tables for about a minute; no data change).

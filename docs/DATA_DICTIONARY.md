@@ -108,3 +108,9 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 | bi.fin_inv_month | Identified invoices by location × client family × invoice month: value, settled, open, collected |
 | bi.fin_review | Admin review queue (kind, key, amount, evidence, status, note) |
 | bi.fin_loc_map / bi.fin_client_map / bi.fin_config | Admin-editable location rules (prefix / label / sheet), client families, settings |
+
+## Growth endpoint and admin diagnostics (22-Oct-2026)
+- `bi.api_growth(month, filters, p)` (via `bi_call('growth')`): `cards` (mom, mtd, qoq, qtd, yoy, qyoy, mtd_yoy — current/previous with label, cases, revenue, working days, targets, attainment, pairs, locations; change, change %, per-working-day %, like for like, new/lost pairs, complete flag), `unavailable` (id + reason), `organic` (share to date, validation by month), `net`, `pairs` (location, zone, unit, client family, owner, owner_changed, mapping_changed, cases, revenue, mom/qoq/yoy/mtd blocks, organic, branches, force1, tat, confidence, priority), `method`. No new table: computed from v_month_business, v_zt_leaf, organic_store, branch_cov_mv, branch_activity, v_force_usage and v_case.
+- `bi.api_db_health()` (admin only, `bi_admin('db_health')`): database bytes, limit, headroom, growth per month, days to limit, 15 largest relations (heap/index/TOAST/free space), jobs, storage buckets, safeguards, owner actions.
+- `bi.test_growth(month)`: 14 SQL tests (fixtures + independent recalculation).
+- Trigger `zz_skip_noop_update` on `bi.point_store` and `bi.case_store`; `point_store.last_batch` / `case_store.last_batch` = batch that last changed the row.

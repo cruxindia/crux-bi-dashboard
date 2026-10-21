@@ -105,3 +105,29 @@
 | Receipts not in the ledger | Receipts dated at least `recon_grace_days` (7) before the snapshot against invoices the snapshot still shows with no part-receipt |
 | Revenue / invoiced / collected per case | Reported revenue, identified invoice value and settled value (ex-GST) ÷ tracker cases of the month; tracker rate = case-weighted leaf rate on the month's last snapshot; billing gap = invoiced per case ÷ rate − 1 |
 | Smart alerts | Rules in setting `alert_rules`: >30 % of a location's balance over 180 days (≥ ₹1 L); unadjusted > 20 % of balance; cash cover < 60 %; collections down > 25 % month on month; receipts not in ledger; possible duplicates; billing gap > 10 %; stale snapshot (> 35 days) or receipts (> 20 days); balance on invoices before Apr-2024 |
+
+## Period comparisons and client × location growth (22-Oct-2026, `bi.api_growth`)
+| Measure | Definition |
+|---|---|
+| Completed month | The selected month once it has ended; while it is still running, the month before |
+| Completed quarter | Indian financial-year quarter (Q1 Apr–Jun, Q2 Jul–Sep, Q3 Oct–Dec, Q4 Jan–Mar) whose three months have all ended |
+| MoM | Completed month vs the month before (full months only) |
+| MTD | Latest report of the running month vs the previous month's latest report on or before the same working day (Monday–Saturday); labelled partial |
+| QoQ | Sum of the three months of the completed quarter vs the sum of the previous quarter's three months — never an average of monthly rates |
+| QTD | Completed months of the running quarter + MTD vs the same months of the previous quarter + its report on the same working day; labelled partial |
+| YoY | Completed month vs the same month a year earlier; quarter vs the same quarter a year earlier. MTD vs last year only where a daily report exists for that month (none before Jun-2026) |
+| Change / change % | Change = current − earlier, always shown. Change % = change ÷ earlier, hidden when the earlier figure is below 30 cases (90 per quarter) or ₹25,000 (₹75,000 per quarter), zero or missing |
+| Per working day | Cases ÷ Monday–Saturday days in each period; shown when the two periods have a different number of working days |
+| Like for like | Only location × client pairs with business in both periods. Reported = like for like + new pairs − lost pairs |
+| Target attainment | Cases ÷ target cases (and revenue ÷ revenue target) where every month of the period has a target (from Jun-2026) |
+| Organic expectation (pair) | Sum of the stored organic model (`bi.organic_store`) over the client family's codes in the location, rounded; to date = month organic × share of a month normally done by this working day |
+| Effort | Actual − organic expectation. An estimate of business above or below business as usual, not proof of cause |
+| Organic accuracy | Last 10 completed months: Pan India mean absolute % error and location × client WAPE (sum of absolute errors ÷ actual), recomputed on every request for the current filters |
+| Share of net change | Pair change ÷ |net change of the selection| (shares add up to ±100 %) |
+| Branch coverage / never activated / gone quiet / recently activated | Verified, code-matchable branches of the client family in the location with a Force1 case in the last 6 months / none since Force1 history began / last case more than 6 months ago / first case in the last 3 months |
+| Indicative cases per month | Never-activated branches × median monthly Force1 cases of ≥ 5 active peer branches of the same client in the same location. A sizing aid, not a forecast |
+| Force1 utilisation (pair) | Location-group × client value for the completed month (shared by locations in the same group) |
+| TAT (pair) | Median raw case TAT (valid completed cases) and SLA met %, completed month vs the month before; "worse" when the median rose more than 10 % on at least 20 cases |
+| Owner | Stakeholder mapped to the location at the end of the completed month (effective-dated); flagged when it changed during the month |
+| Priority | Indicative cases × (1 + effort %, capped ±50 %) × 0.5 when TAT is worse or SLA met < 80 %; only pairs with ≥ 30 cases and a peer benchmark |
+| Confidence notes | Small base, new this month, no business last year, location attributes changed in 12 months, owner changed, no organic estimate |

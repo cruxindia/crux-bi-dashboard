@@ -9,7 +9,7 @@
 | L5 | Tracker expense block (L/M/N) is incorrect (business confirmed 14-Oct) | Ignored everywhere — not displayed, not used | — |
 | L6 | Historical tracker targets not in source | No historical achievement % | — |
 | L7 | 2,425 negative case TATs (mostly Guwahati), 1,353 points without a Case Wise case | Excluded / counted at point level only | Logged in `bi.dq_exception` |
-| L8 | Storage: DB 415 MB at the end of 14-Oct (450 million bytes counting Supabase's template databases) of the 500 MB free limit; Force1 data adds about 40 MB/month. Over the limit the project becomes read-only and cron jobs stop | Limit reached between mid-November and early December 2026 | **Decide now** (SOW Q10): Supabase Pro (8 GB) or an approved archive design; `owner_storage_cleanup.sql` buys ~2 weeks (STORAGE_AUDIT.md) |
+| L8 | Storage: 482.2 million bytes (Supabase measure, all databases) after the 21-Oct cleanup, of the 500 MB Free-plan limit; new Force1 data adds about 42 MB/month. Over the limit the project becomes read-only and cron jobs stop | Limit reached about 3-Nov-2026 (≈ 19-Nov after the owner script) | **Decide now** (SOW Q10/Q19): Supabase Pro or an approved archive design; owner script frees ~23 MB (STORAGE_AUDIT §9) |
 | L9 | Dashboard is public (anyone with the link can read business figures and employee names) | Business decision | `noindex`; rotate the link by renaming the repo if it leaks; admin functions need the key |
 | L13 | Anonymous API calls can be repeated by anyone (no rate limit) | Possible load spikes | Result cache absorbs repeats; Supabase rate limits apply |
 | L10 | Browser upload uses SheetJS 0.20.3 (inlined in artifact build) | — | Keep pinned; files from trusted internal sources only |
@@ -52,3 +52,15 @@
 - No payment terms, so no "overdue"; age is counted from the end of the invoice month because invoice dates are unreliable.
 - Receipts include GST and are after TDS; revenue excludes GST — cash cover is therefore not a realisation rate.
 - A receipt that quotes several invoices is matched on the first one (56 cases, listed).
+
+## Growth analytics (22-Oct-2026)
+| # | Limitation | Effect | Handling |
+|---|---|---|---|
+| L20 | Daily reports start Jun-2026 | Month to date cannot be compared with the same point last year until Jun-2027 | Shown as "not available" with the reason; YoY uses full months |
+| L21 | Targets exist only from Jun-2026 | No target attainment for earlier months or quarters | Attainment shown only when every month of the period has a target |
+| L22 | Locations reporting changed (15 in 2024, 20 in 2025, 36 from Jan-2026) | Reported YoY growth includes new locations | Like-for-like and new/lost pairs shown beside every comparison |
+| L23 | Force1 utilisation is per location group | Locations sharing a group show the same value in the pair ranking | Labelled "group" |
+| L24 | No HR workforce master | Capacity / availability per pair cannot be shown | Stated in the method; upload in Admin › HR |
+| L25 | No verified external competitor or market data | No competitor volumes or market share | Not shown or estimated; opportunity uses verified branch lists and internal peer benchmarks only |
+| L26 | Organic estimate error ≈ 6.7 % Pan India, ≈ 21.5 % per location × client (last 10 months) | Pair-level effort is indicative | Error shown on the page; small pairs flagged |
+| L27 | First uncached growth request takes 3–5 s | Slower first view after a data change for filtered selections | Pan India pre-computed every 10 minutes; results cached until data changes |

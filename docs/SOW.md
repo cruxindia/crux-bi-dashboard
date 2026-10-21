@@ -1,10 +1,22 @@
-# Statement of Work (living) — last updated 21-Oct-2026
+# Statement of Work (living) — last updated 22-Oct-2026
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
 **Scope.** In: the three source categories in the Drive folder; Supabase database; dashboard; upload centre; tests; docs. Out: other tracker sheets (`10 Days Analysis`, `Haque`, `June 2026 Target Sheet`, `Old Tracker till Feb 2026`) by instruction; the "BOM Testing Files" folder and the 83 MB zip (not one of the three categories).
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
+
+## Wave 22-Oct-2026 — implementation, growth analytics and database optimisation
+**Objective.** Complete the management experience (one admin entry point, simpler navigation, explicit MoM/YoY/QoQ, client × location growth with organic expectation and attribution, branch-opportunity evidence, wider drill-down) and resolve the database-space problem from live evidence.
+**Scope.** In: live storage audit and safe cleanup; top-bar Admin login and Admin workspace (8 groups built from existing screens); business-only hamburger; compact Data readiness; period comparisons in Overview and Growth & trends; client-family × location ranking; opportunity evidence; drill-down audit and gaps; server-side authorisation tests; docs; deployment. Out: rebuilding the app; new persisted analytics tables; Lumen app changes (reported only); deletion of business history.
+**Requirements / constraints.** As the 21-Oct wave, plus: diagnose before deleting; measure before/after; back-up or recovery path for every change; frontend is not an authorisation boundary; never compare a partial month with a full month without a warning; quarter totals are sums; small bases flagged; estimates (organic, potential) never shown as fact; do not hard-code examples; Case Wise / Point Wise upload behaviour unchanged except removing no-op rewrites.
+**Inputs.** Live database (measured 21-Oct-2026 17:25 UTC); repository at commit 123d493 (deployed, md5 equal to the live page); the brief of 22:53 IST.
+**Assumptions.** Supabase applies the 500 MB limit to the sum of all databases (its documentation) and counts decimal megabytes (conservative); Indian financial-year quarters; client = client family (bi.client.family).
+**Deliverables.** Migrations bi_091a–bi_091f; front end (Admin workspace, navigation, Data readiness, Growth & trends, Overview period comparison, pair drill, drill gaps); tests (security, growth SQL, admin/growth UI, regression); docs (this file, AUDIT_REGISTER, STORAGE_AUDIT §9, METRICS, OPERATIONS, LIMITATIONS, TEST_REPORT, DATA_DICTIONARY); owner script.
+**Method.** Baseline → storage diagnosis → reversible fix + compaction → re-measure → admin/navigation → growth API + SQL tests → UI → security tests → regression → deploy → live verification.
+**Risks.** Storage headroom is about 13 days at current growth (decision Q10 urgent); first uncached growth request takes 3–5 s (pre-computed for Pan India every 10 minutes); Lumen public functions writable with the public key (Q17).
+**Acceptance.** Every requirement of the 22-Oct brief, status in the requirement audit at the end of this file.
+**Status (22-Oct-2026, 00:30 IST).** Storage: 534.8 → 482.2 million bytes (all databases), no rows removed, re-import churn stopped. Admin workspace, navigation, Data readiness, period comparisons, client × location ranking, opportunity evidence and drill gaps implemented; SQL 14/14, security 28/28 + rolled-back penalty audit test, admin/growth UI 40/40, finance UI 21/21, Stage-2 13/13 locally. Live verification after deployment: see TEST_REPORT.md.
 
 ## Wave 21-Oct-2026 — reaudit, simplification, calculation fixes, Ask Crux rebuild, refresh to 14-Oct, collections
 **Objective.** One connected management system answering: how is the business performing; how efficiently are cases and points processed; how much is billed, collected and outstanding; what is going wrong, where and why; what to do next. Simpler at the top than today, detailed on investigation.
@@ -144,8 +156,25 @@
 | D98 | **Navigation:** six areas + Admin; existing page links (#overview, #tracker, #tat, …) unchanged; new #collections and #health | Brief Phase 2 |
 | D99 | **Stored TAT statistics** (bi.tat_month_stat) for complete months, Pan-India scope, refreshed every 10 minutes when case/point data or the document rule change; the open month and filtered scopes are computed live | Live Ask Crux timed out on cold caches |
 | D100 | **Branch-name text in the finance workbooks is not imported** (some sheets put the borrower's name in the Branch column, e.g. Kolkata/Canara). Already-imported branch text was blanked in place (bi.fin_part, 21-Oct) and the table compacted; totals unchanged (₹11,28,16,964.44) | PII minimisation (D6) |
+| D101 | **Storage measure:** report Supabase's own figure (sum of all databases) against the 500 MB limit; the project database alone is shown separately | Repository notes mixed the two and were stale (413–476.6 MB) |
+| D102 | **Stop no-op rewrites on re-import** with a BEFORE UPDATE trigger (bi.trg_skip_noop_update) instead of redefining the commit functions | The commit functions contain a statement this connection may not run; the trigger is additive, keeps stored values identical and is disabled in one line |
+| D103 | **last_batch** now records the batch that last changed a row (not the last batch that contained it) | Its only readers (force_case_daily staleness, fact views) need exactly that |
+| D104 | **VACUUM FULL** on 9 tables instead of deleting anything; checksums of every row before/after | 52.6 MB recovered with no data removed |
+| D105 | **point_derived_pkey** removal left to the owner script (23.1 MB) | Index removal is a DROP; no reader found in any function |
+| D106 | **One admin entry point:** top-bar Admin login → Admin workspace menu with 8 groups; admin destinations removed from the hamburger | Brief §2; reuses existing screens |
+| D107 | **Admin session:** key checked by the server on every call; expiry returned by verify; auto-lock at expiry, on any 'admin key required' answer and on Lock | Frontend is not an authorisation boundary |
+| D108 | **Data readiness** keeps dates, material gaps and decisions; exceptions, mappings, review queues, Force1 reconciliation detail and finance review move to the Admin workspace | Brief §3 |
+| D109 | **Period definitions:** completed month / completed quarter (Indian FY) / same working day for MTD and QTD; YoY MTD unavailable before Jun-2026 (no daily reports) | Brief §5 |
+| D110 | **Small base:** % hidden below 30 cases (90 per quarter) or ₹25,000 (₹75,000) | Avoids misleading percentages |
+| D111 | **Ranking at client family × location**, with owner = stakeholder mapped for the period (effective-dated), not inferred cause | Brief §7 |
+| D112 | **Priority rule** = indicative never-activated branch cases × (1 + effort, capped ±50%) × 0.5 when TAT worsened >10% or SLA <80% | Transparent ranking aid; labelled as not a forecast |
+| D113 | **No external competitor figures** shown or estimated | No verified source available |
+| D114 | **Growth endpoint** computed on request from existing tables (no new persisted table); Pan India view pre-computed by the existing cache-warming job | Brief §4 cleanup rule |
 
 ## Open questions (need business confirmation)
+17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app.
+18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth.
+19. **Storage:** at 42 MB/month the database reaches 500,000,000 bytes around 3-Nov-2026 (about 19-Nov after the owner script). Pro plan or an archive design is needed now (see Q10).
 2. Confirm the D18 reading of tracker columns M and N.
 
 3. ~~Expense column L~~ — resolved 14-Oct: ignore (data incorrect).
@@ -224,3 +253,19 @@
 | "All other things" | Revenue, Force1 utilisation, penalties, organic, like-for-like, insights, daily additions, 12-month history in the drawer and as breakdown columns | T44, T47; browser K4–K8 | Done |
 | Compare two or more data points | Tick rows / branches / add current item → compare grid with Δ, best value, charts; compare with previous month / last year | browser K9–K12, K15, M9 | Done |
 | Mobile | 390 px drawer and compare fit (tables scroll inside their frame) | M8, M9 | Done |
+
+## Requirement audit — 22-Oct-2026 brief (implementation, growth analytics, database optimisation)
+| Requirement | Status | Evidence |
+|---|---|---|
+| §1 Baseline: git, deploy, sources of truth, inventory, sizes | Implemented | STORAGE_AUDIT §9; live md5 equal at start (fe01ee37…) |
+| §2 Admin Login in the top bar; Admin workspace with grouped functions; hidden before login; lock/expiry | Implemented | UI test A1–A11, V1–V5 |
+| §2 Server-side checks on every admin RPC; direct unauthorised calls denied | Implemented (verified) | security 28/28 |
+| §2 Penalty edit/cancel only in the admin workflow; read-only report for viewers | Implemented (verified) | S03–S05, S17; rolled-back audit test |
+| §3 Data readiness summary; detail moved to Admin | Implemented | V7, H1 |
+| §4 Storage diagnosis, root cause, safe cleanup, before/after | Implemented — owner step pending | 534.8 → 482.2 MB; owner script 23 MB; plan decision Q10/Q19 |
+| §5 MoM / YoY / QoQ, MTD / QTD at the same working day, LFL, small-base guards | Implemented | SQL test_growth 14/14; G1–G7 |
+| §6 Reported vs like-for-like vs organic vs effort vs structure (new/lost pairs) | Implemented | cards + ranking; organic accuracy shown (6.7% / 21.5%) |
+| §7 Client × location ranking, gains/declines, % with base warnings, contribution, organic, targets, branches, Force1, TAT, owner, confidence; drill to branches and daily | Implemented; workforce capacity not available (no HR master) | G4–G10, L5–L10 |
+| §8 Competitive & potential: internal vs addressable vs peer vs external separated; prioritised list | Implemented; external competition not available (no verified source) | Opportunity evidence panel; Priority view |
+| §9 Drill-down audit; preserve filters; avoid accidental activation | Implemented for the gaps listed in TEST_REPORT; finance charts not drillable by design | drill audit table |
+| §10 Regression, mobile 390 px, deploy | See TEST_REPORT.md (live) | |

@@ -132,3 +132,75 @@ Option 1 or 3 is recommended. Nothing irreversible is done until the owner choos
 | Archive visit history older than 6 months | ~35 MB per month archived | Needs design + tested restore before any data leaves |
 | Upgrade to Pro (8 GB) | removes the limit | Cost; no data risk |
 
+
+## 9. Live re-measure, root cause and cleanup — 21-Oct-2026 (evening)
+
+Measured 21-Oct-2026 17:25 UTC (22:55 IST) with `pg_database_size`, `pg_total_relation_size`, `pg_relation_size`, `pg_indexes_size`, `pgstattuple_approx` and `pgstatindex` (the `pgstattuple` extension was added for this, read-only diagnostics). The historical notes above are kept for history; they are not the current size.
+
+### 9.1 Which figure counts
+
+| Figure | Bytes | What it is |
+|---|---:|---|
+| **Supabase database size (all databases)** | **534,827,185** (510.1 MiB) | The figure the Free-plan 500 MB read-only limit applies to ([Supabase docs](https://supabase.com/docs/guides/platform/database-size)): `postgres` + `template0` + `template1` |
+| Project database `postgres` only | 519,711,891 | Some earlier notes quoted this one — about 15 MB lower |
+| Repository notes (14-Oct 413 MB, 15-Oct 439.7 MB, 21-Oct morning 476.6 MB) | — | Stale measurements, not the live size |
+| File storage (buckets `ocr` 6 files, `bills` 1 file — Lumen) | 11,075,631 | Not part of the database size |
+| Disk (1 GB on Free) | — | Separate; includes WAL. Not the limit that triggers read-only |
+
+Supabase's usage pages refresh daily, so the dashboard can lag behind the live figure. The project was **not** read-only at the time (`default_transaction_read_only = off`).
+
+### 9.2 Size-ranked audit (before cleanup)
+
+| Table | Total MB | Heap | Indexes | TOAST | Rows | Free heap | Finding |
+|---|---:|---:|---:|---:|---:|---:|---|
+| point_store | 195.6 | 150.1 | 45.4 | 0.0 | 785,150 | 21.8 MB (14.5 %) | Raw Force1 visits (authoritative). Index leaf density 68–83 % |
+| point_derived | 94.7 | 65.9 | 28.8 | 0.0 | 785,150 | 0.2 MB | Rebuildable cache (TRUNCATE + INSERT). Primary-key index 23.1 MB, no reader in any function |
+| case_store | 61.2 | 44.3 | 16.8 | 0.0 | 227,249 | 11.7 MB (26.5 %) | Raw Force1 cases (authoritative). Index leaf density 51–60 % |
+| client_branch_master | 51.5 | 39.4 | 12.1 | 0.0 | 92,239 | 0.8 MB | Verified branch master (authoritative) |
+| branch_seen | 16.6 | 12.8 | 3.8 | 0.0 | 92,239 | 6.5 MB | Fill factor 50 on purpose (monitor updates in place) |
+| client_branch_history | 15.9 | 9.7 | 6.2 | 0.0 | 96,955 | 0.1 MB | Effective-dated history (required) |
+| branch_cov_mv | 15.2 | 9.4 | 5.7 | 0.0 | 90,714 | — | Materialised view (rebuildable) |
+| zt_row | 13.7 | 9.9 | 3.8 | 0.0 | 63,465 | 0.6 MB | Daily tracker rows (authoritative) |
+| api_cache | 8.2 | 1.4 | 0.1 | 6.6 | 1,084 | — | Response cache, one row per request shape (rebuilds itself) |
+| organic_store | 3.6 | 2.6 | 0.9 | 0.0 | 13,272 | 1.2 MB | Organic model output (rebuildable) |
+| stg_row | 2.8 | 0.0 | 2.8 | 0.1 | 0 | — | Empty import staging with a bloated index |
+| fin_part | 2.7 | 0.0 | 0.0 | 2.7 | 49 | — | Compressed finance rows (evidence) |
+| All other `bi` tables | ≈ 13 | | | | | | Reference, audit, AI, finance aggregates |
+| All indexes in `bi` | 131.2 | | | | | | |
+
+### 9.3 Root cause of the jump (476.6 → 519.7 MB on 21-Oct)
+
+Every re-import of a month's Case Wise / Point Wise file rewrote **every row, even unchanged ones**: `commit_point` upserted unchanged points and then updated `recon_unit` again (2 new row versions per point); `commit_case` and `relocate_cases` did the same three times per case. Vacuum makes the dead versions reusable but the files stay large. Evidence: since the 06:57 UTC restart, point_store had 143,432 updates for 8,388 inserts and case_store 63,823 updates for 2,617 inserts (the October files were re-imported at 16:32 IST); a rolled-back production test re-imported the same 30 points and 30 cases twice — the old code rewrote 30/30 each time with no value change.
+
+### 9.4 Actions taken (no rows removed)
+
+1. **bi_091b** — trigger `zz_skip_noop_update` (BEFORE UPDATE on point_store and case_store) skips an update when nothing but `last_batch` would change. Stored values are identical to before; `last_batch` now means "batch that last changed the row". Tested in a rolled-back transaction on production data: identical re-import 0/30 rewritten (was 30/30), 0 value differences; a real change (5 points, 4 cases) still applied; a date change still recomputes the generated month. Rollback: `alter table bi.point_store disable trigger zz_skip_noop_update; alter table bi.case_store disable trigger zz_skip_noop_update;`
+2. **VACUUM FULL ANALYZE** (rewrites a table without its dead space; no data change) — row counts and a checksum of every whole row were taken before and after and are identical:
+
+| Table | Before (bytes) | After (bytes) | Freed |
+|---|---:|---:|---:|
+| point_store | 195,600,384 | 168,697,856 | 26,902,528 |
+| case_store | 61,227,008 | 42,827,776 | 18,399,232 |
+| stg_row | 2,842,624 | 16,384 | 2,826,240 |
+| organic_store | 3,563,520 | 1,884,160 | 1,679,360 |
+| zt_month_history | 1,998,848 | 974,848 | 1,024,000 |
+| employee | 1,024,000 | 376,832 | 647,168 |
+| branch_review | 1,056,768 | 557,056 | 499,712 |
+| branch_activity | 925,696 | 450,560 | 475,136 |
+| dq_exception | 589,824 | 393,216 | 196,608 |
+| **All databases (Supabase measure)** | **534,827,185** | **482,242,737** | **52,584,448** |
+| Project database `postgres` | 519,711,891 | 467,127,443 | 52,584,448 |
+
+### 9.5 Candidates not executed, with their size and the reason
+
+| Candidate | Size | Risk | Why not done here |
+|---|---:|---|---|
+| Drop `point_derived_pkey` (owner script `supabase/owner/owner_storage_cleanup.sql`) | 23.1 MB | Low: no function reads point_derived by point_id, uniqueness comes from point_store's key; re-create line included | Index removal is a DROP, which this connection does not run |
+| Compute Force1 views from point_store and retire point_derived | up to ≈ 95 MB | Medium: api_force1, api_attrition, api_drill_ops and Ask Crux read it; performance must be re-tested | Needs a design and a performance test first |
+| Archive visit history older than N months to file storage | ≈ 35 MB per archived month | Medium/high: drill-down to individual visits of archived months needs a restore | Needs an owner decision and a tested restore |
+| Upgrade to Pro (8 GB included) | removes the limit | None for data | Owner decision (cost) |
+| Not recommended | — | — | Raw case/visit history, tracker rows, mappings, audit log, finance evidence, the response cache (8 MB, rebuilds itself), branch_seen's fill factor |
+
+### 9.6 Forecast after cleanup
+
+New Force1 data adds **about 42.2 MB per month** (average of the last three complete months: ≈ 110 k visits at 336 bytes including the derived cache and indexes, plus ≈ 31 k cases at 188 bytes). Headroom is 17.7 MB to 500,000,000 bytes (≈ **13 days → about 3-Nov-2026**), or 41.9 MB if Supabase counts 500 MiB (≈ 30 days). The owner script adds about 16 days. The Pro-plan or archive decision (SOW Q10/Q19) is therefore urgent. Admin workspace → Database health shows these figures live.
