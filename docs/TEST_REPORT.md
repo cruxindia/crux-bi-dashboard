@@ -1,4 +1,4 @@
-# Acceptance test report — updated 21-Oct-2026
+# Acceptance test report — updated 22-Oct-2026
 
 Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload). Result: **18 / 18 passed** (T17 is a browser check, listed separately) (after fixing one defect in test T07's case selection).
 
@@ -226,3 +226,36 @@ All browser suites run against the **live** site (https://cruxindia.github.io/cr
 | Finance + navigation (`test_fin_ui.py live`) | 21 / 21 | Six areas + Admin in the menu; Ask Crux menu item; Overview cash and data-health strip; Revenue & collections tiles, dates, 4 charts, alerts, 4 tables, headline ₹11.28 cr, method and limitations, no invoice records for viewers; Data health page; admin unlock; upload recognises both workbooks with summaries and checks; snapshot date editable; identical re-import changes nothing; admin review queue; admin invoice records for a location; no horizontal scroll on a phone; no console errors |
 
 Defect found and fixed during testing: A15 (`grp` ambiguous in bi.ask_tat_stats once stored TAT statistics existed) — fixed in bi_089l and retested (Ask UI 12/12).
+
+## 22-Oct-2026 — admin workspace, growth analytics, storage (bi_091a–bi_091f; deployed commit f2c38e0, live page md5 5dac6893…)
+All runs below are against the **live** site / live database unless marked local.
+
+| Suite | Result | What it covers |
+|---|---|---|
+| Server-side authorisation (`test_security.py`, direct REST calls with the public key) | **28/28** | 15 admin/write endpoints denied without or with a wrong key (verify, penalty add/cancel/list, tracker correction, mapping update/retarget, master import, branch admin, DB health, file and finance import, repository stash, branch job); 5 admin data endpoints return no data; penalty report hides reasons for viewers; `bi` schema functions and tables not reachable through the API (PGRST106); wrong key → viewer; valid key → expiry, DB health, audit list |
+| Penalty audit trail (SQL, rolled back) | **pass** | add without reason rejected; viewer sees no reason/name; short cancel reason rejected; cancel recorded with who and why; second cancel rejected; total excludes cancelled; 2 audit-log rows |
+| Re-import churn fix (SQL, rolled back) | **pass** | identical re-import: 30/30 rows rewritten before, 0/30 after, 0 value differences; real changes applied (5 points, 4 cases); generated month recomputed |
+| Growth SQL tests (`bi.test_growth()`, Oct-26, Sep-26, Jun-26) | **14/14** each | fixtures (small base, FY quarters, completed quarter) + independent recalculation (MoM 58,065 vs 54,102; QoQ 1,68,053 vs 1,16,923 = sum of months; YoY; MTD 36,430 vs 33,745 on working day 16; pair changes sum to net; LFL + new/lost = reported; no % on 30 small-base pairs; organic = stored model; accuracy 6.7 % / 21.5 %; SBI × Delhi recalculated) |
+| Admin & growth UI (`test_adm.py live`, 1366 px + 390 px) | **40/40** | business-only hamburger; Admin login; wrong key rejected; 8 groups open with their functions; People read-only; penalty form validates; revoked key locks and hides admin; Lock; admin routes need the key again; scorecard, partial labels, YoY-MTD reason, ranking views, period switch, pair drill → branches, CSV export; no horizontal scroll at 390 px; no console errors |
+| Finance UI (`test_fin_ui.py live`) | **21/21** | updated for Admin › Finance (review queue, records) |
+| Stage-2 Force1 + TAT (`test_stage2.py live`) | **13/13** | reconciliation now under Admin › Data quality |
+| Ask Crux UI (`test_ask_ui.py live`) | **12/12** | |
+| Ask Crux evaluation (`test_ask3.py`) | **30/30** | |
+| Extra live checks | **4/4** | tracker zone chart; import checks and stakeholder source difference under Admin › Data quality |
+| SQL acceptance (`bi.run_acceptance_tests()`) | **26/27** | T21 fails on the 19-Oct source file (A14, unchanged) |
+
+### Drill-down audit (live, viewer, Oct-2026)
+| Page | Charts drillable | Tables with row drill | KPI tiles drillable | Not drillable, by design or limitation |
+|---|---|---|---|---|
+| Executive overview | 1/1 | — | 12/15 | Period-comparison cards open Growth & trends; gains/declines open the pair drawer (23 list items) |
+| Business tracker | 1/1 | 6/12 | 0/18 | Daily business count drills by report date in Cases mode only; penalty grid, column pickers and expense views are reports |
+| Growth & trends | 2/2 (trend, organic — **organic added**) | 4/5 | scorecard cards set the ranking | organic accuracy table is a method table |
+| TAT & operations | 1/1 (**added**) | 1/4 | — | small summary tables |
+| Force1 utilisation | 1/1 (**added**) | 1/3 | — | role split and TAT summary tables |
+| People | — | 0/1 | 0/3 | employee rows (HR data; drill-down must not widen access) |
+| Revenue & collections | 0/4 | 0/4 (admins: location → invoice records) | 0/10 | finance aggregates; invoice detail is admin-only |
+| Data readiness | — | 0/2 | 0/4 | status tables |
+Filter context is preserved: a zone filter carried into the KPI drawer ("filters: Bengaluru (Rest Of Karnataka) Zone"), the growth ranking (10 pairs) and the pair → branch drill ("Bengaluru + Rest Of Karnataka + Kerela · SBI"). Rows and tiles do not open while text is selected or a control is used.
+
+### Storage (measured)
+534,827,185 → 482,242,737 bytes (all databases), 52,584,448 freed, no rows removed (checksums identical); 483,086,513 at 19:00 UTC after the test runs. See STORAGE_AUDIT §9.
