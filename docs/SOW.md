@@ -160,7 +160,7 @@
 12. **Sub-unit locations without a territory:** two Lucknow/ROUP units and two Nagpur units (location ids 21, 22, 30, 31) share districts with other units. Which districts or clients belong to each unit? (100 research combinations wait on this.)
 13. **Outstanding as-of date:** the Oct-26 workbook says only "as on Oct26"; 15-Oct-2026 (the Drive file date) is used. Confirm or correct it in Admin.
 14. **Payment terms (credit days)** per client, so that "overdue" can be shown; until then only age since invoice month is shown.
-15. **Finance locations not stated in the workbooks:** Chhattisgarh (Raipur or Bilaspur?), Ahmednagar / Satara (which office?), Lucknow series LUK/UP for "Ajay Pathak", Tripura, Haryana, Toyota sheet, and 45 Nagpur receipts quoting NAG invoices that are not in the ledger. Mapped to zone level or left unresolved and listed.
+15. **Finance locations not stated in the workbooks:** Chhattisgarh (Raipur or Bilaspur?), Ahmednagar / Satara (which office?), Lucknow series LUK/UP for one associate-run Lucknow office, Tripura, Haryana, Toyota sheet, and 45 Nagpur receipts quoting NAG invoices that are not in the ledger. Mapped to zone level or left unresolved and listed.
 16. **"MSME" client** in the finance workbooks is read as BOM (Bank of Maharashtra MSME) — confirm.
 
 ## Requirement audit (14-Oct-2026)
