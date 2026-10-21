@@ -17,6 +17,8 @@
 **Risks.** Storage headroom is about 13 days at current growth (decision Q10 urgent); first uncached growth request takes 3–5 s (pre-computed for Pan India every 10 minutes); Lumen public functions writable with the public key (Q17).
 **Acceptance.** Every requirement of the 22-Oct brief, status in the requirement audit at the end of this file.
 **Status (22-Oct-2026, 00:30 IST).** Storage: 534.8 → 482.2 million bytes (all databases), no rows removed, re-import churn stopped. Admin workspace, navigation, Data readiness, period comparisons, client × location ranking, opportunity evidence and drill gaps implemented; SQL 14/14, security 28/28 + rolled-back penalty audit test, admin/growth UI 40/40, finance UI 21/21, Stage-2 13/13 locally. Live verification after deployment: see TEST_REPORT.md.
+**Status (22-Oct-2026, 00:30 IST, live).** Deployed commits f2c38e0 (page, docs) and 8a47a04 (TEST_REPORT); live `index.html` md5 5dac6893… equals local and `main`. Live: admin/growth UI 40/40, finance UI 21/21, Stage-2 13/13, Ask UI 12/12, Ask evaluation 30/30, extra 4/4, SQL acceptance 26/27 (T21 known, A14), test_growth 14/14, security 28/28 (re-run 21-Oct 18:5x UTC). Database 482.9 million bytes (all databases) at 18:50 UTC.
+**AWS migration pack (request of 21-Oct 19:16 IST).** Delivered as the Claude Doc "Crux BI — AWS migration and sizing pack" (9 sections: current architecture, measured sizing, service mapping, unit prices from the AWS Price List of 20-Oct-2026 and indicative cost, non-1:1 items, risks, IT checklist, migration/cutover/rollback, security and open questions). Waiting on the IT checklist (pack §7). See D115.
 
 ## Wave 21-Oct-2026 — reaudit, simplification, calculation fixes, Ask Crux rebuild, refresh to 14-Oct, collections
 **Objective.** One connected management system answering: how is the business performing; how efficiently are cases and points processed; how much is billed, collected and outstanding; what is going wrong, where and why; what to do next. Simpler at the top than today, detailed on investigation.
@@ -170,6 +172,7 @@
 | D112 | **Priority rule** = indicative never-activated branch cases × (1 + effort, capped ±50%) × 0.5 when TAT worsened >10% or SLA <80% | Transparent ranking aid; labelled as not a forecast |
 | D113 | **No external competitor figures** shown or estimated | No verified source available |
 | D114 | **Growth endpoint** computed on request from existing tables (no new persisted table); Pan India view pre-computed by the existing cache-warming job | Brief §4 cleanup rule |
+| D115 | **AWS target (recommendation, not yet approved):** RDS for PostgreSQL 17, db.t4g.small Single-AZ, 20 GB gp3, ap-south-1; API Gateway + Lambda RPC gateway calling the same public RPCs; `ask-crux` Lambda outside the VPC (no NAT gateway); pg_cron kept for the 8 SQL jobs, EventBridge Scheduler for the 3 that call functions; Secrets Manager. About $36/month before GST vs Supabase Pro $25–30 | pg_net and Vault are not on RDS (AWS extension list checked 21-Oct); direct TCP 5432 from Claude's workspace is blocked, so all database work runs inside AWS |
 
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app.
@@ -268,4 +271,6 @@
 | §7 Client × location ranking, gains/declines, % with base warnings, contribution, organic, targets, branches, Force1, TAT, owner, confidence; drill to branches and daily | Implemented; workforce capacity not available (no HR master) | G4–G10, L5–L10 |
 | §8 Competitive & potential: internal vs addressable vs peer vs external separated; prioritised list | Implemented; external competition not available (no verified source) | Opportunity evidence panel; Priority view |
 | §9 Drill-down audit; preserve filters; avoid accidental activation | Implemented for the gaps listed in TEST_REPORT; finance charts not drillable by design | drill audit table |
-| §10 Regression, mobile 390 px, deploy | See TEST_REPORT.md (live) | |
+| §10 Regression, mobile 390 px, deploy | Implemented (verified live) | TEST_REPORT.md 22-Oct section; live md5 equal; suites listed in the status line above |
+| §11 Completion report | Delivered in the conversation, 22-Oct-2026 | — |
+| Earlier request (21-Oct 19:16 IST): AWS migration details and cost | Delivered as a Claude Doc | D115; open: IT checklist, Lumen scope (Q17), stop-gap for the 500 MB limit (Q19) |
