@@ -281,3 +281,30 @@ All results below were executed; nothing is marked passed without a run. "Local"
 **Verified examples (MoM Aug-26 vs Jul-26, actual invoiced ex-GST, recomputed from `fin_inv_month` and the effective-dated owner map):** largest rise — a single-location unit × BOM: 5,07,359 (379 invoices, 451 cases) → 10,65,911 (886 invoices, 950 cases); largest fall — a single-location unit × SBI: 4,97,858 (9 invoices, 312 cases) → 1,22,641 (8 invoices, 253 cases), where the July figure was 213 % of expected (now flagged as possible invoice timing). Owners are shown as mapped, not as cause. Names are in the completion report, not in this repository.
 
 **Performance (uncached, measured in SQL):** `api_growth_rev` Pan India 3.8–4.0 s (≈ 10 s under concurrent load), with a zone filter + grouping 0.9 s; `api_growth` (cases) ≈ 7 s; `api_collections` 0.3 s; `api_db_health` 0.9 s after the visibility-map fix (15 s before). Pan India responses are pre-computed every 10 minutes and served from the `bi_call` cache.
+
+## 22-Oct-2026 (13:30 / 14:42 IST) — organic blend, branch managers, Ask Crux (bi_093a–bi_093i)
+### SQL (production database, after the changes)
+| Check | Result |
+|---|---|
+| `bi.test_organic()` — store = independent function, three largest pairs recomputed one by one from monthly tracker figures, API / zone reconciliation, effort identity | **passed** |
+| `bi.test_growth()` (cases comparisons, organic per pair = store, accuracy reported) | **14 / 14** (L9: 10 months, Pan India 5.8 %, pair WAPE 21.3 %) |
+| `bi.test_growth_rev()` (revenue and cases, both sides organic) | **14 / 14** (R12 revenue back-test 6.4 % / 29.6 %, coverage 98.9 %) |
+| `bi.test_fin_fixtures()` | **15 / 15** |
+| `run_wave_tests` / `run_addendum_tests` / `run_drill_ops_tests` | **4 / 4 · 8 / 8 · 6 / 6** |
+| `run_acceptance_tests()` (via a one-off scheduled job, result in `bi.job_run` id 44) | **26 / 27** — T21 unchanged (19-Oct source file, A14) |
+| Branch-manager admin, rolled back (overlap refused, end-previous + audit of the ended row, dated look-ups, client override, end before start refused, withdraw needs a reason, withdrawn row kept but unused, unknown client refused, 4 audit rows, list) | **11 / 11**, nothing persisted (0 test rows, 0 test audit rows afterwards) |
+| Organic breakdown by branch manager reconciles to the card | cases: 7 periods, Σ groups = card actual, Σ beyond within ±3 cases (rounding); revenue: Σ groups = Σ zone groups = total billed |
+| Ask Crux routing (`bi_ask3`): MoM billed-revenue growth, below organic, QTD with a location, YoY (unavailable → reason + MoM), cases at a location, collections | each routed to the right handler; revenue answers carry stakeholder and branch manager as mapped |
+| Names in migrations synced to GitHub (`schema_migrations`, bi_093*) | 0 manager names in 10 migrations |
+| AI scrub covers branch-manager names (`bi_ai_gateway`, service role) | 5 / 5 name tokens replaced |
+
+### Browser (local build against the live API)
+| Suite | Result |
+|---|---|
+| `test_093_ui` (new: stakeholder + branch-manager columns, CSV, revenue and cases drills, organic breakdown by branch manager reconciles with by-zone, changed manager marked, overview organic explanation with the three bases and the same organic month as the tile, viewer gate, admin list and form check, console) | **11 / 11** |
+| `test_rev_ui` (R11 / R12 updated for the renamed column and the manager) | **14 / 14** |
+| `test_adm` (G8 updated) | **40 / 40** |
+| `test_fin_ui` | **22 / 22** (first run 21 / 22: A5b waited 180 s for the second re-saved workbook to be recognised; passed on re-run — timing, not a calculation) |
+| `test_stage2` | **13 / 13** |
+| `test_ask_ui` (+ A13 revenue growth with organic, stakeholder and branch manager; A14 below organic; A15 collections still collections) | **15 / 15** |
+

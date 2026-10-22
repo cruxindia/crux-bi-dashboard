@@ -1,10 +1,21 @@
-# Statement of Work (living) — last updated 22-Oct-2026
+# Statement of Work (living) — last updated 22-Oct-2026 (wave 093)
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
 **Scope.** In: the three source categories in the Drive folder; Supabase database; dashboard; upload centre; tests; docs. Out: other tracker sheets (`10 Days Analysis`, `Haque`, `June 2026 Target Sheet`, `Old Tracker till Feb 2026`) by instruction; the "BOM Testing Files" folder and the 83 MB zip (not one of the three categories).
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
+
+## Wave 22-Oct-2026 (13:30 / 14:42 IST) — organic expectation from MoM, QoQ and YoY; branch managers; Ask Crux check
+**Objective.** (1) Build the organic expectation from the same three views used for the seasonal pattern — last month (MoM), last quarter (QoQ) and the same month last year (YoY) — instead of a three-month weighted average. (2) Load the location-wise branch-manager list with its effective dates and show the manager beside the stakeholder wherever growth is ranked, drilled or answered. (3) Check that Ask Crux works.
+**Scope.** In: organic model (cases; revenue organic follows because it values organic cases), its explanation in every organic "?" popover, method texts, back-test; branch-manager table with effective dates and client-specific overrides, admin maintenance (add / end / withdraw, audited), growth rankings, drills, exports, organic breakdown "By branch manager", Ask findings, AI name scrubbing; Ask Crux routing for revenue-growth questions. Out: changing the seasonal index itself; employee-level performance claims.
+**Inputs.** Live database (organic store, monthly business, working days, seasonal index); the branch-manager list in the 13:30 message (names loaded with `execute_sql`, never in a migration or the repository).
+**Assumptions.** "w.e.f <month>" = from the 1st of that month; the previous manager ends the day before; "All locations of X before Feb-2026 under Y" applies to every location X manages from Feb-2026; "BOM for all locations of X is under Y" = client-specific rows for BOM at X's locations.
+**Deliverables.** Migrations bi_093a–bi_093i; front end (organic explanation with the three bases, Stakeholder (mapped) + Branch manager (mapped) columns in rankings / billing gap / CSV, manager in mover lists and pair drills, organic breakdown by branch manager, Admin → Master data & mapping → Branch managers); tests (`bi.test_organic` rewritten for the blend, rolled-back admin test, `test_093_ui` 11 checks, Ask revenue checks A13–A15); docs.
+**Method.** Back-test grid of weights on Dec-2025 → Sep-2026 (each month from earlier months only) → store rebuild → independent recomputation (`organic_pairs`, scalar recomputation of the three largest pairs) → API bases → UI → branch-manager model → load and overlap check → APIs / Ask / scrub → tests → docs → deploy → live verification.
+**Risks.** Only 76 % of business has a usable month last year (L43); Aug-2026 is the largest miss (13.4 %, L44); free-text list ambiguities (open questions 20–23); storage at 488,968,369 bytes (all databases, 22-Oct 10:20 UTC) — about 11 MB below 500,000,000 (Q19).
+**Acceptance.** Requirement audit "22-Oct-2026 13:30 / 14:42" at the end of this file.
+**Status.** See the requirement audit at the end of this file (updated after deployment).
 
 ## Wave 22-Oct-2026 (09:20 IST brief) — revenue-first growth, organic comparison and finance integration
 **Objective.** Move from "are case volumes changing" to: is the business earning more (actual billed revenue), is the improvement genuine relative to expectation (organic), is the money collected (invoice → cash), and where management action matters most; plus safe database-size remediation.
@@ -198,10 +209,23 @@
 | D127 | **No persisted revenue summaries:** `api_growth_rev` takes ≈ 4 s uncached for Pan India and < 1 s filtered; served from the `bi_call` cache and pre-computed for Pan India every 10 minutes | Brief §3 "measure before persisting" |
 | D128 | **Confidence note when the comparison month was invoiced outside 0.5–2× of expected** ("part of the change may be invoice timing") | Review: a pair's large MoM fall came mostly from an unusually high comparison month |
 
+| D129 | **Organic expectation = 50 % MoM + 40 % QoQ (with a bounded quarter trend) + 10 % YoY (own same-month shape, bounded)**; 5/9 MoM + 4/9 QoQ when there is no usable month last year | Back-test: Pan India 5.8 % / pair 21.3 % vs 6.7 % / 21.5 % for the previous 70/20/10 three-month method; YoY 20 % → 5.8 % / 21.5 %, 30 % → 6.1 % / 21.9 % (many locations started or changed since last year) |
+| D130 | **The explanation shows the API's three bases; nothing is recalculated in the browser** | Brief: no comparison logic in JS; prevents two versions of one number |
+| D131 | **Branch managers stored as effective-dated rows per location, with optional client-family rows that win for that client**; overlapping periods refused unless "end the current one" is chosen; wrong rows withdrawn (kept for audit), never deleted | The list has client-specific entries (Pune–BOM, Delhi–SBI, Nagpur–BOM MSME, BOM at one manager's locations) and dated hand-overs |
+| D132 | **Names loaded with `execute_sql` (audit action `branch_manager_load`), never in a migration or the repository**; AI name scrubbing extended to branch-manager names (bi_093e) | Migrations sync to GitHub; names must not reach AI providers |
+| D133 | **"Owner (mapped)" renamed "Stakeholder (mapped)" and shown next to "Branch manager (mapped)"** in rankings, billing gap, CSV, drills and Ask | Two kinds of mapped responsibility now exist; one word for each, same as Ask findings |
+| D134 | **A billing unit that combines locations lists every member's manager** ("A, B") and counts members without one; organic breakdown groups by that combined label; no drill from a manager group (it is not a filter dimension) | Zone-billed invoices cannot be split by city (L30) |
+| D135 | **Ask Crux: revenue-growth intent routed before collections** (organic, effort, business as usual, or growth words with revenue / billed / MoM-type words, unless the question is about collection / outstanding / cash / payment); findings carry stakeholder and branch manager as mapped | 14:42 report "Ask Crux is not working": the endpoint answered, but revenue-growth questions fell into the collections or cases handlers |
+| D136 | **Acceptance suite run through a one-off scheduled job** that unscheduled itself and wrote its result to `bi.job_run` (job `acceptance_tests`) | The SQL connector times out at about 60 s; the suite needs ≈ 90 s |
+
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app.
 18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth.
 19. **Storage (urgent):** 486.2 million bytes (all databases) on 22-Oct 05:37 UTC; at ≈ 42 MB/month it reaches 500,000,000 bytes around 1-Nov-2026 (about three weeks later after the owner script, STORAGE_AUDIT §10). Pro plan or an archive design is needed now (see Q10).
+20. **Branch-manager spellings:** two names are written two ways in the list (one loaded, the other kept in the row note) — confirm the correct spelling (Admin → Master data & mapping shows both).
+21. **Shared and split entries:** one state lists two managers for one place and its capital lists one of them; another state is written as "A / B" in one line and with one surname in another. Loaded as written per location — confirm.
+22. **Nagpur:** the BOM MSME line names one manager and the Nagpur line another; loaded as a BOM-specific manager plus a location manager — confirm.
+23. **Unassigned location:** one location in the Bhopal MP billing unit has no manager in the list — assign one in Admin if it should have one.
 2. Confirm the D18 reading of tracker columns M and N.
 
 3. ~~Expense column L~~ — resolved 14-Oct: ignore (data incorrect).

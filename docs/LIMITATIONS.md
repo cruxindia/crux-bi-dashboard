@@ -62,7 +62,7 @@
 | L23 | Force1 utilisation is per location group | Locations sharing a group show the same value in the pair ranking | Labelled "group" |
 | L24 | No HR workforce master | Capacity / availability per pair cannot be shown | Stated in the method; upload in Admin › HR |
 | L25 | No verified external competitor or market data | No competitor volumes or market share | Not shown or estimated; opportunity uses verified branch lists and internal peer benchmarks only |
-| L26 | Organic estimate error ≈ 6.7 % Pan India, ≈ 21.5 % per location × client (last 10 months) | Pair-level effort is indicative | Error shown on the page; small pairs flagged |
+| L26 | Organic estimate error ≈ 5.8 % Pan India, ≈ 21.3 % per location × client (last 10 months, MoM/QoQ/YoY blend from 22-Oct-2026; was 6.7 % / 21.5 %) | Pair-level effort is indicative | Error shown on the page by month; small pairs flagged |
 | L27 | First uncached growth request takes 3–5 s | Slower first view after a data change for filtered selections | Pan India pre-computed every 10 minutes; results cached until data changes |
 
 ## Revenue-first growth (22-Oct-2026)
@@ -72,6 +72,15 @@
 | L29 | Sep-26 and Oct-26 invoices still being raised at the snapshot date | Not compared | Listed as "in progress" with billed so far and coverage |
 | L30 | Gujarat, Bhopal-MP and Lucknow invoices mostly do not name the city | Their locations cannot be ranked separately on revenue | Compared as one billing unit; a location filter inside them lists the unit under "not in totals" |
 | L31 | No revenue-recognition rules; invoice date ≠ service date in general | "Actual billed revenue" = invoiced value by invoice month (ex-GST), not recognised revenue | Invoice month used as service month (best-fit evidence in the method); per-case labelled approximate |
-| L32 | Revenue organic model: Pan India error 6.1 %, unit × client WAPE 29.2 % (4 back-test months) | Pair-level growth beyond organic is indicative, noisier than the cases model (21.5 %) | Error, coverage and basis (pair / family / unavailable) shown; unavailable never shown as zero |
+| L32 | Revenue organic model: Pan India error 6.4 %, unit × client WAPE 29.6 % (4 back-test months, after the 22-Oct organic blend; was 6.1 % / 29.2 %) | Pair-level growth beyond organic is indicative, noisier than the cases model (21.3 %) | Error, coverage and basis (pair / family / unavailable) shown; unavailable never shown as zero |
 | L33 | Some tracker revenue has no identified invoice (Aug-26: 20 unit × client pairs, ₹11.26 L expected minimum) — cause not established (could be billing under another client or location, or not yet invoiced) | Billed below expected for those pairs | Confidence note "no invoices identified" and billing coverage per pair |
 | L34 | First uncached revenue growth request takes about 4–10 s (more under concurrent load) | Slower first view after a data change for a new filter | Pan India pre-computed every 10 minutes; cached until data changes |
+
+## Organic blend and branch managers (22-Oct-2026, wave 093)
+| # | Limitation | Effect | Handling |
+|---|---|---|---|
+| L43 | Only 76 % of business has a usable month last year (many locations started or changed since 2025) | The YoY basis covers 76 % of organic cases; the rest use 5/9 MoM + 4/9 QoQ | The explanation states how many rows have a YoY basis; YoY weight kept at 10 % because a larger share back-tested worse |
+| L44 | Aug-2026 actual was 13.4 % above the organic estimate (largest monthly miss in the back-test) | Aug effort looks high; Sep growth beyond organic (MoM, cases) looks low — partly an Aug estimate miss rather than a Sep fall-off | Monthly accuracy table in Growth → method; read Sep MoM beyond organic with Aug's miss in mind |
+| L45 | The branch-manager list was supplied as free text: two names appear with two spellings, one shared entry is written two ways, one state has two managers listed for one place, and one city has a client-specific manager (BOM) as well as a location manager | Names shown as loaded (one spelling chosen, the other kept in the row note); the client-specific manager wins for that client | Notes on each row in Admin → Master data & mapping; correct there (end / withdraw / add, audited). Open questions are in the SOW |
+| L46 | One location has no listed manager, and some invoices are not tied to a location ("Location not identified", a zone office without a dashboard location) | Branch manager shows "not mapped" / "–" | The admin page lists locations without a current manager |
+| L47 | Branch manager and stakeholder are mapped responsibility | Not evidence of who caused a change | Stated in drills, Ask answers and the method |

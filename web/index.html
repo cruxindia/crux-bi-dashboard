@@ -235,7 +235,7 @@ function mcpErr(e){const c=e&&e.code;const msg={server_not_connected:'The Supaba
  const er=new Error(msg||((c?c+': ':'')+(e&&e.message||e)));er.code=c;return er}
 async function api(fn,args={}){if(S.mode==='mcp')return mcpSql(`select ${sqlFor(fn,args)} as r`);
  const {data,error}=await S.sb.rpc('bi_call',{p_fn:fn,p_args:S.adminKey?{...args,admin_key:S.adminKey}:args});if(error)throw new Error(error.message);if(data&&data.error){if(ADMDENY.test(data.error)&&S.role==='admin')ADM.lock('expired');throw new Error(data.error)}return data}
-async function adminCall(action,p){if(S.mode==='mcp'){if(action==='verify')return{ok:true,via:'connector'};if(action==='db_health')return mcpSql('select bi.api_db_health() as r');if(action==='tat_records')return mcpSql(`select bi.tat_records(${dt(p.month)},${js(p.filters||{})},${lit(p.level==='point'?'point':'case')},${js(p.p||{})}) as r`);if(action==='tat_rule')return mcpSql(`select bi.tat_rule_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='mapping_update')return mcpSql(`select bi.api_mapping_update(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='refresh_employees')return mcpSql(`select jsonb_build_object('employees',bi.refresh_employee_classification()) as r`);if(action==='master_import')return mcpSql(`select bi.master_import(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='rate')return mcpSql(`select bi.rate_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='penalty')return mcpSql(`select bi.penalty_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='branch')return mcpSql(`select bi.branch_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='mapping_retarget')return mcpSql(`select bi.mapping_retarget(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`)}
+async function adminCall(action,p){if(S.mode==='mcp'){if(action==='verify')return{ok:true,via:'connector'};if(action==='db_health')return mcpSql('select bi.api_db_health() as r');if(action==='tat_records')return mcpSql(`select bi.tat_records(${dt(p.month)},${js(p.filters||{})},${lit(p.level==='point'?'point':'case')},${js(p.p||{})}) as r`);if(action==='tat_rule')return mcpSql(`select bi.tat_rule_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='mapping_update')return mcpSql(`select bi.api_mapping_update(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='refresh_employees')return mcpSql(`select jsonb_build_object('employees',bi.refresh_employee_classification()) as r`);if(action==='master_import')return mcpSql(`select bi.master_import(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='rate')return mcpSql(`select bi.rate_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='penalty')return mcpSql(`select bi.penalty_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='branch')return mcpSql(`select bi.branch_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='mapping_retarget')return mcpSql(`select bi.mapping_retarget(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`);if(action==='branch_manager')return mcpSql(`select bi.branch_manager_admin(${lit('connector:'+(S.email||'owner'))},${js(p)}) as r`)}
  const {data,error}=await S.sb.rpc('bi_admin',{p_action:action,p:{...p,admin_key:S.adminKey}});if(error){if(action!=='verify'&&ADMDENY.test(error.message)&&S.role==='admin'){ADM.lock('expired');throw new Error('Your admin session has ended. Sign in again with Admin login.')}throw new Error(error.message)}return data}
 async function ingest(action,payload){if(S.mode==='mcp')return mcpSql(`select bi.ingest_as(${lit('connector:'+(S.email||'owner'))},${lit(action)},${js(payload)}) as r`);
  const {data,error}=await S.sb.rpc('bi_ingest',{p_token:S.adminKey,p_action:action,p_payload:payload});if(error){if(ADMDENY.test(error.message)&&S.role==='admin')ADM.lock('expired');throw new Error(error.message)}return data}
@@ -708,7 +708,7 @@ async function finBusiness(s,m,f){const G=await api('growth',{month:m,filters:f,
   el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>{S.measure='revenue';try{sessionStorage.setItem('crux_measure','revenue')}catch{}go('growth')}},'Full ranking in Growth & trends →'))));
  const gap=(G.pairs||[]).filter(r=>r.expected>0||r.billed>0).map(r=>({...r,_gap:(r.billed||0)-(r.expected||0),_gp:r.expected>0?((r.billed||0)-r.expected)/r.expected:null})).sort((a,b)=>Math.abs(b._gap)-Math.abs(a._gap));
  s.append(el('h3',{},`Expected vs actual billing by billing unit × client — ${mlabel(G.billing_month)}`),el('p',{class:'note'},'A large gap can mean invoices booked under another location or client, cases billed at a different rate, or cases not yet billed. It is a reconciliation pointer, not an error finding.'),
-  table(gap,[{key:'location',label:'Billing unit'},{key:'client_label',label:'Client'},{key:'owner',label:'Owner (mapped)'},{key:'billed',label:'Actual billed',num:1,fmt:fmtL},{key:'expected',label:'Expected minimum',num:1,fmt:fmtL},
+  table(gap,[{key:'location',label:'Billing unit'},{key:'client_label',label:'Client'},{key:'owner',label:'Stakeholder (mapped)'},{key:'branch_manager',label:'Branch manager (mapped)',fmt:bmCell,raw:bmRaw},{key:'billed',label:'Actual billed',num:1,fmt:fmtL},{key:'expected',label:'Expected minimum',num:1,fmt:fmtL},
    {key:'_gap',label:'Gap',num:1,fmt:v=>chgEl(v,null,true),raw:r=>r._gap},{key:'_gp',label:'Gap %',num:1,fmt:v=>v==null?'–':pctS(v)},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'billed_per_case',label:'Billed / case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)},
    {key:'expected_per_case',label:'Expected / case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)},{key:'_cn',label:'Read with care',fmt:(v,r)=>(r.confidence||[]).length?el('span',{class:'chip warn',title:r.confidence.join('; ')},r.confidence.length+' note'+(r.confidence.length>1?'s':'')):'–'}],
    {name:`billing_gap_${String(G.billing_month).slice(0,7)}.csv`,pageSize:15,rowAction:r=>pairCtx(r,G,f,'mom')}))}
@@ -873,7 +873,7 @@ async function finImport(it,progress){const x=it.x;const data=x.sheets.filter(s=
 /* ---------- Admin workspace: one entry point in the top bar ---------- */
 const ADM_GROUPS=[
  ['adm_upload','File uploads & daily tracker corrections','Zonal Tracker, Case Wise, Point Wise and finance workbooks; the daily update table and its corrections'],
- ['adm_mapping','Master data & mapping','Location and client mappings with effective dates, WEF location groups, point types, client branch list'],
+ ['adm_mapping','Master data & mapping','Location and client mappings with effective dates, WEF location groups, branch managers, point types, client branch list'],
  ['adm_dq','Data-quality exceptions & reconciliation','Import exceptions with evidence, Force1 vs business count reconciliation, data coverage by location group'],
  ['adm_branch','Branch research & monitor','Research status by client and location, monthly monitor runs, branch review queue'],
  ['adm_hr','HR / workforce master data','Workforce list upload and employee classification'],
@@ -933,6 +933,7 @@ async function mappingUI(s){const mq=await api('mapping_queue');const act=mapAct
  if(mq.clients)s.append(el('h3',{},'Client aliases'),table(mq.clients,[{key:'source',label:'Source'},{key:'alias',label:'Alias'},{key:'client_code',label:'Client'},{key:'method',label:'Method'},{key:'confidence',label:'Confidence',num:1},{key:'status',label:'Review'},{key:'alias',label:'Correct',fmt:(v,row)=>mapFixBtn('client_alias',row),raw:r=>''}],{name:'client_aliases.csv'}));
  if(mq.point_types)s.append(el('h3',{},'Point type classification'),table(mq.point_types,[{key:'name',label:'Point type'},{key:'category',label:'Category',fmt:(v,row)=>{const sel=el('select',{'aria-label':'Category'},['field','document','tele','unknown'].map(o=>el('option',{value:o},o)));sel.value=v;sel.onchange=async()=>{try{await adminCall('mapping_update',{kind:'point_type',name:row.name,category:sel.value,status:'confirmed'})}catch(e){alert(e.message)}};return sel}},{key:'rule',label:'Rule'},{key:'evidence',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,120):'–'},{key:'review_status',label:'Review'},{key:'reviewed_by',label:'Reviewed by'}],{name:'point_types.csv'}));
  const gw=el('div');s.append(gw);groupUI(gw);
+ const bmw=el('div',{class:'card',style:'margin-top:14px',id:'bmAdmin'});s.append(bmw);branchMgrUI(bmw);
  const mdw=el('div');s.append(mdw);masterUI(mdw,{kind:'branch',fixed:true})}
 const RV='Listed in Admin workspace → Data-quality exceptions';
 const DQL={source_total_mismatch:['A source file\'s own total differs from the sum of its rows','The rows are used; the file total is kept as a check'],snapshot_date_mismatch:['Report date in the file name differs from the sheet',RV],
@@ -1068,7 +1069,7 @@ function growthRanking(box,G,f){const rev=G.measure==='revenue';const C=G.cards|
    rev?el('small',{},'Gujarat, Bhopal MP and Lucknow / ROUP are billed at zone level (most invoices do not name the city), so their locations appear as one billing unit here.'):null].filter(Boolean));
   const perLab=rev?(((C[per]||{}).current||{}).label||[]).join('+'):({mom:mlabel(G.completed_month),qoq:'Quarter',yoy:mlabel(G.completed_month),mtd:'MTD'}[per]);
   const money=v=>v==null?'–':chgEl(v,null,rev);
-  const cols=[{key:'location',label:rev?'Billing unit':'Location'},{key:'client_label',label:'Client'},{key:'owner',label:'Owner (mapped)',fmt:(v,r)=>v?(r.owner_changed?v+' (changed)':v):'–'},{key:'zone',label:'Zone'},
+  const cols=[{key:'location',label:rev?'Billing unit':'Location'},{key:'client_label',label:'Client'},{key:'owner',label:'Stakeholder (mapped)',fmt:(v,r)=>v?(r.owner_changed?v+' (changed)':v):'–'},{key:'branch_manager',label:'Branch manager (mapped)',fmt:bmCell,raw:bmRaw},{key:'zone',label:'Zone'},
    {key:'_cur',label:perLab,num:1,fmt:F},{key:'_prev',label:'Earlier',num:1,fmt:F},{key:'_chg',label:'Change',num:1,fmt:money,raw:r=>r._chg},{key:'_pct',label:'Change %',num:1,fmt:(v,r)=>v==null?el('span',{class:'note',title:'Earlier period below the minimum base or zero'},r._prev>0?'small base':'new'):el('span',{class:v>0?'good':v<0?'bad':''},pctS(v)),raw:r=>r._pct},
    {key:'_share',label:'Share of net change',num:1,fmt:v=>v==null?'–':pctS(v),raw:r=>r._share},
    ...(rev?[{key:'_exp',label:'Expected minimum',num:1,fmt:fmtL},{key:'_cov',label:'Billed ÷ expected',num:1,fmt:pct},{key:'_bpc',label:'Billed per case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)}]
@@ -1109,15 +1110,18 @@ function growthMethod(G){const V=(G.organic||{}).validation||{};const M=G.method
   V.months?el('div',{},el('h4',{},`Organic estimate — measured error, ${mlabel(V.from)} to ${mlabel(V.to)}`),
    el('p',{class:'note'},`Average monthly error ${pct(V.pan_mape)} for this selection; ${pct(V.pair_wape)} at location × client level (sum of absolute errors ÷ actual). Small pairs are less predictable, so their organic status is an indication only.`),
    table(V.by_month||[],[{key:'month',label:'Month',fmt:mlabel},{key:'actual',label:'Actual',num:1,fmt:fmt},{key:'organic',label:'Organic estimate',num:1,fmt:fmt},{key:'error_pct',label:'Actual vs estimate',num:1,fmt:pctS}],{search:false,name:'organic_accuracy.csv'})):null)}
+const bmCell=(v,r)=>v?(r.branch_manager_changed&&r.branch_manager_prev?el('span',{title:'Changed this month from '+r.branch_manager_prev},v+' (changed)'):v):'–';
+const bmRaw=r=>r.branch_manager?(r.branch_manager_changed&&r.branch_manager_prev?`${r.branch_manager} (was ${r.branch_manager_prev})`:r.branch_manager):'';
+const bmNote=(r,ml)=>`branch manager (mapped for ${ml}): ${r.branch_manager||'not mapped'}${r.branch_manager_changed&&r.branch_manager_prev?' — changed this month from '+r.branch_manager_prev:''}${r.branch_manager_missing>0?' · '+r.branch_manager_missing+' combined location'+(r.branch_manager_missing>1?'s':'')+' without a manager':''}`;
 function moverList(title,rows,G,f,per='mom'){const rev=G.measure==='revenue';const F=rev?fmtL:fmt;
  return el('div',{},el('h4',{},title),rows.length?el('ul',{class:'hl'},rows.map(r=>{const x=r[per]||{};const cur=rev||per!=='mom'?x.cur:r.cases;
-  return ddEl(el('li',{},el('strong',{},`${r.client_label} · ${r.location}`),' ',chgEl(x.chg,x.pct,rev),el('span',{class:'note'},` ${F(x.prev)} → ${F(cur)}`+(x.beyond!=null?` · beyond organic ${sgF(x.beyond,F)}`:'')+(r.owner?` · owner (mapped): ${r.owner}`:'')+((r.confidence||[]).length?' · '+r.confidence[0]:''))),()=>pairCtx(r,G,f,per),`${r.client_label} ${r.location}`)})):el('p',{class:'note'},'None.'))}
+  return ddEl(el('li',{},el('strong',{},`${r.client_label} · ${r.location}`),' ',chgEl(x.chg,x.pct,rev),el('span',{class:'note'},` ${F(x.prev)} → ${F(cur)}`+(x.beyond!=null?` · beyond organic ${sgF(x.beyond,F)}`:'')+(r.owner?` · stakeholder (mapped): ${r.owner}`:'')+(r.branch_manager?` · branch manager (mapped): ${r.branch_manager}`:'')+((r.confidence||[]).length?' · '+r.confidence[0]:''))),()=>pairCtx(r,G,f,per),`${r.client_label} ${r.location}`)})):el('p',{class:'note'},'None.'))}
 function moverSets(G){const P=G.pairs||[];const k=r=>(r.mom||{});
  return{up:P.filter(r=>k(r).chg>0).sort((a,b)=>k(b).chg-k(a).chg).slice(0,3),dn:P.filter(r=>k(r).chg<0).sort((a,b)=>k(a).chg-k(b).chg).slice(0,3),
   bo:P.filter(r=>k(r).beyond>0).sort((a,b)=>k(b).beyond-k(a).beyond).slice(0,3),bn:P.filter(r=>k(r).beyond<0).sort((a,b)=>k(a).beyond-k(b).beyond).slice(0,3)}}
 async function ddPairRev(o,c){const r=c.r,G=c.G;const t=(k,x)=>{const n=x||{};return tile(k,n.chg==null?'–':sgF(n.chg,fmtL),`${fmtL(n.prev)} → ${fmtL(n.cur)}`+(n.pct!=null?' · '+pctS(n.pct):(n.prev>0?' · % hidden (small base)':''))+(n.beyond!=null?` · beyond organic ${sgF(n.beyond,fmtL)}`:''),n.chg>0?'good':n.chg<0?'bad':'')};
  const B=r.branches,Tt=r.tat||{},F1=r.force1||{},O=r.organic||{},Se=r.settlement||{};
- o.append(...[el('p',{class:'note'},`${r.zone||''} · billing unit ${r.location}${r.members>1?' ('+r.member_locations+')':''} · owner (mapped for ${mlabel(G.billing_month)}): ${r.owner||'not mapped'}${r.owner_changed?' — changed this month':''}`),
+ o.append(...[el('p',{class:'note'},`${r.zone||''} · billing unit ${r.location}${r.members>1?' ('+r.member_locations+')':''} · stakeholder (mapped for ${mlabel(G.billing_month)}): ${r.owner||'not mapped'}${r.owner_changed?' — changed this month':''} · ${bmNote(r,mlabel(G.billing_month))}`),
   el('div',{class:'tiles'},tile(mlabel(G.billing_month)+' actual billed',fmtL(r.billed),`expected minimum ${fmtL(r.expected)} (billed ÷ expected ${pct(r.billing_coverage)}) · ${fmt(r.cases)} cases`),
    t('Month on month',r.mom),r.qtd?t('Quarter to date',r.qtd):null,r.qoq?t('Quarter on quarter',r.qoq):null,
    tile('Organic expectation',fmtL(O.expected),O.effort!=null?`actual ${sgF(O.effort,fmtL)}${O.effort_pct!=null?' ('+pctS(O.effort_pct)+')':''} · basis: ${O.basis==='pair'?'this pair’s billing per case':O.basis==='family'?'client-wide billing ratio':'–'}${O.ref_from?`, ${mlabel(O.ref_from)}–${mlabel(O.ref_to)}`:''} — an estimate, not proof of cause`:'no estimate'),
@@ -1127,10 +1131,10 @@ async function ddPairRev(o,c){const r=c.r,G=c.G;const t=(k,x)=>{const n=x||{};re
    tile('Force1 utilisation',pct(F1.utilisation),'location group level'),tile('Case TAT median',hrs(Tt.median_hours),Tt.sla!=null?'SLA met '+pct(Tt.sla):'')),
   (r.confidence||[]).length?el('div',{class:'banner'},'Read with care: '+r.confidence.join(' · ')):null,
   el('div',{class:'ddact'},el('button',{type:'button',class:'btn sm',onclick:()=>DD.push(bizCtx(G.billing_month,r.members>1&&r.zone_code?{...c.f,zone_group:r.zone_code,client_family:r.client}:{...c.f,location_id:r.location_id||r.unit_id,client_family:r.client},{clientLabel:r.client_label}))},'Branches, daily reports and TAT →')),
-  el('p',{class:'note'},'Measured: invoiced revenue, expected minimum revenue, cases, settlement, branch counts, Force1 and TAT. Estimated: organic expectation and branch potential. Mapped: the owner is the stakeholder assigned for the period — responsibility, not proof of cause.')].filter(Boolean))}
+  el('p',{class:'note'},'Measured: invoiced revenue, expected minimum revenue, cases, settlement, branch counts, Force1 and TAT. Estimated: organic expectation and branch potential. Mapped: the stakeholder and the branch manager are the people assigned for the period — responsibility, not proof of cause.')].filter(Boolean))}
 async function ddPair(o,c){if(c.G&&c.G.measure==='revenue')return ddPairRev(o,c);const r=c.r,G=c.G;const t=(k,x,p,money)=>{const n=x||{};return tile(k,n.chg==null?'–':((n.chg>0?'+':n.chg<0?'−':'')+(money?fmtL(Math.abs(n.chg)):fmt(Math.abs(n.chg)))),`${fmt(n.prev)} → ${fmt(n.cur!=null?n.cur:r.cases)}`+(n.pct!=null?' · '+pctS(n.pct):(n.prev>0?' · % hidden (small base)':'')),n.chg>0?'good':n.chg<0?'bad':'')};
  const B=r.branches,Tt=r.tat||{},F1=r.force1||{},O=r.organic||{},M=r.mtd;
- o.append(...[el('p',{class:'note'},`${r.zone||''} · location group ${r.unit||'–'} · owner (mapped for ${mlabel(G.completed_month)}): ${r.owner||'not mapped'}${r.owner_changed?' — changed this month':''}`),
+ o.append(...[el('p',{class:'note'},`${r.zone||''} · location group ${r.unit||'–'} · stakeholder (mapped for ${mlabel(G.completed_month)}): ${r.owner||'not mapped'}${r.owner_changed?' — changed this month':''} · ${bmNote(r,mlabel(G.completed_month))}`),
   el('div',{class:'tiles'},tile(mlabel(G.completed_month)+' cases',fmt(r.cases),'revenue '+fmtL(r.revenue)),t('Month on month',r.mom),t('Quarter on quarter',r.qoq),t('Year on year',r.yoy),
    M?tile('Month to date',fmt(M.cur),`vs ${fmt(M.prev)} on the same working day · target ${fmt(M.target)} (${pct(M.attainment)}) · projected ${fmt(M.projected)}`):null,
    tile('Organic expectation',fmt(O.expected),O.effort!=null?`actual ${O.effort>=0?'+':'−'}${fmt(Math.abs(O.effort))}${O.effort_pct!=null?' ('+pctS(O.effort_pct)+')':''} — an estimate, not proof of cause`:'no estimate (short history)'),
@@ -1140,7 +1144,7 @@ async function ddPair(o,c){if(c.G&&c.G.measure==='revenue')return ddPairRev(o,c)
    tile('Case TAT median',hrs(Tt.median_hours),(Tt.prev_median_hours!=null?'was '+hrs(Tt.prev_median_hours):'')+(Tt.sla!=null?' · SLA met '+pct(Tt.sla):''),Tt.worse?'bad':'')),
   (r.confidence||[]).length?el('div',{class:'banner'},'Read with care: '+r.confidence.join(' · ')):null,
   el('div',{class:'ddact'},el('button',{type:'button',class:'btn sm',onclick:()=>DD.push(bizCtx(G.partial&&c.per==='mtd'?G.month:G.completed_month,{...c.f,location_id:r.location_id,client_family:r.client},{clientLabel:r.client_label}))},'Branches, daily reports and TAT →')),
-  el('p',{class:'note'},'Measured: cases, revenue, changes, branch counts, Force1 and TAT. Estimated: organic expectation and branch potential. Mapped: the owner is the stakeholder assigned to the location for the period — responsibility, not proof of cause. Causes need investigation.')].filter(Boolean))}
+  el('p',{class:'note'},'Measured: cases, revenue, changes, branch counts, Force1 and TAT. Estimated: organic expectation and branch potential. Mapped: the stakeholder and the branch manager are the people assigned to the location for the period — responsibility, not proof of cause. Causes need investigation.')].filter(Boolean))}
 function adminGate(s,what){if(S.role==='admin')return true;const inp=el('input',{type:'password',placeholder:'Admin key','aria-label':'Admin key',autocomplete:'off',style:'padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);min-width:260px'});const msg=el('span',{class:'note'});
  const go2=async()=>{msg.textContent='Checking…';const ok=await ADM.unlock(inp.value.trim());if(!ok)msg.textContent='That key was not accepted.'};
  inp.addEventListener('keydown',e=>{if(e.key==='Enter')go2()});
@@ -1331,32 +1335,41 @@ const POT_LBL={on_track:['On track','good'],stretch:['Stretch','warn'],at_risk:[
 const chipS=(map,v)=>{const x=map[v]||[v||'—',''];return el('span',{class:'chip '+x[1]},x[0])};
 const sgn=v=>v==null||isNaN(v)?'–':(v>0?'+':v<0?'−':'')+fmt(Math.abs(v));
 const sgnp=v=>v==null||isNaN(v)?'':` (${v>0?'+':v<0?'−':''}${(Math.abs(v)*100).toFixed(1)}%)`;
-/* Explanation of one organic figure. o = {title, v:[last month, month before, 3 months back], mon:[labels same order], wd:[…], si:[…], wdT, siT, share, k, kk, actual, unit, rateNote, rows} */
+/* Explanation of one organic figure. o = {title, v:[last month, month before, 3 months back], mon, wd, si, wdT, siT, share, k, kk, actual, rateNote, rows,
+   org: organic cases for the month (from the API), b: {mom, qoq, yoy, ny, orgy, qtr, ysh} the three bases (from the API)} — nothing is recalculated here */
 function orgExplain(o){return qi(o.title||'How this organic figure is calculated',()=>{
- const d=[0,1,2].map(i=>o.wd[i]&&o.si[i]?o.v[i]/o.wd[i]/o.si[i]:0);const lvl=.7*d[0]+.2*d[1]+.1*d[2];const org=lvl*o.siT*o.wdT;const td=org*(o.share==null?1:o.share);
- const f2=x=>x==null||isNaN(x)?'–':(+x).toLocaleString('en-IN',{maximumFractionDigits:2});
- const t=el('table',{},el('tr',{},el('td',{},el('b',{},'Month')),el('td',{class:'num'},el('b',{},'Cases')),el('td',{class:'num'},el('b',{},'Work days')),el('td',{class:'num'},el('b',{},'Season')),el('td',{class:'num'},el('b',{},'Per day*')),el('td',{class:'num'},el('b',{},'Weight'))),
-  [0,1,2].map(i=>el('tr',{},el('td',{},o.mon[i]||''),el('td',{class:'num'},fmt(o.v[i])),el('td',{class:'num'},o.wd[i]||'–'),el('td',{class:'num'},o.si[i]==null?'–':(+o.si[i]).toFixed(3)),el('td',{class:'num'},f2(d[i])),el('td',{class:'num'},['70%','20%','10%'][i]))));
- const out=[o.rows>1?`Sum of ${fmt(o.rows)} client rows — the same formula applied to their combined cases.`:null,t,el('p',{class:'note'},'*Cases per working day with the usual seasonal effect of that month removed.'),
-  `Weighted daily level = 0.7 × ${f2(d[0])} + 0.2 × ${f2(d[1])} + 0.1 × ${f2(d[2])} = ${f2(lvl)} cases a day.`,
-  `× this month's usual seasonal effect ${o.siT==null?'–':(+o.siT).toFixed(3)} × ${o.wdT} working days = organic month ${fmt(org)} cases.`];
+ const f2=x=>x==null||isNaN(x)?'–':(+x).toLocaleString('en-IN',{maximumFractionDigits:2});const B=o.b||{};const one=(o.rows||1)<=1;const org=o.org;
+ const d=[0,1,2].map(i=>o.wd[i]&&o.si[i]?o.v[i]/o.wd[i]/o.si[i]:null);
+ const t=el('table',{},el('tr',{},el('td',{},el('b',{},'Month')),el('td',{class:'num'},el('b',{},'Cases')),el('td',{class:'num'},el('b',{},'Work days')),el('td',{class:'num'},el('b',{},'Season')),el('td',{class:'num'},el('b',{},'Per day*'))),
+  [0,1,2].map(i=>el('tr',{},el('td',{},o.mon[i]||''),el('td',{class:'num'},fmt(o.v[i])),el('td',{class:'num'},o.wd[i]||'–'),el('td',{class:'num'},o.si[i]==null?'–':(+o.si[i]).toFixed(3)),el('td',{class:'num'},f2(d[i])))));
+ const out=[one?null:`Sum of ${fmt(o.rows)} location × client rows — each blended on its own, then added up.`,t,el('p',{class:'note'},'*Cases per working day with the usual (Pan India) seasonal effect of that month removed.')];
+ if(B.mom!=null){const yoyTxt=B.yoy==null?(one?'not available — no usable month last year (needs 30+ cases that month)':'—'):fmt(B.yoy);
+  out.push(el('h4',{},'Three bases for '+(o.monT||'this month')),el('table',{},el('tr',{},el('td',{},el('b',{},'Basis')),el('td',{},el('b',{},'Built from')),el('td',{class:'num'},el('b',{},'Cases')),el('td',{class:'num'},el('b',{},'Weight'))),
+   el('tr',{},el('td',{},'MoM'),el('td',{},`last month's level × this month's seasonal effect ${o.siT==null?'–':(+o.siT).toFixed(3)} × ${o.wdT} working days`),el('td',{class:'num'},fmt(B.mom)),el('td',{class:'num'},'50%')),
+   el('tr',{},el('td',{},'QoQ'),el('td',{},`last three months' level × seasonal effect × working days × QoQ trend${one&&B.qtr!=null?' '+(+B.qtr).toFixed(3):''} (last quarter vs the quarter before, limited to 0.5–2×)`),el('td',{class:'num'},fmt(B.qoq)),el('td',{class:'num'},'40%')),
+   el('tr',{},el('td',{},'YoY'),el('td',{},`last three months' cases per working day × ${o.wdT} working days × own pattern for this month last year${one&&B.ysh!=null?' '+(+B.ysh).toFixed(3):''} (limited to 0.67–1.5×)`),el('td',{class:'num'},yoyTxt),el('td',{class:'num'},'10%'))));
+  out.push(one?(B.yoy!=null?`Organic month = 0.5 × ${fmt(B.mom)} + 0.4 × ${fmt(B.qoq)} + 0.1 × ${fmt(B.yoy)} = ${fmt(org)} cases.`:`No usable month last year, so organic month = 5/9 × ${fmt(B.mom)} + 4/9 × ${fmt(B.qoq)} = ${fmt(org)} cases.`)
+   :`${fmt(B.ny||0)} of ${fmt(o.rows)} rows have a usable month last year (${fmt(B.orgy||0)} of the ${fmt(org)} organic cases); the others use 5/9 MoM + 4/9 QoQ. Organic month = ${fmt(org)} cases.`)}
+ else out.push(`Organic month = ${fmt(org)} cases.`);
+ const td=org==null?null:org*(o.share==null?1:o.share);
  if(o.share!=null&&o.share<1)out.push(`By working day ${o.k} of ${o.kk} a month is normally ${(o.share*100).toFixed(1)}% done → organic so far ${fmt(td)} cases.`);
- if(o.actual!=null){const e=o.actual-td;out.push(el('p',{},el('b',{},`Actual ${fmt(o.actual)} → ${e>=0?'above':'below'} organic by ${fmt(Math.abs(e))}${sgnp(td?e/td:null)}.`)))}
+ if(o.actual!=null&&td!=null){const e=o.actual-td;out.push(el('p',{},el('b',{},`Actual ${fmt(o.actual)} → ${e>=0?'above':'below'} organic by ${fmt(Math.abs(e))}${sgnp(td?e/td:null)}.`)))}
  if(o.rateNote)out.push(o.rateNote);
- out.push(el('p',{class:'note'},'Why this method: tested against Dec-2025 → Sep-2026, it was the closest of six methods (6.7% average miss at Pan India level). The older rule — the higher of last-year growth × 3-month average and 3-month growth × last month — overstated organic business by 25% on average.'));
+ out.push(el('p',{class:'note'},'Why this method: weights tested on Dec-2025 → Sep-2026, each month predicted from earlier months only — 5.8% average miss at Pan India level and 21.3% per location × client (the previous three-month method: 6.7% / 21.5%). A larger YoY share was less accurate because many locations started or changed since last year.'));
  return out})}
+const orgB=i=>i&&i.b_mom!=null?{mom:i.b_mom,qoq:i.b_qoq,yoy:i.b_yoy,ny:i.rows_with_yoy,orgy:i.organic_with_yoy,qtr:i.q_trend,ysh:i.y_shape}:null;
 /* organic explanation from an api_organic row */
 function orgExplainRow(J,r,title){const i=r.inputs||{};const mon=(J.months||[]).slice(0,3).reverse();
- return orgExplain({title:title||('Organic — '+r.group),v:[i.v1,i.v2,i.v3],mon,wd:[i.wd1,i.wd2,i.wd3],si:[i.si1,i.si2,i.si3],wdT:i.wd,siT:i.si,share:J.share_to_date,k:J.workdays_elapsed,kk:J.workdays_in_month,
-  actual:J.measure==='cases'?r.actual:null,rows:i.rows,rateNote:J.measure==='revenue'?`Revenue view: these organic cases valued at each client row's rate = ${inr(r.organic_month)} for the month, ${inr(r.organic_to_date)} so far; actual ${inr(r.actual)}.`:null})}
+ return orgExplain({title:title||('Organic — '+r.group),v:[i.v1,i.v2,i.v3],mon,monT:(J.months||[])[3],wd:[i.wd1,i.wd2,i.wd3],si:[i.si1,i.si2,i.si3],wdT:i.wd,siT:i.si,share:J.share_to_date,k:J.workdays_elapsed,kk:J.workdays_in_month,
+  org:i.organic_cases,b:orgB(i),actual:J.measure==='cases'?r.actual:null,rows:i.rows,rateNote:J.measure==='revenue'?`Revenue view: these organic cases valued at each client row's rate = ${inr(r.organic_month)} for the month, ${inr(r.organic_to_date)} so far; actual ${inr(r.actual)}.`:null})}
 
 /* Growth: organic vs actual */
 function organicSection(box,month,f,G){const rev=S.measure==='revenue';const C0=(G&&G.cards)||{};
  const PER=rev?['mom','qtd','qoq','yoy','qyoy','ytd'].filter(k=>C0[k]&&C0[k].available):['mtd','mom','qtd','qoq','yoy','qyoy'].filter(k=>C0[k]&&C0[k].organic&&C0[k].organic.organic_current!=null);
  const ps=el('select',{'aria-label':'Organic comparison period'},PER.map(k=>el('option',{value:k},PERIODS[k])));if(PER.includes(OG.period))ps.value=OG.period;
- const gs=el('select',{'aria-label':'Organic breakdown'},(rev?[['zone','By zone'],['unit','By billing unit'],['client','By client'],['stakeholder','By stakeholder']]:[['zone','By zone'],['location','By location'],['client','By client'],['stakeholder','By stakeholder']]).map(([v,l])=>el('option',{value:v},l)));
+ const gs=el('select',{'aria-label':'Organic breakdown'},(rev?[['zone','By zone'],['unit','By billing unit'],['client','By client'],['stakeholder','By stakeholder'],['manager','By branch manager']]:[['zone','By zone'],['location','By location'],['client','By client'],['stakeholder','By stakeholder'],['manager','By branch manager']]).map(([v,l])=>el('option',{value:v},l)));
  const host=el('div'),tr=el('div'),det=el('div');const F=rev?fmtL:fmt;
- box.append(el('h3',{},'Organic vs actual — growth beyond business as usual'),el('p',{class:'note'},(rev?'Measure: actual billed revenue. Organic revenue = organic cases × the invoiced revenue per case of the last three completely billed months, adjusted for the month’s tracker rate. ':'Measure: cases. Organic = the business expected with no special effort, from each location × client’s recent level, the usual seasonal pattern and working days. ')+'For each comparison: growth beyond organic = actual growth − organic growth (= effort now − effort then). An estimate, not proof of cause.'),
+ box.append(el('h3',{},'Organic vs actual — growth beyond business as usual'),el('p',{class:'note'},(rev?'Measure: actual billed revenue. Organic revenue = organic cases (50% MoM, 40% QoQ, 10% YoY basis) × the invoiced revenue per case of the last three completely billed months, adjusted for the month’s tracker rate. ':'Measure: cases. Organic = the business expected with no special effort, blended from each location × client’s last month (MoM, 50%), last quarter with its trend (QoQ, 40%) and its own pattern for the same month last year (YoY, 10%), with the usual seasonal pattern and working days. ')+'For each comparison: growth beyond organic = actual growth − organic growth (= effort now − effort then). An estimate, not proof of cause.'),
   el('div',{class:'tools'},el('label',{class:'note'},'Comparison ',ps),gs),host,tr,det);
  if(!PER.length){host.append(el('p',{class:'note'},'No comparison with an organic estimate is available for this selection.'))}
  async function load(){host.innerHTML='';if(!PER.length)return;const per=ps.value;OG.period=per;const c=C0[per]||{};const O=c.organic||{};
@@ -1369,11 +1382,11 @@ function organicSection(box,month,f,G){const rev=S.measure==='revenue';const C0=
   let J;try{J=await growthApi(month,f,{p:{group:gs.value}})}catch(e){wait.textContent='Breakdown unavailable: '+e.message;return}
   wait.remove();const rows=(J.groups||[]).filter(g=>g.id===per).map(g=>({...g,org_growth:g.org_cur!=null&&g.org_prev!=null?g.org_cur-g.org_prev:null}));
   const mv=v=>v==null?'–':chgEl(v,null,rev);
-  host.append(table(rows,[{key:'group',label:{zone:'Zone',location:'Location',unit:'Billing unit',client:'Client',stakeholder:'Stakeholder'}[gs.value]||'Group'},
+  host.append(table(rows,[{key:'group',label:{zone:'Zone',location:'Location',unit:'Billing unit',client:'Client',stakeholder:'Stakeholder',manager:'Branch manager (mapped)'}[gs.value]||'Group'},
    {key:'cur',label:'Actual (current)',num:1,fmt:F},{key:'prev',label:'Actual (earlier)',num:1,fmt:F},{key:'chg',label:'Actual growth',num:1,fmt:mv,raw:r=>r.chg},{key:'pct',label:'Growth %',num:1,fmt:v=>v==null?'–':pctS(v)},
    {key:'org_cur',label:'Organic (current)',num:1,fmt:F},{key:'org_prev',label:'Organic (earlier)',num:1,fmt:F},{key:'org_growth',label:'Organic growth',num:1,fmt:mv,raw:r=>r.org_growth},
    {key:'beyond',label:'Growth beyond organic',num:1,fmt:mv,raw:r=>r.beyond},{key:'effort_cur',label:'Effort now',num:1,fmt:mv,raw:r=>r.effort_cur},{key:'effort_prev',label:'Effort then',num:1,fmt:mv,raw:r=>r.effort_prev},{key:'pairs',label:'Pairs',num:1,fmt:fmt}],
-   {name:`organic_${S.measure}_${per}_${gs.value}.csv`,rowAction:gs.value==='unit'?null:(r=>entityCtx(gs.value,r.group,month,f))}),
+   {name:`organic_${S.measure}_${per}_${gs.value}.csv`,rowAction:gs.value==='unit'||gs.value==='manager'?null:(r=>entityCtx(gs.value,r.group,month,f))}),
    el('p',{class:'note'},'Organic columns sum pairs with an organic estimate in both periods; actual columns include every pair. Group totals reconcile to the scorecard.'))}
  ps.onchange=load;gs.onchange=load;load();
  if(rev){const T=((G&&G.trend)||[]).filter(t=>t.status==='complete'&&t.billed!=null);if(T.length){const cv=el('canvas');const k=C();
@@ -1383,7 +1396,7 @@ function organicSection(box,month,f,G){const rev=S.measure==='revenue';const C0=
  else{const d=el('details',{class:'card',style:'margin-top:12px'},el('summary',{},'This month in detail — organic so far, projection and branch activity (cases)'));det.append(d);let done=false;d.addEventListener('toggle',()=>{if(d.open&&!done){done=true;const b=el('div');d.append(b);organicMonthDetail(b,month,f)}})}}
 function organicMonthDetail(box,month,f){const gs=el('select',{'aria-label':'Organic breakdown'},[['zone','By zone'],['location','By location'],['client','By client'],['stakeholder','By stakeholder'],['pair','By location × client']].map(([v,l])=>el('option',{value:v},l)));
  const ms=el('div',{class:'seg',role:'group','aria-label':'Measure'},[['cases','Cases'],['revenue','Expected min. revenue']].map(([v,l],i)=>el('button',{class:'btn'+(i?'':' on'),'data-v':v},l)));let meas='cases';
- const host=el('div'),tr=el('div');box.append(el('h3',{},'Organic so far this month'),el('p',{class:'note'},'Organic = the business we would expect with no special effort, from each location–client\'s own recent level, the usual seasonal pattern and working days. Above it = effort growth; below it = needs attention.'),
+ const host=el('div'),tr=el('div');box.append(el('h3',{},'Organic so far this month'),el('p',{class:'note'},'Organic = the business we would expect with no special effort, blended from each location–client\'s last month (MoM 50%), last quarter with its trend (QoQ 40%) and its own same-month pattern last year (YoY 10%), with the usual seasonal pattern and working days. Above it = effort growth; below it = needs attention.'),
   el('div',{class:'tools'},gs,ms),host,tr);
  async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading…'));let J;try{J=await api('organic',{month,filters:f,group:gs.value,measure:meas})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},e.message));return}
   host.innerHTML='';const T=J.total||{};const money=meas==='revenue';const v=x=>money?inr(x):fmt(x);
@@ -1448,7 +1461,8 @@ async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a gla
 /* Tracker: organic columns + per-cell explanation */
 function ztOrgCell(J,x,kind){const O=J.organic||{};const org=x.org;if(org==null)return null;const td=org*(O.share==null?1:O.share);
  const val=kind==='org'?org:kind==='otd'?td:(x.mtd||0)-td;
- const ex=orgExplain({title:'Organic — '+[x.loc,x.cli].filter(Boolean).join(' · '),v:x.ov||[0,0,0],mon:[O.m1,O.m2,O.m3],wd:[O.wd1,O.wd2,O.wd3],si:[O.si1,O.si2,O.si3],wdT:O.wd,siT:O.si,share:O.share,k:O.k,kk:O.kk,actual:x.mtd||0,rows:x.t==='leaf'?1:(x.k||x.mem)});
+ const ex=orgExplain({title:'Organic — '+[x.loc,x.cli].filter(Boolean).join(' · '),v:x.ov||[0,0,0],mon:[O.m1,O.m2,O.m3],wd:[O.wd1,O.wd2,O.wd3],si:[O.si1,O.si2,O.si3],wdT:O.wd,siT:O.si,share:O.share,k:O.k,kk:O.kk,actual:x.mtd||0,rows:x.t==='leaf'?1:(x.k||x.mem),
+  org:x.org,b:x.ob?{mom:x.ob[0],qoq:x.ob[1],yoy:x.ob[2],ny:x.ob[3],orgy:x.ob[4],qtr:x.ob[5],ysh:x.ob[6]}:null});
  return {val,ex}}
 
 /* ---------- Like-for-like (Growth) ---------- */
@@ -1705,6 +1719,40 @@ function penaltySection(box,month,f,manage=false){const host=el('div'),form=el('
  drawForm();load()}
 
 /* ---------- WEF-dated group mapping (Data quality) ---------- */
+/* ---------- Branch managers (effective-dated; Admin → Master data & mapping) ---------- */
+async function branchMgrUI(box){box.append(el('h3',{style:'margin-top:0'},'Branch managers (WEF-dated)'),
+  el('p',{class:'note'},'One manager per location, optionally a different manager for one client at that location (that row wins for the client). Dates are inclusive; leave "from" empty when the start is not known. Growth rankings, drills and Ask Crux show the manager mapped for each period — mapped responsibility, not proof of who caused a change. Changes are audited; a wrong row is withdrawn (kept for audit), not erased.'));
+ const msg=el('p',{class:'note'},'Loading…'),host=el('div'),panel=el('div');box.append(msg);
+ const editor=el('input',{type:'text',placeholder:'Your name (audit trail)','aria-label':'Your name for the audit trail',style:'max-width:200px'});try{editor.value=localStorage.getItem('crux_editor')||''}catch{}editor.onchange=()=>{try{localStorage.setItem('crux_editor',editor.value)}catch{}};
+ const locs=(S.meta.locations||[]).filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label));
+ const loc=el('select',{'aria-label':'Location'},[el('option',{value:''},'Location…'),...locs.map(l=>el('option',{value:l.id},l.label))]);
+ const fam=el('select',{'aria-label':'Client (optional)'},[el('option',{value:''},'All clients at the location')]);
+ const name=el('input',{type:'text',placeholder:'Branch manager name','aria-label':'Branch manager name',maxlength:80});
+ const from=el('input',{type:'date','aria-label':'With effect from'}),to=el('input',{type:'date','aria-label':'Until (optional)'});
+ const endPrev=el('input',{type:'checkbox','aria-label':'End the current assignment the day before'});endPrev.checked=true;
+ const note=el('input',{type:'text',placeholder:'Note (optional)','aria-label':'Note',maxlength:300});
+ const out=el('span',{class:'note'});const save=el('button',{class:'btn primary',type:'button'},'Add assignment');
+ const lbl=(t,x)=>el('label',{class:'note',style:'display:inline-flex;gap:4px;align-items:center'},t,x);
+ box.append(el('div',{class:'tools',style:'flex-wrap:wrap'},loc,fam,name,lbl('from',from),lbl('to',to),lbl('end the current one the day before',endPrev),note,editor,save,out),panel,host);
+ const call=async p=>{const ed=editor.value.trim();if(p.op==='list')return adminCall('branch_manager',{op:'list'});if(!ed)throw new Error('Enter your name for the audit trail first.');try{localStorage.setItem('crux_editor',ed)}catch{}return adminCall('branch_manager',{...p,editor:ed})};
+ save.onclick=async()=>{out.className='note';if(!loc.value){out.textContent='Choose a location.';return}if(name.value.trim().length<2){out.textContent='Enter the manager’s name.';return}
+  save.disabled=true;out.textContent='Saving…';try{const r=await call({op:'add',location_id:+loc.value,client_family:fam.value||null,manager:name.value.trim(),valid_from:from.value||null,valid_to:to.value||null,end_previous:endPrev.checked,note:note.value.trim()||null});
+   out.textContent=`Saved (assignment ${r.id}). Rankings and Ask use it from the next load.`;name.value='';note.value='';await load()}catch(e){out.className='bad';out.textContent=e.message}finally{save.disabled=false}};
+ const stat=r=>!r.active?'withdrawn':r.current?'current':(r.valid_from&&r.valid_from>new Date(Date.now()+19800000).toISOString().slice(0,10))?'future':'past';
+ function act(r){panel.innerHTML='';if(!r.active)return;const d=el('input',{type:'date','aria-label':'Last day'}),why=el('input',{type:'text',placeholder:'Reason for withdrawing (5+ characters)','aria-label':'Reason',maxlength:300});const o=el('span',{class:'note'});
+  panel.append(el('div',{class:'banner'},el('p',{style:'margin:0 0 6px'},`${r.location}${r.client_family?' · '+r.client_family:' · all clients'} · ${r.manager} · ${r.valid_from?ddmm(r.valid_from):'no start date'} – ${r.valid_to?ddmm(r.valid_to):'open'}`),
+   el('div',{class:'tools',style:'flex-wrap:wrap'},lbl('last day',d),el('button',{class:'btn',type:'button',onclick:async()=>{if(!d.value){o.textContent='Pick the last day.';return}try{await call({op:'end',id:r.id,valid_to:d.value});panel.innerHTML='';await load()}catch(e){o.className='bad';o.textContent=e.message}}},'End assignment'),
+    why,el('button',{class:'btn',type:'button',onclick:async()=>{if(why.value.trim().length<5){o.textContent='Give a reason (5+ characters).';return}try{await call({op:'withdraw',id:r.id,reason:why.value.trim()});panel.innerHTML='';await load()}catch(e){o.className='bad';o.textContent=e.message}}},'Withdraw (entered by mistake)'),
+    el('button',{class:'btn sm',type:'button',onclick:()=>{panel.innerHTML=''}},'Close'),o)))}
+ async function load(){let J;try{J=await call({op:'list'})}catch(e){msg.className='bad';msg.textContent='Could not load branch managers: '+e.message;return}
+  if(fam.options.length===1)(J.families||[]).forEach(x=>fam.append(el('option',{value:x},x)));
+  const R=(J.rows||[]).map(r=>({...r,_st:stat(r)}));const U=J.unassigned||[];
+  msg.className='note';msg.textContent=`${fmt(R.filter(r=>r._st==='current').length)} current assignments · ${fmt(R.length)} rows including history`+(U.length?` · locations with no current manager: ${U.map(u=>u.location).join(', ')}`:' · every location has a current manager');
+  host.innerHTML='';host.append(table(R,[{key:'location',label:'Location'},{key:'client_family',label:'Client',fmt:v=>v||'All clients'},{key:'manager',label:'Branch manager'},
+   {key:'valid_from',label:'From',fmt:v=>v?ddmm(v):'–'},{key:'valid_to',label:'To',fmt:v=>v?ddmm(v):'open'},{key:'_st',label:'Status',fmt:v=>el('span',{class:'chip '+(v==='current'?'good':v==='withdrawn'?'bad':'')},v)},
+   {key:'note',label:'Note',fmt:v=>v||'–'},{key:'changed_by',label:'Changed by'},{key:'changed_at',label:'Changed',fmt:v=>v?String(v).slice(0,16).replace('T',' '):'–'},
+   {key:'id',label:'Change',fmt:(v,r)=>r.active?el('button',{class:'btn sm',type:'button',onclick:()=>act(r)},'End / withdraw…'):'–',raw:r=>r.id}],{name:'branch_managers.csv',pageSize:25,defaultHidden:['changed_by','changed_at']}))}
+ await load()}
 async function groupUI(box){box.append(el('h3',{},'Groups & mappings (WEF-dated)'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let G;try{G=await adminCall('groups',{})}catch(e){msg.textContent='Group editing is not available yet ('+e.message+').';return}msg.remove();
  const ATTR={zone_group:'Zone group',region:'Region',stakeholder:'Stakeholder'};
@@ -1830,7 +1878,7 @@ function ddTile(t,fn,label){t.classList.add('dd');t.tabIndex=0;t.setAttribute('r
  t.onclick=e=>{if(e.target.closest('button,a,.qpop'))return;if(String(getSelection()).trim())return;DD.go(fn(),t)};t.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();DD.go(fn(),t)}};return t}
 const DEF={mtd:'Cases so far = month-to-date cases from the latest Zonal Tracker report of the month.',target:'Target = monthly target cases from the Zonal Tracker.',
  likely:'Likely month end = the Overview projection: cases so far ÷ the share of a month normally done by this working day (range = weakest to strongest recent month).',
- organic:'Organic expectation = cases expected from recent levels, seasonality and working days without extra effort.',previous:'Same point last month = last month\'s report on or before the same day.',
+ organic:'Organic expectation = cases expected without extra effort: 50% last month (MoM), 40% last quarter with its trend (QoQ), 10% the same month last year (YoY), with seasonality and working days.',previous:'Same point last month = last month\'s report on or before the same day.',
  force1:'Force1 cases = cases recorded in the Force1 operational system (by branch). They are counted differently from tracker figures.'};
 const DDK={
  info:async(o,c)=>{o.append(el('p',{},c.text||'No further detail is available for this item.'),el('p',{class:'note'},'This is the lowest level the data supports here.'))},
@@ -2219,7 +2267,7 @@ const GLOSS={
  fieldexec:['Field executive','A person who only submits field visit reports in Force1 and never creates cases or handles document/tele checks.'],
  backoffice:['Back office','Anyone who creates cases or points, or handles document or tele checks. Field visits they submit are counted as manual (outside the field executive route).'],
  lfl:['Like-for-like','Compares the same stretch of days: e.g. this month up to the 9th vs last month up to the 9th — never a part month against a full month.'],
- organic:['Organic expectation','The business we would expect with no special effort: built from each location–client\'s own recent level, the usual seasonal pattern for this month and the number of working days. Click the ? next to a figure to see exactly how it was calculated.'],
+ organic:['Organic expectation','The business we would expect with no special effort: a blend of each location–client\'s last month (MoM 50%), last quarter with its trend (QoQ 40%) and its own pattern for this month last year (YoY 10%), with the usual seasonal pattern and the number of working days. Click the ? next to a figure to see exactly how it was calculated.'],
  effort:['Effort growth','Business above the organic expectation (actual − organic). A negative value means the location is below what it would normally do — investigate.'],
  coverage:['Coverage','Share of a client\'s verified active branches that sent Crux at least one case in the last 6 months.'],
  attrition:['Attrition','People who left in the month ÷ average headcount of the month.'],

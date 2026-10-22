@@ -59,6 +59,14 @@ Admins (admin key, checked on the server): date, location, client (optional), am
 
 ## Organic benchmark
 Recomputed by the `bi-organic-refresh` job (every 10 minutes, only when data changed; < 1 s). Manual: `select bi.organic_refresh();`.
+Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend (QoQ), 10 % the location × client's own pattern for the same month last year (YoY); see METRICS. Check: `select bi.test_organic();` (≈ 10 s).
+
+## Branch managers (Admin → Master data & mapping)
+- **Hand-over:** choose the location (and the client only when one client has its own manager there), type the new manager, set *from* = first day, keep *end the current one the day before* ticked → Add assignment. The previous row gets its last day automatically and the audit row records it.
+- **Correct a wrong row:** *End / withdraw…* → *Withdraw (entered by mistake)* with a reason. The row is kept for audit and no longer used. Then add the correct row.
+- **Stop an assignment:** *End / withdraw…* → last day → *End assignment*.
+- Rankings, drills, the organic breakdown *By branch manager* and Ask Crux use the change from the next load (the response cache follows the audit log).
+- Names are entered here (or loaded by the owner with SQL); never put them in migrations or the repository.
 
 ## Lumen bill extractor (shares this project)
 - **What:** the bill-extraction app at cruxindia.github.io/lumen_billextractor uses the `public` schema (12 tables: invoices, applicant_lines, checks, field_confidence, ingest_log, failed_uploads, payments, branches, clients, district_codes, crux_identity, review_progress), its functions (sync_invoice, lookup_branch, …) and the storage buckets `ocr` (OCR engine, public) and `bills` (bill files, private). **Do not delete any of these; never run `remove_old_invoice_app.sql` again** (SOW D84).

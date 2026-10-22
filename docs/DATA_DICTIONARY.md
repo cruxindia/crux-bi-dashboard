@@ -137,3 +137,21 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.api_collections` | `flow` months gain expected minimum, cash allocated, gross / TDS in ledger, billing status; top-level `billing` |
 | `bi.test_growth_rev(month)` | 14 SQL checks of the revenue and cases comparisons, recomputed from base tables |
 | `bi.test_fin_fixtures()` | 15 controlled finance fixtures through the real ingest and derive, always rolled back |
+
+## Organic blend and branch managers (22-Oct-2026, wave 093)
+| Object | Change / purpose |
+|---|---|
+| `bi.organic_store` | + `b_mom`, `b_qoq`, `b_yoy` (the three bases, cases), `q_trend` (bounded quarter trend, 1 when not usable), `y_shape` (bounded same-month shape last year; null when not usable); `organic` = 0.5·MoM + 0.4·QoQ + 0.1·YoY, or (0.5·MoM + 0.4·QoQ) ÷ 0.9 without YoY. Unchanged rows are not rewritten |
+| `bi.organic_pairs(month)` | Independent single-month implementation used by `bi.test_organic` to check the stored figures |
+| `bi.test_organic()` | Store = function (< 0.1 %), three largest pairs recomputed one by one from monthly tracker figures (± 0.2 or 0.05 %), API total and zone rows reconcile, effort identity |
+| `bi.api_organic` | `inputs` gain `organic_cases`, `b_mom`, `b_qoq`, `b_yoy`, `rows_with_yoy`, `organic_with_yoy`, and `q_trend` / `y_shape` for a single row; new `formula` and `why` texts |
+| `bi.api_tracker_sheet` | Each row's `ob` = [MoM, QoQ, YoY bases, rows with YoY, organic of those rows, quarter trend, YoY shape] for the per-cell explanation |
+| `bi.branch_manager` | id, location_id, client_family (null = whole location), manager, valid_from / valid_to (inclusive, null = open), active (false = withdrawn, kept), source, note, changed_by, changed_at. RLS on; reachable only through the admin RPC. **Names are data, loaded with `execute_sql`, never in migrations** |
+| `bi.branch_manager_at(location, family, date)` | Manager on that date: client-family row first, then location row; latest start wins |
+| `bi.branch_manager_admin(actor, p)` | `list` (rows, current flag, locations without a current manager, client families) · `add` (overlap refused unless `end_previous`; the audit row records any assignment it ended) · `end` (last day) · `withdraw` (reason ≥ 5 characters). Audit actions `branch_manager_add` / `_end` / `_withdraw` / `_load` (these do not mark derived tables stale) |
+| `public.bi_admin('branch_manager', p)` | Admin-key path to the above (actor `admin-key:<editor>`) |
+| `bi.api_growth_rev` pairs | + `branch_manager`, `branch_manager_prev`, `branch_manager_changed`, `branch_manager_shared`, `branch_manager_missing`; `group: 'manager'`; confidence notes for a changed manager and for different managers across combined locations |
+| `bi.api_growth` pairs | + `branch_manager`, `branch_manager_prev`, `branch_manager_changed`; `group: 'manager'`; confidence note when the manager changed; `method.organic` and `method.owner` texts updated |
+| `bi.ask_h_revenue(m, f, q)` | Ask Crux handler for revenue-growth questions (period, focus, measure detection); findings with Stakeholder (mapped) and Branch manager (mapped) |
+| `public.bi_ai_gateway` | Name scrubbing also covers `bi.branch_manager` names (bi_093e) |
+
