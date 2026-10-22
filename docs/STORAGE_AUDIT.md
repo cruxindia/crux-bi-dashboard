@@ -246,4 +246,4 @@ Row counts were checked after the rewrite (92,239 / 13,272 / 63,465 / 686 / 4,29
 | Archive old visit history | ≈ 35 MB per month archived | Owner decision and tested restore | SOW Q10/Q19 |
 | Not candidates | — | Audit log, raw case/visit history, tracker rows, finance uploads and parts (evidence), invoice/receipt identity, mapping history, branch master/history | Kept |
 
-**Headroom and forecast:** 484.9 MB (all databases, 05:16 UTC) → 15.1 MB below 500,000,000 bytes, 39.4 MB below 500 MiB. At ≈ 42 MB of new Force1 data per month that is about **11 days (≈ 2-Nov-2026)**, or ≈ 28 days if the limit is 500 MiB. The owner script (≈ 29 MB) adds about 3 weeks. The Pro-plan or archive decision is urgent.
+**Headroom and forecast:** 486.2 MB (all databases, 486,158,513 bytes at 05:37 UTC after the live test runs refilled the response cache) → 13.8 MB below 500,000,000 bytes, 38.1 MB below 500 MiB. At ≈ 42 MB of new Force1 data per month that is about **10 days (≈ 1-Nov-2026)**, or ≈ 27 days if the limit is 500 MiB. The owner script (≈ 29 MB) adds about 3 weeks. The Pro-plan or archive decision is urgent.

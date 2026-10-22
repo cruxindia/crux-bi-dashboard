@@ -13,8 +13,9 @@
 **Assumptions.** Invoice month ≈ service month (evidence in D121); a month is completely billed 30 days after its end; zone-level invoices cannot be split across cities; tracker revenue is an expectation (cases × agreed rate).
 **Deliverables.** Migrations bi_092a–bi_092n; front end (measure switch, revenue scorecard/ranking/organic/trend, Overview highlights, Business performance and Cash & receivables views, content-hash import guard); SQL tests `bi.test_growth_rev` (14) and `bi.test_fin_fixtures` (15); UI tests `test_rev_ui` (14) plus updated admin/finance suites; docs (METRICS revenue dictionary, DATA_DICTIONARY, OPERATIONS, LIMITATIONS L28–L34, STORAGE_AUDIT §10, TEST_REPORT, this file); owner script extended.
 **Method.** Audit → dictionary → finance grain and idempotency → revenue facts / billing completeness / units → revenue organic + back-test → API (revenue and cases) → UI → storage → fixtures and live recalculation tests → review → fixes → deploy → live verification.
-**Risks.** Only Mar–Aug 2026 invoices are complete, so QoQ/YoY/YTD on invoices are unavailable until 2027 (benchmarks shown); revenue organic is noisier per pair (WAPE 29 %); storage headroom ≈ 11 days to 500,000,000 bytes (Q19).
+**Risks.** Only Mar–Aug 2026 invoices are complete, so QoQ/YoY/YTD on invoices are unavailable until 2027 (benchmarks shown); revenue organic is noisier per pair (WAPE 29 %); storage headroom ≈ 10 days to 500,000,000 bytes (Q19).
 **Acceptance.** Requirement audit "22-Oct-2026 09:20 brief" at the end of this file.
+**Status (22-Oct-2026, 11:10 IST, live).** Deployed commit 70ede23; live page md5 01dfd721… equals the build. SQL: revenue 14/14, finance fixtures 15/15, cases growth 14/14, wave/addendum/drill 4/4 · 8/8 · 6/6, acceptance 26/27 (T21 known). Security 33/33. Live UI: revenue 14/14, admin/growth 40/40, finance 22/22, Stage-2 13/13, Ask UI 12/12. Storage 486.2 million bytes (all databases) at 05:37 UTC — owner script and plan decision urgent (Q19).
 
 ## Wave 22-Oct-2026 — implementation, growth analytics and database optimisation
 **Objective.** Complete the management experience (one admin entry point, simpler navigation, explicit MoM/YoY/QoQ, client × location growth with organic expectation and attribution, branch-opportunity evidence, wider drill-down) and resolve the database-space problem from live evidence.
@@ -200,7 +201,7 @@
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app.
 18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth.
-19. **Storage (urgent):** 484.9 million bytes (all databases) on 22-Oct 05:16 UTC; at ≈ 42 MB/month it reaches 500,000,000 bytes around 2-Nov-2026 (about three weeks later after the owner script, STORAGE_AUDIT §10). Pro plan or an archive design is needed now (see Q10).
+19. **Storage (urgent):** 486.2 million bytes (all databases) on 22-Oct 05:37 UTC; at ≈ 42 MB/month it reaches 500,000,000 bytes around 1-Nov-2026 (about three weeks later after the owner script, STORAGE_AUDIT §10). Pro plan or an archive design is needed now (see Q10).
 2. Confirm the D18 reading of tracker columns M and N.
 
 3. ~~Expense column L~~ — resolved 14-Oct: ignore (data incorrect).
