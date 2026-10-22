@@ -207,6 +207,11 @@ th .qi{width:14px;height:14px;font-size:9px}
 'use strict';
 const CFG={project:'czdjbbhxboweawqbjywr',url:'https://czdjbbhxboweawqbjywr.supabase.co',key:'sb_publishable_J7fFRVLVB_h5SHZcquWfXA_p_O30PkF',server:'Supabase'};
 const S={mode:null,mcp:null,sb:null,role:null,email:null,meta:null,section:'overview',charts:[],adminKey:(()=>{try{return sessionStorage.getItem('crux_admin_key')}catch{return null}})()};
+/* Measure for growth, organic and finance business analysis: Actual billed revenue (default) or Cases. One shared choice; switching re-renders the whole page. */
+S.measure=(()=>{try{return sessionStorage.getItem('crux_measure')==='cases'?'cases':'revenue'}catch{return 'revenue'}})();
+function setMeasure(v){v=v==='cases'?'cases':'revenue';if(S.measure===v)return;S.measure=v;try{sessionStorage.setItem('crux_measure',v)}catch{}render()}
+function measureSeg(){return el('div',{class:'seg meas',role:'group','aria-label':'Measure for growth and organic analysis'},[['revenue','Actual billed revenue'],['cases','Cases']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(S.measure===k?' on':''),'aria-pressed':String(S.measure===k),'data-measure':k,onclick:()=>setMeasure(k)},l)))}
+const growthApi=(m,f,extra={})=>api('growth',{month:m,filters:f,...(S.measure==='revenue'?{measure:'revenue'}:{}),...extra});
 const $=s=>document.querySelector(s), el=(t,a={},...c)=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(v!=null)e.setAttribute(k,v)}c.flat().forEach(x=>x!=null&&e.append(x.nodeType?x:document.createTextNode(String(x))));return e};
 const nf=new Intl.NumberFormat('en-IN'),fmt=v=>v==null||isNaN(v)?'–':nf.format(Math.round(v)),pct=v=>v==null||isNaN(v)?'–':(v*100).toFixed(1)+'%',hrs=v=>v==null?'–':(v>=48?(v/24).toFixed(1)+' d':(+v).toFixed(1)+' h'),inr=v=>v==null?'–':'₹'+nf.format(Math.round(v));
 const mlabel=m=>m?new Date(m+'T00:00:00Z').toLocaleDateString('en-IN',{month:'short',year:'numeric',timeZone:'UTC'}):'–';
@@ -219,7 +224,7 @@ function sqlFor(fn,a){const m=a.month,f=a.filters||{};const g=k=>{const v=a.grou
  case'zonal':return`bi.api_zonal(${dt(a.snapshot)},${js(f)})`;case'daily':return`bi.api_daily(${dt(m)},${js(f)})`;case'monthly':return`bi.api_monthly(${dt(a.from)},${dt(a.to)},${js(f)},${g('monthly')})`;
  case'force':return`bi.api_force(${dt(m)},${js(f)})`;case'force_trend':return`bi.api_force_trend(${js(f)})`;case'case_tat':return`bi.api_case_tat(${dt(m)},${js(f)},${g('case_tat')})`;
  case'point_tat':return`bi.api_point_tat(${dt(m)},${js(f)},${g('point_tat')})`;case'manual_tat':return`bi.api_manual_tat(${dt(m)},${js(f)})`;case'employees':return`bi.api_employees(${dt(m)},${js(f)})`;
- case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'collections':return`bi.api_collections(${dt(m)},${js(f)})`;case'growth':return`bi.api_growth(${dt(m)},${js(f)},${js(a.p||{})})`;case'fin_review':return`bi.api_fin_review(${js(a.p||{})})`;case'fin_records':return`bi.api_fin_records(${js(a.p||{})})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'drill_ops':return`bi.api_drill_ops(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'none')},${lit(['tat','force1','coverage','lifecycle','revenue','penalty'].includes(a.part)?a.part:'tat')})`;case'tat_summary':return`bi.tat_summary(${dt(m)},${js(f)},${lit(['total','zone','location','client','unit','branch','pin','employee'].includes(a.group)?a.group:'total')})`;case'tat_trend':return`bi.tat_trend(${js(f)},${Math.min(24,Math.max(2,parseInt(a.months)||12))})`;case'force1_recon':return`bi.api_force1_recon(${dt(m)},${js(f)})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
+ case'insights':return`bi.api_insights(${dt(m)},${js(f)})`;case'expense':return`bi.api_expense(${dt(a.snapshot)})`;case'force1':return`bi.api_force1(${dt(m)},${js(f)})`;case'collections':return`bi.api_collections(${dt(m)},${js(f)})`;case'growth':return a.measure==='revenue'?`bi.api_growth_rev(${dt(m)},${js(f)},${js(a.p||{})})`:`bi.api_growth(${dt(m)},${js(f)},${js(a.p||{})})`;case'fin_review':return`bi.api_fin_review(${js(a.p||{})})`;case'fin_records':return`bi.api_fin_records(${js(a.p||{})})`;case'branches':return`bi.api_branches(${js(f)})`;case'lfl':return`bi.api_lfl(${dt(m)},${js(f)},${lit(['location','client','stakeholder','zone'].includes(a.group)?a.group:'location')})`;case'tracker_sheet':return`bi.api_tracker_sheet(${dt(a.snapshot)},${js(f)},${a.compare?dt(a.compare):'null'},${Math.min(24,Math.max(0,parseInt(a.history)||0))})`;case'compare':return`bi.api_compare(${js({a:a.a,b:a.b,group:a.group})},${js(f)})`;case'organic':return`bi.api_organic(${dt(m)},${js(f)},${lit(['location','client','zone','stakeholder','region','pair','total'].includes(a.group)?a.group:'location')},${lit(a.measure==='revenue'?'revenue':'cases')})`;case'organic_trend':return`bi.api_organic_trend(${js(f)},${Math.min(24,Math.max(1,parseInt(a.months)||12))})`;case'potential':return`bi.api_potential(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')},${lit(['location','zone','client','stakeholder','total'].includes(a.group)?a.group:'location')})`;case'penalty':return`bi.api_penalty(${dt(m)},${js(f)})`;case'business_count':return`bi.api_business_count(${dt(m)},${js(f)},${lit(a.measure==='cases'?'cases':'revenue')})`;case'branch_coverage':return`bi.api_branch_coverage(${js(f)})`;case'branch_research':return`bi.api_branch_research(${js(f)})`;case'ai_status':return'bi.api_ai_status()';case'drill':return`bi.api_drill(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'zone')},${js(a.p||{})})`;case'branch_detail':return`bi.api_branch_detail(${js(a.p||{})})`;case'drill_ops':return`bi.api_drill_ops(${dt(m)},${js(f)},${lit(['zone','location','client','branch','none'].includes(a.level)?a.level:'none')},${lit(['tat','force1','coverage','lifecycle','revenue','penalty'].includes(a.part)?a.part:'tat')})`;case'tat_summary':return`bi.tat_summary(${dt(m)},${js(f)},${lit(['total','zone','location','client','unit','branch','pin','employee'].includes(a.group)?a.group:'total')})`;case'tat_trend':return`bi.tat_trend(${js(f)},${Math.min(24,Math.max(2,parseInt(a.months)||12))})`;case'force1_recon':return`bi.api_force1_recon(${dt(m)},${js(f)})`;case'branch_reviews':return`bi.branch_admin('viewer',${js({op:'review_list',status:a.status||'open',limit:a.limit||200})})`;case'attrition':return`bi.api_attrition(${dt(m)},${js(f)})`;case'exceptions':return'bi.api_exceptions(300)';case'mapping_queue':return'bi.api_mapping_queue()';}
  throw new Error('unknown fn '+fn)}
 function parseSqlPayload(p){let rows=p;if(p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.result==='string')p=p.result;
  if(typeof p==='string'){const m=p.match(/<untrusted-data-[^>]+>\s*([\s\S]*?)\s*<\/untrusted-data-/);rows=JSON.parse(m?m[1]:p)}
@@ -324,16 +329,24 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null))}
  {const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((fc,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:fc}))})}
  const pcb=el('div',{class:'card',style:'margin:12px 0'},el('h3',{style:'margin-top:0'},'Period comparison'),el('p',{class:'note'},'Loading…'));s.append(pcb);
- api('growth',{month:m,filters:f}).then(G=>{if(!pcb.isConnected)return;pcb.innerHTML='';pcb.append(el('h3',{style:'margin-top:0'},'Period comparison'),el('p',{class:'note'},`Completed month ${mlabel(G.completed_month)} · completed quarter ${G.completed_quarter_label}`+(G.partial?` · month to date compared on the same working day (${G.workdays_elapsed})`:'')));growthScorecard(pcb,G,{compact:true,onPick:()=>go('growth')});
-  const P=G.pairs||[];const up=P.filter(r=>r.mom.chg>0).sort((a,b)=>b.mom.chg-a.mom.chg).slice(0,3),dn=P.filter(r=>r.mom.chg<0).sort((a,b)=>a.mom.chg-b.mom.chg).slice(0,3);
-  pcb.append(el('div',{class:'grid2'},moverList(`Biggest gains — ${mlabel(G.completed_month)} vs previous month`,up,G,f),moverList('Biggest declines',dn,G,f)),el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('growth')},'All client × location movements →')))})
+ growthApi(m,f).then(G=>{if(!pcb.isConnected)return;pcb.innerHTML='';const rev=G.measure==='revenue';
+  pcb.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},rev?'Period comparison — actual billed revenue':'Period comparison — cases'),measureSeg()));
+  if(rev&&G.available===false){pcb.append(el('p',{class:'note'},G.reason));return}
+  pcb.append(el('p',{class:'note'},rev?`Latest completely billed month ${mlabel(G.billing_month)} · invoices identified in the finance workbooks (ex-GST) · expected minimum revenue shown as a benchmark`:`Completed month ${mlabel(G.completed_month)} · completed quarter ${G.completed_quarter_label}`+(G.partial?` · month to date compared on the same working day (${G.workdays_elapsed})`:'')));
+  growthScorecard(pcb,G,{compact:true,onPick:()=>go('growth')});
+  if(rev){const c=(G.cards||{}).mom||{};const Se=c.settlement||{};if(c.available)pcb.append(el('p',{class:'note ovfin'},`${mlabel(G.billing_month)}: invoiced ${fmtL(c.current.billed)} vs expected minimum ${fmtL(c.current.expected)} (${pctS(c.billing_gap_pct)}) · ${fmt(c.current.invoices)} invoices · settled so far ${pct(Se.realisation)}, still open ${fmtL(Se.open)} · cash allocated ${fmtL(Se.cash_allocated)} (incl. GST) · organic estimate covers ${pct((c.organic||{}).covered_share)} of invoiced revenue.`))}
+  const M=moverSets(G);const per=mlabel(rev?G.billing_month:G.completed_month);
+  pcb.append(el('div',{class:'grid2'},moverList(`Biggest gains — ${per} vs previous month`,M.up,G,f),moverList('Biggest declines',M.dn,G,f),
+   moverList('Most growth beyond organic',M.bo,G,f),moverList('Furthest below organic',M.bn,G,f)),
+   el('p',{class:'note'},'Owners are the stakeholders mapped for the period — responsibility, not proof of cause. Organic is an estimate.'),
+   el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('growth')},rev?'All billing unit × client movements →':'All client × location movements →'),rev?el('button',{class:'btn',onclick:()=>{FV.view='cash';go('collections')}},'Collections and outstanding →'):null))})
   .catch(e=>{if(!pcb.isConnected)return;pcb.innerHTML='';pcb.append(el('p',{class:'note'},'Period comparison unavailable: '+e.message))});
  const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f);
  const ovx=el('div',{class:'split'});s.append(ovx);ovStrip(ovx,m,f);
  const f2=ov.force||{},ct=ov.case_tat||{};
  s.append(el('div',{class:'tiles ovsec'},tile('Achievement',pct(ov.achievement),`Shortfall ${fmt(ov.shortfall_cases)} cases`,ov.achievement<(wpace||0)?'bad':''),
   tile('Latest daily change',fmt(ov.latest_change),`${ov.prev_snapshot||''} → ${ov.as_of||''} (${(ov.latest_change_basis||'').replace(/_/g,' ')})`),
-  tile('Revenue (MTD)',inr(ov.revenue_actual),`${pct(ov.revenue_achievement)} of ${inr(ov.revenue_target)}`),
+  tile('Expected minimum revenue (MTD)',inr(ov.revenue_actual),`${pct(ov.revenue_achievement)} of ${inr(ov.revenue_target)} · Zonal Tracker cases × rate, not invoiced`),
   tile('Same day last month',fmt(ov.prev_month_same_day&&ov.prev_month_same_day.mtd),ov.prev_month_same_day?'as of '+ov.prev_month_same_day.snapshot:''),
   tile('Last month final',fmt(ov.prev_month_final),'Same month last year '+fmt(ov.same_month_last_year)),
   tile('Force1 utilisation (cases)',pct(f2.usage_pct),`${fmt(f2.matched_cases)} validated Force1 cases of ${fmt(f2.tracker_cases_covered)} business cases${f2.excess_cases?` · ${fmt(f2.excess_cases)} Force1 cases above the business count in ${fmt(f2.units_with_force_gt_tracker)} rows are under reconciliation (Data Health)`:''} · ${fmt(f2.tracker_cases_not_covered)} cases in locations not yet on Force1 reports`,f2.excess_cases?'warn':''),
@@ -578,25 +591,30 @@ function compareSection(box,f){const today=String((S.meta.freshness||{}).zonal_l
  go.onclick=run}
 
 /* ---------- Growth ---------- */
-const vGrowth=guard(async s=>{const f=filters();const months=S.meta.months;const to=$('#fMonth').value;const from=months[Math.min(months.length-1,months.indexOf(to)+17)]||months[months.length-1];
- s.append(el('h2',{},'Growth & trends'),el('p',{class:'lede'},'Is the business growing, where, and by more than business as usual? Completed months and quarters are compared in full; a partial month or quarter is compared at the same working day and labelled.'));
- const G=await api('growth',{month:to,filters:f});let RKH=null;
- const meas=el('div',{class:'seg',role:'group','aria-label':'Measure'},[['cases','Cases'],['revenue','Revenue']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(RK.meas===k?' on':''),'aria-pressed':String(RK.meas===k),onclick:e=>{RK.meas=k;meas.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});drawSc()}},l)));
- const sc=el('div');const drawSc=()=>{sc.innerHTML='';growthScorecard(sc,G,{meas:RK.meas,onPick:id=>{const p={mtd:'mtd',mom:'mom',qtd:'qoq',qoq:'qoq',yoy:'yoy',qyoy:'yoy',mtd_yoy:'mom'}[id]||'mom';RKH&&RKH.set(G.partial||p!=='mtd'?p:'mom')}})};
- s.append(el('div',{class:'tools'},el('strong',{},'Scorecard'),meas,el('span',{class:'note'},`Completed month ${mlabel(G.completed_month)} · completed quarter ${G.completed_quarter_label}`+(G.partial?` · ${mlabel(G.month)} to ${ddmm(G.as_of)} (working day ${G.workdays_elapsed} of ${G.workdays_in_month})`:'')+' · click a card for its movements')),sc);drawSc();
- const rk=el('div',{class:'card',style:'margin-top:6px'});s.append(rk);RKH=growthRanking(rk,G,f);s.append(oppBasis(G),growthMethod(G));
- const gsel=el('select',{'aria-label':'Breakdown'},GROUPS.monthly.map(x=>el('option',{value:x},x==='total'?'Total':'By '+x)));const box=el('div');
- s.append(el('h3',{},'Monthly trend'),el('p',{class:'note'},`Monthly business from ${mlabel(from)} to ${mlabel(to)}. The current month is month to date and is marked as such.`),el('div',{class:'tools'},gsel),box);
+const vGrowth=guard(async s=>{const f=filters();const months=S.meta.months;const to=$('#fMonth').value;const from=months[Math.min(months.length-1,months.indexOf(to)+17)]||months[months.length-1];const rev=S.measure==='revenue';
+ s.append(el('h2',{},'Growth & trends'),el('p',{class:'lede'},rev?'Is the business earning more, where, and by more than business as usual? Actual billed revenue = invoices identified in the finance workbooks (ex-GST); only completely billed months are compared. Expected minimum revenue (Zonal Tracker cases × rate) is shown beside it as a benchmark, never in its place.':'Is the business growing, where, and by more than business as usual? Completed months and quarters are compared in full; a partial month or quarter is compared at the same working day and labelled.'));
+ s.append(el('div',{class:'tools'},el('strong',{},'Measure'),measureSeg(),el('span',{class:'note'},rev?'Switching changes the scorecard, rankings, organic comparison, trend, exports and the Overview highlights.':'Cases view: operational volumes. Revenue figures here are expected minimum revenue.')));
+ const G=await growthApi(to,f);let RKH=null;
+ if(rev&&G.available===false){s.append(el('div',{class:'banner'},G.reason));return}
+ const sc=el('div');growthScorecard(sc,G,{onPick:id=>{const p=rev?(['mom','qtd','qoq','yoy'].includes(id)?id:'mom'):({mtd:'mtd',mom:'mom',qtd:'qoq',qoq:'qoq',yoy:'yoy',qyoy:'yoy',mtd_yoy:'mom'}[id]||'mom');RKH&&RKH.set(rev||G.partial||p!=='mtd'?p:'mom')}});
+ s.append(el('div',{class:'tools'},el('strong',{},'Scorecard'),el('span',{class:'note'},rev?`Latest completely billed month ${mlabel(G.billing_month)} · ${G.running_quarter_label} · click a card for its movements`:`Completed month ${mlabel(G.completed_month)} · completed quarter ${G.completed_quarter_label}`+(G.partial?` · ${mlabel(G.month)} to ${ddmm(G.as_of)} (working day ${G.workdays_elapsed} of ${G.workdays_in_month})`:'')+' · click a card for its movements')),sc);
+ if(rev&&G.billing)s.append(el('p',{class:'note'},G.billing.rule));
+ const rk=el('div',{class:'card',style:'margin-top:6px'});s.append(rk);RKH=growthRanking(rk,G,f);
+ const og=el('div');s.append(og);organicSection(og,to,f,G);
+ if(rev)revTrend(s,G,f);
+ else{const gsel=el('select',{'aria-label':'Breakdown'},GROUPS.monthly.map(x=>el('option',{value:x},x==='total'?'Total':'By '+x)));const box=el('div');
+ s.append(el('h3',{},'Monthly trend — cases'),el('p',{class:'note'},`Monthly business from ${mlabel(from)} to ${mlabel(to)}. The current month is month to date and is marked as such.`),el('div',{class:'tools'},gsel),box);
  async function load(){box.innerHTML='Loading…';const rows=await api('monthly',{from,to,filters:f,group:gsel.value});box.innerHTML='';
   const ms=[...new Set(rows.map(r=>r.month))].sort();const keys=[...new Set(rows.map(r=>r.key))];const tot={};rows.forEach(r=>tot[r.key]=(tot[r.key]||0)+(r.cases||0));keys.sort((a,b)=>tot[b]-tot[a]);const top=keys.slice(0,8);
   const cv=el('canvas');box.append(el('div',{class:'card'},el('div',{class:'chartbox',style:'height:320px'},cv)));const pal=['#1E4F8F','#C2892B','#2D7A57','#B23A30','#6B5CA5','#3E8EA8','#8A6D3B','#5A6676'];
   chart(cv,{type:'line',drill:(ds,i)=>entityCtx(gsel.value,top[ds],ms[i],f),data:{labels:ms.map(mlabel),datasets:top.map((k,i)=>({label:k,data:ms.map(m=>{const r=rows.find(x=>x.key===k&&x.month===m);return r?r.cases:null}),borderColor:pal[i],backgroundColor:pal[i],pointRadius:2,spanGaps:false}))},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false}}});
   const byKey={};rows.forEach(r=>{(byKey[r.key]=byKey[r.key]||{})[r.month]=r});const last=ms[ms.length-1],prev=ms[ms.length-2];const ly=ms.find(m=>m===(+last.slice(0,4)-1)+last.slice(4));
   const t=keys.map(k=>{const a=byKey[k];return{key:k,last:a[last]&&a[last].cases,prev:a[prev]&&a[prev].cases,ly:ly&&a[ly]&&a[ly].cases,rev_prev:a[prev]&&a[prev].revenue,billing_prev:a[prev]&&a[prev].billing}});
-  box.append(el('details',{class:'card',style:'margin-top:10px'},el('summary',{},'Monthly figures by group (table)'),table(t,[{key:'key',label:'Group'},{key:'last',label:mlabel(last)+(last===S.meta.months[0]?' (MTD)':''),num:1,fmt:fmt},{key:'prev',label:mlabel(prev),num:1,fmt:fmt},{key:'ly',label:ly?mlabel(ly):'Same month last year',num:1,fmt:fmt},{key:'rev_prev',label:'Revenue '+mlabel(prev),num:1,fmt:inr},{key:'billing_prev',label:'Billing '+mlabel(prev),num:1,fmt:inr}],{name:'growth_monthly.csv',rowAction:r=>entityCtx(gsel.value,r.key,last,f)}),
-   el('p',{class:'note'},'Use the scorecard above for growth rates: it never compares a partial month with a full one. Billing is blank where it has not been entered.')))}
- gsel.onchange=load;await load();const og=el('div');s.append(og);organicSection(og,to,f);
- const more=el('details',{class:'card',style:'margin-top:14px'},el('summary',{},'More comparisons — like for like by group, and any two periods'));s.append(more);const lf=el('div');more.append(lf);lflSection(lf,to,f);const cp=el('div');more.append(cp);compareSection(cp,f)});
+  box.append(el('details',{class:'card',style:'margin-top:10px'},el('summary',{},'Monthly figures by group (table)'),table(t,[{key:'key',label:'Group'},{key:'last',label:mlabel(last)+(last===S.meta.months[0]?' (MTD)':''),num:1,fmt:fmt},{key:'prev',label:mlabel(prev),num:1,fmt:fmt},{key:'ly',label:ly?mlabel(ly):'Same month last year',num:1,fmt:fmt},{key:'rev_prev',label:'Expected min. revenue '+mlabel(prev),num:1,fmt:inr},{key:'billing_prev',label:'Tracker billing column '+mlabel(prev),num:1,fmt:inr}],{name:'growth_monthly.csv',rowAction:r=>entityCtx(gsel.value,r.key,last,f)}),
+   el('p',{class:'note'},'Use the scorecard above for growth rates: it never compares a partial month with a full one. The tracker billing column is shown as entered in the Zonal Tracker; actual invoiced revenue comes from the finance workbooks (Actual billed revenue view).')))}
+ gsel.onchange=load;await load()}
+ s.append(oppBasis(G),growthMethod(G));
+ const more=el('details',{class:'card',style:'margin-top:14px'},el('summary',{},'More comparisons — like for like by group, and any two periods (cases and expected minimum revenue)'));s.append(more);const lf=el('div');more.append(lf);lflSection(lf,to,f);const cp=el('div');more.append(cp);compareSection(cp,f)});
 
 /* ---------- Force & reconciliation ---------- */
 async function forceBody(s,m,f){const [rows,trend,man]=await Promise.all([api('force',{month:m,filters:f}),api('force_trend',{filters:f}),api('manual_tat',{month:m,filters:f})]);
@@ -673,11 +691,37 @@ function finAlerts(box,alerts,{limit=8}={}){if(!(alerts||[]).length){box.append(
   a.location_id?el('button',{class:'btn sm',style:'margin-top:6px',onclick:()=>finFocusLoc(a.location_id)},'Show this location'):null)))}
 function finFocusLoc(id){const L=S.meta.locations.find(l=>l.id===id);if(L&&L.zone_group){$('#fZone').value='';$('#fStake').value='';$('#fRegion').value='';fillLoc();$('#fLoc').value=String(id);fpSum();fpSave();render();return}
  const z=(S.meta.locations.find(l=>l.id===id)||{}).rollup_zone;if(z){$('#fLoc').value='';$('#fZone').value=z;fillLoc();fpSum();fpSave();render()}}
-const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();const d=await api('collections',{month:m,filters:f});
+const FV={view:'business'};
+async function finBusiness(s,m,f){const G=await api('growth',{month:m,filters:f,measure:'revenue'});
+ if(G.available===false){s.append(el('div',{class:'banner'},G.reason));return}
+ const B=G.billing||{};
+ s.append(el('p',{class:'lede'},`Actual invoiced revenue (ex-GST) from the outstanding workbook (snapshot ${ddmm(B.as_of)}) and the collection workbook (receipts ${ddmm(B.receipts_from)} – ${ddmm(B.receipts_through)}). Completely billed months: ${mlabel(B.first_complete)} – ${mlabel(B.last_complete)}. Expected minimum revenue = Zonal Tracker cases × rate.`),
+  el('div',{class:'tools'},el('span',{class:'chip'},'Outstanding snapshot '+ddmm(B.as_of)),el('span',{class:'chip'},'Receipts to '+ddmm(B.receipts_through)),el('span',{class:'chip'},'Billing complete to '+mlabel(B.last_complete))));
+ const sc=el('div');growthScorecard(sc,G,{onPick:id=>{try{sessionStorage.setItem('crux_measure','revenue')}catch{}S.measure='revenue';RK.period=['mom','qtd','qoq','yoy'].includes(id)?id:'mom';go('growth')}});s.append(sc);
+ revTrend(s,G,f);
+ const T=(G.trend||[]).filter(t=>t.status==='complete');const cv=el('canvas');const k=C();
+ s.append(el('div',{class:'card',style:'margin-top:12px'},el('h3',{style:'margin-top:0'},'Revenue per case — billed vs expected (completely billed months)'),el('div',{class:'chartbox'},cv),
+  el('p',{class:'note'},'Billed per case = invoiced revenue ÷ tracker cases of the same month (invoice month treated as the service month; approximate). Expected per case = tracker revenue ÷ cases. The gap is the billing gap.')));
+ chart(cv,{type:'line',data:{labels:T.map(t=>mlabel(t.month)),datasets:[{label:'Billed per case (₹)',data:T.map(t=>t.billed_per_case),borderColor:k.blue,backgroundColor:k.blue},{label:'Expected per case (₹)',data:T.map(t=>t.cases?Math.round(t.expected/t.cases):null),borderColor:k.ochre,backgroundColor:k.ochre,borderDash:[4,4]}]},options:{maintainAspectRatio:false}});
+ const M=moverSets(G);s.append(el('div',{class:'card',style:'margin-top:12px'},el('h3',{style:'margin-top:0'},`Top movements — ${mlabel(G.billing_month)} vs previous month (actual billed)`),
+  el('div',{class:'grid2'},moverList('Biggest gains',M.up,G,f),moverList('Biggest declines',M.dn,G,f),moverList('Most growth beyond organic',M.bo,G,f),moverList('Furthest below organic',M.bn,G,f)),
+  el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>{S.measure='revenue';try{sessionStorage.setItem('crux_measure','revenue')}catch{}go('growth')}},'Full ranking in Growth & trends →'))));
+ const gap=(G.pairs||[]).filter(r=>r.expected>0||r.billed>0).map(r=>({...r,_gap:(r.billed||0)-(r.expected||0),_gp:r.expected>0?((r.billed||0)-r.expected)/r.expected:null})).sort((a,b)=>Math.abs(b._gap)-Math.abs(a._gap));
+ s.append(el('h3',{},`Expected vs actual billing by billing unit × client — ${mlabel(G.billing_month)}`),el('p',{class:'note'},'A large gap can mean invoices booked under another location or client, cases billed at a different rate, or cases not yet billed. It is a reconciliation pointer, not an error finding.'),
+  table(gap,[{key:'location',label:'Billing unit'},{key:'client_label',label:'Client'},{key:'owner',label:'Owner (mapped)'},{key:'billed',label:'Actual billed',num:1,fmt:fmtL},{key:'expected',label:'Expected minimum',num:1,fmt:fmtL},
+   {key:'_gap',label:'Gap',num:1,fmt:v=>chgEl(v,null,true),raw:r=>r._gap},{key:'_gp',label:'Gap %',num:1,fmt:v=>v==null?'–':pctS(v)},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'billed_per_case',label:'Billed / case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)},
+   {key:'expected_per_case',label:'Expected / case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)},{key:'_cn',label:'Read with care',fmt:(v,r)=>(r.confidence||[]).length?el('span',{class:'chip warn',title:r.confidence.join('; ')},r.confidence.length+' note'+(r.confidence.length>1?'s':'')):'–'}],
+   {name:`billing_gap_${String(G.billing_month).slice(0,7)}.csv`,pageSize:15,rowAction:r=>pairCtx(r,G,f,'mom')}))}
+const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();
  s.append(el('h2',{},'Revenue & collections'));
+ const sw=el('div',{class:'seg',role:'group','aria-label':'Finance view'},[['business','Business performance'],['cash','Cash & receivables']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(FV.view===k?' on':''),'aria-pressed':String(FV.view===k),'data-fv':k,onclick:()=>{FV.view=k;render()}},l)));
+ s.append(el('div',{class:'tools'},sw,el('span',{class:'note'},FV.view==='business'?'Invoiced revenue, growth against expectation and organic, per case and by billing unit × client.':'Cash received by receipt month, invoices by invoice month, settlement, outstanding and ageing.')));
+ if(FV.view==='business')return finBusiness(s,m,f);
+ const d=await api('collections',{month:m,filters:f});
  if(!d||!d.available){s.append(el('div',{class:'banner'},(d&&d.message)||'No finance data yet.'));return}
  const k=d.kpi||{},sn=d.snapshot||{},rc=d.receipts||{},cm=d.comparison_months||[];
- s.append(el('p',{class:'lede'},`Outstanding as at ${ddmm(sn.as_of)} (latest outstanding workbook). Receipts up to ${ddmm(rc.data_through)}${rc.partial_month?` — ${mlabel(rc.partial_month)} is a part month`:''}. Revenue is the Zonal Tracker reported revenue (excluding GST). The month selector does not change the outstanding snapshot.`));
+ s.append(el('p',{class:'lede'},`Outstanding as at ${ddmm(sn.as_of)} (latest outstanding workbook). Receipts up to ${ddmm(rc.data_through)}${rc.partial_month?` — ${mlabel(rc.partial_month)} receipts are incomplete`:''}. Receipt-month totals are cash received in that month, not revenue of that month. Expected minimum revenue is the Zonal Tracker (cases × rate, ex-GST). The month selector does not change the outstanding snapshot.`),
+  el('div',{class:'tools'},el('span',{class:'chip'},'Outstanding snapshot '+ddmm(sn.as_of)),el('span',{class:'chip'},'Receipts to '+ddmm(rc.data_through)),(d.billing||{}).last_complete?el('span',{class:'chip'},'Invoices complete to '+mlabel(d.billing.last_complete)):null));
  if(f.client_family)s.append(el('div',{class:'banner'},'Client filter: unadjusted receipts are recorded per location, not per client, so the net receivable is not shown.'));
  // A — headline position
  s.append(el('div',{class:'tiles kpi4'},
@@ -686,8 +730,8 @@ const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();const 
   tile('Collected — '+mlabel(rc.last_complete_month),fmtL(k.collected_last_month),k.collected_prev_month!=null?`${mlabel(calPrevMonth(rc.last_complete_month))}: ${fmtL(k.collected_prev_month)} · this financial year ${fmtL(k.collected_fytd)}`:''),
   tile('Realisation',pct(k.realisation),k.realisation_basis||'')));
  s.append(el('div',{class:'tiles'},
-  tile('Cash cover (3 months)',pct(k.cash_cover_3m),cm.length?`Cash received ÷ reported revenue, ${mlabel(cm[0])}–${mlabel(cm[cm.length-1])}. Receipts include GST.`:''),
-  tile('Months of revenue outstanding',k.months_outstanding==null?'–':(+k.months_outstanding).toFixed(1),'Open invoice value (ex-GST) ÷ average monthly revenue'),
+  tile('Cash cover (3 months)',pct(k.cash_cover_3m),cm.length?`Cash received (incl. GST, after TDS) ÷ expected minimum revenue (ex-GST), ${mlabel(cm[0])}–${mlabel(cm[cm.length-1])} — a cash-flow indicator, not a collection rate`:''),
+  tile('Months of revenue outstanding',k.months_outstanding==null?'–':(+k.months_outstanding).toFixed(1),'Open invoice value (ex-GST) ÷ average monthly expected minimum revenue'),
   tile('Average days to collect',k.avg_days_to_collect==null?'–':k.avg_days_to_collect+' days','From the end of the invoice month to the receipt, weighted by amount'),
   tile('Receipts not in the ledger',fmtL(k.receipts_not_in_ledger),`${fmt(k.receipts_not_in_ledger_n)} receipts against invoices still shown fully unpaid`,k.receipts_not_in_ledger>0?'warn':''),
   tile('Unallocated receipts (this year)',fmtL(k.unallocated_fytd),'Received without an invoice number'),
@@ -696,19 +740,19 @@ const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();const 
  // B — explanation charts
  const g=el('div',{class:'grid2'});const c1=el('canvas'),c2=el('canvas'),c3=el('canvas'),c4=el('canvas');
  g.append(el('div',{class:'card'},el('h3',{},'Outstanding by age'),el('div',{class:'chartbox'},c1),el('div',{class:'note'},d.method&&d.method.ageing)),
-  el('div',{class:'card'},el('h3',{},'Collected vs reported revenue'),el('div',{class:'chartbox'},c2),el('div',{class:'note'},'Bars: cash received in the month (incl. GST, after TDS). Line: reported revenue (ex-GST). '+(rc.partial_month?mlabel(rc.partial_month)+' is a part month.':''))),
-  el('div',{class:'card'},el('h3',{},'From revenue to cash, by invoice month (ex-GST)'),el('div',{class:'chartbox'},c3),el('div',{class:'note'},'Each bar is the invoice value identified for that month: settled, still open, and reported revenue not yet traced to an invoice. '+(d.method&&d.method.not_traced||''))),
+  el('div',{class:'card'},el('h3',{},'Cash received by receipt month vs expected minimum revenue'),el('div',{class:'chartbox'},c2),el('div',{class:'note'},'Bars: cash received in the month (incl. GST, after TDS) — not revenue of that month. Line: expected minimum revenue (ex-GST). '+(rc.partial_month?mlabel(rc.partial_month)+' receipts are incomplete.':''))),
+  el('div',{class:'card'},el('h3',{},'Invoices by invoice month — settled, open and not traced (ex-GST)'),el('div',{class:'chartbox'},c3),el('div',{class:'note'},'Each bar is the invoice value identified for that month: settled, still open, and expected minimum revenue not yet traced to an invoice. '+(d.method&&d.method.not_traced||''))),
   el('div',{class:'card'},el('h3',{},'Value per case (ex-GST)'),el('div',{class:'chartbox'},c4),el('div',{class:'note'},d.method&&d.method.revenue_per_case)));
  s.append(g);
  const cc=C(),L=v=>v==null?null:Math.round(v/1e3)/100;
  const AG=(d.ageing||[]).filter(a=>a.from!=null);
  chart(c1,{type:'bar',data:{labels:AG.map(a=>a.bucket),datasets:[{label:'₹ lakh',data:AG.map(a=>L(a.amount)),backgroundColor:AG.map((a,i)=>i>=AG.length-2?cc.bad:i>=AG.length-3?cc.ochre:cc.blue)}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>`${fmtL(AG[x.dataIndex].amount)} · ${fmt(AG[x.dataIndex].invoices)} invoice lines · ${pct(AG[x.dataIndex].share)}`}}},scales:{y:{title:{display:true,text:'₹ lakh'}}}}});
  const T=d.trend||[];
- chart(c2,{data:{labels:T.map(t=>mlabel(t.month)+(t.partial?' (part)':'')),datasets:[{type:'bar',label:'Collected',data:T.map(t=>L(t.collected)),backgroundColor:T.map(t=>t.partial?cc.muted:cc.blue)},{type:'line',label:'Reported revenue',data:T.map(t=>L(t.revenue)),borderColor:cc.ochre,pointRadius:3}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ lakh'}}}}});
+ chart(c2,{data:{labels:T.map(t=>mlabel(t.month)+(t.partial?' (part)':'')),datasets:[{type:'bar',label:'Collected',data:T.map(t=>L(t.collected)),backgroundColor:T.map(t=>t.partial?cc.muted:cc.blue)},{type:'line',label:'Expected minimum revenue',data:T.map(t=>L(t.revenue)),borderColor:cc.ochre,pointRadius:3}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ lakh'}}}}});
  const F=d.flow||[];
- chart(c3,{data:{labels:F.map(x=>mlabel(x.month)),datasets:[{type:'bar',label:'Settled',data:F.map(x=>L(x.settled)),backgroundColor:cc.good,stack:'v'},{type:'bar',label:'Still open',data:F.map(x=>L(x.open)),backgroundColor:cc.ochre,stack:'v'},{type:'bar',label:'Revenue not traced to an invoice',data:F.map(x=>L(x.not_traced)),backgroundColor:cc.muted,stack:'v'},{type:'line',label:'Reported revenue',data:F.map(x=>L(x.revenue)),borderColor:cc.blue,pointRadius:3}]},options:{maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'₹ lakh'}}}}});
+ chart(c3,{data:{labels:F.map(x=>mlabel(x.month)),datasets:[{type:'bar',label:'Settled',data:F.map(x=>L(x.settled)),backgroundColor:cc.good,stack:'v'},{type:'bar',label:'Still open',data:F.map(x=>L(x.open)),backgroundColor:cc.ochre,stack:'v'},{type:'bar',label:'Expected revenue not traced to an invoice',data:F.map(x=>L(x.not_traced)),backgroundColor:cc.muted,stack:'v'},{type:'line',label:'Expected minimum revenue',data:F.map(x=>L(x.revenue)),borderColor:cc.blue,pointRadius:3}]},options:{maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'₹ lakh'}}}}});
  const P=d.per_case||[];
- chart(c4,{type:'line',data:{labels:P.map(p=>mlabel(p.month)),datasets:[{label:'Reported revenue per case',data:P.map(p=>p.revenue_per_case),borderColor:cc.blue},{label:'Tracker rate',data:P.map(p=>p.tracker_rate),borderColor:cc.muted,borderDash:[4,4]},{label:'Invoiced per case',data:P.map(p=>p.invoiced_per_case),borderColor:cc.ochre},{label:'Collected per case (so far)',data:P.map(p=>p.collected_per_case),borderColor:cc.good}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ per case'}}}}});
+ chart(c4,{type:'line',data:{labels:P.map(p=>mlabel(p.month)),datasets:[{label:'Expected revenue per case',data:P.map(p=>p.revenue_per_case),borderColor:cc.blue},{label:'Tracker rate',data:P.map(p=>p.tracker_rate),borderColor:cc.muted,borderDash:[4,4]},{label:'Invoiced per case',data:P.map(p=>p.invoiced_per_case),borderColor:cc.ochre},{label:'Collected per case (so far)',data:P.map(p=>p.collected_per_case),borderColor:cc.good}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ per case'}}}}});
  // C — detail tables
  s.append(el('h3',{},'By location'),el('p',{class:'note'},'Zone lines (for example "Gujarat Zone") hold amounts whose city is not stated in the workbook. '+(S.role==='admin'?'Click a row for its open invoices.':'')),
   table(d.by_location||[],[{key:'location',label:'Location'},{key:'zone',label:'Zone'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_90',label:'Over 90 days',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},
@@ -716,9 +760,10 @@ const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();const 
    {key:'collected_last_month',label:'Collected '+mlabel(rc.last_complete_month),num:1,fmt:fmtL},{key:'collected_fytd',label:'Collected this year',num:1,fmt:fmtL},{key:'cash_cover_3m',label:'Cash cover (3 m)',num:1,fmt:pct},
    {key:'months_outstanding',label:'Months outstanding',num:1,fmt:v=>v==null?'–':(+v).toFixed(1)},{key:'avg_days_to_collect',label:'Days to collect',num:1,fmt:fmt},{key:'receipts_not_in_ledger',label:'Receipts not in ledger',num:1,fmt:fmtL}],
    {name:'collections_by_location.csv',defaultHidden:['zone','over_90','collected_fytd'],rowAction:S.role==='admin'?(r=>({kind:'fin_records',title:'Open invoices — '+r.location,location_id:r.location_id})):null}));
- s.append(el('h3',{},'By client'),table(d.by_client||[],[{key:'family',label:'Client'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},{key:'collected_3m',label:'Collected (3 m)',num:1,fmt:fmtL},{key:'revenue_3m',label:'Reported revenue (3 m)',num:1,fmt:fmtL},{key:'cash_cover_3m',label:'Cash cover (3 m)',num:1,fmt:pct},{key:'collected_fytd',label:'Collected this year',num:1,fmt:fmtL}],{name:'collections_by_client.csv',search:false}));
- s.append(el('h3',{},'Realisation by invoice month'),table(F,[{key:'month',label:'Invoice month',fmt:mlabel},{key:'revenue',label:'Reported revenue',num:1,fmt:fmtL},{key:'identified',label:'Invoice value identified',num:1,fmt:fmtL},{key:'coverage',label:'Identified ÷ revenue',num:1,fmt:pct},{key:'settled',label:'Settled',num:1,fmt:fmtL},{key:'open',label:'Still open',num:1,fmt:fmtL},{key:'realisation',label:'Realisation',num:1,fmt:pct},{key:'age_days',label:'Age at snapshot (days)',num:1,fmt:fmt}],{name:'realisation_by_month.csv',search:false}));
- s.append(el('h3',{},'Revenue per case'),table(P,[{key:'month',label:'Month',fmt:mlabel},{key:'cases',label:'Cases (tracker)',num:1,fmt:fmt},{key:'revenue_per_case',label:'Reported revenue per case',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'tracker_rate',label:'Tracker rate',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'invoiced_per_case',label:'Invoiced per case',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'billing_gap',label:'Invoiced vs rate',num:1,fmt:pct},{key:'collected_per_case',label:'Collected per case (so far)',num:1,fmt:v=>v==null?'–':'₹'+v}],{name:'per_case.csv',search:false}));
+ s.append(el('h3',{},'By client'),table(d.by_client||[],[{key:'family',label:'Client'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},{key:'collected_3m',label:'Collected (3 m)',num:1,fmt:fmtL},{key:'revenue_3m',label:'Expected min. revenue (3 m)',num:1,fmt:fmtL},{key:'cash_cover_3m',label:'Cash cover (3 m)',num:1,fmt:pct},{key:'collected_fytd',label:'Collected this year',num:1,fmt:fmtL}],{name:'collections_by_client.csv',search:false}));
+ s.append(el('h3',{},'Invoice cohorts — invoiced, settled, cash allocated and open, by invoice month'),el('p',{class:'note'},'Invoiced and settled are ex-GST; cash allocated is the receipts quoting these invoices (incl. GST, after TDS) and is never divided by the ex-GST value. TDS is shown where the invoice is still in the ledger snapshot.'),
+  table(F,[{key:'month',label:'Invoice month',fmt:mlabel},{key:'billing_status',label:'Billing',fmt:v=>({complete:'complete',partial:'in progress',incomplete:'incomplete'}[v]||v||'–')},{key:'revenue',label:'Expected minimum revenue',num:1,fmt:fmtL},{key:'identified',label:'Actual invoiced (identified)',num:1,fmt:fmtL},{key:'coverage',label:'Invoiced ÷ expected',num:1,fmt:pct},{key:'invoices',label:'Invoices',num:1,fmt:fmt},{key:'settled',label:'Settled',num:1,fmt:fmtL},{key:'open',label:'Still open',num:1,fmt:fmtL},{key:'realisation',label:'Realisation (settled ÷ invoiced)',num:1,fmt:pct},{key:'cash_allocated',label:'Cash allocated (incl. GST)',num:1,fmt:fmtL},{key:'tds_in_ledger',label:'TDS in ledger',num:1,fmt:fmtL},{key:'age_days',label:'Age at snapshot (days)',num:1,fmt:fmt}],{name:'invoice_cohorts.csv',search:false,defaultHidden:['tds_in_ledger']}));
+ s.append(el('h3',{},'Revenue per case'),table(P,[{key:'month',label:'Month',fmt:mlabel},{key:'cases',label:'Cases (tracker)',num:1,fmt:fmt},{key:'revenue_per_case',label:'Expected revenue per case',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'tracker_rate',label:'Tracker rate',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'invoiced_per_case',label:'Invoiced per case',num:1,fmt:v=>v==null?'–':'₹'+v},{key:'billing_gap',label:'Invoiced vs rate',num:1,fmt:pct},{key:'collected_per_case',label:'Collected per case (so far)',num:1,fmt:v=>v==null?'–':'₹'+v}],{name:'per_case.csv',search:false}));
  s.append(el('details',{class:'card',style:'margin-top:14px'},el('summary',{},'How these figures are calculated, and their limits'),
   el('ul',{},Object.entries(d.method||{}).map(([kk,v])=>el('li',{},el('strong',{},kk.replace(/_/g,' ')+': '),v))),el('h4',{},'Limitations'),el('ul',{},(d.limitations||[]).map(v=>el('li',{},v))),
   el('p',{class:'note'},`Sources: ${sn.file} (as at ${ddmm(sn.as_of)}; ${sn.as_of_basis||''}) · ${rc.file} (receipts to ${ddmm(rc.data_through)}) · Zonal Tracker.`)));
@@ -806,14 +851,20 @@ function finPrepare(it,x,file){const L=x.sheets.filter(s=>s.rows.length);const n
   if(!it.asof){if(nm&&lm.slice(0,7)===nm){it.asof=lm;it.asofBasis=`Inferred from the file date ${ddmm(lm)}; workbook labelled ${mlabel(nm+'-01')}`}else if(nm){const e=endOf(nm);it.asof=e<today?e:today;it.asofBasis=`Inferred from the workbook label ${mlabel(nm+'-01')}`}else{it.asof=lm;it.asofBasis='Inferred from the file date'}}
   it.summary=`${led.length} location sheets · ${fmt(n)} invoice lines · outstanding ${fmtL(os)} · unadjusted receipts ${fmtL(un)} · snapshot date ${ddmm(it.asof)} (check)`;it.period=it.asof;it.status='Ready'}
  it.issues=x.issues||[]}
+/* Content hash of a finance workbook = SHA-256 over "sheet|chunk|SHA-256 of the 2,000-row chunk as stored" (sheets in byte order) — the same value the server computes at commit, so a re-saved or re-downloaded copy with the same rows is recognised even when the file bytes differ. */
+async function finContentHash(data){const ser=v=>Array.isArray(v)?'['+v.map(ser).join(', ')+']':JSON.stringify(v);const N=2000;const enc=new TextEncoder();
+ const hx=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+ const parts=[];for(const sh of data)for(let i=0,seq=0;i<sh.rows.length;i+=N,seq++)parts.push([sh.sheet,seq,await hx(ser(sh.rows.slice(i,i+N)))]);
+ parts.sort((p,q)=>p[0]<q[0]?-1:p[0]>q[0]?1:p[1]-q[1]);return hx(parts.map(p=>p.join('|')).join(';'))}
 async function finImport(it,progress){const x=it.x;const data=x.sheets.filter(s=>s.rows.length);
  const controls={sheets:Object.fromEntries(x.sheets.map(s=>[s.sheet,{role:s.role,...s.controls}])),issues:x.issues};
  const b=await finIngest('begin',{kind:x.kind,file_name:it.file.name,file_hash:it.hash,source_ref:'upload:'+it.file.name,as_of:x.kind==='collection'?x.data_through:it.asof,
-  as_of_basis:x.kind==='collection'?'last receipt date in the file':(it.asofBasis||'entered at upload'),period_from:x.period_from||null,period_to:x.period_to||null,name_period:x.name_period?x.name_period+'-01':null,controls});
- if(b.duplicate)return'Already imported (identical file) — unchanged';
+  as_of_basis:x.kind==='collection'?'last receipt date in the file':(it.asofBasis||'entered at upload'),period_from:x.period_from||null,period_to:x.period_to||null,name_period:x.name_period?x.name_period+'-01':null,controls,content_sha256:await finContentHash(data)});
+ if(b.duplicate)return b.duplicate_content?'Already imported (same rows as an earlier file, different file copy) — unchanged':'Already imported (identical file) — unchanged';
  const N=S.mode==='mcp'?400:2000;let done=0;const tot=data.reduce((a,s)=>a+s.rows.length,0);
  try{for(const sh of data)for(let i=0,seq=0;i<sh.rows.length;i+=N,seq++){await finIngest('stage',{upload_id:b.upload_id,sheet:sh.sheet,seq,role:sh.role,cols:sh.cols,rows:sh.rows.slice(i,i+N)});done+=Math.min(N,sh.rows.length-i);progress(`Staging ${fmt(done)}/${fmt(tot)}`)}
   const c=await finIngest('commit',{upload_id:b.upload_id,expected:Object.fromEntries(data.map(s=>[s.sheet,s.rows.length]))});
+  if(c.duplicate_content)return`Already imported (same rows as upload ${c.same_as}) — not added`;
   progress('Rebuilding finance figures…');let dv=null;try{dv=await finIngest('derive',{})}catch(e){}
   return`Imported ${fmt(tot)} rows`+(c.status==='superseded'?' (kept; a file with later receipts is current)':'')+(dv?' · figures rebuilt':' · figures refresh within 10 minutes')}
  catch(e){try{await finIngest('reject',{upload_id:b.upload_id,reason:'upload interrupted: '+e.message})}catch{}throw e}}
@@ -918,11 +969,34 @@ async function dbHealthUI(s){const H=await adminCall('db_health',{});const mb=b=
   el('li',{},'Unused primary-key index on the rebuildable visit cache (point_derived_pkey): ',sg.point_derived_pkey_present?`present, ${mb(sg.point_derived_pkey_bytes)} — owner script pending`:'removed'),
   ...(H.history||[]).map(h=>el('li',{},ddmm(h.date)+': '+h.step+(h.all_databases_before?` — ${mb(h.all_databases_before)} → ${mb(h.all_databases_after)}`:'')))))}
 /* ---------- Period comparisons (MoM / QoQ / YoY, MTD / QTD at the same working day) and client × location growth ---------- */
-const PERIODS={mtd:'Month to date',mom:'Month on month',qtd:'Quarter to date',qoq:'Quarter on quarter',yoy:'Year on year',qyoy:'Quarter vs last year',mtd_yoy:'Month to date vs last year'};
-const RK={period:'mom',view:'gain',meas:'cases'};
+const PERIODS={mtd:'Month to date',mom:'Month on month',qtd:'Quarter to date',qoq:'Quarter on quarter',yoy:'Year on year',qyoy:'Quarter vs last year',mtd_yoy:'Month to date vs last year',ytd:'Financial year to date'};
+const RK={period:'mom',view:'gain'};const OG={period:'mom'};
+const sgF=(v,F)=>v==null?'–':(v>=0?'+':'−')+F(Math.abs(v));
+function orgLine(O,money){if(!O||O.organic_current==null||O.organic_previous==null)return null;const F=money?fmtL:fmt;
+ return el('div',{class:'per orgl'},`Organic ${F(O.organic_previous)} → ${F(O.organic_current)} (${sgF(O.organic_growth,F)}${O.organic_growth_pct!=null?', '+pctS(O.organic_growth_pct):''}) · growth beyond organic `,chgEl(O.beyond_organic,null,money),
+  O.covered_share!=null&&O.covered_share<0.98?el('span',{class:'note'},` · organic covers ${pct(O.covered_share)} of actual`):null)}
+function periodCardRev(id,c,onPick){const cur=c.current||{},prv=c.previous||{};
+ if(!c.available){const B=c.benchmark||{};return el('div',{class:'card na','data-period':id},el('div',{class:'lbl'},PERIODS[id]),el('div',{class:'per'},(cur.label||[]).join(' + ')+' vs '+(prv.label||[]).join(' + ')),
+  el('p',{class:'note'},'Actual billed revenue not available — '+c.reason),
+  B.expected_current!=null?el('div',{class:'per'},'Benchmark only — expected minimum revenue ',fmtL(B.expected_current),' vs ',fmtL(B.expected_previous),' ',chgEl(B.expected_change,B.expected_pct,true)):null)}
+ const O=c.organic||{},Se=c.settlement||{},L=c.like_for_like||{},st=c.structure||{};const warn=[];
+ if(prv.billed>0&&c.billed_pct==null)warn.push('change % hidden: small base');
+ if(id==='qtd')warn.push('completed billing months of the quarter only');
+ if(cur.pairs!=null&&prv.pairs!=null&&cur.pairs!==prv.pairs)warn.push(`${prv.pairs} → ${cur.pairs} billed unit × client pairs`);
+ const card=el('div',{class:'card','data-period':id},el('div',{class:'lbl'},PERIODS[id]+' · actual billed'),
+  el('div',{class:'per'},(cur.label||[]).join(' + ')+' vs '+(prv.label||[]).join(' + ')),
+  el('div',{class:'val'},fmtL(cur.billed)),el('div',{},chgEl(c.billed_change,c.billed_pct,true),' ',el('span',{class:'per'},'vs '+fmtL(prv.billed))),
+  el('div',{class:'per'},`Expected minimum ${fmtL(cur.expected)} — invoiced ${pctS(c.billing_gap_pct)||'±0%'} vs expected · expected change `,chgEl(c.expected_change,c.expected_pct,true)),
+  orgLine(O,true),
+  el('div',{class:'per'},`Billed per case ₹${fmt(cur.billed_per_case)} (was ₹${fmt(prv.billed_per_case)}) · expected ₹${fmt(cur.expected_per_case)}`),
+  Se.invoiced?el('div',{class:'per'},`Settled so far ${pct(Se.realisation)} · still open ${fmtL(Se.open)} · cash allocated ${fmtL(Se.cash_allocated)} (incl. GST)`):null,
+  L.billed_pct!=null?el('div',{class:'per'},'Like for like '+pctS(L.billed_pct)+(st.new_pairs||st.lost_pairs?` · new pairs ${fmtL(st.new_pair_billed)}, lost ${fmtL(st.lost_pair_billed)}`:'')):null,
+  warn.length?el('div',{class:'warnline warn'},'⚠ '+warn.join(' · ')):null);
+ if(onPick){ddEl(card,()=>null,PERIODS[id]);card.onclick=e=>{if(String(getSelection()).trim())return;onPick(id)};card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target===card){e.preventDefault();onPick(id)}};card.title='Show the movements for this comparison'}
+ return card}
 const pctS=p=>p==null?'':`${p>0?'+':p<0?'−':''}${(Math.abs(p)*100).toFixed(1)}%`;
 function chgEl(v,p,money){const t=v==null?'–':(v>0?'+':v<0?'−':'')+(money?fmtL(Math.abs(v)):fmt(Math.abs(v)));return el('span',{class:'chg '+(v>0?'good':v<0?'bad':'')},t,p!=null?' ('+pctS(p)+')':'')}
-function periodCard(id,c,meas,onPick){const rv=meas==='revenue';const cur=c.current||{},prv=c.previous||{};
+function periodCard(id,c,meas,onPick){if(meas==='revenue')return periodCardRev(id,c,onPick);const rv=false;const cur=c.current||{},prv=c.previous||{};
  const v1=rv?cur.revenue:cur.cases,v0=rv?prv.revenue:prv.cases,ch=rv?c.revenue_change:c.cases_change,pc=rv?c.revenue_pct:c.cases_pct;
  const partial=id==='mtd'||id==='qtd'||id==='mtd_yoy';const warn=[];
  if(partial)warn.push('partial period, compared at the same working day');
@@ -938,55 +1012,90 @@ function periodCard(id,c,meas,onPick){const rv=meas==='revenue';const cur=c.curr
   lp!=null?el('div',{class:'per'},'Like for like '+pctS(lp)+(st.new_pairs||st.lost_pairs?` · new pairs +${fmt(st.new_pair_cases)}, lost −${fmt(st.lost_pair_cases)} cases`:'')):null,
   !rv&&c.per_working_day_pct!=null&&cur.working_days!==prv.working_days?el('div',{class:'per'},`Per working day ${pctS(c.per_working_day_pct)} (${cur.working_days} vs ${prv.working_days} days)`):null,
   att!=null?el('div',{class:'per'},`Target ${pct(att)} achieved`+(att0!=null?` (was ${pct(att0)})`:' · no target for the earlier period')):null,
+  orgLine(c.organic,false),
+  cur.revenue!=null?el('div',{class:'per'},'Expected minimum revenue '+fmtL(cur.revenue)+' ',chgEl(c.revenue_change,c.revenue_pct,true)):null,
   warn.length?el('div',{class:'warnline warn'},'⚠ '+warn.join(' · ')):null);
  if(onPick){ddEl(card,()=>null,PERIODS[id]);card.onclick=e=>{if(String(getSelection()).trim())return;onPick(id)};card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target===card){e.preventDefault();onPick(id)}};card.title='Show the client × location movements for this comparison'}
  return card}
-function growthScorecard(box,G,{compact=false,meas='cases',onPick=null}={}){const C=G.cards||{};const order=compact?['mtd','mom','qoq','yoy']:['mtd','mom','qtd','qoq','yoy','qyoy','mtd_yoy'];
- const wrap=el('div',{class:'sc'});
+function growthScorecard(box,G,{compact=false,onPick=null}={}){const C=G.cards||{};const rev=G.measure==='revenue';
+ const order=rev?(compact?['mom','qtd','yoy']:['mom','qtd','qoq','yoy','qyoy','ytd']):(compact?['mtd','mom','qoq','yoy']:['mtd','mom','qtd','qoq','yoy','qyoy','mtd_yoy']);
+ const wrap=el('div',{class:'sc','data-measure':rev?'revenue':'cases'});
  order.forEach(id=>{const c=C[id];const u=(G.unavailable||[]).find(x=>x.id===id);
-  if(c&&c.previous&&c.previous.cases!=null)wrap.append(periodCard(id,c,meas,onPick));
+  if(rev&&c)wrap.append(periodCardRev(id,c,c.available?onPick:null));
+  else if(!rev&&c&&c.previous&&c.previous.cases!=null)wrap.append(periodCard(id,c,'cases',onPick));
   else if(u)wrap.append(el('div',{class:'card na'},el('div',{class:'lbl'},PERIODS[id]),el('p',{class:'note'},'Not available — '+u.reason)))});
- box.append(wrap)}
+ box.append(wrap);
+ if(rev){const IP=G.in_progress||[];if(IP.length)box.append(el('p',{class:'note inprog'},'Not yet compared: '+IP.map(x=>`${mlabel(x.month)} — ${fmtL(x.billed_so_far)} invoiced so far (${pct(x.coverage)} of expected). ${x.note}`).join(' ')));
+  const mt=(G.unavailable||[]).find(x=>x.id==='mtd');if(mt&&!compact)box.append(el('p',{class:'note'},'Month to date: '+mt.reason))}}
 function rankRows(G,per){const minc=(G.min_base||{}).cases||30;
+ if(G.measure==='revenue')return (G.pairs||[]).map(r=>{const x=r[per]||{};
+  return{...r,_cur:x.cur,_prev:x.prev,_chg:x.chg,_pct:x.pct,_share:per==='mom'?r.share_of_net:null,_exp:x.exp_cur,_cov:x.exp_cur>0&&x.cur!=null?x.cur/x.exp_cur:null,
+   _bpc:x.cases_cur>0&&x.cur!=null?Math.round(x.cur/x.cases_cur):null,_org:x.org_cur,_org0:x.org_prev,_beyond:x.beyond,_eff:x.effort_cur,_effp:x.effort_pct,
+   _real:(r.settlement||{}).realisation,_open:(r.settlement||{}).open,_bcov:(r.branches||{}).coverage,_never:(r.branches||{}).never_activated,_opp:(r.branches||{}).indicative_cases_per_month,
+   _f1:(r.force1||{}).utilisation,_tat:(r.tat||{}).median_hours,_tat0:null,_prio:null,_conf:(r.confidence||[]).join('; ')}});
  return (G.pairs||[]).map(r=>{const x=r[per]||{};const cur=per==='qoq'||per==='mtd'?x.cur:r.cases;
-  const eff=per==='mtd'?(r.mtd||{}).effort:(r.organic||{}).effort,orgb=per==='mtd'?(r.mtd||{}).organic_to_date:(r.organic||{}).expected;
-  return{...r,_cur:cur,_prev:x.prev,_chg:x.chg,_pct:x.pct,_share:x.share_of_net,_org:orgb,_eff:per==='qoq'||per==='yoy'?null:eff,_effp:per==='qoq'||per==='yoy'?null:(orgb>=minc&&eff!=null?eff/orgb:null),
-   _cov:(r.branches||{}).coverage,_never:(r.branches||{}).never_activated,_opp:(r.branches||{}).indicative_cases_per_month,_f1:(r.force1||{}).utilisation,_tat:(r.tat||{}).median_hours,_tat0:(r.tat||{}).prev_median_hours,
+  const orgb=x.org_cur!=null?x.org_cur:(per==='mtd'?(r.mtd||{}).organic_to_date:per==='mom'?(r.organic||{}).expected:null);
+  const eff=x.effort_cur!=null?x.effort_cur:(per==='mtd'?(r.mtd||{}).effort:per==='mom'?(r.organic||{}).effort:null);
+  return{...r,_cur:cur,_prev:x.prev,_chg:x.chg,_pct:x.pct,_share:x.share_of_net,_org:orgb,_org0:x.org_prev,_beyond:x.beyond,_eff:eff,_effp:orgb>=minc&&eff!=null?eff/orgb:null,
+   _bcov:(r.branches||{}).coverage,_never:(r.branches||{}).never_activated,_opp:(r.branches||{}).indicative_cases_per_month,_f1:(r.force1||{}).utilisation,_tat:(r.tat||{}).median_hours,_tat0:(r.tat||{}).prev_median_hours,
    _rchg:per==='mom'?x.rev_chg:per==='yoy'?(r.revenue!=null&&x.rev_prev!=null?r.revenue-x.rev_prev:null):(x.rev_cur!=null&&x.rev_prev!=null?x.rev_cur-x.rev_prev:null),_rpct:x.rev_pct,
    _prio:(r.priority||{}).score,_conf:(r.confidence||[]).join('; '),_tgt:(r.mtd||{}).attainment,_proj:(r.mtd||{}).projected_attainment}})}
 function pairCtx(r,G,f,per){return{kind:'pair',title:`${r.client_label} · ${r.location}`,r,G,f:{...f},per}}
-function growthRanking(box,G,f){const C=G.cards||{};const lab=id=>{const c=C[id];return c?(c.current.label||[]).join('+')+' vs '+((c.previous.label||[]).join('+')||'–'):''};
- const PER=[['mom','Month on month'],['qoq','Quarter on quarter'],['yoy','Year on year'],...(G.partial?[['mtd','Month to date']]:[])];if(!PER.some(p=>p[0]===RK.period))RK.period='mom';
- const VIEWS=[['gain','Biggest gains'],['gainp','Fastest growth %'],['loss','Biggest declines'],['lossp','Steepest declines %'],['effort','Above organic'],['effortneg','Below organic'],['prio','Priority opportunities']];
+function growthRanking(box,G,f){const rev=G.measure==='revenue';const C=G.cards||{};const lab=id=>{const c=C[id];return c&&c.current?(c.current.label||[]).join('+')+' vs '+(((c.previous||{}).label||[]).join('+')||'–'):''};
+ const PER=rev?[['mom','Month on month'],['qtd','Quarter to date'],['qoq','Quarter on quarter'],['yoy','Year on year']].filter(([k])=>C[k]&&C[k].available)
+  :[['mom','Month on month'],['qoq','Quarter on quarter'],['yoy','Year on year'],...(G.partial?[['mtd','Month to date']]:[])];
+ if(!PER.length)PER.push(['mom','Month on month']);if(!PER.some(p=>p[0]===RK.period))RK.period=PER[0][0];
+ const VIEWS=[['gain','Biggest gains'],['gainp','Fastest growth %'],['loss','Biggest declines'],['lossp','Steepest declines %'],['effort','Above organic'],['effortneg','Below organic'],...(rev?[]:[['prio','Priority opportunities']])];
+ if(!VIEWS.some(v=>v[0]===RK.view))RK.view='gain';
  const perSel=el('select',{'aria-label':'Comparison period'},PER.map(([k,l])=>el('option',{value:k},l)));perSel.value=RK.period;
  const seg=el('div',{class:'seg wrap',role:'group','aria-label':'Ranking'},VIEWS.map(([k,l])=>el('button',{type:'button',class:'btn sm'+(RK.view===k?' on':''),'aria-pressed':String(RK.view===k),'data-v':k,onclick:()=>{RK.view=k;draw()}},l)));
  const head=el('p',{class:'note'}),host=el('div'),sum=el('div',{class:'insight'});
- box.append(el('h3',{style:'margin-top:0'},'Where the business is moving — client × location'),el('div',{class:'tools'},el('label',{class:'note'},'Compare ',perSel),seg),head,sum,host);
+ box.append(el('h3',{style:'margin-top:0'},rev?'Where the business is earning more — billing unit × client (actual billed revenue)':'Where the business is moving — client × location (cases)'),el('div',{class:'tools'},el('label',{class:'note'},'Compare ',perSel),seg),head,sum,host);
  perSel.onchange=()=>{RK.period=perSel.value;draw()};
+ const F=rev?fmtL:fmt;const minb=rev?((G.min_base||{}).revenue_per_month||25000):((G.min_base||{}).cases||30);
  function draw(){seg.querySelectorAll('button').forEach(b=>{const on=b.dataset.v===RK.view;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
-  const per=RK.period;const R=rankRows(G,per);const minc=(G.min_base||{}).cases||30;
+  const per=RK.period;const R=rankRows(G,per);
   const V={gain:[r=>r._chg>0,(a,b)=>b._chg-a._chg],gainp:[r=>r._pct!=null&&r._pct>0,(a,b)=>b._pct-a._pct],loss:[r=>r._chg<0,(a,b)=>a._chg-b._chg],lossp:[r=>r._pct!=null&&r._pct<0,(a,b)=>a._pct-b._pct],
-   effort:[r=>r._eff!=null&&r._eff>0&&(r._org||0)>=minc,(a,b)=>b._eff-a._eff],effortneg:[r=>r._eff!=null&&r._eff<0&&(r._org||0)>=minc,(a,b)=>a._eff-b._eff],prio:[r=>r._prio!=null,(a,b)=>b._prio-a._prio]}[RK.view];
+   effort:[r=>r._beyond!=null&&r._beyond>0&&(r._org0||0)>=minb,(a,b)=>b._beyond-a._beyond],effortneg:[r=>r._beyond!=null&&r._beyond<0&&(r._org0||0)>=minb,(a,b)=>a._beyond-b._beyond],prio:[r=>r._prio!=null,(a,b)=>b._prio-a._prio]}[RK.view];
   const rows=R.filter(V[0]).sort(V[1]);
   const net=R.reduce((a,r)=>a+(r._chg||0),0),gain=R.reduce((a,r)=>a+Math.max(r._chg||0,0),0),loss=R.reduce((a,r)=>a+Math.min(r._chg||0,0),0);
   const top5=rows.slice(0,5).reduce((a,r)=>a+(r._chg||0),0);
-  head.textContent=`${lab(per)} · ${ctxTitle(f)} · ${fmt(R.length)} client × location pairs`+(per==='qoq'||per==='yoy'?' · organic columns apply to month comparisons only':'')+(RK.view.endsWith('p')?` · change % only where the earlier period had at least ${per==='qoq'?minc*3:minc} cases`:'');
-  sum.innerHTML='';sum.append(...[el('div',{},'Net change ',chgEl(net,null),` = gains +${fmt(gain)} and declines −${fmt(Math.abs(loss))}.`),
-   rows.length&&(RK.view==='gain'||RK.view==='loss')?el('small',{},`The top ${Math.min(5,rows.length)} explain ${fmt(Math.abs(top5))} cases (${pct(Math.abs(top5)/Math.max(1,RK.view==='gain'?gain:Math.abs(loss)))} of all ${RK.view==='gain'?'gains':'declines'}).`):null,
+  head.textContent=`${lab(per)} · ${ctxTitle(f)} · ${fmt(R.length)} ${rev?'billing unit × client':'client × location'} pairs · ${rev?'actual invoiced revenue, ex-GST':'cases'}`+(RK.view.endsWith('p')?` · change % only where the earlier period had at least ${rev?fmtL(minb)+' a month':fmt(per==='qoq'?minb*3:minb)+' cases'}`:'');
+  sum.innerHTML='';sum.append(...[el('div',{},'Net change ',chgEl(net,null,rev),` = gains +${F(gain)} and declines −${F(Math.abs(loss))}.`),
+   rows.length&&(RK.view==='gain'||RK.view==='loss')?el('small',{},`The top ${Math.min(5,rows.length)} explain ${F(Math.abs(top5))} (${pct(Math.abs(top5)/Math.max(1,RK.view==='gain'?gain:Math.abs(loss)))} of all ${RK.view==='gain'?'gains':'declines'}).`):null,
    RK.view==='prio'?el('small',{},'Priority = indicative cases from never-activated verified branches × (1 + effort above organic, capped at ±50%), halved where TAT worsened by more than 10% or SLA met is below 80%. A place to look first, not a forecast.'):null,
-   RK.view.startsWith('effort')?el('small',{},'Effort = actual − organic expectation (an estimate of business as usual). It is not proof of what caused the change.'):null].filter(Boolean));
-  const P=G.completed_month;const perLab={mom:mlabel(P),qoq:'Quarter',yoy:mlabel(P),mtd:'MTD'}[per];
-  const cols=[{key:'location',label:'Location'},{key:'client_label',label:'Client'},{key:'owner',label:'Owner (mapped)',fmt:(v,r)=>v?(r.owner_changed?v+' (changed)':v):'–'},{key:'zone',label:'Zone'},
-   {key:'_cur',label:perLab,num:1,fmt:fmt},{key:'_prev',label:'Earlier',num:1,fmt:fmt},{key:'_chg',label:'Change',num:1,fmt:v=>chgEl(v,null),raw:r=>r._chg},{key:'_pct',label:'Change %',num:1,fmt:(v,r)=>v==null?el('span',{class:'note',title:'Earlier period below the minimum base or zero'},r._prev>0?'small base':'new'):el('span',{class:v>0?'good':v<0?'bad':''},pctS(v)),raw:r=>r._pct},
-   {key:'_share',label:'Share of net change',num:1,fmt:v=>v==null?'–':pctS(v),raw:r=>r._share},{key:'_rchg',label:'Revenue change',num:1,fmt:v=>v==null?'–':chgEl(v,null,true),raw:r=>r._rchg},{key:'_rpct',label:'Revenue change %',num:1,fmt:v=>v==null?'–':pctS(v),raw:r=>r._rpct},
-   {key:'_org',label:per==='mtd'?'Organic to date':'Organic expected',num:1,fmt:fmt},{key:'_eff',label:'Effort vs organic',num:1,fmt:v=>v==null?'–':chgEl(v,null),raw:r=>r._eff},{key:'_effp',label:'Effort %',num:1,fmt:v=>v==null?'–':pctS(v),raw:r=>r._effp},
-   ...(per==='mtd'?[{key:'_tgt',label:'Target achieved',num:1,fmt:pct},{key:'_proj',label:'Projected vs target',num:1,fmt:pct}]:[]),
-   {key:'_cov',label:'Branch coverage',num:1,fmt:pct},{key:'_never',label:'Never-activated branches',num:1,fmt:fmt},{key:'_opp',label:'Indicative cases / month',num:1,fmt:fmt},
+   RK.view.startsWith('effort')?el('small',{},'Ranked by growth beyond organic = actual change − change in the organic expectation (= effort now − effort then). An estimate of business above or below business as usual, not proof of what caused it.'):null,
+   rev?el('small',{},'Gujarat, Bhopal MP and Lucknow / ROUP are billed at zone level (most invoices do not name the city), so their locations appear as one billing unit here.'):null].filter(Boolean));
+  const perLab=rev?(((C[per]||{}).current||{}).label||[]).join('+'):({mom:mlabel(G.completed_month),qoq:'Quarter',yoy:mlabel(G.completed_month),mtd:'MTD'}[per]);
+  const money=v=>v==null?'–':chgEl(v,null,rev);
+  const cols=[{key:'location',label:rev?'Billing unit':'Location'},{key:'client_label',label:'Client'},{key:'owner',label:'Owner (mapped)',fmt:(v,r)=>v?(r.owner_changed?v+' (changed)':v):'–'},{key:'zone',label:'Zone'},
+   {key:'_cur',label:perLab,num:1,fmt:F},{key:'_prev',label:'Earlier',num:1,fmt:F},{key:'_chg',label:'Change',num:1,fmt:money,raw:r=>r._chg},{key:'_pct',label:'Change %',num:1,fmt:(v,r)=>v==null?el('span',{class:'note',title:'Earlier period below the minimum base or zero'},r._prev>0?'small base':'new'):el('span',{class:v>0?'good':v<0?'bad':''},pctS(v)),raw:r=>r._pct},
+   {key:'_share',label:'Share of net change',num:1,fmt:v=>v==null?'–':pctS(v),raw:r=>r._share},
+   ...(rev?[{key:'_exp',label:'Expected minimum',num:1,fmt:fmtL},{key:'_cov',label:'Billed ÷ expected',num:1,fmt:pct},{key:'_bpc',label:'Billed per case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)}]
+     :[{key:'_rchg',label:'Expected min. revenue change',num:1,fmt:v=>v==null?'–':chgEl(v,null,true),raw:r=>r._rchg},{key:'_rpct',label:'Expected min. revenue %',num:1,fmt:v=>v==null?'–':pctS(v),raw:r=>r._rpct}]),
+   {key:'_org',label:per==='mtd'?'Organic to date':'Organic (current)',num:1,fmt:F},{key:'_org0',label:'Organic (earlier)',num:1,fmt:F},
+   {key:'_beyond',label:'Growth beyond organic',num:1,fmt:money,raw:r=>r._beyond},{key:'_eff',label:'Effort vs organic',num:1,fmt:money,raw:r=>r._eff},{key:'_effp',label:'Effort %',num:1,fmt:v=>v==null?'–':pctS(v)},
+   ...(rev?[{key:'_real',label:'Settled so far',num:1,fmt:pct},{key:'_open',label:'Still open',num:1,fmt:fmtL}]:[]),
+   ...(per==='mtd'&&!rev?[{key:'_tgt',label:'Target achieved',num:1,fmt:pct},{key:'_proj',label:'Projected vs target',num:1,fmt:pct}]:[]),
+   {key:'_bcov',label:'Branch coverage',num:1,fmt:pct},{key:'_never',label:'Never-activated branches',num:1,fmt:fmt},{key:'_opp',label:'Indicative cases / month',num:1,fmt:fmt},
    {key:'_f1',label:'Force1 utilisation (group)',num:1,fmt:pct},{key:'_tat',label:'Case TAT median',num:1,fmt:(v,r)=>v==null?'–':el('span',{class:(r.tat||{}).worse?'bad':''},hrs(v)+(r._tat0!=null?' (was '+hrs(r._tat0)+')':'')),raw:r=>r._tat},
    ...(RK.view==='prio'?[{key:'_prio',label:'Priority score',num:1,fmt:fmt}]:[]),
    {key:'_conf',label:'Read with care',fmt:v=>v?el('span',{class:'chip warn',title:v},v.split('; ').length+' note'+(v.split('; ').length>1?'s':'')):'–'}];
-  host.innerHTML='';host.append(rows.length?table(rows,cols,{name:`growth_${per}_${RK.view}.csv`,pageSize:15,defaultHidden:['zone','_share','_effp','_never','_f1','_rpct'],rowAction:r=>pairCtx(r,G,f,per)}):el('p',{class:'note'},'No client × location pair matches this view for the selection.'))}
- draw();return{set(per){RK.period=per;perSel.value=per;draw();box.scrollIntoView({behavior:'smooth',block:'start'})}}}
+  host.innerHTML='';host.append(rows.length?table(rows,cols,{name:`growth_${rev?'revenue':'cases'}_${per}_${RK.view}.csv`,pageSize:15,defaultHidden:rev?['zone','_share','_org0','_effp','_never','_f1','_open','_bpc','_tat']:['zone','_share','_org0','_effp','_never','_f1','_rpct'],rowAction:r=>pairCtx(r,G,f,per)}):el('p',{class:'note'},'No pair matches this view for the selection.'))}
+ draw();return{set(per){if(!PER.some(p=>p[0]===per))return;RK.period=per;perSel.value=per;draw();box.scrollIntoView({behavior:'smooth',block:'start'})}}}
+function revTrend(s,G,f){const T=(G.trend||[]);const cc=C();const L=v=>v==null?null:Math.round(v/1e3)/100;const B=G.billing||{};
+ const cv=el('canvas');s.append(el('h3',{},'Monthly trend — actual billed revenue'),el('p',{class:'note'},`Bars: actual invoiced revenue (ex-GST); pale bars are months still being billed and are not compared. Lines: expected minimum revenue (Zonal Tracker) and the organic revenue expectation. Months before ${mlabel(B.first_complete)} are not shown as actual revenue: the workbooks hold only invoices still unpaid or paid from ${ddmm(B.receipts_from)}.`),
+  el('div',{class:'card'},el('div',{class:'chartbox',style:'height:320px'},cv)));
+ chart(cv,{drill:(ds,i)=>T[i]?bizCtx(T[i].month,f,{title:ctxTitle(f)+' — '+mlabel(T[i].month)}):null,data:{labels:T.map(t=>mlabel(t.month)+(t.status==='partial'?' (billing in progress)':'')),datasets:[
+  {type:'bar',label:'Actual billed (₹ lakh)',data:T.map(t=>L(t.billed)),backgroundColor:T.map(t=>t.status==='complete'?cc.blue:cc.muted)},
+  {type:'line',label:'Expected minimum (₹ lakh)',data:T.map(t=>L(t.expected)),borderColor:cc.ochre,backgroundColor:cc.ochre,pointRadius:2},
+  {type:'line',label:'Organic expectation (₹ lakh)',data:T.map(t=>L(t.organic_billed)),borderColor:cc.good,backgroundColor:cc.good,borderDash:[5,4],pointRadius:2,spanGaps:false}]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{title:{display:true,text:'₹ lakh'}}}}});
+ const st={complete:'complete',partial:'in progress',incomplete:'incomplete in the workbooks',none:'–'};
+ s.append(el('details',{class:'card',style:'margin-top:10px'},el('summary',{},'Monthly figures (table)'),table(T.map(t=>({...t,effort:t.billed!=null&&t.organic_billed!=null&&t.status==='complete'?t.billed-t.organic_billed:null})),[
+  {key:'month',label:'Month',fmt:mlabel},{key:'status',label:'Billing',fmt:v=>st[v]||v},{key:'billed',label:'Actual billed',num:1,fmt:fmtL},{key:'identified_incomplete',label:'Identified (incomplete)',num:1,fmt:fmtL},
+  {key:'expected',label:'Expected minimum',num:1,fmt:fmtL},{key:'coverage',label:'Billed ÷ expected',num:1,fmt:pct},{key:'cases',label:'Cases',num:1,fmt:fmt},{key:'billed_per_case',label:'Billed per case',num:1,fmt:v=>v==null?'–':'₹'+fmt(v)},
+  {key:'organic_billed',label:'Organic expectation',num:1,fmt:fmtL},{key:'effort',label:'Effort vs organic',num:1,fmt:v=>v==null?'–':chgEl(v,null,true),raw:r=>r.effort},{key:'realisation',label:'Settled so far',num:1,fmt:pct},{key:'cash_allocated',label:'Cash allocated (incl. GST)',num:1,fmt:fmtL}],{name:'revenue_trend.csv',search:false})))}
 function oppBasis(G){const V=(G.pairs||[]).map(r=>(r.branches||{}).verified_on).filter(Boolean).sort();const withB=(G.pairs||[]).filter(r=>r.branches).length;
  return el('details',{class:'card',style:'margin-top:14px'},el('summary',{},'Opportunity evidence — what is measured, what is estimated, what is not known'),
   el('ul',{class:'hl'},el('li',{},el('strong',{},'Internal comparisons (measured): '),'cases and revenue by client and location from the Zonal Tracker; Force1 cases, TAT and utilisation from Force1 files. Rankings above use these.'),
@@ -1000,8 +1109,26 @@ function growthMethod(G){const V=(G.organic||{}).validation||{};const M=G.method
   V.months?el('div',{},el('h4',{},`Organic estimate — measured error, ${mlabel(V.from)} to ${mlabel(V.to)}`),
    el('p',{class:'note'},`Average monthly error ${pct(V.pan_mape)} for this selection; ${pct(V.pair_wape)} at location × client level (sum of absolute errors ÷ actual). Small pairs are less predictable, so their organic status is an indication only.`),
    table(V.by_month||[],[{key:'month',label:'Month',fmt:mlabel},{key:'actual',label:'Actual',num:1,fmt:fmt},{key:'organic',label:'Organic estimate',num:1,fmt:fmt},{key:'error_pct',label:'Actual vs estimate',num:1,fmt:pctS}],{search:false,name:'organic_accuracy.csv'})):null)}
-function moverList(title,rows,G,f){return el('div',{},el('h4',{},title),rows.length?el('ul',{class:'hl'},rows.map(r=>ddEl(el('li',{},el('strong',{},`${r.client_label} · ${r.location}`),' ',chgEl(r.mom.chg,r.mom.pct),el('span',{class:'note'},` ${fmt(r.mom.prev)} → ${fmt(r.cases)}`+((r.confidence||[]).length?' · '+r.confidence[0]:''))),()=>pairCtx(r,G,f,'mom'),`${r.client_label} ${r.location}`))):el('p',{class:'note'},'None.'))}
-async function ddPair(o,c){const r=c.r,G=c.G;const t=(k,x,p,money)=>{const n=x||{};return tile(k,n.chg==null?'–':((n.chg>0?'+':n.chg<0?'−':'')+(money?fmtL(Math.abs(n.chg)):fmt(Math.abs(n.chg)))),`${fmt(n.prev)} → ${fmt(n.cur!=null?n.cur:r.cases)}`+(n.pct!=null?' · '+pctS(n.pct):(n.prev>0?' · % hidden (small base)':'')),n.chg>0?'good':n.chg<0?'bad':'')};
+function moverList(title,rows,G,f,per='mom'){const rev=G.measure==='revenue';const F=rev?fmtL:fmt;
+ return el('div',{},el('h4',{},title),rows.length?el('ul',{class:'hl'},rows.map(r=>{const x=r[per]||{};const cur=rev||per!=='mom'?x.cur:r.cases;
+  return ddEl(el('li',{},el('strong',{},`${r.client_label} · ${r.location}`),' ',chgEl(x.chg,x.pct,rev),el('span',{class:'note'},` ${F(x.prev)} → ${F(cur)}`+(x.beyond!=null?` · beyond organic ${sgF(x.beyond,F)}`:'')+(r.owner?` · owner (mapped): ${r.owner}`:'')+((r.confidence||[]).length?' · '+r.confidence[0]:''))),()=>pairCtx(r,G,f,per),`${r.client_label} ${r.location}`)})):el('p',{class:'note'},'None.'))}
+function moverSets(G){const P=G.pairs||[];const k=r=>(r.mom||{});
+ return{up:P.filter(r=>k(r).chg>0).sort((a,b)=>k(b).chg-k(a).chg).slice(0,3),dn:P.filter(r=>k(r).chg<0).sort((a,b)=>k(a).chg-k(b).chg).slice(0,3),
+  bo:P.filter(r=>k(r).beyond>0).sort((a,b)=>k(b).beyond-k(a).beyond).slice(0,3),bn:P.filter(r=>k(r).beyond<0).sort((a,b)=>k(a).beyond-k(b).beyond).slice(0,3)}}
+async function ddPairRev(o,c){const r=c.r,G=c.G;const t=(k,x)=>{const n=x||{};return tile(k,n.chg==null?'–':sgF(n.chg,fmtL),`${fmtL(n.prev)} → ${fmtL(n.cur)}`+(n.pct!=null?' · '+pctS(n.pct):(n.prev>0?' · % hidden (small base)':''))+(n.beyond!=null?` · beyond organic ${sgF(n.beyond,fmtL)}`:''),n.chg>0?'good':n.chg<0?'bad':'')};
+ const B=r.branches,Tt=r.tat||{},F1=r.force1||{},O=r.organic||{},Se=r.settlement||{};
+ o.append(...[el('p',{class:'note'},`${r.zone||''} · billing unit ${r.location}${r.members>1?' ('+r.member_locations+')':''} · owner (mapped for ${mlabel(G.billing_month)}): ${r.owner||'not mapped'}${r.owner_changed?' — changed this month':''}`),
+  el('div',{class:'tiles'},tile(mlabel(G.billing_month)+' actual billed',fmtL(r.billed),`expected minimum ${fmtL(r.expected)} (billed ÷ expected ${pct(r.billing_coverage)}) · ${fmt(r.cases)} cases`),
+   t('Month on month',r.mom),r.qtd?t('Quarter to date',r.qtd):null,r.qoq?t('Quarter on quarter',r.qoq):null,
+   tile('Organic expectation',fmtL(O.expected),O.effort!=null?`actual ${sgF(O.effort,fmtL)}${O.effort_pct!=null?' ('+pctS(O.effort_pct)+')':''} · basis: ${O.basis==='pair'?'this pair’s billing per case':O.basis==='family'?'client-wide billing ratio':'–'}${O.ref_from?`, ${mlabel(O.ref_from)}–${mlabel(O.ref_to)}`:''} — an estimate, not proof of cause`:'no estimate'),
+   tile('Billed per case','₹'+fmt(r.billed_per_case),`expected ₹${fmt(r.expected_per_case)} per case`),
+   tile('Settlement of these invoices',pct(Se.realisation),`still open ${fmtL(Se.open)} · cash allocated ${fmtL(Se.cash_allocated)} (incl. GST)`),
+   B?tile('Branch coverage',pct(B.coverage),`${fmt(B.active_6m)} of ${fmt(B.matchable)} verified branches active in 6 months · ${fmt(B.never_activated)} never activated`+(B.indicative_cases_per_month!=null?` · indicative ${fmt(B.indicative_cases_per_month)} cases / month`:'')):null,
+   tile('Force1 utilisation',pct(F1.utilisation),'location group level'),tile('Case TAT median',hrs(Tt.median_hours),Tt.sla!=null?'SLA met '+pct(Tt.sla):'')),
+  (r.confidence||[]).length?el('div',{class:'banner'},'Read with care: '+r.confidence.join(' · ')):null,
+  el('div',{class:'ddact'},el('button',{type:'button',class:'btn sm',onclick:()=>DD.push(bizCtx(G.billing_month,r.members>1&&r.zone_code?{...c.f,zone_group:r.zone_code,client_family:r.client}:{...c.f,location_id:r.location_id||r.unit_id,client_family:r.client},{clientLabel:r.client_label}))},'Branches, daily reports and TAT →')),
+  el('p',{class:'note'},'Measured: invoiced revenue, expected minimum revenue, cases, settlement, branch counts, Force1 and TAT. Estimated: organic expectation and branch potential. Mapped: the owner is the stakeholder assigned for the period — responsibility, not proof of cause.')].filter(Boolean))}
+async function ddPair(o,c){if(c.G&&c.G.measure==='revenue')return ddPairRev(o,c);const r=c.r,G=c.G;const t=(k,x,p,money)=>{const n=x||{};return tile(k,n.chg==null?'–':((n.chg>0?'+':n.chg<0?'−':'')+(money?fmtL(Math.abs(n.chg)):fmt(Math.abs(n.chg)))),`${fmt(n.prev)} → ${fmt(n.cur!=null?n.cur:r.cases)}`+(n.pct!=null?' · '+pctS(n.pct):(n.prev>0?' · % hidden (small base)':'')),n.chg>0?'good':n.chg<0?'bad':'')};
  const B=r.branches,Tt=r.tat||{},F1=r.force1||{},O=r.organic||{},M=r.mtd;
  o.append(...[el('p',{class:'note'},`${r.zone||''} · location group ${r.unit||'–'} · owner (mapped for ${mlabel(G.completed_month)}): ${r.owner||'not mapped'}${r.owner_changed?' — changed this month':''}`),
   el('div',{class:'tiles'},tile(mlabel(G.completed_month)+' cases',fmt(r.cases),'revenue '+fmtL(r.revenue)),t('Month on month',r.mom),t('Quarter on quarter',r.qoq),t('Year on year',r.yoy),
@@ -1224,9 +1351,39 @@ function orgExplainRow(J,r,title){const i=r.inputs||{};const mon=(J.months||[]).
   actual:J.measure==='cases'?r.actual:null,rows:i.rows,rateNote:J.measure==='revenue'?`Revenue view: these organic cases valued at each client row's rate = ${inr(r.organic_month)} for the month, ${inr(r.organic_to_date)} so far; actual ${inr(r.actual)}.`:null})}
 
 /* Growth: organic vs actual */
-function organicSection(box,month,f){const gs=el('select',{'aria-label':'Organic breakdown'},[['zone','By zone'],['location','By location'],['client','By client'],['stakeholder','By stakeholder'],['pair','By location × client']].map(([v,l])=>el('option',{value:v},l)));
- const ms=el('div',{class:'seg',role:'group','aria-label':'Measure'},[['cases','Cases'],['revenue','Revenue']].map(([v,l],i)=>el('button',{class:'btn'+(i?'':' on'),'data-v':v},l)));let meas='cases';
- const host=el('div'),tr=el('div');box.append(el('h3',{},'Organic vs actual — effort growth'),el('p',{class:'note'},'Organic = the business we would expect with no special effort, from each location–client\'s own recent level, the usual seasonal pattern and working days. Above it = effort growth; below it = needs attention.'),
+function organicSection(box,month,f,G){const rev=S.measure==='revenue';const C0=(G&&G.cards)||{};
+ const PER=rev?['mom','qtd','qoq','yoy','qyoy','ytd'].filter(k=>C0[k]&&C0[k].available):['mtd','mom','qtd','qoq','yoy','qyoy'].filter(k=>C0[k]&&C0[k].organic&&C0[k].organic.organic_current!=null);
+ const ps=el('select',{'aria-label':'Organic comparison period'},PER.map(k=>el('option',{value:k},PERIODS[k])));if(PER.includes(OG.period))ps.value=OG.period;
+ const gs=el('select',{'aria-label':'Organic breakdown'},(rev?[['zone','By zone'],['unit','By billing unit'],['client','By client'],['stakeholder','By stakeholder']]:[['zone','By zone'],['location','By location'],['client','By client'],['stakeholder','By stakeholder']]).map(([v,l])=>el('option',{value:v},l)));
+ const host=el('div'),tr=el('div'),det=el('div');const F=rev?fmtL:fmt;
+ box.append(el('h3',{},'Organic vs actual — growth beyond business as usual'),el('p',{class:'note'},(rev?'Measure: actual billed revenue. Organic revenue = organic cases × the invoiced revenue per case of the last three completely billed months, adjusted for the month’s tracker rate. ':'Measure: cases. Organic = the business expected with no special effort, from each location × client’s recent level, the usual seasonal pattern and working days. ')+'For each comparison: growth beyond organic = actual growth − organic growth (= effort now − effort then). An estimate, not proof of cause.'),
+  el('div',{class:'tools'},el('label',{class:'note'},'Comparison ',ps),gs),host,tr,det);
+ if(!PER.length){host.append(el('p',{class:'note'},'No comparison with an organic estimate is available for this selection.'))}
+ async function load(){host.innerHTML='';if(!PER.length)return;const per=ps.value;OG.period=per;const c=C0[per]||{};const O=c.organic||{};
+  host.append(el('div',{class:'tiles orgcmp'},tile('Actual',F(O.actual_current),`${((c.current||{}).label||[]).join(' + ')} · earlier ${F(O.actual_previous)} (${((c.previous||{}).label||[]).join(' + ')})`),
+   tile('Actual growth',sgF(O.actual_growth,F),O.actual_growth_pct!=null?pctS(O.actual_growth_pct):'',O.actual_growth>=0?'good':'bad'),
+   tile('Organic expectation',F(O.organic_current),`earlier ${F(O.organic_previous)} · organic growth ${sgF(O.organic_growth,F)}${O.organic_growth_pct!=null?' ('+pctS(O.organic_growth_pct)+')':''}`),
+   tile('Growth beyond organic',sgF(O.beyond_organic,F),`effort now ${sgF(O.effort_current,F)}${O.effort_current_pct!=null?' ('+pctS(O.effort_current_pct)+')':''} · effort then ${sgF(O.effort_previous,F)}`,O.beyond_organic>=0?'good':'bad')),
+   O.covered_share!=null&&(O.covered_share<0.98||O.covered_share_prev<0.98)?el('p',{class:'note'},`Organic estimates cover ${pct(O.covered_share)} of actual in the current period and ${pct(O.covered_share_prev)} in the earlier one (new pairs have no estimate); the figures above use covered pairs only.`):null);
+  const wait=el('p',{class:'note'},'Loading breakdown…');host.append(wait);
+  let J;try{J=await growthApi(month,f,{p:{group:gs.value}})}catch(e){wait.textContent='Breakdown unavailable: '+e.message;return}
+  wait.remove();const rows=(J.groups||[]).filter(g=>g.id===per).map(g=>({...g,org_growth:g.org_cur!=null&&g.org_prev!=null?g.org_cur-g.org_prev:null}));
+  const mv=v=>v==null?'–':chgEl(v,null,rev);
+  host.append(table(rows,[{key:'group',label:{zone:'Zone',location:'Location',unit:'Billing unit',client:'Client',stakeholder:'Stakeholder'}[gs.value]||'Group'},
+   {key:'cur',label:'Actual (current)',num:1,fmt:F},{key:'prev',label:'Actual (earlier)',num:1,fmt:F},{key:'chg',label:'Actual growth',num:1,fmt:mv,raw:r=>r.chg},{key:'pct',label:'Growth %',num:1,fmt:v=>v==null?'–':pctS(v)},
+   {key:'org_cur',label:'Organic (current)',num:1,fmt:F},{key:'org_prev',label:'Organic (earlier)',num:1,fmt:F},{key:'org_growth',label:'Organic growth',num:1,fmt:mv,raw:r=>r.org_growth},
+   {key:'beyond',label:'Growth beyond organic',num:1,fmt:mv,raw:r=>r.beyond},{key:'effort_cur',label:'Effort now',num:1,fmt:mv,raw:r=>r.effort_cur},{key:'effort_prev',label:'Effort then',num:1,fmt:mv,raw:r=>r.effort_prev},{key:'pairs',label:'Pairs',num:1,fmt:fmt}],
+   {name:`organic_${S.measure}_${per}_${gs.value}.csv`,rowAction:gs.value==='unit'?null:(r=>entityCtx(gs.value,r.group,month,f))}),
+   el('p',{class:'note'},'Organic columns sum pairs with an organic estimate in both periods; actual columns include every pair. Group totals reconcile to the scorecard.'))}
+ ps.onchange=load;gs.onchange=load;load();
+ if(rev){const T=((G&&G.trend)||[]).filter(t=>t.status==='complete'&&t.billed!=null);if(T.length){const cv=el('canvas');const k=C();
+  tr.append(el('div',{class:'card',style:'margin-top:12px'},el('h4',{style:'margin:0 0 6px'},'Completely billed months: actual billed vs organic expectation'),el('div',{class:'chartbox'},cv)));
+  chart(cv,{drill:(ds,i)=>T[i]?bizCtx(T[i].month,f,{title:ctxTitle(f)+' — '+mlabel(T[i].month)}):null,data:{labels:T.map(x=>mlabel(x.month)),datasets:[{type:'bar',label:'Actual billed',data:T.map(x=>x.billed),backgroundColor:k.blue},{type:'line',label:'Organic expectation',data:T.map(x=>x.organic_billed),borderColor:k.ochre,backgroundColor:k.ochre,tension:.2}]},
+   options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:it=>`${it.dataset.label}: ${fmtL(it.raw)}`}}}}})}}
+ else{const d=el('details',{class:'card',style:'margin-top:12px'},el('summary',{},'This month in detail — organic so far, projection and branch activity (cases)'));det.append(d);let done=false;d.addEventListener('toggle',()=>{if(d.open&&!done){done=true;const b=el('div');d.append(b);organicMonthDetail(b,month,f)}})}}
+function organicMonthDetail(box,month,f){const gs=el('select',{'aria-label':'Organic breakdown'},[['zone','By zone'],['location','By location'],['client','By client'],['stakeholder','By stakeholder'],['pair','By location × client']].map(([v,l])=>el('option',{value:v},l)));
+ const ms=el('div',{class:'seg',role:'group','aria-label':'Measure'},[['cases','Cases'],['revenue','Expected min. revenue']].map(([v,l],i)=>el('button',{class:'btn'+(i?'':' on'),'data-v':v},l)));let meas='cases';
+ const host=el('div'),tr=el('div');box.append(el('h3',{},'Organic so far this month'),el('p',{class:'note'},'Organic = the business we would expect with no special effort, from each location–client\'s own recent level, the usual seasonal pattern and working days. Above it = effort growth; below it = needs attention.'),
   el('div',{class:'tools'},gs,ms),host,tr);
  async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading…'));let J;try{J=await api('organic',{month,filters:f,group:gs.value,measure:meas})}catch(e){host.innerHTML='';host.append(el('div',{class:'banner err'},e.message));return}
   host.innerHTML='';const T=J.total||{};const money=meas==='revenue';const v=x=>money?inr(x):fmt(x);

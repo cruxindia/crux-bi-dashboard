@@ -64,3 +64,14 @@
 | L25 | No verified external competitor or market data | No competitor volumes or market share | Not shown or estimated; opportunity uses verified branch lists and internal peer benchmarks only |
 | L26 | Organic estimate error ≈ 6.7 % Pan India, ≈ 21.5 % per location × client (last 10 months) | Pair-level effort is indicative | Error shown on the page; small pairs flagged |
 | L27 | First uncached growth request takes 3–5 s | Slower first view after a data change for filtered selections | Pan India pre-computed every 10 minutes; results cached until data changes |
+
+## Revenue-first growth (22-Oct-2026)
+| # | Limitation | Effect | Handling |
+|---|---|---|---|
+| L28 | Invoices are complete only for Mar–Aug 2026 (finance workbooks start Apr-2026; snapshot 15-Oct) | MoM and QTD on actual revenue only; QoQ, YoY, quarter vs last year and YTD on invoices unavailable (YoY from Mar-2027) | Card shows the reason and the expected-minimum benchmark; never substituted |
+| L29 | Sep-26 and Oct-26 invoices still being raised at the snapshot date | Not compared | Listed as "in progress" with billed so far and coverage |
+| L30 | Gujarat, Bhopal-MP and Lucknow invoices mostly do not name the city | Their locations cannot be ranked separately on revenue | Compared as one billing unit; a location filter inside them lists the unit under "not in totals" |
+| L31 | No revenue-recognition rules; invoice date ≠ service date in general | "Actual billed revenue" = invoiced value by invoice month (ex-GST), not recognised revenue | Invoice month used as service month (best-fit evidence in the method); per-case labelled approximate |
+| L32 | Revenue organic model: Pan India error 6.1 %, unit × client WAPE 29.2 % (4 back-test months) | Pair-level growth beyond organic is indicative, noisier than the cases model (21.5 %) | Error, coverage and basis (pair / family / unavailable) shown; unavailable never shown as zero |
+| L33 | Some tracker revenue has no identified invoice (Aug-26: 20 unit × client pairs, ₹11.26 L expected minimum) — cause not established (could be billing under another client or location, or not yet invoiced) | Billed below expected for those pairs | Confidence note "no invoices identified" and billing coverage per pair |
+| L34 | First uncached revenue growth request takes about 4–10 s (more under concurrent load) | Slower first view after a data change for a new filter | Pan India pre-computed every 10 minutes; cached until data changes |

@@ -114,3 +114,26 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 - `bi.api_db_health()` (admin only, `bi_admin('db_health')`): database bytes, limit, headroom, growth per month, days to limit, 15 largest relations (heap/index/TOAST/free space), jobs, storage buckets, safeguards, owner actions.
 - `bi.test_growth(month)`: 14 SQL tests (fixtures + independent recalculation).
 - Trigger `zz_skip_noop_update` on `bi.point_store` and `bi.case_store`; `point_store.last_batch` / `case_store.last_batch` = batch that last changed the row.
+
+## Revenue-first growth and finance integration (22-Oct-2026, wave 092)
+Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum revenue; location × client × month) · **invoices** = `bi.fin_inv_month` (each invoice once, by invoice month) · **receipts** = `bi.fin_rcpt_agg` (by receipt month) · **outstanding** = `bi.fin_os_agg` (by snapshot upload; never summed across snapshots) · **derived monthly** = `bi.fin_rev_facts` (computed on request, not stored). Existing tables reused; nothing new is persisted except the columns below.
+
+| Object | Change / purpose |
+|---|---|
+| `bi.fin_config` | + `billing_complete_days` = 30 (a month is completely billed once the snapshot is this many days past month end), `zone_billing_share` = 0.10 (zone becomes one billing unit when this share of its invoices is zone-level) |
+| `bi.fin_os_agg` | + `gross`, `tds` (ledger GST-inclusive and TDS, by snapshot) |
+| `bi.fin_inv_month` | + `gross_l`, `tds_l`, `net_l` (ledger values of the identified invoices; receipt-only invoices have basic only) |
+| `bi.fin_upload.controls.content_sha256` | SHA-256 over every staged chunk (`sheet|seq|sha256(rows)` joined by `;`, ordered by sheet, seq) — a re-saved copy of an imported workbook (new file bytes, same rows) is refused at `begin` (browser hash) or rejected at `commit` (server hash, audit `fin_duplicate_content`) |
+| `bi.fin_derive()` | Receipts repeated across current uploads counted once (latest upload wins); identical credits inside one file kept and flagged; summary `receipts_repeated_across_uploads` |
+| `bi.fin_billing_basis()` | Snapshot and receipt cut-off dates, first / last completely billed month, rule text |
+| `bi.fin_month_status(month, basis)` | none / incomplete / complete / partial |
+| `bi.fin_unit_map()` | Location → billing unit (location or zone), members, basis |
+| `bi.fin_rev_facts(from, to, filters, at)` | Unit × client family × month: billed, invoices, settled, open, cash allocated, gross / TDS / net, expected minimum, cases, organic cases, `unit_ok`, `unit_split` |
+| `bi.fin_org_rev(months, filters, at)` | Revenue organic expectation per unit × family × month with basis, reference months and rates |
+| `bi.fin_org_validation(filters)` | Revenue organic back-test (also computed inside `api_growth_rev`) |
+| `bi.api_growth_rev(month, filters, p)` | Revenue measure of the Growth / Organic / Overview / Revenue & collections business view: `billing`, `cards` (mom, qtd, qoq, yoy, qyoy, ytd — available or reason + expected-minimum benchmark), `in_progress`, `trend` (13 months), `organic.validation`, `pairs` (unit × client with per-period cur / prev / chg / pct / expected / cases / org / beyond / effort, owner as mapped, branches, Force1, TAT, settlement, confidence), `groups` (`p.group` = client / unit / zone / stakeholder / region), `not_in_totals`, `method` |
+| `bi.api_growth(month, filters, p)` | Cases measure: cards and pairs now carry organic for both periods (`org_cur`, `org_prev`, `org_growth`, `beyond`, `effort_cur`, `effort_prev`), `groups`, `measure` = cases |
+| `public.bi_call('growth', {measure})` | `measure: 'revenue'` → `api_growth_rev`, otherwise `api_growth` (same cache and authorisation path) |
+| `bi.api_collections` | `flow` months gain expected minimum, cash allocated, gross / TDS in ledger, billing status; top-level `billing` |
+| `bi.test_growth_rev(month)` | 14 SQL checks of the revenue and cases comparisons, recomputed from base tables |
+| `bi.test_fin_fixtures()` | 15 controlled finance fixtures through the real ingest and derive, always rolled back |

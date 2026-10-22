@@ -131,3 +131,40 @@
 | Owner | Stakeholder mapped to the location at the end of the completed month (effective-dated); flagged when it changed during the month |
 | Priority | Indicative cases × (1 + effort %, capped ±50 %) × 0.5 when TAT is worse or SLA met < 80 %; only pairs with ≥ 30 cases and a peer benchmark |
 | Confidence notes | Small base, new this month, no business last year, location attributes changed in 12 months, owner changed, no organic estimate |
+
+## Revenue-first metric dictionary (22-Oct-2026, wave 092 — one definition per metric, computed in SQL only)
+The UI, exports, drills and Ask Crux read these from `bi.api_growth_rev`, `bi.api_growth`, `bi.api_collections` and the finance aggregates. No comparison is computed in the browser.
+
+| Code | Metric | Exact definition | Never |
+|---|---|---|---|
+| A | **Expected minimum revenue** (tracker revenue) | Σ Zonal Tracker leaf revenue (`G` = cases × rate, rate changes applied by report day) for the period, non-roll-up locations (`bi.v_month_business.revenue`). Shown as "Expected minimum revenue" with the tooltip "an expectation from tracker cases × agreed rate, not money billed" | Labelled or summed as actual revenue; used in place of a missing actual |
+| B | **Actual billed (invoiced) revenue** — the default measure | Σ invoice basic value **ex-GST** of distinct invoices (canonical number `bi.fin_inv_key`) by **invoice month** (the month in the invoice number), from the latest outstanding snapshot ∪ receipts that quote an invoice; each invoice once (`bi.fin_inv_month.basic`). GST, gross, TDS and net are held separately (`gross_l`, `tds_l`, `net_l`, from ledger lines). It is invoiced value, not recognised revenue (no recognition rules are available). The invoice month is used as an approximation of the service month only because invoices are raised at month end and invoice-month billing tracks the same month's cases best (location × client correlation 0.92 vs 0.84 next month and 0.90 previous month, Apr–Aug 2026); per-case figures are therefore labelled approximate | Taken from "Actual Outstanding"; mixed with GST; substituted by A when missing |
+| — | Billing completeness | A month is **complete** when the outstanding snapshot date ≥ month end + 30 days (`fin_config.billing_complete_days`) and the month is on or after the month before the first receipt period (`first_complete` = Mar-2026). Sep-26 and Oct-26 are **partial** (snapshot 15-Oct); months before Mar-26 are **incomplete**. Only complete months are compared | Comparing a partial month |
+| — | Billing unit | A location, or a whole zone when ≥ 10 % (`zone_billing_share`) of the zone's complete-month invoice value cannot be placed below zone level (Gujarat, Bhopal-MP, Lucknow). A location filter inside a zone-billed unit leaves that unit out of the totals and lists it under "not in totals" | Splitting zone invoices across cities by guesswork |
+| C | **Cash received** | Bank-account credits by **receipt month** (incl. GST, after TDS), `bi.fin_rcpt_agg.amount`; split into invoice-matched (`inv_amount`, receipt quotes an invoice) and **unallocated** (no invoice). Matched receipts are further classed closed / partial / open against the ledger. A receipt repeated in two current uploads is counted once (latest upload); identical credits inside one file are kept and sent to review. TDS is not cash | Counted as revenue of the receipt month |
+| D | **Outstanding** | Σ "Actual Outstanding" of the latest outstanding snapshot, always shown with its as-of date (15-Oct-2026). A corrected file for the same date replaces the earlier one; different dates sit side by side | Summed across snapshots |
+| E | **Settlement / realisation** | For invoices of an invoice month: settled ÷ invoiced, **both ex-GST** — settled = basic × (1 − open ÷ net) for ledger invoices, full basic for invoices seen only in receipts. Cash allocated to the cohort (receipts quoting those invoices, incl. GST) is reported next to it, never divided by ex-GST revenue. "Cash cover" (cash ÷ expected minimum revenue) is labelled a cash-flow indicator because the bases differ | Dividing GST-inclusive cash by ex-GST revenue without saying so |
+| F | **Revenue per case** | Expected per case = A ÷ tracker cases; billed per case = B ÷ tracker cases; settled per case (Revenue & collections) = settled ex-GST ÷ tracker cases — numerator and denominator always the **same months and the same pairs**. Billing gap = B − A (and ÷ A). Labelled approximate (invoice month ≈ service month, see B) | Per-case on mismatched months |
+
+### Revenue period comparisons (`bi.api_growth_rev`)
+| Period | Revenue definition |
+|---|---|
+| MoM | Latest complete billing month vs the month before (Aug-26 vs Jul-26 on 22-Oct) |
+| QTD (billing) | Complete billing months of the running FY quarter vs the same months of the previous quarter (Jul+Aug-26 vs Apr+May-26) — sums, never averages |
+| QoQ / quarter vs last year / YoY / YTD | Available only when every month on both sides is complete. Today unavailable (Jan/Feb-26 and all of FY25 are not completely billed in the finance workbooks): the card says why and shows the expected-minimum benchmark instead. YoY on invoices becomes possible with Mar-2027 data |
+| MTD | Not available for invoices (raised at month end); shown as "in progress" with billed so far and coverage |
+
+| Field (every card, pair and group) | Definition |
+|---|---|
+| actual current / previous, change, change % | B for each side; change % hidden below ₹25,000 a month on the earlier side |
+| organic current / previous, organic growth | Σ revenue organic expectation for each side (below), covered pairs only |
+| growth beyond organic | (actual current − actual previous) − (organic current − organic previous) = effort current − effort previous |
+| effort | actual − organic for one period; effort % = effort ÷ organic |
+| covered share | share of actual billed value in pairs that have an organic estimate in every month of both sides; reported on each card |
+| like for like / structure | pairs billed in both periods; new / lost / expected-but-not-billed pairs with their values, so totals reconcile to pairs |
+| confidence notes (pair) | zone-combined invoices; no invoices although the tracker shows expected revenue; invoiced < 50 % or > 200 % of expected; small base (< ₹25,000 last month); new this month; organic from the family ratio; no organic estimate; owners differ across combined locations; owner changed this month |
+
+### Revenue organic expectation (`bi.fin_org_rev`)
+`organic billed (unit × client, month t) = organic cases(t) × billed per case(ref) × rate(t) ÷ rate(ref)` where organic cases come from the case organic model (`bi.organic_store`, unchanged), billed per case(ref) = Σ billed ÷ Σ cases over up to the last 3 complete months before t in which the pair had billed > 0, expected > 0 and ≥ 10 cases, excluding months whose billed ÷ expected ratio is outside 0.5–2× the pair's median; at least 2 such months needed. Otherwise **family basis**: family uplift (Σ billed ÷ Σ expected over the same months) × the pair's tracker rate. Otherwise **unavailable** (never zero). Organic expected-minimum = organic cases × rate(t).
+**In a comparison both sides use one basis** — the reference months before the first month of the *current* side (`bi.fin_org_basis`) — so expected organic growth comes only from organic case growth and tracker-rate changes, never from a change of estimate between the two sides. (Before bi_092m each month used its own window, so a pair could switch from the family ratio in one month to its own rate in the next and show a large "beyond organic" figure that was only a change of estimate.) The monthly estimate and the back-test keep each month's own window.
+Back-test (May–Aug 2026, each month predicted from earlier months only): Pan India mean error 6.1 %, unit × client WAPE 29.2 %, coverage 98.9 %; naive "last month's billing" 12.7 % / 26.1 %. Effort is an estimate of business above or below business as usual — not proof of cause, and a mapped owner is not the cause.

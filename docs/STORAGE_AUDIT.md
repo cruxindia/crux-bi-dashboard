@@ -204,3 +204,46 @@ Every re-import of a month's Case Wise / Point Wise file rewrote **every row, ev
 ### 9.6 Forecast after cleanup
 
 New Force1 data adds **about 42.2 MB per month** (average of the last three complete months: ≈ 110 k visits at 336 bytes including the derived cache and indexes, plus ≈ 31 k cases at 188 bytes). Headroom is 17.7 MB to 500,000,000 bytes (≈ **13 days → about 3-Nov-2026**), or 41.9 MB if Supabase counts 500 MiB (≈ 30 days). The owner script adds about 16 days. The Pro-plan or archive decision (SOW Q10/Q19) is therefore urgent. Admin workspace → Database health shows these figures live.
+
+## 10. Re-audit and safe remediation — 22-Oct-2026 (wave 092)
+Measured live with `pg_database_size` (all databases = the Free-plan figure), `pg_total_relation_size`, `pgstattuple_approx`, `pgstatindex`. Plan: **Free** (organisation plan checked 22-Oct); project `ACTIVE_HEALTHY`, not read-only (`default_transaction_read_only = off`).
+
+| When (UTC, 22-Oct) | All databases (bytes) | `postgres` (bytes) | Note |
+|---|---:|---:|---|
+| 03:59 — start of this wave | 482,996,401 | 467,881,107 (derived: all − templates 15,115,294) | after the 21-Oct cleanup + overnight growth |
+| 04:50 — before remediation | 486,453,425 (derived: postgres + templates) | 471,338,131 (measured) | migrations, finance re-derive, cache entries and test fixtures of this wave (+3.5 MB) |
+| 04:52–04:53 — after VACUUM FULL / REINDEX | **475,697,329** (04:53) | 460,573,843 (04:52) | **−10,764,288 bytes** on `postgres`, measured immediately before (471,338,131) and after |
+| 05:07 — after plain `vacuum (analyze)` and new cache entries | 476,909,745 | 461,794,451 | visibility maps rebuilt (+0.3 MB); response cache refilled after the API change |
+| 05:16 — after the scheduled jobs rebuilt `point_derived`, `organic_store`, `employee`, `branch_activity` | **484,896,945** | — | my cache-invalidation row (action `api_change`, 05:09) marked the derived tables stale; their rebuild undid ≈ 8 MB of the compaction (see below) |
+
+**Actions taken (no rows removed, all reversible by nature):**
+| Object | Before (bytes) | After (bytes) | Freed | Why it was safe |
+|---|---:|---:|---:|---|
+| `point_derived_pkey` (REINDEX) | 22,945,792 | 17,661,952 | 5,283,840 | leaf density 69 %, fragmentation 50 %; same index rebuilt. It grows back at the next full rebuild of `point_derived` (TRUNCATE + INSERT in non-key order) — the owner script removes it for good |
+| `organic_store` (VACUUM FULL) | 3,530,752 | 1,884,160 | 1,646,592 | 45 % free space; rebuildable model output |
+| `api_cache` (VACUUM FULL) | 8,527,872 | 7,143,424 | 1,384,448 | 20 % free space + dead rows; cache |
+| `zt_row` (VACUUM FULL) | 13,991,936 | 12,861,440 | 1,130,496 | 7 % free + 2,522 dead rows; row count 63,465 before and after |
+| `fin_review` (VACUUM FULL) | 1,048,576 | 532,480 | 516,096 | dead rows; 1,027 rows before and after |
+| `branch_activity` (VACUUM FULL) | 892,928 | 450,560 | 442,368 | 50 % free; 4,296 rows before and after |
+| `employee` (VACUUM FULL) | 745,472 | 376,832 | 368,640 | 50 % free; 686 rows before and after |
+| `branch_seen` (VACUUM FULL) | 16,564,224 | 16,564,224 | 0 | Fill factor 50 is deliberate (monthly monitor updates in place) — left as is |
+
+Row counts were checked after the rewrite (92,239 / 13,272 / 63,465 / 686 / 4,296 / 1,127 / 1,027 / 785,150). Follow-up found by the admin browser test: VACUUM FULL leaves the visibility map empty, which made `api_db_health` read whole tables (15 s → the Database health page failed to load); a plain `vacuum (analyze)` of the large tables fixed it (0.9 s). This is now in OPERATIONS.md.
+
+**What lasted — honest result.** Compaction is durable only for tables written by imports. `point_derived_pkey` (back to 23,379,968 bytes), `organic_store` (3,530,752), `employee` (745,472) and `branch_activity` (892,928) are rebuilt by scheduled jobs and returned to their earlier size within 20 minutes, triggered by the audit row this wave inserted to invalidate the response cache (the cache-only action `cache_bump` should have been used — now in OPERATIONS.md). Durable gains: `zt_row` −1.10 MB, `fin_review` −0.48 MB. Net over the wave: 482,996,401 → 484,896,945 bytes (+1.9 MB: this wave's functions, finance re-derive and refilled response cache outweigh the durable compaction). A second REINDEX of `point_derived_pkey` was attempted at 05:16 and cancelled by the statement timeout while the cache warm-up job held the table — not retried (it would also block readers while waiting). The levers that last are the owner script (index drop ≈ 23 MB, stale cache ≈ 5.9 MB) and, if the key is kept, inserting `point_derived` rows in key order (needs an owner change to `refresh_point_derived`, which contains TRUNCATE and cannot be redefined from this connection).
+
+**Duplicate import prevention (finance):** a re-saved copy of an imported workbook is refused before staging (browser content hash) or rejected at commit (server content hash) — previously such a copy would have stored another ≈ 2.7 MB of `fin_part` rows. Verified live by `test_fin_ui` A5b and by fixtures F01/F02.
+
+**Largest objects now** (bytes, total incl. indexes): point_store 168.8 M (raw visits, authoritative) · point_derived 89.3 M (rebuildable cache) · client_branch_master 51.5 M (authoritative) · case_store 42.9 M (raw cases) · branch_seen 16.6 M · client_branch_history 15.9 M (history, required) · branch_cov_mv 15.2 M (rebuildable) · zt_row 12.9 M (tracker rows) · api_cache 7.6 M (cache) · fin_part 2.8 M (finance evidence). All `bi` indexes: 109.3 M.
+
+**Not done, with the precise blocker:**
+| Candidate | Size | Blocker / reason | Supported path |
+|---|---:|---|---|
+| Drop `point_derived_pkey` | 17.7 MB now, ≈ 23 MB after each rebuild | DROP is refused by this connection | Owner runs `supabase/owner/owner_storage_cleanup.sql` step 1 (dry-run check and re-create line included) |
+| Remove response-cache rows of old versions | ≈ 5.9 MB (1,032 rows on 22-Oct) | DELETE is refused by this connection (rewriting payloads instead would be a work-around, so not done) | Owner script step 3, then `vacuum (full, analyze)` + `vacuum (analyze)` |
+| pg_cron run history | < 1 MB | DELETE refused | Owner script step 4 |
+| Retire `point_derived` (compute from `point_store`) | up to ≈ 89 MB | Design + performance test needed (api_force1, api_attrition, api_drill_ops, Ask Crux read it) | SOW Q10/Q19 |
+| Archive old visit history | ≈ 35 MB per month archived | Owner decision and tested restore | SOW Q10/Q19 |
+| Not candidates | — | Audit log, raw case/visit history, tracker rows, finance uploads and parts (evidence), invoice/receipt identity, mapping history, branch master/history | Kept |
+
+**Headroom and forecast:** 484.9 MB (all databases, 05:16 UTC) → 15.1 MB below 500,000,000 bytes, 39.4 MB below 500 MiB. At ≈ 42 MB of new Force1 data per month that is about **11 days (≈ 2-Nov-2026)**, or ≈ 28 days if the limit is 500 MiB. The owner script (≈ 29 MB) adds about 3 weeks. The Pro-plan or archive decision is urgent.
