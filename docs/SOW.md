@@ -15,7 +15,7 @@
 **Method.** Back-test grid of weights on Dec-2025 → Sep-2026 (each month from earlier months only) → store rebuild → independent recomputation (`organic_pairs`, scalar recomputation of the three largest pairs) → API bases → UI → branch-manager model → load and overlap check → APIs / Ask / scrub → tests → docs → deploy → live verification.
 **Risks.** Only 76 % of business has a usable month last year (L43); Aug-2026 is the largest miss (13.4 %, L44); free-text list ambiguities (open questions 20–23); storage at 488,968,369 bytes (all databases, 22-Oct 10:20 UTC) — about 11 MB below 500,000,000 (Q19).
 **Acceptance.** Requirement audit "22-Oct-2026 13:30 / 14:42" at the end of this file.
-**Status.** See the requirement audit at the end of this file (updated after deployment).
+**Status (22-Oct-2026, 16:05 IST, live).** Deployed commit 104e88c; live page md5 d8eafe73… equals the build. SQL: organic test passed, cases growth 14/14, revenue 14/14, fixtures 15/15, wave/addendum/drill 4/4 · 8/8 · 6/6, acceptance 26/27 (T21 known), branch-manager admin 11/11 (rolled back). Live UI: wave 093 11/11, revenue 14/14, admin 40/40, Stage-2 13/13, Ask 15/15; security 41/41. Storage 488,968,369 bytes all databases (Q19).
 
 ## Wave 22-Oct-2026 (09:20 IST brief) — revenue-first growth, organic comparison and finance integration
 **Objective.** Move from "are case volumes changing" to: is the business earning more (actual billed revenue), is the improvement genuine relative to expectation (organic), is the money collected (invoice → cash), and where management action matters most; plus safe database-size remediation.
@@ -337,3 +337,17 @@
 | §9 DB size audit and safe remediation; no deletion of audit/financial/identity/history; before/after; precise blockers | Done — compaction of job-rebuilt tables proved transient; durable gain small; owner script extended (≈ 29 MB) | STORAGE_AUDIT §10 (482,996,401 → 484,896,945 bytes net over the wave); D126; Q19 |
 | §10 Tests (1–10) incl. controlled fixtures, desktop/mobile, drills, exports, filters, admin boundary, server-side writes | Done | TEST_REPORT 22-Oct (09:20 brief) section; security 33/33 |
 | §11 Completion report | Delivered in the conversation, 22-Oct-2026 | — |
+
+## Requirement audit — 22-Oct-2026 13:30 / 14:42 IST messages
+| Requirement (as given) | Status | Evidence |
+|---|---|---|
+| "Use YoY, MoM and QoQ in calculating the Organic expectations, like … while calculating seasonal" | Implemented (verified) — organic = 50 % MoM + 40 % QoQ (with trend) + 10 % YoY (own same-month shape); weights chosen by back-test | D129; METRICS; `bi.test_organic` passed; store = independent function; three largest pairs recomputed one by one; L9 accuracy 5.8 % / 21.3 % |
+| The explanation must show how the figure is built | Implemented — every organic "?" shows the three bases, weights and the blend line from the API | D130; B8 (live) |
+| Revenue organic follows the new model | Implemented — revenue organic values the blended organic cases | R6, R12 (6.4 % / 29.6 %) |
+| Location-wise branch-manager list with effective dates (incl. client-specific and "all locations of X before Feb-2026" rules) | Loaded (58 rows, 41 current; no overlaps); names only in the database | D131, D132; checks in the summary above; open questions 20–23 for list ambiguities |
+| Show the manager where growth is analysed | Implemented — rankings, billing gap, CSV, mover lists, pair drills, organic breakdown "By branch manager", Ask findings; changes flagged with previous → current | D133, D134; B1–B7 (live) |
+| Maintain branch managers without code | Implemented — Admin → Master data & mapping (add with end-previous, end, withdraw; audited; admin key checked on the server) | OPERATIONS; rolled-back admin test 11/11; S27–S31, P04 |
+| Names never to AI providers; not proof of cause | Implemented — scrub extended; "mapped responsibility, not proof of cause" in drills, Ask and method | bi_093e (5/5 tokens replaced); L47 |
+| "check Ask Crux is not working" | Checked and fixed — the endpoint answered; revenue-growth questions were routed to other handlers. New revenue-growth handler and routing; collections wording corrected | D135; A13–A15 live; probe_ask 12/12 |
+| Do not commit names / secrets; additive migrations; no deletions | Done — 0 names in bi_093 migrations and in the repository diff; token in 0 files; migrations additive (function patches, new table) | scans in this session |
+

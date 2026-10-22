@@ -308,3 +308,15 @@ All results below were executed; nothing is marked passed without a run. "Local"
 | `test_stage2` | **13 / 13** |
 | `test_ask_ui` (+ A13 revenue growth with organic, stakeholder and branch manager; A14 below organic; A15 collections still collections) | **15 / 15** |
 
+### Live (deployed commit 104e88c; live page md5 d8eafe73… equals the build)
+| Suite | Result |
+|---|---|
+| `test_093_ui live` | **11 / 11** |
+| `test_rev_ui live` | **14 / 14** |
+| `test_adm live` | **40 / 40** |
+| `test_stage2 live` | **13 / 13** |
+| `test_ask_ui live` (incl. A13–A15 revenue routing) | **15 / 15** |
+| `probe_ask` (viewer desktop, admin desktop, viewer 390 px; 4 questions each) | 12 / 12 answered in 2.6–6.1 s, no console errors, no failed requests |
+| `test_security` (anon key against the live API; + S27–S31 branch-manager admin denied without / with a wrong key, functions not callable directly, table not readable; P04 admin list) | **41 / 41** |
+| `test_fin_ui` | run on the local build against the live API (22 / 22, same build as deployed); not repeated live because it re-submits finance workbooks |
+
