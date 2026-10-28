@@ -286,6 +286,7 @@
 22. **Nagpur unit 30, non-MSME clients** — MSME answered 28-Oct 19:04 (the MSME manager for the full history, D158). For the other clients at unit 30 the 28-Oct 17:41 answer said the manager changed but gave no date; they stay with the current manager for the full history until a change date is given.
 23. ~~Unassigned location~~ — answered 22-Oct 16:42; assigned (D141).
 24. **Newer finance workbooks:** not received yet (28-Oct); receipts end 13-Oct-2026, outstanding 15-Oct-2026. The "_new" files of 28-Oct have the same rows as the imported ones.
+27. **New tracker location (first seen in the 26- and 27-Oct tracker files, location id 52, Amaravati team):** listed by the tracker under Rest Of Maharashtra Zone but has no zone, Force1 unit or branch manager mapping yet, so its 311 October cases show as "(no zone)" on the zone map. Map it in Admin → Mapping (zone with its start date, Force1 unit, branch manager).
 26. **Operations handlers and collections owners** (D164): the screen is ready (Admin → Mapping); enter the people per location with their start dates.
 25. **Tracker files of 21-Oct and 22-Oct-2026 have no rates** (every leaf row empty; revenue present). Revenue figures are unaffected (D147); re-upload those two files if the rate column should be visible for those dates.
 2. Confirm the D18 reading of tracker columns M and N.
