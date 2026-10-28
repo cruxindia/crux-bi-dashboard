@@ -349,3 +349,12 @@ The one-off acceptance job now sets `statement_timeout = 10min` as its own state
 | `test_fin_ui` | not re-run: it re-submits the finance workbooks and the upload code is unchanged in this wave |
 
 Notes. Runs in this workspace load the three CDN libraries (same URLs and versions) from local copies, because the workspace's connection to the CDNs was intermittently very slow (page "load" timeouts); live runs below load the CDNs as users do. Two runs failed while the acceptance job was running in parallel ("Database unavailable: signal timed out", HTTP 502) and passed when re-run on their own; one transient request failed in the workspace proxy without reaching Supabase (no failed request in the API log).
+
+### Live (deployed commit c94580d; live page md5 39d65014… equals the build)
+| Suite | Result |
+|---|---|
+| `test_094_ui live` (CDN libraries loaded from the CDNs) | **13 / 13** |
+| `test_093_ui live` · `test_ask_ui live` · `test_stage2 live` (CDNs) | **11 / 11 · 15 / 15 · 13 / 13** |
+| `test_rev_ui live` · `test_adm live` | **14 / 14 · 40 / 40** — first attempts failed only on the workspace's connection to the spreadsheet-library CDN (page-load timeout; one `ERR_CONNECTION_RESET` on `xlsx.full.min.js`); re-run with the libraries served locally |
+| `probe_ask` (viewer desktop, admin desktop, viewer 390 px; 4 questions each) | 12 / 12 answered in 2.6–8.2 s, no console errors, no failed requests |
+| `test_security` (live API) | **44 / 44** |

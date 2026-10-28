@@ -15,7 +15,7 @@
 **Method.** Shortcomings list → list corrections → manager model at client level → API (business, finance, hand-overs) → reconciliation tests against the tracker, invoices, receipts and outstanding → growth measure → UI → Ask → acceptance → docs → deploy → live verification.
 **Risks.** 72 % of October receipts (₹36.6 L of ₹50.9 L to 13-Oct) carry no location, so per-manager collections are understated (L49); finance data ends 13/15-Oct; storage 521,416,881 bytes (all databases, 28-Oct 07:07 UTC) — over the 500,000,000-byte free-plan limit (Q19, Q10).
 **Acceptance.** Requirement audit "22-Oct-2026 16:42" at the end of this file.
-**Status (28-Oct-2026).** _Filled in after deployment — see the status line below the requirement audit._
+**Status (28-Oct-2026, 13:30 IST, live).** Deployed commit c94580d; live page md5 39d65014… equals the build. SQL: `bi.test_bm` 11/11, cases growth 14/14, revenue 14/14, acceptance 26/27 (T21 known; T25 repaired at its cause, D147). Live UI: wave 094 13/13, revenue 14/14, admin 40/40, wave 093 11/11, Ask 15/15, Stage-2 13/13; Ask probe 12/12 (2.6–8.2 s, no console errors); security 44/44. Storage 521.4 million bytes (all databases) — over the 500,000,000-byte limit (Q19).
 
 ## Wave 22-Oct-2026 (13:30 / 14:42 IST) — organic expectation from MoM, QoQ and YoY; branch managers; Ask Crux check
 **Objective.** (1) Build the organic expectation from the same three views used for the seasonal pattern — last month (MoM), last quarter (QoQ) and the same month last year (YoY) — instead of a three-month weighted average. (2) Load the location-wise branch-manager list with its effective dates and show the manager beside the stakeholder wherever growth is ranked, drilled or answered. (3) Check that Ask Crux works.
