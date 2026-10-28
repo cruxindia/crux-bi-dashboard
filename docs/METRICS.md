@@ -203,3 +203,17 @@ Checks (`bi.test_bm`, 11): M1 managers add up to the total = tracker revenue to 
 | Checks | `bi.test_fin_attr()` F1–F3 totals = invoices / receipts / outstanding; F4 known client codes; F5 share of the latest receipt month tied to a location. `bi.test_bm()` M3–M5 manager rows + not attributable = source |
 
 Overview hero (wave 095): Revenue view = expected revenue so far, target revenue, working-day pace (target × working days elapsed ÷ working days in month), projection = revenue so far ÷ the share of a month normally done by this working day (same share as the case projection; range scaled the same way), organic expectation so far and effort, billed (month being billed and last complete month) and collected (receipt month to the last receipt date). Cases view unchanged.
+
+## Operations, outstanding and case location (28-Oct-2026, wave 096)
+| Item | Rule |
+|---|---|
+| Case location | Rule book order: area office → office learned for the branch (60 %+) → place in the branch name → branch customers' area (2+ cases, 60 %+) → residence pincode (longest prefix) → the file's usual location; Nagpur places follow the file's team |
+| Force1 case attribution (utilisation) | Bank branch in the master first; otherwise the case location above; cases outside their unit flagged |
+| Opening backlog (day d) | Force1 cases received before d and not completed before d (IST) |
+| Closing backlog | opening + received − completed; must equal an independent count of cases open at the end of the day |
+| Ageing bucket | calendar days from the received time to the end of the last reported day, open cases only: 0–1, >1–3, >3–7, >7–15, >15–30, >30 days (non-overlapping) |
+| Gross outstanding | location sheets' outstanding (collection + reconciliation target) |
+| Received, not linked to an invoice | the sheets' "Less Unadj" lines (money in the bank not yet applied to an invoice) |
+| Net invoice balance | gross − received not linked; workbook adjustments listed, never deducted |
+| Workbook check | summary-sheet rows matched to location sheets by total (within ₹1); a missing sheet or a difference ≥ ₹1 = "not reconciled" |
+| Receipts not tied to a location | receipt-month receipts with no location ÷ all receipts of that month |

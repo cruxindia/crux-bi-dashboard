@@ -389,3 +389,30 @@ Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5
 |---|---|
 | `test_094_ui live` · `test_ask_ui live` · `test_adm live` · `test_rev_ui live` | **13 / 13 · 15 / 15 · 40 / 40 · 14 / 14** (CDN libraries served locally in this workspace; page and data live) |
 | `test_security` (+ S35 reference loader with a wrong token denied; S36 `bi.fin_attr` not readable through the API) | **46 / 46** |
+
+## 28-Oct-2026 (night) — wave 096: case location rules, outstanding, operations, roles, charts, graphics, Ask (bi_096a–bi_096k)
+### SQL (production, after the changes)
+| Check | Result |
+|---|---|
+| Case relocation (one-off job, all 236,441 cases) | **succeeded** — 37,566 moved; basis: branch name 122,050 · area office 72,057 · branch customers' area 39,839 · pincode 1,672 · file default 758 · learned office 40 · not identified 25 (was 11,644 without a location); every move in `bi.case_loc_change`; new upload batches relocate automatically (seen on the 28-Oct evening uploads) |
+| Force1 utilisation re-check (Sep-2026) | case utilisation 60.48 % → 61.09 %; matched 28,897 → 29,192; above business count 2,094 → 1,750; no unit above 100 % |
+| Nagpur MSME | `branch_manager_code_at(30, MSME, 1-Jun-2025)` = the MSME manager; non-MSME at unit 30 = the other Nagpur manager; `bi.test_bm()` M6, M7, M11 pass |
+| `bi.api_os_recon()` (15-Oct workbook) | gross ₹11,28,16,964 · unadjusted ₹2,73,15,946 · net ₹8,55,01,019 (gross − unadjusted = net); summary ₹11,07,85,671; gap ₹20,31,293 = Nagpur (second team) sheet ₹19,96,131 + Toyota ₹35,163 missing from the summary; unadjusted gap ₹21,77,248 = that sheet's unadjusted; `reconciled` = false (shown, not changed) |
+| `bi.api_ops()` Oct-2026 (to 27-Oct, before the evening uploads) | 4,221 + 31,264 − 29,452 = 6,033 = independent open count = Σ ageing; every day's closing = next day's opening |
+| Roles (`bi.person_role_admin`, run inside a rolled-back block) | add; overlap refused; "end the current one" closes the earlier row the day before; client-specific row wins; reason < 5 characters refused; withdraw; 4 audit rows |
+| Branch monitor (manual run 28-Oct) | skipped — RBI IFSC release of 1-Sep-2026 unchanged; coverage 3,888 / 84,659 (4.59 %) |
+| AI-provider scrub | full names and names inside location labels → [name]; place names (Nagpur, Pune, Mumbai, Goa, Raipur, Bhopal, Delhi, Rajasthan, Lucknow) kept |
+| `bi.test_bm()` · `bi.test_fin_attr()` · `bi.test_growth()` · `bi.test_growth_rev()` · `bi.test_fin_fixtures()` | **11 / 11 · 5 / 5 · 14 / 14 · 14 / 14 · 15 / 15** |
+| `run_acceptance_tests()` (one-off job) | **26 / 27** — T21 unchanged (source-file block totals) |
+| Ask Crux, 30 new questions (`w096/ask_eval.py`, multi-turn, false premise, named manager, Pune, SBI / Delhi, BOM / Pune, Bhubaneswar, finance gap, TAT, open cases, outstanding, growth) | first run **17 / 30** → after bi_096g–k **30 / 30** |
+| Ask Crux, earlier 30 questions (`test_ask3.py`) | **30 / 30** (two expectations updated to the wave-094 design: "revenue so far" → revenue answer; "revenue per case vs rate" now routes to the finance answer) |
+| Names in bi_096 migrations | none |
+
+### Browser (local build against the live API; CDN libraries and web fonts served locally)
+| Suite | Result |
+|---|---|
+| `test_096_ui` W1–W11 (lines above bars in every mixed chart on Overview, TAT, tracker, Force1, both finance views; Operations / Collections card = APIs; sequence identities; TAT case flow one scale; Cash view three measures; zone tile map toggle and drill; in-cell bars; menu icons; roles card; 390 px; console) | **11 / 11** |
+| `test_094_ui` · `test_rev_ui` · `test_093_ui` · `test_stage2` | **13 / 13 · 14 / 14 · 11 / 11 · 13 / 13** (S11 now reads the TAT level table; the new ageing table also lists Guwahati) |
+| `test_adm` | **39 / 40** — Z1: one request cut by this workspace's proxy at ≈30 s while the warm-up ran |
+| `test_ask_ui` | **10 / 15** — the Ask Edge Function took 16–24 s per answer right after the cache refresh; calls over ≈30 s are cut by this workspace's proxy ("Failed to fetch"); direct calls returned 200 with the right intents |
+| `test_security` (+ S37 role add with a wrong key, S38 role list without a key, S39–S41 new tables not readable) | **51 / 51** |

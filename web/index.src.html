@@ -57,7 +57,18 @@ body.ddopen,body.fopen{overflow:hidden}
 .filters select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);min-width:130px}
 .mode{margin-left:12px;font-size:12px;color:var(--muted)}
 .asof{font-size:12px;padding:3px 9px;border-radius:12px;background:var(--blue-soft);color:var(--ink);white-space:nowrap}
-.kpi4 .tile .v{font-size:26px}.kpi4 .tile .k{font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+.kpi4 .tile .v{font-size:26px}
+.ico{display:inline-flex;vertical-align:-3px;margin-right:8px;opacity:.85}.navh .ico{margin-right:6px}
+.dbar{display:inline-block;min-width:64px;padding:1px 5px;border-radius:3px;text-align:right;background:linear-gradient(90deg,color-mix(in srgb,var(--blue) 22%,transparent) var(--w),transparent var(--w))}
+.stripw{margin-top:8px}.strip{display:flex;height:12px;border-radius:4px;overflow:hidden;gap:2px;background:var(--panel)}.strip i{display:block;min-width:3px}
+.stripw .legend{margin-top:4px;font-size:11.5px}
+.zgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin:8px 0}
+.zt2{border-radius:8px;padding:8px 9px;border:1px solid var(--line);cursor:pointer;transition:transform .12s,box-shadow .12s;min-height:74px;display:flex;flex-direction:column;gap:2px}
+.zt2:hover,.zt2:focus-visible{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.12);outline:none}
+.zt2 b{font-size:12.5px;line-height:1.2}.zt2 .zv{font-size:17px;font-weight:600}.zt2 .zn{font-size:11.5px;color:var(--muted)}
+.zt2 .zb{height:4px;border-radius:2px;background:color-mix(in srgb,var(--ink) 12%,transparent);margin-top:auto}.zt2 .zb i{display:block;height:4px;border-radius:2px;background:var(--ink)}
+.zscale{display:flex;align-items:center;gap:4px;font-size:11.5px;flex-wrap:wrap}.zscale i{display:inline-block;width:22px;height:10px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){.zt2{transition:none}.zt2:hover{transform:none}}.teams .team{border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;background:var(--panel)}.teams .team:hover{border-color:var(--blue)}.teams .th{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}.teams .tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 0;border-top:1px solid var(--line)}.teams .tk{color:var(--muted)}.teams .tv{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}.teams .tn{grid-column:1/3;font-size:12px;color:var(--muted)}.kpi4 .tile .k{font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:11px}
 .hl{margin:0;padding-left:18px}.hl li{margin:6px 0;line-height:1.45}
 section{padding:20px 22px 40px;max-width:1500px}
 h2{font:600 20px/1.25 var(--f);margin:0 0 4px}h3{font:600 15px/1.3 var(--f);margin:22px 0 8px}
@@ -75,7 +86,7 @@ h2{font:600 20px/1.25 var(--f);margin:0 0 4px}h3{font:600 15px/1.3 var(--f);marg
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
 .tile .k{font-size:12px;color:var(--muted)}.tile .v{font:700 26px/1.15 var(--fn);font-variant-numeric:tabular-nums}.tile .n{font-size:12px;color:var(--muted)}
 .good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--ochre)}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}.grid2>*{min-width:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
 .chartbox{position:relative;height:260px}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;max-height:620px;overflow-y:auto}
@@ -263,9 +274,15 @@ const AREAS=[['Executive overview',[['overview','Executive overview']]],['Busine
  ['Operations & TAT',[['tat','TAT & operations'],['force1','Force1 utilisation']]],['Revenue & collections',[['collections','Revenue & collections']]],
  ['Data readiness',[['health','Data readiness']]],['Ask Crux',[['ask','Ask Crux']]]];
 const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_finance','Admin · Finance review'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health']];
+/* wave 096: simple line icons for the menu areas (decorative, aria-hidden) */
+const ICO={'Executive overview':'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+ 'Business performance':'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>','Operations & TAT':'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ 'Revenue & collections':'<path d="M7 5h10M7 9.5h10M7 5h3.5a4.25 4.25 0 010 8.5H7l7 6"/>','Data readiness':'<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/>',
+ 'Ask Crux':'<path d="M4 5h16v11H10l-5 4v-4H4z"/>'};
+function ico(lab){const sp=el('span',{class:'ico','aria-hidden':'true'});if(ICO[lab])sp.innerHTML=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICO[lab]}</svg>`;return sp}
 function buildNav(){const n=$('#navbtns');n.innerHTML='';AREAS.forEach(([lab,items])=>{const g=el('div',{class:'navgrp',role:'group','aria-label':lab});
- if(items.length>1)g.append(el('div',{class:'navh'},lab));
- items.forEach(([k,l])=>g.append(el('button',{'data-k':k,class:items.length>1?'sub':'',onclick:()=>{if(k==='ask'){if($('#drawer').classList.contains('open'))drawer(false);const p=$('#askPanel');if(!p||p.classList.contains('hidden'))$('#askBtn').click();return}go(k)}},items.length>1?l:lab)));n.append(g)})}
+ if(items.length>1)g.append(el('div',{class:'navh'},ico(lab),lab));
+ items.forEach(([k,l])=>g.append(el('button',{'data-k':k,class:items.length>1?'sub':'',onclick:()=>{if(k==='ask'){if($('#drawer').classList.contains('open'))drawer(false);const p=$('#askPanel');if(!p||p.classList.contains('hidden'))$('#askBtn').click();return}go(k)}},...(items.length>1?[l]:[ico(lab),lab]))));n.append(g)})}
 function drawer(open){const d=$('#drawer'),b=$('#burger'),sc=$('#scrim');d.classList.toggle('open',open);sc.classList.toggle('open',open);b.setAttribute('aria-expanded',String(open));b.setAttribute('aria-label',open?'Close menu':'Open menu');
  if(open){const c=d.querySelector('button[aria-current="page"]')||d.querySelector('button');c&&c.focus()}else b.focus()}
 document.addEventListener('click',e=>{if(e.target.closest('#burger'))drawer(!$('#drawer').classList.contains('open'));else if(e.target.id==='scrim')drawer(false)});
@@ -290,9 +307,20 @@ function noPointData(m){const lm=String(S.meta.freshness.point_latest_created_is
  return el('div',{class:'banner'},el('p',{style:'margin:0 0 8px'},`No Force1 visit data for ${mlabel(m)} yet. Visit data currently runs to ${mlabel(lm)}; an admin can add newer data in the Upload centre.`),
   has?el('button',{class:'btn primary',onclick:()=>{$('#fMonth').value=lm;render()}},'Show '+mlabel(lm)):null)}
 function kill(){S.charts.forEach(c=>c.destroy());S.charts=[]}
+/* Mixed bar + line charts: lines (and their points) are always drawn above the bars (lower Chart.js "order" = drawn later = on top). Applies to every chart, including ones created directly. */
+if(window.Chart&&!Chart.registry.plugins.get('linesOnTop'))Chart.register({id:'linesOnTop',beforeUpdate(ch){const D=ch.config.data&&ch.config.data.datasets||[],base=ch.config.type,ty=d=>d.type||base;
+ if(!(D.some(d=>ty(d)==='bar')&&D.some(d=>ty(d)==='line')))return;
+ D.forEach(d=>{if(ty(d)==='line'){if(d.order==null)d.order=-1;if(d.pointRadius==null)d.pointRadius=3;if(d.pointHoverRadius==null)d.pointHoverRadius=5;if(d.borderWidth==null)d.borderWidth=2.5;
+   if(d.pointBackgroundColor==null&&typeof d.borderColor==='string')d.pointBackgroundColor=d.borderColor}else if(ty(d)==='bar'&&d.order==null)d.order=1})}});
 function chart(canvas,cfg){const css=getComputedStyle(document.documentElement);Chart.defaults.color=css.getPropertyValue('--muted').trim();Chart.defaults.borderColor=css.getPropertyValue('--line').trim();Chart.defaults.font.family="'Archivo',system-ui";if(cfg.drill){const dr=cfg.drill;cfg.options=cfg.options||{};cfg.options.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'};cfg.options.onClick=(e,els)=>{if(!els.length)return;const cx=dr(els[0].datasetIndex,els[0].index);if(cx)setTimeout(()=>DD.go(cx,canvas),0)};delete cfg.drill;canvas.setAttribute('aria-label','Chart — click a bar or point for details')}const c=new Chart(canvas,cfg);S.charts.push(c);return c}
 const C=()=>{const s=getComputedStyle(document.documentElement);return{blue:s.getPropertyValue('--blue').trim(),ochre:s.getPropertyValue('--ochre').trim(),bad:s.getPropertyValue('--bad').trim(),good:s.getPropertyValue('--good').trim(),muted:s.getPropertyValue('--muted').trim()}};
 function tile(k,v,n,cls){return el('div',{class:'tile'},el('div',{class:'k'},k),el('div',{class:'v '+(cls||'')},v),n?el('div',{class:'n'},n):null)}
+/* wave 096 graphics: in-cell bar (share of target), part-to-whole strip with a text legend (colour never alone) */
+function dbar(v){return v==null?'–':el('span',{class:'dbar',style:`--w:${Math.max(0,Math.min(100,v*100)).toFixed(1)}%`,title:pct(v)+' of the target so far'},pct(v))}
+function strip(parts,label,F=fmt){const P=parts.filter(p=>p.v>0),t=P.reduce((a,p)=>a+p.v,0)||1;
+ return el('div',{class:'stripw'},el('div',{class:'strip',role:'img','aria-label':label+': '+P.map(p=>`${p.k} ${F(p.v)}`).join(', ')},
+  ...P.map(p=>el('i',{style:`flex:${p.v/t} 1 0;background:${p.col}`,title:`${p.k}: ${F(p.v)} (${pct(p.v/t)})`}))),
+  el('div',{class:'legend'},...P.map(p=>el('span',{},el('i',{style:'background:'+p.col}),`${p.k} ${F(p.v)}`))))}
 function csv(rows,cols,name){const esc=v=>{v=v==null?'':String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};const t=[cols.map(c=>esc(c.label)).join(','),...rows.map(r=>cols.map(c=>esc(c.raw?c.raw(r):r[c.key])).join(','))].join('\n');
  const save=async()=>{if(window.claude&&claude.use){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data:t});return}}catch(e){if(e&&e.code==='cancelled')return}}const a=el('a',{href:URL.createObjectURL(new Blob([t],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()};save()}
 function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[],rowAction=null,expand=null}={}){
@@ -351,6 +379,17 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    tl('Projection — month end',fc.available&&fc.curve_projection?fmt(fc.curve_projection):'–',fc.available&&fc.curve_range?`range ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} · ${pct(fc.curve_achievement)} of target`:'needs 2+ months of daily reports','',hint('projection')),
    og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null));
    const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))})}
+  {const tb=el('div',{class:'card teams',style:'margin:12px 0',id:'teamCards'},el('h3',{style:'margin-top:0'},'Operations and Collections — '+mlabel(m)),el('p',{class:'note'},'Loading…'));s.append(tb);
+   Promise.all([api('ops',{month:m,filters:f}).catch(()=>null),api('os_recon',{month:m,filters:{}}).catch(()=>null)]).then(([O,R])=>{if(!tb.isConnected)return;tb.lastChild.remove();
+    const T2=ok?B.total:{},F2=ok?B.finance||{}:{},una=ok?rcptUna(B):0;
+    const side=(t,sub,rows,go_,extra)=>{const d=el('div',{class:'team'},el('div',{class:'th'},el('b',{},t),el('span',{class:'note'},sub)),...rows.map(([k,v,n2,cls])=>el('div',{class:'tr'},el('span',{class:'tk'},k),el('span',{class:'tv '+(cls||'')},v),n2?el('span',{class:'tn'},n2):null)),extra||null);d.tabIndex=0;d.setAttribute('role','button');d.onclick=go_;d.onkeydown=e=>{if(e.key==='Enter')go_()};return d};
+    tb.append(el('div',{class:'grid2'},
+     O?side('Operations','Force1 cases · to '+ddmm(O.as_of),[['Received',fmt(O.received_mtd)],['Completed',fmt(O.closed_mtd),O.tat&&O.tat.median_hours!=null?`median ${O.tat.median_hours} h`:''],
+       ['Open now',fmt(O.closing_backlog),`opened the month at ${fmt(O.opening_backlog)}`],['Open > 7 days',fmt(O.over_7_days),pct(O.closing_backlog?O.over_7_days/O.closing_backlog:null)+' of open',O.over_7_days>0.3*O.closing_backlog?'bad':'']],()=>go('tat'),
+       strip((O.ageing||[]).map((a,i)=>({k:a.bucket.replace(' days','d').replace(' day','d'),v:a.cases,col:`color-mix(in srgb,var(--ochre) ${[22,36,50,64,82,100][i]||100}%,var(--panel))`})),'Open cases by age')):el('p',{class:'note'},'Operations figures unavailable.'),
+     side('Collections','Finance · receipts to '+ddmm(F2.receipts_through)+(R&&R.as_of?' · outstanding '+ddmm(R.as_of):''),[['Collected',fmtL(T2.collected_current),mlabel(F2.receipt_month)+(una>0.2?' · ⚠ '+pct(una)+' not tied to a location':'')],
+       ['Gross outstanding',R?fmtL(R.gross):fmtL(T2.outstanding),'collect + reconcile'],['Received, not linked to an invoice',R?fmtL(R.unadjusted):'–','reconcile',R&&R.unadjusted>0?'warn':''],['Net invoice balance',R?fmtL(R.net):'–',R&&!R.reconciled?'⚠ workbook summary ≠ sheets':'']],()=>{FV.view='cash';go('collections')},
+       R&&R.gross>0?strip([{k:'Net invoice balance',v:R.net,col:'var(--blue)'},{k:'Received, not linked',v:R.unadjusted,col:'var(--ochre)'}],'Gross outstanding',fmtL):null)))})}
   if(ok){const bmb=el('div',{class:'card',style:'margin:12px 0',id:'bmPanel'});s.append(bmb);bmTable(bmb,B,m,f,{compact:true});bmb.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('people')},'All branch managers and hand-overs →')))}}
  const pcb=el('div',{class:'card',style:'margin:12px 0'},el('h3',{style:'margin-top:0'},'Period comparison'),el('p',{class:'note'},'Loading…'));s.append(pcb);
  growthApi(m,f).then(G=>{if(!pcb.isConnected)return;pcb.innerHTML='';const rev=G.measure==='revenue';
@@ -656,10 +695,36 @@ async function forceBody(s,m,f){const [rows,trend,man]=await Promise.all([api('f
 /* ---------- TAT & operations ---------- */
 const openM=m=>m===(S.meta.months||[])[0];
 const TATG=[['zone','Zone'],['location','Location'],['client','Client'],['unit','Location group'],['branch','Branch'],['pin','PIN code (points only)'],['employee','Employee (points only)']];
+function opsFlow(box,O,D,m,f){const c=C(),Dy=O.daily||[],ok=O.closing_backlog===O.open_now_check,AG=O.ageing||[],T=O.tat||{};
+ const trk=Object.fromEntries((Array.isArray(D)?D:(D&&D.days)||[]).map(d=>[String(d.date).slice(0,10),d.change]));
+ box.append(el('div',{class:'card',style:'margin-top:14px'},el('h3',{style:'margin-top:0'},'Case flow — '+mlabel(O.month)+(O.as_of?' to '+ddmm(O.as_of):'')),
+  el('p',{class:'note'},'Force1 cases (Operations). Opening backlog + received − completed = closing backlog, every day.'+(ok?' ✓ The closing backlog equals an independent count of open cases.':' ⚠ Closing backlog and open-case count differ — see the method.')),
+  el('div',{class:'tiles kpi4'},tile('Opening backlog',fmt(O.opening_backlog),'open on '+ddmm(O.month)),tile('Received',fmt(O.received_mtd),'new Force1 cases this month'),
+   tile('Completed',fmt(O.closed_mtd),T.median_hours!=null?`median ${T.median_hours} h · 90th percentile ${T.p90_hours} h`:''),
+   tile('Open now',fmt(O.closing_backlog),`${fmt(O.over_7_days)} older than 7 days · oldest ${O.oldest_days} days`,O.over_7_days>0.3*O.closing_backlog?'bad':'')),
+  (()=>{const cv=el('canvas');const w=el('div',{class:'chartbox'},cv);setTimeout(()=>chart(cv,{data:{labels:Dy.map(d=>d.date.slice(8)+'.'+d.date.slice(5,7)),datasets:[
+    {type:'bar',label:'Received',data:Dy.map(d=>d.incoming),backgroundColor:c.blue+'cc'},{type:'bar',label:'Completed',data:Dy.map(d=>d.closed),backgroundColor:c.good+'cc'},
+    {type:'line',label:'Closing backlog (open cases)',data:Dy.map(d=>d.closing),borderColor:c.ochre,backgroundColor:c.ochre}]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,title:{display:true,text:'cases (one scale)'}}}}}),0);return w})(),
+  el('details',{},el('summary',{},'Day by day — with the Zonal Tracker dated count beside it (a different measure, never added)'),
+   table(Dy.map(d=>({...d,tracker:trk[d.date]??null})),[{key:'date',label:'Date',fmt:ddmm},{key:'tracker',label:'Zonal Tracker: added since previous report',num:1,fmt:v=>v==null?'–':fmt(v)},
+    {key:'opening',label:'Force1 opening backlog',num:1,fmt:fmt},{key:'incoming',label:'Received',num:1,fmt:fmt},{key:'closed',label:'Completed',num:1,fmt:fmt},{key:'closing',label:'Closing backlog',num:1,fmt:fmt}],{name:'case_flow.csv',search:false}))));
+ const cv2=el('canvas');
+ box.append(el('div',{class:'card',style:'margin-top:14px'},el('h3',{style:'margin-top:0'},'Open cases by age'),
+  el('p',{class:'note'},'Calendar days from the case\'s received time to the end of '+ddmm(O.as_of)+'. Buckets do not overlap. "Past due" = past the case\'s due time.'),
+  el('div',{class:'grid2'},el('div',{class:'chartbox'},cv2),
+   table(AG,[{key:'bucket',label:'Age'},{key:'cases',label:'Open cases',num:1,fmt:fmt},{key:'share',label:'Share',num:1,fmt:pct},{key:'past_due',label:'Past due',num:1,fmt:fmt}],{name:'open_case_ageing.csv',search:false})),
+  el('h4',{},'By location'),
+  table(O.ageing_by_location||[],[{key:'location',label:'Location',fmt:v=>v||'not identified'},{key:'open',label:'Open',num:1,fmt:fmt},{key:'over_7',label:'Older than 7 days',num:1,fmt:fmt},{key:'over_30',label:'Older than 30 days',num:1,fmt:v=>v>0?el('span',{class:'bad'},fmt(v)):'0'},{key:'oldest_days',label:'Oldest (days)',num:1,fmt:v=>v==null?'–':(+v).toFixed(0)}],{name:'open_cases_by_location.csv'}),
+  el('p',{class:'note'},O.method)));
+ setTimeout(()=>chart(cv2,{type:'bar',data:{labels:AG.map(a=>a.bucket),datasets:[{label:'Open cases',data:AG.map(a=>a.cases),backgroundColor:AG.map((a,i)=>c.ochre+(['38','5c','80','a3','d1','ff'][i]||'ff')),borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}}),0)}
 const vTat=guard(async s=>{const m=$('#fMonth').value,f=filters();
  s.append(el('h2',{},'TAT — '+mlabel(m)),el('p',{class:'lede'},'Three measures at every level: overall case TAT (Completed − Received), field TAT (Field review − Assigned, field points) and document TAT (rule shown in the table; provisional and changeable by an administrator). Count, average, median and P90, in hours. A measure that cannot be calculated or is not reliable says why.'));
  const tb=el('div',{},'Loading…');s.append(tb);
  api('tat_summary',{month:m,filters:f,group:'total'}).then(r=>{tb.innerHTML='';tb.append(tatStd((r||[])[0],{note:openM(m)?'Open month: only work completed so far is timed, so TAT reads lower than it will at month end.':''}))}).catch(e=>{tb.textContent='TAT could not be loaded: '+e.message});
+ /* Operations: case flow (opening + received − completed = closing) and open-case ageing — Force1 Case Wise, IST days */
+ const ob=el('div',{id:'opsFlow'},el('p',{class:'note'},'Loading case flow…'));s.append(ob);
+ Promise.all([api('ops',{month:m,filters:f}),api('daily',{month:m,filters:f}).catch(()=>[])]).then(([O,D])=>{if(!ob.isConnected)return;ob.innerHTML='';opsFlow(ob,O,D,m,f)}).catch(e=>{ob.textContent='Case flow could not be loaded: '+e.message});
  const cv=el('canvas'),tn=el('p',{class:'note'},'Loading trend…');const msel=el('select',{'aria-label':'TAT measure'},[['case','Overall case TAT'],['field','Field TAT'],['document','Document TAT']].map(([v,l])=>el('option',{value:v},l)));
  s.append(el('div',{class:'card',style:'margin-top:14px'},el('h3',{},'Trend — median and P90 by month'),el('div',{class:'tools'},msel),el('div',{class:'chartbox'},cv),tn));
  let TR=null;const drawT=()=>{if(!TR)return;const k=msel.value,c=C();
@@ -765,6 +830,21 @@ const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();
   tile('Receipts not in the ledger',fmtL(k.receipts_not_in_ledger),`${fmt(k.receipts_not_in_ledger_n)} receipts against invoices still shown fully unpaid`,k.receipts_not_in_ledger>0?'warn':''),
   tile('Unallocated receipts (this year)',fmtL(k.unallocated_fytd),'Received without an invoice number'),
   tile('Open before April 2024',fmtL(k.pre_apr_2024),'Kept in the outstanding balance as recorded')));
+ {const ob=el('div',{class:'card',style:'margin-bottom:14px',id:'osRecon'},el('h3',{style:'margin-top:0'},'Outstanding — collection and reconciliation workload'),el('p',{class:'note'},'Loading…'));s.append(ob);
+  api('os_recon',{month:m,filters:{}}).then(R=>{if(!ob.isConnected)return;ob.lastChild.remove();if(!R||!R.available){ob.append(el('p',{class:'note'},'No outstanding workbook imported yet.'));return}
+   const adj=(R.adjustments||[]).filter(a=>a.amount!=null);
+   ob.append(el('p',{class:'note'},`Whole company (filters do not apply) · snapshot ${ddmm(R.as_of)} · ${fmt(R.lines)} invoice lines · three separate measures, never netted silently`),
+    el('div',{class:'tiles kpi4'},tile('Gross — collect and reconcile',fmtL(R.gross),'Managers\' target: open invoices, including money already received but not yet linked to them'),
+     tile('Received, not yet linked to an invoice',fmtL(R.unadjusted),'The workbook\'s "unadjusted" receipts — reconcile them against invoices',R.unadjusted>0?'warn':''),
+     tile('Net invoice balance to collect',fmtL(R.net),'Gross − received but not linked'),
+     (()=>{const miss=(R.rows||[]).filter(r=>Math.abs(r.diff_total||0)>=1);return tile('Workbook check',R.reconciled?'✓ Reconciled':'⚠ Summary ≠ sheets',R.reconciled?'Summary sheet = location sheets':`Summary sheet ${fmtL(R.summary&&R.summary.gross)} vs location sheets ${fmtL(R.gross)} · difference ${fmtL(R.gross-(R.summary&&R.summary.gross||0))}`+(miss.length?' — '+miss.map(r=>`${r.sheet||r.summary_row} ${fmtL(r.diff_total)} (${r.status})`).join('; '):''),R.reconciled?'good':'bad')})()),
+    R.gross>0?strip([{k:'Net invoice balance',v:R.net,col:'var(--blue)'},{k:'Received, not linked to an invoice',v:R.unadjusted,col:'var(--ochre)'}],'Gross outstanding',fmtL):null,
+    adj.length?el('p',{class:'note'},'Workbook adjustments listed, not deducted (they need approval first): '+adj.map(a=>`${a.label} ${fmtL(a.amount)}`).join(' · ')):null,
+    el('details',{},el('summary',{},'Summary sheet vs location sheets — where the difference comes from'),
+     table(R.rows||[],[{key:'summary_row',label:'Summary row',fmt:v=>v||'–'},{key:'sheet',label:'Location sheet',fmt:v=>v||'–'},{key:'summary_total',label:'Summary total',num:1,fmt:fmtL},{key:'sheet_total',label:'Sheet total',num:1,fmt:fmtL},
+      {key:'diff_total',label:'Difference',num:1,fmt:v=>Math.abs(v||0)<1?'–':el('span',{class:'bad'},fmtL(v))},{key:'summary_unadj',label:'Summary unadjusted',num:1,fmt:fmtL},{key:'sheet_unadj',label:'Sheet unadjusted',num:1,fmt:fmtL},
+      {key:'diff_unadj',label:'Difference (unadjusted)',num:1,fmt:v=>Math.abs(v||0)<1?'–':el('span',{class:'bad'},fmtL(v))},{key:'status',label:'Status',fmt:v=>v==='matches'?'matches':el('b',{class:'bad'},v)}],{name:'outstanding_reconciliation.csv',search:false})),
+    el('p',{class:'note'},R.method))}).catch(e=>{if(ob.isConnected){ob.lastChild.textContent='Reconciliation unavailable: '+e.message}})}
  const al=el('div',{class:'card',style:'margin-bottom:14px'},el('h3',{},'What needs attention'));finAlerts(al,d.alerts);s.append(al);
  // B — explanation charts
  const g=el('div',{class:'grid2'});const c1=el('canvas'),c2=el('canvas'),c3=el('canvas'),c4=el('canvas');
@@ -963,6 +1043,7 @@ async function mappingUI(s){const mq=await api('mapping_queue');const act=mapAct
  if(mq.point_types)s.append(el('h3',{},'Point type classification'),table(mq.point_types,[{key:'name',label:'Point type'},{key:'category',label:'Category',fmt:(v,row)=>{const sel=el('select',{'aria-label':'Category'},['field','document','tele','unknown'].map(o=>el('option',{value:o},o)));sel.value=v;sel.onchange=async()=>{try{await adminCall('mapping_update',{kind:'point_type',name:row.name,category:sel.value,status:'confirmed'})}catch(e){alert(e.message)}};return sel}},{key:'rule',label:'Rule'},{key:'evidence',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,120):'–'},{key:'review_status',label:'Review'},{key:'reviewed_by',label:'Reviewed by'}],{name:'point_types.csv'}));
  const gw=el('div');s.append(gw);groupUI(gw);
  const bmw=el('div',{class:'card',style:'margin-top:14px',id:'bmAdmin'});s.append(bmw);branchMgrUI(bmw);
+ const rlw=el('div',{class:'card',style:'margin-top:14px',id:'roleAdmin'});s.append(rlw);roleUI(rlw);
  const mdw=el('div');s.append(mdw);masterUI(mdw,{kind:'branch',fixed:true})}
 const RV='Listed in Admin workspace → Data-quality exceptions';
 const DQL={source_total_mismatch:['A source file\'s own total differs from the sum of its rows','The rows are used; the file total is kept as a check'],snapshot_date_mismatch:['Report date in the file name differs from the sheet',RV],
@@ -1012,7 +1093,7 @@ function bmTable(box,B,m,f,opt={}){const Fi=B.finance||{};const R=(B.managers||[
   P.length&&B.partial?el('div',{class:'insight'},el('div',{},el('strong',{},'On course to meet target: '),P.filter(r=>r.pace_ratio>=1).slice(0,4).map(r=>`${r.manager} (${pct(r.pace_ratio)})`).join(' · ')||'none at the current pace'),
    el('div',{},el('strong',{},'Furthest from target pace: '),P.slice(-3).reverse().map(r=>`${r.manager} (on course for ${pct(r.pace_ratio)})`).join(' · '))):null,
   table(R,[{key:'manager',label:'Branch manager'},{key:'n_locations',label:'Locations',num:1,fmt:(v,r)=>el('span',{title:(r.locations||[]).join(', ')},v==null?'–':fmt(v)),raw:r=>(r.locations||[]).join('; ')},
-   {key:'expected_revenue',label:B.partial?'Expected revenue so far':'Expected revenue',num:1,fmt:fmtL},{key:'revenue_target',label:'Target',num:1,fmt:fmtL},{key:'revenue_attainment',label:'Achieved',num:1,fmt:pct},
+   {key:'expected_revenue',label:B.partial?'Expected revenue so far':'Expected revenue',num:1,fmt:fmtL},{key:'revenue_target',label:'Target',num:1,fmt:fmtL},{key:'revenue_attainment',label:'Achieved',num:1,fmt:dbar},
    {key:'projected_attainment',label:B.partial?'On course for (% of target)':'Achieved % of target',num:1,fmt:v=>v==null?'–':el('span',{class:'chip '+(v>=1?'good':v>=0.9?'warn':'bad')},pct(v))},
    {key:'pace_gap',label:'vs pace needed today',num:1,fmt:v=>v==null?'–':chgEl(v,null,true),raw:r=>r.pace_gap},
    {key:'revenue_change_pct',label:B.partial?'vs same day last month':'vs last month',num:1,fmt:(v,r)=>r.revenue_change==null?'–':chgEl(r.revenue_change,v,true),raw:r=>r.revenue_change_pct},
@@ -1058,7 +1139,7 @@ async function ddBm(o,c){const B=await bmData(c.m,c.f,c.mgr);const r=(B.managers
   DD.charts.push(new Chart(cv,{data:{labels:lab,datasets:[{type:'bar',label:'Expected revenue (₹ lakh)',data:[...T.map(t=>t.expected_revenue/1e5),(r.expected_revenue||0)/1e5],backgroundColor:[...T.map(()=>k.blue),k.muted]},
    {type:'line',label:'Target (₹ lakh)',data:[...T.map(t=>t.revenue_target?t.revenue_target/1e5:null),r.revenue_target?r.revenue_target/1e5:null],borderColor:k.ochre,backgroundColor:k.ochre,pointRadius:2}]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false}}}))}
  const Pf=B.portfolio||[];o.append(el('h4',{},`Portfolio — ${mlabel(B.month)}${B.partial?' so far':''}`),Pf.length?table(Pf,[{key:'location',label:'Location'},{key:'client_label',label:'Client'},
-  {key:'expected_revenue',label:'Expected revenue',num:1,fmt:fmtL},{key:'revenue_target',label:'Target',num:1,fmt:fmtL},{key:'revenue_attainment',label:'Achieved',num:1,fmt:pct},
+  {key:'expected_revenue',label:'Expected revenue',num:1,fmt:fmtL},{key:'revenue_target',label:'Target',num:1,fmt:fmtL},{key:'revenue_attainment',label:'Achieved',num:1,fmt:dbar},
   {key:'pace_ratio',label:B.partial?'On course for (% of target)':'Achieved % of target',num:1,fmt:v=>v==null?'–':el('span',{class:'chip '+(v>=1?'good':v>=0.9?'warn':'bad')},pct(v))},
   {key:'revenue_change_pct',label:B.partial?'vs same day last month':'vs last month',num:1,fmt:(v,x)=>x.expected_revenue_prev_same_day==null?'–':chgEl((x.expected_revenue||0)-(x.expected_revenue_prev_same_day||0),v,true),raw:x=>x.revenue_change_pct},
   {key:'cases',label:'Cases',num:1,fmt:fmt},{key:'effort_pct',label:'Effort vs organic',num:1,fmt:v=>v==null?'–':pctS(v)},
@@ -1544,8 +1625,29 @@ function potentialSection(box,month,f){const gs=el('select',{'aria-label':'Poten
  gs.onchange=load;ms.querySelectorAll('button').forEach(b=>b.onclick=()=>{meas=b.dataset.v;ms.querySelectorAll('button').forEach(y=>y.classList.toggle('on',y===b));load()});load()}
 
 /* Overview: zones doing well / needing attention */
-async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance'));const host=el('div',{class:'grid2'});box.append(host);
+/* wave 096: zone tile map — every zone as a tile, coloured by distance from organic (or likely vs target), grey within ±5 %, value and text always shown */
+function zoneGrid(box,O,P,month,f){const pz={};((P&&P.rows)||[]).forEach(r=>pz[r.group]=r);
+ const rows=(O.rows||[]).filter(r=>(r.actual||0)>0||(r.organic_to_date||0)>0).sort((a,b)=>(b.actual||0)-(a.actual||0));if(!rows.length)return;
+ let mode='organic';const grid=el('div',{class:'zgrid',id:'zoneGrid'}),scale=el('div',{class:'zscale'});
+ const tint=x=>{if(x==null)return'var(--panel)';const a=Math.abs(x);if(a<=0.05)return'color-mix(in srgb,var(--muted) 14%,var(--panel))';
+  return`color-mix(in srgb,var(${x>0?'--good':'--bad'}) ${Math.round(16+Math.min(1,(a-0.05)/0.25)*36)}%,var(--panel))`};
+ const val=r=>{const p=pz[r.group]||{};return mode==='organic'?(r.organic_to_date>=100?r.effort_pct:null):(p.achievement_likely!=null?p.achievement_likely-1:null)};
+ const draw=()=>{grid.innerHTML='';rows.forEach(r=>{const lk=(pz[r.group]||{}).achievement_likely,v=val(r);
+   const t=el('div',{class:'zt2',tabindex:'0',role:'button','data-zone':r.group,style:'background:'+tint(v),
+     title:`${r.group}: ${fmt(r.actual)} cases so far · organic so far ${fmt(r.organic_to_date)} (${pctS(r.effort_pct)}) · likely ${lk!=null?pct(lk):'–'} of target. Click for the drill-down.`},
+    el('b',{},r.group),el('span',{class:'zv'},fmt(r.actual)),
+    el('span',{class:'zn'},mode==='organic'?(r.organic_to_date>=100?pctS(r.effort_pct)+' vs organic':'too small to compare'):(lk!=null?'likely '+pct(lk)+' of target':'no target')),
+    el('div',{class:'zb'},el('i',{style:`width:${Math.min(100,(lk||0)*100).toFixed(1)}%`})));
+   const fn=()=>DD.go(entityCtx('zone',r.group,month,f),t);t.onclick=fn;t.setAttribute('aria-label',r.group+' — open details');t.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}};grid.append(t)});
+  const lab=mode==='organic'?['below organic','above organic']:['below target','above target'];scale.innerHTML='';
+  scale.append(el('span',{},lab[0]),...[-0.3,-0.15,0,0.15,0.3].map(x=>el('i',{style:'background:'+tint(x)})),el('span',{},lab[1]),
+   el('span',{class:'note',style:'margin-left:8px'},'Grey = within ±5 %. Line under each zone = likely % of target. Click a zone for its drill-down.'))};
+ const seg=el('div',{class:'seg',role:'group','aria-label':'Colour zones by'},[['organic','vs organic'],['target','likely vs target']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-zm':k,
+  onclick:e=>{mode=k;seg.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
+ box.append(el('div',{class:'tools'},el('span',{class:'note'},'Colour by'),seg),scale,grid);draw()}
+async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance'));const host=el('div',{class:'grid2'});
  let O,P;try{[O,P]=await Promise.all([api('organic',{month,filters:f,group:'zone',measure:'cases'}),api('potential',{month,filters:f,group:'zone',measure:'cases'})])}catch(e){box.append(el('p',{class:'note'},'Zone view unavailable: '+e.message));return}
+ zoneGrid(box,O,P,month,f);box.append(host);
  const pz={};((P&&P.rows)||[]).forEach(r=>pz[r.group]=r);const rows=(O.rows||[]).filter(r=>r.organic_to_date>=100).map(r=>({...r,p:pz[r.group]||{}}));
  const line=r=>ddEl(el('li',{},el('strong',{},r.group),` — ${fmt(r.actual)} so far vs organic ${fmt(r.organic_to_date)} → ${r.effort>=0?'+':'−'}${fmt(Math.abs(r.effort))}${sgnp(r.effort_pct)}`,
   r.p.achievement_likely!=null?`; likely ${pct(r.p.achievement_likely)} of target`:'',' ',orgExplainRow(O,r)),()=>entityCtx('zone',r.group,month,f),r.group);
@@ -1816,6 +1918,26 @@ function penaltySection(box,month,f,manage=false){const host=el('div'),form=el('
 
 /* ---------- WEF-dated group mapping (Data quality) ---------- */
 /* ---------- Branch managers (effective-dated; Admin → Master data & mapping) ---------- */
+/* Operations handlers and collections owners (separate from branch managers; never replace them) */
+async function roleUI(box){const RL={operations_handler:'Operations handler',collections_owner:'Collections owner'};
+ box.append(el('h3',{style:'margin-top:0'},'Operations handlers and collections owners (WEF-dated)'),el('p',{class:'note'},'Separate roles by location and (optionally) client. They never replace the branch manager. Every change is audited; ended rows are kept.'));
+ const editor=el('input',{type:'text',placeholder:'Your name (audit trail)','aria-label':'Your name for the audit trail',style:'max-width:200px'});try{editor.value=localStorage.getItem('crux_editor')||''}catch{}
+ const call=async p=>{if(p.op==='list')return adminCall('person_role',{op:'list'});const ed=editor.value.trim();if(!ed)throw new Error('Enter your name for the audit trail first.');try{localStorage.setItem('crux_editor',ed)}catch{}return adminCall('person_role',{...p,editor:ed})};
+ const locs=(S.meta.locations||[]).filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label));
+ const role=el('select',{'aria-label':'Role'},Object.entries(RL).map(([k,v])=>el('option',{value:k},v)));
+ const loc=el('select',{'aria-label':'Location'},[el('option',{value:''},'Location…'),...locs.map(l=>el('option',{value:l.id},l.label))]);
+ const cli=el('select',{'aria-label':'Client (optional)'},[el('option',{value:''},'All clients'),...((S.meta.clients||[]).map(c=>el('option',{value:c.code},(c.label||c.code)+' only')))]);
+ const who=el('input',{type:'text',placeholder:'Name','aria-label':'Person name',maxlength:80}),from=el('input',{type:'date','aria-label':'With effect from'}),endPrev=el('input',{type:'checkbox','aria-label':'End the current one the day before'});endPrev.checked=true;
+ const out=el('span',{class:'note'}),host=el('div');
+ const lbl=(t,x)=>el('label',{class:'note',style:'display:inline-flex;gap:4px;align-items:center'},t,x);
+ const load=async()=>{host.innerHTML='';try{const r=await call({op:'list'});const R=r.rows||[];
+   host.append(R.length?table(R.map(x=>({...x,role_label:RL[x.role]||x.role})),[{key:'role_label',label:'Role'},{key:'location',label:'Location'},{key:'client_code',label:'Client',fmt:v=>v?v+' only':'all clients'},{key:'person',label:'Person'},{key:'valid_from',label:'From',fmt:v=>v?ddmm(v):'start'},{key:'valid_to',label:'To',fmt:v=>v?ddmm(v):'open'},
+     {key:'id',label:'',fmt:(v,row)=>{const b=el('button',{class:'btn sm',type:'button'},'Withdraw');b.onclick=async()=>{const reason=prompt('Reason for withdrawing (5+ characters)');if(!reason)return;try{await call({op:'withdraw',id:v,reason});load()}catch(e){out.textContent=e.message}};return b}}],{name:'roles.csv',search:false})
+     :el('p',{class:'note'},'No operations handlers or collections owners entered yet.'))}catch(e){host.append(el('p',{class:'note'},e.message))}};
+ const save=el('button',{class:'btn primary',type:'button'},'Add role');
+ save.onclick=async()=>{if(!loc.value||!who.value.trim()){out.textContent='Choose a location and enter a name.';return}save.disabled=true;out.textContent='Saving…';
+  try{await call({op:'add',role:role.value,location_id:+loc.value,client_code:cli.value||null,person:who.value.trim(),valid_from:from.value||null,end_previous:endPrev.checked});out.textContent='Saved.';who.value='';load()}catch(e){out.textContent=e.message}finally{save.disabled=false}};
+ box.append(el('div',{class:'tools',style:'flex-wrap:wrap'},editor,role,loc,cli,who,lbl('from',from),lbl('end the current one the day before',endPrev),save,out),host);load()}
 async function branchMgrUI(box){box.append(el('h3',{style:'margin-top:0'},'Branch managers (WEF-dated)'),
   el('p',{class:'note'},'One manager per location, optionally a different manager for one client family — or one client, such as BOM MSME — at that location (the narrower row wins). Dates are inclusive; leave "from" empty when the start is not known. Growth rankings, drills and Ask Crux show the manager mapped for each period — mapped responsibility, not proof of who caused a change. Changes are audited; a wrong row is withdrawn (kept for audit), not erased.'));
  const msg=el('p',{class:'note'},'Loading…'),host=el('div'),panel=el('div');box.append(msg);

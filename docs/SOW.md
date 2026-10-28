@@ -1,10 +1,17 @@
-# Statement of Work (living) — last updated 28-Oct-2026 (wave 095)
+# Statement of Work (living) — last updated 28-Oct-2026 (wave 096)
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
 **Scope.** In: the three source categories in the Drive folder; Supabase database; dashboard; upload centre; tests; docs. Out: other tracker sheets (`10 Days Analysis`, `Haque`, `June 2026 Target Sheet`, `Old Tracker till Feb 2026`) by instruction; the "BOM Testing Files" folder and the 83 MB zip (not one of the three categories).
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
+
+## Wave 096 (request 28-Oct-2026 19:04 IST) — finish the open list: case location rules, outstanding, operations, roles, charts, graphics, Ask
+**Objective.** "Yash for the full MSME history of Nagpur"; add (1) lines hidden behind bars in all charts and (2) better, more interactive graphics to the open list, and finish all of it: place rules on Force1 case records, outstanding gross / unadjusted / net and the summary-vs-detail gap, Operations vs Collections scorecards, daily backlog sequence, Force1 utilisation re-check, open-case ageing buckets, assignment roles, branch-coverage refresh, 30-question Ask evaluation.
+**Inputs.** Live database (area office, branch name, residence pincode and file group are already held per case, so the Google Sheet offered in the message was not needed); "Case mapping logic and method" rule book (27-Oct); outstanding workbook controls (upload of 15-Oct); RBI IFSC directory release of 1-Sep-2026 (unchanged).
+**Deliverables.** Migrations bi_096a–bi_096k (case location rules and relocation with a change log, outstanding reconciliation API, operations API, Force1 fallback to the case location, assignment roles with admin route, Ask routing fixes and an operations answer, method texts, AI-provider scrub of names inside location labels); Nagpur MSME assignment rows (data, loaded through SQL, not in a migration); page: Overview "Operations and Collections" card, zone tile map, in-cell bars, TAT case flow and ageing, Cash view outstanding reconciliation, admin roles card, menu icons, lines above bars everywhere; tests; docs.
+**Decisions.** D158–D169 below.
+**Status.** See the wave 096 entry in TEST_REPORT.md.
 
 ## Wave 095 (request 28-Oct-2026 17:41 IST) — finance identity without sharing, revenue in the Overview hero
 **Objective.** (1) Overview: revenue shown in the main block with a Cases toggle (revenue default), not as a separate section. (2) Finance per location / client / branch manager: one bill belongs to one location and one client — never shared out; use the invoice series as an identifier with care; identify October receipts (72 % had no location) with the new case-mapping logic, "especially about branches". (3) Record the answers on spelling and Nagpur. (4) Blend, do not pile up, the 28-Oct change request (attachment) — this wave takes its finance-identity and Overview items.
@@ -258,15 +265,28 @@
 | D156 | **Narration never stored**; only the payer branch code / IFSC, payer branch name and a quoted invoice number are kept from it | Narrations carry customer names |
 | D157 | **Cache writes never wait** for the warm-up transaction (`lock_timeout` 1.5 s on the cache insert; answer returned uncached) | Requests failed with HTTP 500 for ~4 minutes after every data change while the warm-up held the same cache keys |
 
+| D158 | **Nagpur MSME = the MSME manager for the full history** (answer 28-Oct 19:04): units 30 and 31, clients BOM MSME PRE / POST, no start date; the earlier dated rows were withdrawn (audit trail kept). Non-MSME clients at unit 30 stay with the other Nagpur manager for the full history until a change date is given (Q22) | 28-Oct answer |
+| D159 | **Case location follows the rule book** (`bi.case_locate`): area office (cleaned) → office learned for the client branch (60 %+) → place named in the branch name → the branch customers' area (2+ cases, 60 %+) → residence pincode (longest prefix) → the file's usual location; Nagpur-area places follow the file's team. Applied to all 236,441 cases (37,566 moved, every change logged in `bi.case_loc_change`) and to every new upload batch | rule book 27-Oct |
+| D160 | **Force1 utilisation keeps the bank-branch attribution first**; only when the branch is not in the master does the case location from D159 decide (it used to be the processing team). Sep-2026 case utilisation 60.48 % → 61.09 %; no unit above 100 % | bi_096e |
+| D161 | **Outstanding = three separate measures** from the location sheets: gross (collect + reconcile), received but not linked to an invoice ("unadjusted"), net invoice balance = gross − unadjusted. Workbook adjustments are listed, never deducted. The summary sheet is compared with the sheets row by row; the gap (₹20.31 L on 15-Oct) is shown, neither sheet is changed | change request 28-Oct |
+| D162 | **Operations sequence and ageing from Force1 Case Wise** (case grain, IST days): opening + received − completed = closing, checked every day against an independent open-case count; ageing buckets 0–1, >1–3, >3–7, >7–15, >15–30, >30 days from the received time (non-overlapping). The Zonal Tracker dated count is shown beside it, never added | change request 28-Oct |
+| D163 | **Operations and Collections are two scorecards**, side by side on the Overview, each opening its own page; never combined into one score | change request 28-Oct |
+| D164 | **Operations handler and collections owner are separate, WEF-dated roles** by location (optionally client), entered and withdrawn only by an administrator with a reason, audited; they never replace the branch manager. None entered yet | change request 28-Oct |
+| D165 | **Lines are drawn above bars in every mixed chart** (one global chart rule: lines first in drawing order, visible points); new charts use one y-scale when both measures are cases | 19:04 message |
+| D166 | **Graphics:** zone tile map (grey within ±5 %, green / red tints from the existing palette, value and text always printed, toggle "vs organic" / "likely vs target", click → drill-down), part-to-whole strips (open-case ageing; gross = net + not linked), in-cell bars for "Achieved", decorative menu icons. Colour never carries meaning alone; no new data source | 19:04 message |
+| D167 | **Ask Crux routing** (30-question evaluation): full client names and place spellings resolve to the client / location; "who handles …" leads with the mapped people; open cases and ageing get an operations answer; receipts not tied to a location, the summary-vs-sheets gap and gross / net outstanding are stated; "ahead of / on target" premises are checked against the working-day pace; "revenue per case vs rate" goes to the finance answer | evaluation |
+| D168 | **AI-provider scrub covers names inside location labels** (a team named after its manager) unless the word is a known place, and the new role names | privacy rule |
+| D169 | **Branch coverage refresh:** the RBI IFSC directory has no newer release than 1-Sep-2026 (monitor run 28-Oct: unchanged); coverage is computed live from Force1 cases — 3,888 of 84,659 code-matchable verified branches active in the last 6 months (4.6 %) | monitor run 28-Oct |
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app.
 18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth.
 19. **Storage (urgent):** 486.2 million bytes (all databases) on 22-Oct 05:37 UTC; at ≈ 42 MB/month it reaches 500,000,000 bytes around 1-Nov-2026 (about three weeks later after the owner script, STORAGE_AUDIT §10). Pro plan or an archive design is needed now (see Q10).
 20. ~~Branch-manager spellings~~ — resolved 28-Oct: the two Nagpur spellings are one person (one name kept; it matches the employee master); the Delhi+Rajisthan SBI manager's spelling confirmed as loaded.
 21. ~~Shared and split entries~~ — confirmed as loaded 22-Oct 16:42 (answers 2 and 3).
-22. **Nagpur unit 30, non-MSME clients (28-Oct answer: "before it was [the MSME manager] and now it's [the other Nagpur manager]")** — the change date is needed to load it (currently the other manager for the whole history).
+22. **Nagpur unit 30, non-MSME clients** — MSME answered 28-Oct 19:04 (the MSME manager for the full history, D158). For the other clients at unit 30 the 28-Oct 17:41 answer said the manager changed but gave no date; they stay with the current manager for the full history until a change date is given.
 23. ~~Unassigned location~~ — answered 22-Oct 16:42; assigned (D141).
 24. **Newer finance workbooks:** not received yet (28-Oct); receipts end 13-Oct-2026, outstanding 15-Oct-2026. The "_new" files of 28-Oct have the same rows as the imported ones.
+26. **Operations handlers and collections owners** (D164): the screen is ready (Admin → Mapping); enter the people per location with their start dates.
 25. **Tracker files of 21-Oct and 22-Oct-2026 have no rates** (every leaf row empty; revenue present). Revenue figures are unaffected (D147); re-upload those two files if the rate column should be visible for those dates.
 2. Confirm the D18 reading of tracker columns M and N.
 
@@ -421,3 +441,20 @@
 | Nagpur: "before it was [MSME manager] and now it's [other manager]" | Waiting for the change date | Q22 |
 | Change request (attachment) | Blended in part — finance identity and Overview; the rest listed under "Not in this wave" | wave 095 section |
 | Names / secrets / additive / no deletions | 0 names in bi_095 migrations; token not in the repository; additive (new tables, function patches) | scans before deployment |
+
+## Requirement audit — 28-Oct-2026 19:04 IST message (wave 096)
+| Requirement | Work | Evidence | Result |
+|---|---|---|---|
+| Nagpur MSME = the MSME manager for the full history | earlier dated rows withdrawn, undated rows for both Nagpur units (data via SQL, audited) | `branch_manager_code_at` checks; `test_bm` 11/11 | done (D158); non-MSME change date still open (Q22) |
+| Place rules on Force1 case records | `bi.case_locate`, relocation of all cases with a change log, automatic for new uploads | job succeeded; 37,566 moved; 25 not identified | done (D159) |
+| Outstanding summary vs detail; gross / unadjusted / net | `bi.api_os_recon`; Cash view card; Overview Collections side; Ask | ₹20.31 L gap explained row by row; gross − unadjusted = net | done (D161) |
+| Operations vs Collections scorecards | Overview card with two sides, each opening its page | W2 | done (D163) |
+| Daily backlog sequence | `bi.api_ops`; TAT view case flow chart + day table with the tracker count beside it | W3, W4 | done (D162) |
+| Force1 utilisation re-check | grain audited (cases ÷ tracker, capped; points for field); fallback to the case location | Sep-26 60.48 % → 61.09 %, no unit > 100 % | done (D160) |
+| Open-case ageing buckets | six non-overlapping buckets, past-due, by location | W3; Σ ageing = open | done (D162) |
+| Assignment roles | `bi.person_role` + admin card + audit | rolled-back SQL test; W9; S37–S39 | done; people to be entered (Q26) |
+| Branch coverage refresh | monitor run; live coverage measure | source unchanged since 1-Sep-2026 | done (D169) |
+| 30-question Ask evaluation | evaluation + routing fixes | 17/30 → 30/30; earlier set 30/30 | done (D167) |
+| Lines hidden behind bars in all graphs | global chart rule | W1 on every mixed chart in six views | done (D165) |
+| Better graphics, more interactive | zone tile map with toggle and drill, part-to-whole strips, in-cell bars, menu icons | W6–W8, W10 | done (D166) |
+| Google Sheet link | not needed — the database already holds area office, branch name, pincode and file group | — | no access requested |

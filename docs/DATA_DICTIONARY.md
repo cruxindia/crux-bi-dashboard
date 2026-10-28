@@ -185,3 +185,17 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.fin_attr` | Whole-line attribution: kind (billed / collected / outstanding), upload, month, location, client code ('' = not identified), family, basis, client basis, amount, lines. Rebuilt by `bi.fin_attr_refresh()` at the end of every `bi.fin_derive` |
 | `bi.fin_client_word`, `bi.fin_client_fits` | Client words in the finance client text and whether a client code fits them |
 | `bi.test_fin_attr()` | F1–F5 |
+
+## Case location, operations, outstanding, roles, Ask (28-Oct-2026, wave 096)
+| Object | Purpose |
+|---|---|
+| `bi.place_of_area_office(text, client)`, `bi.place_of_pin(text)` | Cleaned area office → place (spellings, state → head-office city, directions removed); residence pincode → place (longest prefix) |
+| `bi.case_locate(case_ids[])` | Location, place and basis of each case by the rule book (all cases when null) |
+| `bi.case_loc_change` | Every case move: old / new location, basis, place, run, time |
+| `bi.case_relocate_apply(run, case_ids[])` | Applies `case_locate`, logs the changes, audits `case_relocation`; called by `relocate_cases` for each upload batch |
+| `bi.api_os_recon()` → `bi_call('os_recon')` | Gross, unadjusted, net, summary totals, adjustments, row-by-row reconciliation, `reconciled` |
+| `bi.api_ops(month, filters)` → `bi_call('ops')` | Daily opening / received / completed / closing, ageing buckets with past-due, ageing by location, completed-case TAT |
+| `bi.person_role`, `bi.person_role_at(role, loc, client, date)`, `bi.person_role_admin` (via `public.bi_admin` 'person_role') | Operations handler / collections owner by location (optionally client), WEF-dated, audited |
+| `bi.client_name_alias` | Public client names → client family for Ask Crux (e.g. "bank of maharashtra" → BOM) |
+| `bi.ask_h_ops(month, filters, q)` | Ask Crux operations answer (open cases, ageing, oldest, TAT) |
+| `bi_ask3` intents `ops`; lead sentences | Premise check vs working-day pace, mapped people for "who handles", summary-vs-sheets gap, receipts not tied, gross / not linked / net |

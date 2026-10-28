@@ -165,3 +165,10 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 - **Improve identification:** write the location or branch in the workbook row; add an invoice-series or label line in Admin workspace → Finance review & records (finance review queue → location mapping form). Zone-level series (GUJ, CHH, UP / LUK, AHN) stay "not attributable" unless a row names a place.
 - **Reference rules:** to reload the case-mapping reference after it changes, call `public.bi_ref_load` with the admin token (upsert; nothing is removed).
 - **Checks:** `select * from bi.test_fin_attr();` and `select * from bi.test_bm();`.
+
+## Case location, operations, outstanding and roles (28-Oct-2026, wave 096)
+- **Case location:** applied automatically to every Case Wise upload batch (`bi.case_relocate_apply` from `relocate_cases`). To re-run for all cases after the reference changes, schedule a one-off cron job with `set statement_timeout = '10min'` and `select bi.case_relocate_apply('manual <date>');` (≈ 3–5 min); every move is logged in `bi.case_loc_change` and audited as `case_relocation`. Dry run: `select basis, count(*) from bi.case_locate() group by 1;`
+- **Operations / ageing:** `select public.bi_call('ops', '{"month":"2026-10-01","filters":{}}');` — check `closing_backlog = open_now_check` and Σ ageing = closing.
+- **Outstanding reconciliation:** `select public.bi_call('os_recon', '{}');` — `reconciled`, the row-by-row table and the listed adjustments.
+- **Roles:** Admin workspace → Mapping → "Operations handlers and collections owners" (add with a start date, tick "end the current one", withdraw with a reason). Every change is in `bi.audit_log` (`branch_role_*`).
+- **Branch coverage:** the monthly monitor (cron `bi-branch-monitor`, 2nd of the month) compares with the latest RBI IFSC release; a manual run is `select bi.call_edge('branch-monitor', '{"trigger":"manual"}');` — "skipped" means the source has not changed.
