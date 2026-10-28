@@ -416,3 +416,9 @@ Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5
 | `test_adm` | **39 / 40** — Z1: one request cut by this workspace's proxy at ≈30 s while the warm-up ran |
 | `test_ask_ui` | **10 / 15** — the Ask Edge Function took 16–24 s per answer right after the cache refresh; calls over ≈30 s are cut by this workspace's proxy ("Failed to fetch"); direct calls returned 200 with the right intents |
 | `test_security` (+ S37 role add with a wrong key, S38 role list without a key, S39–S41 new tables not readable) | **51 / 51** |
+
+### Live (deployed commit c20d43b; live page md5 3aa835ab… equals the build)
+| Suite | Result |
+|---|---|
+| `test_096_ui live` · `test_094_ui live` · `test_ask_ui live` · `test_adm live` · `test_rev_ui live` | **11 / 11 · 13 / 13 · 15 / 15 · 40 / 40 · 14 / 14** (no failed API call in the run; CDN libraries and fonts served locally in this workspace; page and data live) |
+| Storage after the wave | 554,758,321 bytes (all databases) after rebuilding the case-move log's index (9.9 MB → 2.3 MB); still above the 500 MB Free-plan limit (Q10, Q19) |
