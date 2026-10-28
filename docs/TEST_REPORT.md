@@ -1,4 +1,4 @@
-# Acceptance test report — updated 22-Oct-2026
+# Acceptance test report — updated 28-Oct-2026
 
 Automated: `select * from bi.run_acceptance_tests();` (re-run after every upload). Result: **18 / 18 passed** (T17 is a browser check, listed separately) (after fixing one defect in test T07's case selection).
 
@@ -320,3 +320,32 @@ All results below were executed; nothing is marked passed without a run. "Local"
 | `test_security` (anon key against the live API; + S27–S31 branch-manager admin denied without / with a wrong key, functions not callable directly, table not readable; P04 admin list) | **41 / 41** |
 | `test_fin_ui` | run on the local build against the live API (22 / 22, same build as deployed); not repeated live because it re-submits finance workbooks |
 
+
+## 28-Oct-2026 — wave 094: branch managers first, current month, revenue first (bi_094a–bi_094j)
+### SQL (production database, after the changes; data to 24-Oct-2026)
+| Check | Result |
+|---|---|
+| `bi.test_bm()` — M1 managers = total = tracker to 24-Oct (₹1,75,30,559); M2 comparison = 24-Sep report (₹1,77,76,902); M3 billed Aug-26 21,335,191 + 117,320 not attributable = 21,452,512; M4 collected Oct to 13-Oct 1,433,297 + 3,655,664 = 5,088,963; M5 outstanding 111,455,462 + 1,361,502 = 112,816,964; M6 precedence 17/17; M7 0 overlaps; M8 location filter; M9–M10 expected-revenue growth = tracker, pairs add up, beyond-organic identity; M11 7/7 hand-overs | **11 / 11** |
+| `bi.test_growth()` (cases) | **14 / 14** |
+| `bi.test_growth_rev()` (billed revenue and cases) | **14 / 14** |
+| `run_acceptance_tests()` (one-off scheduled job, `bi.job_run` id 54, 07:31–07:32 UTC) | **26 / 27** — T21 unchanged (source-file block totals). T25 failed in the first run of this wave (id 53) and was repaired at its cause (next row) |
+| T25 cause: the 21-Oct and 22-Oct-2026 snapshots have every rate empty; rate change / undo valued those days at ₹0 | fixed in bi_094j; dry run first (rolled back): revenue 11,08,780 = expected, undo 11,05,440 = cases × old rate, daily-table route 11,06,220 = expected; then applied; `bi.test_rate_change()` passed, 0 leftover rows |
+| No active rate changes existed when the defect was found | so no stored revenue had been affected |
+| Names in migrations synced to GitHub (`schema_migrations`, bi_094*) | 0 manager names in 17 migrations |
+| Names, admin token and secrets in the repository diff | 0 names in added lines; token in 0 files; the only key in the page is the existing public (anon) key |
+
+The one-off acceptance job now sets `statement_timeout = 10min` as its own statement and catches a timeout inside the block, so a slow run records "did not finish" and still unschedules itself (the first attempt of this wave hit the 2-minute default while browser suites ran in parallel; it was unscheduled by hand after two failed runs that rolled back).
+
+### Browser (local build against the live API, headless Chromium)
+| Suite | Result |
+|---|---|
+| `test_094_ui` — N1 Overview opens with Revenue (business ₹1.75 cr = API total, billing, collection, each dated); N2 cases after revenue; N3 branch-manager panel, Σ = total; N4 manager drawer (expected, billed, collected, trend, portfolio, hand-overs); N5 People opens with managers and hand-overs (7); N6 all 21 current managers listed; N7 Growth defaults to expected revenue, month to date first, ranking in ₹; N8 Overview comparison = expected revenue, movers month to date; N9 tracker Branch manager column filled (40/40 rows checked); N10 admin client-level options, spelling form, client rows listed; N11 Ask: revenue now and a named manager; N12 390 px without page overflow; N13 no console errors | **13 / 13** |
+| `test_rev_ui` (R01 now expects Expected revenue as the default, then switches to Billed) | **14 / 14** |
+| `test_adm` (V3 now waits for the comparison scorecard, because the revenue cards render first) | **40 / 40** |
+| `test_093_ui` | **11 / 11** |
+| `test_ask_ui` (A13–A15 billed-revenue and collections routing unchanged) | **15 / 15** |
+| `test_stage2` | **13 / 13** |
+| `test_security` (+ S32–S34: spelling correction without / with a wrong key and client-level assignment with a wrong key are denied) | **44 / 44** |
+| `test_fin_ui` | not re-run: it re-submits the finance workbooks and the upload code is unchanged in this wave |
+
+Notes. Runs in this workspace load the three CDN libraries (same URLs and versions) from local copies, because the workspace's connection to the CDNs was intermittently very slow (page "load" timeouts); live runs below load the CDNs as users do. Two runs failed while the acceptance job was running in parallel ("Database unavailable: signal timed out", HTTP 502) and passed when re-run on their own; one transient request failed in the workspace proxy without reaching Supabase (no failed request in the API log).

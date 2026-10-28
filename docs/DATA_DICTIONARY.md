@@ -155,3 +155,21 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.ask_h_revenue(m, f, q)` | Ask Crux handler for revenue-growth questions (period, focus, measure detection); findings with Stakeholder (mapped) and Branch manager (mapped) |
 | `public.bi_ai_gateway` | Name scrubbing also covers `bi.branch_manager` names (bi_093e) |
 
+
+## Branch managers first, current month, revenue first (28-Oct-2026, wave 094)
+| Object | Purpose |
+|---|---|
+| `bi.branch_manager.client_code` (new column, references `bi.client.code`) | Client-level assignment; precedence client code > client family > location (bi_094a) |
+| `bi.branch_manager_code_at(location, client code, date)` | The single manager of a location × client on a date (client-code row, then its family row, then the location row; latest start wins) |
+| `bi.branch_manager_at(location, family, date)` | Now also folds client-code rows of the family: returns "A, B" when clients of one family have different managers |
+| `bi.branch_manager_admin(actor, p)` | `list` adds `client_code`, `client_label` and the `clients` list; `add` accepts `client_code` (overlap and end-previous scoped to location × family × code) and `source`; new `rename` (from, to — every row of a name, audited as `branch_manager_rename`) |
+| `bi.api_bm(month, filters, p)` | Branch-manager performance: `month`, `as_of`, `partial`, working days, `previous_month_snapshot`; `finance` (billing months and rule, receipt month and date, outstanding date, `unallocated` by kind and month); `total`; `managers[]` (expected revenue, target, attainment, pace gap, projection, organic / effort, billed / collected / outstanding allocated, since, hand-overs in / out, `current`); `handovers[]`; `portfolio` and `trend` when `p.manager` is given; `method` texts |
+| `public.bi_call('bm', …)` | Public path to `bi.api_bm` (args `m`, `f`, `p`); growth with `measure: "expected"` calls `bi.api_growth(…, {"value": "revenue"})` |
+| `bi.api_growth(m, f, p)` with `p.value = 'revenue'` | Expected revenue (tracker cases × rate) instead of cases: cards, pairs, organic valued at each row's rate, small-base threshold ₹25,000; `measure: 'expected_revenue'` |
+| `bi.api_tracker_sheet` | + `bm` on every row (leaf: manager on the report date; location total: distinct managers active on that date) |
+| `bi.warm_drill_cache` | Also warms growth `measure: "expected"` and `bm` |
+| `bi.ask_h_bm(m, f, q, manager)` | Ask Crux branch-manager answers (named manager; ranking; hand-overs) |
+| `bi.bi_ask3` intents `bm`, `revenue_now` | Manager questions and "how is revenue" questions (expected → billed → collected, each with its own dates) |
+| `bi.ask_h_revenue` | "Revenue" = expected revenue month to date unless billed / invoice / billing words are used |
+| `bi.test_bm()` | 11 live checks M1–M11 (METRICS) |
+| `bi.rate_recompute`, `bi.rate_admin` (`end`) | Null stored rates carried from the last stored rate of the month (bi_094j) |
