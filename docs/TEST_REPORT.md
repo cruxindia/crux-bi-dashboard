@@ -383,3 +383,9 @@ Notes. Runs in this workspace load the three CDN libraries (same URLs and versio
 | `test_ask_ui` | **13 / 15** — A15 and A12: one Ask Edge Function call failed in transit; the same question answered in 10 s when called directly; the database answer takes 0.4 s |
 
 Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5 minutes after a refresh) and the derived-table jobs load the Free-plan database; requests in that window can fail. bi_095g removes one cause (cache-key waits); the rest is capacity (see L8 / SOW Q10).
+
+### Live (deployed commit bc2a138; live page md5 2597717f… and extract.js equal the build)
+| Suite | Result |
+|---|---|
+| `test_094_ui live` · `test_ask_ui live` · `test_adm live` · `test_rev_ui live` | **13 / 13 · 15 / 15 · 40 / 40 · 14 / 14** (CDN libraries served locally in this workspace; page and data live) |
+| `test_security` (+ S35 reference loader with a wrong token denied; S36 `bi.fin_attr` not readable through the API) | **46 / 46** |
