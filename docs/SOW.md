@@ -1,10 +1,18 @@
-# Statement of Work (living) — last updated 28-Oct-2026 (wave 094)
+# Statement of Work (living) — last updated 28-Oct-2026 (wave 095)
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
 **Scope.** In: the three source categories in the Drive folder; Supabase database; dashboard; upload centre; tests; docs. Out: other tracker sheets (`10 Days Analysis`, `Haque`, `June 2026 Target Sheet`, `Old Tracker till Feb 2026`) by instruction; the "BOM Testing Files" folder and the 83 MB zip (not one of the three categories).
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
+
+## Wave 095 (request 28-Oct-2026 17:41 IST) — finance identity without sharing, revenue in the Overview hero
+**Objective.** (1) Overview: revenue shown in the main block with a Cases toggle (revenue default), not as a separate section. (2) Finance per location / client / branch manager: one bill belongs to one location and one client — never shared out; use the invoice series as an identifier with care; identify October receipts (72 % had no location) with the new case-mapping logic, "especially about branches". (3) Record the answers on spelling and Nagpur. (4) Blend, do not pile up, the 28-Oct change request (attachment) — this wave takes its finance-identity and Overview items.
+**Inputs.** "Case mapping logic and method" (27-Oct) and "Crux case mapping reference" (28-Oct) — authoritative place rules; the two "_new" finance workbooks (content identical to uploads 1 and 2: same row hashes 819ecf52… and c64fa82d…, so no new finance data); live database.
+**Deliverables.** Migrations bi_095a–bi_095g (reference tables and look-ups, finance line identity, whole-line attribution table `bi.fin_attr`, branch-manager finance from it, payer columns accepted at import, retry fix, cache-write fix, `bi.test_fin_attr`); `web/extract.js` keeps the payer branch code / IFSC, payer branch name and an invoice number quoted in the narration (never the narration); collection workbook re-imported through the normal import path (upload 38 replaces upload 2); Overview hero; tests; docs.
+**Decisions.** D150–D157 below.
+**Not in this wave (change request of 28-Oct).** Applying the place rules to Force1 Case Wise / Point Wise records, the outstanding summary-vs-detail resolution beyond the existing import warning, gross / unadjusted / net outstanding split on screen, Operations vs Collections scorecards, daily backlog sequence, Force1 utilisation re-audit, ageing buckets, assignment roles (operations handler, collections owner), branch-coverage refresh, 30-question Ask evaluation. They remain open; nothing was claimed for them.
+**Status (28-Oct-2026).** See the status line in the wave 095 requirement audit.
 
 ## Wave 094 (request 22-Oct-2026 16:42 IST, "Continue" 28-Oct 12:11 IST) — branch managers first, current month, revenue first
 **Objective.** (1) Correct the branch-manager list from the answers to open questions 20–23 (Nagpur split by client, the unassigned location's manager, spellings). (2) Show branch managers everywhere and ahead of stakeholders, with how each manager is performing on the Overview and in People. (3) Show what changed when managers were changed or brought in. (4) Make the current month the first thing shown, keeping the business side (Zonal Tracker) and the finance side (invoices, receipts, outstanding) apart, each with its own dates. (5) Overview opens with revenue — expected, billed and collected — before cases. (6) List the shortcomings first (sent 22-Oct before any build).
@@ -241,16 +249,24 @@
 | D147 | **Rate recomputation carries the last stored rate forward** when a tracker snapshot has no rate (bi_094j); the undo looks back to the last snapshot with a rate. Stored source values unchanged | The 21-Oct and 22-Oct-2026 tracker files were loaded with every rate empty (revenue present); acceptance T25 then failed — a later rate change would have valued those two days' cases at ₹0 |
 | D148 | **No global branch-manager filter in this wave**; the branch-manager drawer (Overview / People) is the per-manager view | Every API would have to resolve a manager into location × client pairs by date; recorded as L52 |
 | D149 | **Spelling correction** is an audited admin operation (`rename`) that changes every row of a name at once | Answers 1 and 6 of 22-Oct 16:42 (spellings) |
+| D150 | **One finance line, one location, one client — never shared out.** `bi.fin_attr` holds every invoice, receipt and outstanding line whole; per-manager billed / collected / outstanding are sums of whole lines | 28-Oct: "one bill cannot be shared by multiple locations or clients" — the wave 094 allocation by expected revenue is withdrawn |
+| D151 | **Location of an invoice line:** invoice series (prefix) → row label → sheet, as before; a zone-level or missing result is refined only by a place named in the label / client / branch text (case-mapping branch words and places) and only to a location inside the same zone; a specific label outside the series' zone does not override the series | 28-Oct: the prefix "can work like an identifier (but not 100%)" — e.g. GUJ invoices kept in the Mumbai sheet stay Gujarat |
+| D152 | **Location of a receipt:** the cited invoice (its ledger location) → series → label → an invoice number quoted in the narration (series) → the paying bank branch (branch code or IFSC → client branch master → its location, else its district / city / name via the place rules) → not identified. The client family of an unlabelled receipt is the paying bank | October receipts carry the payer's branch code on 99 % of the unidentified amount |
+| D153 | **Client of a line:** the family's only client at that location, else the client named in the text (MSME, INOP, TSR, Car Loan, HL, FSL, ITR, Retail), else the family's largest client there over the last three months | One bill → one client; BOM MSME vs BOM retail at Nagpur follow the text |
+| D154 | **Zone-level lines** (invoice series covers a zone, location not stated) count for a manager only when every member location × client of that family in the zone has that one manager and no filter is set; otherwise "not attributable" | No sharing, no guessing |
+| D155 | **Overview hero = Revenue (expected, business) by default with a Cases toggle** in the same block (shared measure state); Billed and Collected are tiles in the same grid with their own dates; the separate "Revenue — month" section is removed. Revenue projection uses the same share of month as the case projection | 28-Oct small change request |
+| D156 | **Narration never stored**; only the payer branch code / IFSC, payer branch name and a quoted invoice number are kept from it | Narrations carry customer names |
+| D157 | **Cache writes never wait** for the warm-up transaction (`lock_timeout` 1.5 s on the cache insert; answer returned uncached) | Requests failed with HTTP 500 for ~4 minutes after every data change while the warm-up held the same cache keys |
 
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app.
 18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth.
 19. **Storage (urgent):** 486.2 million bytes (all databases) on 22-Oct 05:37 UTC; at ≈ 42 MB/month it reaches 500,000,000 bytes around 1-Nov-2026 (about three weeks later after the owner script, STORAGE_AUDIT §10). Pro plan or an archive design is needed now (see Q10).
-20. **Branch-manager spellings:** ~~first name~~ confirmed 22-Oct 16:42. **Still open:** the second name (Nagpur) is written two ways — the loaded spelling is kept; correct it in Admin → Master data & mapping → "Correct spelling" if needed. The manager of the Delhi+Rajisthan SBI rows from Jul-2026 was "not seen anywhere" (16:42 answer 6): now shown on the Overview panel, People, the tracker column and the drawer; the spelling in the list differs from the one in the message — confirm.
+20. ~~Branch-manager spellings~~ — resolved 28-Oct: the two Nagpur spellings are one person (one name kept; it matches the employee master); the Delhi+Rajisthan SBI manager's spelling confirmed as loaded.
 21. ~~Shared and split entries~~ — confirmed as loaded 22-Oct 16:42 (answers 2 and 3).
-22. ~~Nagpur~~ — answered 22-Oct 16:42 and reloaded at client level (D141). **Confirm:** the non-MSME clients of Nagpur unit 30 (the unit whose label carries the MSME manager's name) are now under the other Nagpur manager for the whole history, as the answer reads.
+22. **Nagpur unit 30, non-MSME clients (28-Oct answer: "before it was [the MSME manager] and now it's [the other Nagpur manager]")** — the change date is needed to load it (currently the other manager for the whole history).
 23. ~~Unassigned location~~ — answered 22-Oct 16:42; assigned (D141).
-24. **Newer finance workbooks:** receipts end 13-Oct-2026 and outstanding is at 15-Oct-2026; upload newer collection / outstanding workbooks for October collections to move with the business side.
+24. **Newer finance workbooks:** not received yet (28-Oct); receipts end 13-Oct-2026, outstanding 15-Oct-2026. The "_new" files of 28-Oct have the same rows as the imported ones.
 25. **Tracker files of 21-Oct and 22-Oct-2026 have no rates** (every leaf row empty; revenue present). Revenue figures are unaffected (D147); re-upload those two files if the rate column should be visible for those dates.
 2. Confirm the D18 reading of tracker columns M and N.
 
@@ -393,3 +409,15 @@
 | "in overview page, I can still see cases first and not revenue … Revenue, expected revenue, billed revenue and collection done" | Implemented — "Revenue — month" first (expected · billed · collected), then managers, then "Cases — month" | D138; N1, N2 |
 | "I need to know the shortcomings first" | Done — shortcomings list and fix order sent on 22-Oct before building | message of 22-Oct |
 | Do not commit names / secrets; additive migrations; no deletions | Names only through `execute_sql`; migrations are function patches, new functions and one added column | scans before deployment (TEST_REPORT wave 094) |
+
+## Requirement audit — 28-Oct-2026 17:41 IST message (wave 095)
+| Requirement (as given) | Status | Evidence |
+|---|---|---|
+| "revenue to be seen in the [main Overview block], with an option to toggle to case, revenue being default and not a different section on top" | Implemented — hero shows expected revenue with a Revenue / Cases toggle; billed and collected tiles in the same grid; separate section removed | D155; N1, N2 |
+| "one bill cannot be shared by multiple locations or clients" | Implemented — whole-line attribution (`bi.fin_attr`); allocation withdrawn | D150, D153, D154; F1–F4; M3–M5 |
+| "the prefix of the invoice numbers can work like an identifier (but not 100%) … be smart" | Implemented — series first, refined only inside its zone by label / place words; a conflicting label outside the zone does not override; zone-level lines stay "not attributable" unless the zone has one manager | D151 |
+| "add intelligence to identify [location] … use the same logic … especially about branches" | Implemented for finance — paying bank branch (code / IFSC) → client branch master → location, else place rules; invoice numbers quoted in narrations; October receipts tied to a location 28 % → 81 % (₹41.2 L of ₹50.9 L) | D152; F5; M4 |
+| Spelling answers (Nagpur and Delhi SBI managers) | Recorded; one name each | Q20 |
+| Nagpur: "before it was [MSME manager] and now it's [other manager]" | Waiting for the change date | Q22 |
+| Change request (attachment) | Blended in part — finance identity and Overview; the rest listed under "Not in this wave" | wave 095 section |
+| Names / secrets / additive / no deletions | 0 names in bi_095 migrations; token not in the repository; additive (new tables, function patches) | scans before deployment |

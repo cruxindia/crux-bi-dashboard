@@ -93,7 +93,15 @@
   }
   function nameMonth(fileName) { const m = String(fileName).match(/till\s*([A-Za-z]{3,9})[\s\-'’]*(\d{2,4})/i); return m && MON[m[1].toLowerCase().slice(0, 3)] ? `${yr(m[2])}-${pad2(MON[m[1].toLowerCase().slice(0, 3)])}` : null; }
 
-  const COLL_COLS = ['r', 'loc', 'bank', 'rm', 'd', 'amt', 'cl', 'br', 'inv', 'basic', 'im', 'ims', 'h'];
+  const COLL_COLS = ['r', 'loc', 'bank', 'rm', 'd', 'amt', 'cl', 'br', 'inv', 'basic', 'im', 'ims', 'h', 'pbc', 'pbn', 'ir'];
+  /* Payer identity kept from a bank line (never the narration itself, which can carry customer names):
+     pbc = payer branch code or IFSC, pbn = payer branch name, ir = an invoice number quoted in the narration ("INV NO ROMG 2609 1205" -> ROMG-2609-1205). */
+  const IR_STOP = new Set(['NEFT', 'RTGS', 'IMPS', 'UPI', 'INB', 'CHQ', 'TRF', 'NACH', 'CMS', 'INV', 'NO', 'FROM', 'BY', 'TO', 'REF', 'UTR', 'ACH', 'ECS', 'BIL', 'ONL', 'MOB', 'CLG', 'OUTWARD', 'INWARD', 'DT', 'DATE', 'TXN', 'FT', 'IFT', 'BRN', 'CR', 'DR']);
+  function invRef(t) {
+    const s = String(t || '').toUpperCase(); const re = /\b([A-Z]{2,5})[\s\-\/]{0,2}(\d{2})(\d{2})[\s\-\/]{1,3}(\d{3,5})\b/g; let m;
+    while ((m = re.exec(s))) { const yy = +m[2], mm = +m[3]; if (!IR_STOP.has(m[1]) && yy >= 23 && yy <= 30 && mm >= 1 && mm <= 12) return `${m[1]}-${m[2]}${m[3]}-${m[4]}`; }
+    return null;
+  }
   function extractCollection(wb, fileName) {
     const sheets = []; const issues = [];
     for (const name of wb.SheetNames) {
@@ -107,7 +115,7 @@
       const c = { loc: idx((x) => x === 'location'), bank: idx((x) => x === 'bank'), rm: idx((x) => x === 'month'),
         d: idx((x, i) => i < ci && ['date', 'txn date', 'date.', 'transaction date', 'value date'].includes(x)),
         cl: idx((x) => x === 'client', ci), br: idx((x) => x === 'branch', ci), inv: idx((x) => /^invoice( no\.?| number)?$/.test(x), ci), basic: idx((x) => x === 'basic', ci),
-        nar: idx((x, i) => i < ci && ['narration', 'description', 'discription', 'details', 'remarks', 'particulars'].includes(x)), chq: idx((x, i) => i < ci && x.startsWith('cheque')), bc: idx((x, i) => i < ci && x === 'branch code'), im };
+        nar: idx((x, i) => i < ci && ['narration', 'description', 'discription', 'details', 'remarks', 'particulars'].includes(x)), chq: idx((x, i) => i < ci && x.startsWith('cheque')), bc: idx((x, i) => i < ci && x === 'branch code'), bcn: idx((x, i) => i < ci && x === 'branch code with name'), bnm: idx((x, i) => i < ci && x === 'branch name'), ifsc: idx((x) => x === 'ifsc'), im };
       const out = []; const ctl = { rows: 0, credit: 0, by_month: {}, min_date: null, max_date: null, with_invoice: 0, invoice_credit: 0, ym_number_vs_column_differ: 0, odd_invoice: 0, multi_invoice: 0, no_receipt_month: 0 };
       for (let r = hi + 1; r < rows.length; r++) {
         const row = rows[r]; const amt = num(row[ci]); if (amt == null) continue;
@@ -115,7 +123,13 @@
         const iv = c.inv >= 0 ? invParse(row[c.inv]) : null; const colYm = c.im >= 0 ? finMonth(row[c.im]) : null;
         let ym = null, ims = null; if (iv && iv.ym) { ym = iv.ym; ims = 'n'; if (colYm && colYm !== iv.ym) ctl.ym_number_vs_column_differ++; } else if (colYm) { ym = colYm; ims = 'c'; }
         const fp = fnv([c.nar >= 0 ? lc(row[c.nar]) : '', c.chq >= 0 ? lc(row[c.chq]) : '', c.bc >= 0 ? lc(row[c.bc]) : '', d || lc(row[c.d]), amt].join('|'));
-        out.push([r + 1, cut(row[c.loc], 40), cut(row[c.bank], 30), rm, d, amt, cut(row[c.cl], 30), null, iv ? cut(iv.raw, 40) : null, c.basic >= 0 ? num(row[c.basic]) : null, ym, ims, fp]);
+        const bcn = c.bcn >= 0 ? String(row[c.bcn] == null ? '' : row[c.bcn]).match(/^\s*(\d{1,6})\s*-\s*(.+)$/) : null;
+        const ifsc = c.ifsc >= 0 ? String(row[c.ifsc] == null ? '' : row[c.ifsc]).trim().toUpperCase() : '';
+        const code = c.bc >= 0 ? String(row[c.bc] == null ? '' : row[c.bc]).replace(/\.0+$/, '').trim() : '';
+        const pbc = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc) ? ifsc : /^\d{1,6}$/.test(code) ? code : bcn ? bcn[1] : null;
+        const pbn = bcn ? cut(bcn[2], 40) : c.bnm >= 0 ? cut(row[c.bnm], 40) : null;
+        out.push([r + 1, cut(row[c.loc], 40), cut(row[c.bank], 30), rm, d, amt, cut(row[c.cl], 30), c.br >= 0 ? cut(row[c.br], 40) : null, iv ? cut(iv.raw, 40) : null, c.basic >= 0 ? num(row[c.basic]) : null, ym, ims, fp,
+          pbc, pbn, iv ? null : (c.nar >= 0 ? invRef(row[c.nar]) : null)]);
         ctl.rows++; ctl.credit += amt; if (rm) ctl.by_month[rm] = (ctl.by_month[rm] || 0) + amt; else ctl.no_receipt_month++;
         if (d) { if (!ctl.min_date || d < ctl.min_date) ctl.min_date = d; if (!ctl.max_date || d > ctl.max_date) ctl.max_date = d; }
         if (iv) { ctl.with_invoice++; ctl.invoice_credit += amt; if (iv.odd) ctl.odd_invoice++; if (iv.multi) ctl.multi_invoice++; }

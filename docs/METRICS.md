@@ -191,3 +191,15 @@ Business and finance are two departments with their own dates (SOW D137). Every 
 Checks (`bi.test_bm`, 11): M1 managers add up to the total = tracker revenue to date; M2 comparison = previous month's report on the same working day; M3–M5 billed / collected / outstanding by manager + not attributable = source; M6 precedence; M7 no overlapping assignments; M8 location filter; M9–M10 expected-revenue growth = tracker and pairs add up, beyond-organic identity; M11 hand-over arithmetic and windows.
 
 **Rate recomputation (bi_094j).** When a snapshot row has no stored rate, a rate change or undo values that day's cases at the last stored rate earlier in the month (else the next one in the month), not at ₹0.
+
+## Finance identity and whole-line attribution (28-Oct-2026, wave 095 — replaces the allocation in wave 094)
+| Item | Rule |
+|---|---|
+| One line, one owner | Every invoice, receipt and outstanding line counts whole for one location × client (`bi.fin_attr`); nothing is shared by expected revenue |
+| Invoice location | invoice series → row label → sheet; a zone-level / missing result is refined only by a place named in the label, client or branch text (case-mapping reference: branch words, places, merges) and only inside the same zone |
+| Receipt location | cited invoice (its ledger location) → series → label (only inside the series' zone) → invoice number quoted in the narration → paying bank branch (branch code / IFSC → client branch master → location, else district / city / branch name / state through the place rules) → not identified |
+| Client | family's only client at the location → client named in the text (MSME, INOP, TSR, Car Loan, HL, FSL, ITR, Retail) → family's largest client there over the last three months |
+| Manager | branch manager of the line's location × client on the line's date (billed: month end; collected: receipt month end or the last receipt date; outstanding: snapshot date). Zone-level lines: the zone's single manager for that client family, else "not attributable" |
+| Checks | `bi.test_fin_attr()` F1–F3 totals = invoices / receipts / outstanding; F4 known client codes; F5 share of the latest receipt month tied to a location. `bi.test_bm()` M3–M5 manager rows + not attributable = source |
+
+Overview hero (wave 095): Revenue view = expected revenue so far, target revenue, working-day pace (target × working days elapsed ÷ working days in month), projection = revenue so far ÷ the share of a month normally done by this working day (same share as the case projection; range scaled the same way), organic expectation so far and effort, billed (month being billed and last complete month) and collected (receipt month to the last receipt date). Cases view unchanged.

@@ -358,3 +358,28 @@ Notes. Runs in this workspace load the three CDN libraries (same URLs and versio
 | `test_rev_ui live` · `test_adm live` | **14 / 14 · 40 / 40** — first attempts failed only on the workspace's connection to the spreadsheet-library CDN (page-load timeout; one `ERR_CONNECTION_RESET` on `xlsx.full.min.js`); re-run with the libraries served locally |
 | `probe_ask` (viewer desktop, admin desktop, viewer 390 px; 4 questions each) | 12 / 12 answered in 2.6–8.2 s, no console errors, no failed requests |
 | `test_security` (live API) | **44 / 44** |
+
+## 28-Oct-2026 (evening) — wave 095: finance identity without sharing, revenue in the Overview hero (bi_095a–bi_095g)
+### SQL (production, after the changes)
+| Check | Result |
+|---|---|
+| Line identity, before → after (ledger upload 1): totals unchanged (₹10,29,97,552 by series; ₹11,28,16,964 overall); 157 lines moved from zone-level to a location inside the same zone | verified by query before and after the change |
+| Receipts (re-imported collection upload 38 replaces upload 2; same 28,430 bank lines, same ₹11,77,91,329) | October: tied to a location ₹41.2 L of ₹50.9 L (81 %; was 28 %) — paying branch ₹22.5 L, paying branch place ₹5.5 L, quoted invoice ₹2.4 L |
+| `bi.test_fin_attr()` F1–F5 | **5 / 5** — invoices 189,775,652 = 189,775,652; receipts 117,791,329 = 117,791,329; outstanding 112,816,964 = 112,816,964; 0 unknown client codes; 81.0 % of Oct-26 receipts tied |
+| `bi.test_bm()` | **11 / 11** — M3 billed Aug-26 19,137,625 + 2,314,887 not attributable = 21,452,512; M4 collected Oct-26 4,012,487 + 1,076,475 = 5,088,963; M5 outstanding 104,233,588 + 8,583,378 = 112,816,964 |
+| `bi.test_growth()` · `bi.test_growth_rev()` · `bi.test_fin_fixtures()` | **14 / 14 · 14 / 14 · 15 / 15** |
+| `run_acceptance_tests()` (one-off job, `bi.job_run` id 55) | **26 / 27** — T21 unchanged (source-file block totals) |
+| Reference load (`bi_ref_load`) | 159 places, 30 state defaults, 1,081 branch words, 326 pincode prefixes; every grouping maps to a dashboard location (the Nagpur places follow the team) |
+| Look-up spot checks | "SBI SHIVCOLONY JALGAON" → JALGAON; "BOI-CHAKAN BRANCH" → Pune; BOM branch 2483 (Basmath) → Nanded; Nagpur → NAGPUR (YASH) unless the sheet names the other team |
+| Cache write | `bi_call` no longer waits for the warm-up transaction (HTTP 500s seen right after a cache refresh are gone; growth answered in 10 s while the warm-up ran) |
+| Names in bi_095 migrations | none apart from the two existing Nagpur location labels (present in the repository since bi_003) |
+
+### Browser (local build against the live API; CDN libraries served locally)
+| Suite | Result |
+|---|---|
+| `test_094_ui` (N1 now: hero opens on Revenue with Billed and Collected tiles, no separate revenue section; N2: Cases toggle in the same hero = tracker month to date 47,613, then back) | **13 / 13** |
+| `test_rev_ui` · `test_093_ui` · `test_stage2` | **14 / 14 · 11 / 11 · 13 / 13** |
+| `test_adm` | **39 / 40** — Z1 one failed request while the background warm-up ran (passed 40 / 40 in wave 094; see note) |
+| `test_ask_ui` | **13 / 15** — A15 and A12: one Ask Edge Function call failed in transit; the same question answered in 10 s when called directly; the database answer takes 0.4 s |
+
+Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5 minutes after a refresh) and the derived-table jobs load the Free-plan database; requests in that window can fail. bi_095g removes one cause (cache-key waits); the rest is capacity (see L8 / SOW Q10).

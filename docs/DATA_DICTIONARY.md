@@ -173,3 +173,15 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.ask_h_revenue` | "Revenue" = expected revenue month to date unless billed / invoice / billing words are used |
 | `bi.test_bm()` | 11 live checks M1–M11 (METRICS) |
 | `bi.rate_recompute`, `bi.rate_admin` (`end`) | Null stored rates carried from the last stored rate of the month (bi_094j) |
+
+## Finance identity (28-Oct-2026, wave 095)
+| Object | Purpose |
+|---|---|
+| `bi.ref_place`, `bi.ref_state_default`, `bi.ref_branch_word`, `bi.ref_pin_prefix` | Case-mapping reference (28-Oct-2026): place → grouping → location; state default; branch-name words → place; pincode prefixes. Loaded with `public.bi_ref_load(token, json)` (admin token, upsert) |
+| `bi.loc_of_grouping`, `bi.loc_of_place(place, hint)`, `bi.place_of_branch(name)`, `bi.loc_of_payer(family, code, name)` | Look-ups: grouping → location; place → location (Nagpur places follow the team named in the hint); branch name → place (last match wins, longer phrase first); paying bank branch → location / family / basis |
+| `bi.rollup_zone(id)`, `bi.loc_refine(base, candidates)` | Zone of a zone-level location; first candidate inside that zone |
+| `bi.fin_os_lines`, `bi.fin_receipts` | Same columns; location now refined as in METRICS (`loc_src` / `map_state` gain `+place`, `invoice_ref`, `payer_branch`, `payer_branch_place`, `payer_branch_name`) |
+| Collection row columns 13–15 | `pbc` payer branch code or IFSC, `pbn` payer branch name, `ir` invoice number quoted in the narration (`web/extract.js`; earlier uploads have none) |
+| `bi.fin_attr` | Whole-line attribution: kind (billed / collected / outstanding), upload, month, location, client code ('' = not identified), family, basis, client basis, amount, lines. Rebuilt by `bi.fin_attr_refresh()` at the end of every `bi.fin_derive` |
+| `bi.fin_client_word`, `bi.fin_client_fits` | Client words in the finance client text and whether a client code fits them |
+| `bi.test_fin_attr()` | F1–F5 |

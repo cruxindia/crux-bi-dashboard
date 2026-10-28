@@ -159,3 +159,9 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 - **Measures:** Growth, Organic and the Overview comparison open on *Expected revenue* (business); *Billed revenue* (finance) and *Cases* are one click away and remembered for the session.
 - **Finance dates:** billed months move forward when a newer outstanding workbook is imported; October collections move forward only when a newer collection workbook is uploaded (the latest ends 13-Oct-2026).
 - **Checks:** `select * from bi.test_bm();` (11 live checks, read-only).
+
+## Finance identity (28-Oct-2026, wave 095)
+- **Collection workbook:** upload as before (Admin workspace → File uploads). The extractor now also keeps each line's paying bank branch code / IFSC, branch name and any invoice number quoted in the narration (the narration itself is never stored). A re-saved copy with the same rows is still refused; the new columns make a first re-import of an old file a new upload that replaces the earlier one (no double counting).
+- **Improve identification:** write the location or branch in the workbook row; add an invoice-series or label line in Admin workspace → Finance review & records (finance review queue → location mapping form). Zone-level series (GUJ, CHH, UP / LUK, AHN) stay "not attributable" unless a row names a place.
+- **Reference rules:** to reload the case-mapping reference after it changes, call `public.bi_ref_load` with the admin token (upsert; nothing is removed).
+- **Checks:** `select * from bi.test_fin_attr();` and `select * from bi.test_bm();`.

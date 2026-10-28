@@ -318,28 +318,40 @@ function render(){({overview:vOverview,force1:vForce1,tracker:vTracker,growth:vG
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
  const bmP=bmData(m,f).catch(e=>({error:e.message}));
  const [ov,daily,ins,og]=await Promise.all([api('overview',{month:m,filters:f}),api('daily',{month:m,filters:f}),api('insights',{month:m,filters:f}),api('organic',{month:m,filters:f,group:'total',measure:'cases'}).catch(()=>null)]);
- s.append(el('h2',{},'Revenue — '+mlabel(m)),el('p',{class:'lede'},'Expected revenue is the business side (operations: Zonal Tracker cases × agreed rate), current to the latest daily report. Billed revenue and collections are the finance side, a separate department with its own dates — each card states them.'));
- const rn=el('div',{id:'revNow'},el('p',{class:'note'},'Loading revenue…'));const bmb=el('div',{class:'card',style:'margin:12px 0',id:'bmPanel'});s.append(rn,bmb);
- bmP.then(B=>{if(!rn.isConnected)return;rn.innerHTML='';if(!B||B.error){rn.append(el('p',{class:'note'},'Revenue summary unavailable: '+((B&&B.error)||'no data')));bmb.remove();return}
-  revNow(rn,B);bmTable(bmb,B,m,f,{compact:true});bmb.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('people')},'All branch managers and hand-overs →')))});
- s.append(el('h2',{},'Cases — '+mlabel(m)),el('p',{class:'lede'},`Case volumes up to ${ddmm(ov.as_of||'')} (report date). Force1, TAT and forecast figures state their own period.`));
- const fc=ov.forecast||{};const tgt=ov.target_cases||0;const max=(Math.max(tgt,fc.curve_range?fc.curve_range[1]:0,ov.mtd_cases||0)||1)*1.06;
- const wpace=fc.workdays_in_month?fc.workdays_elapsed/fc.workdays_in_month:null;
- const track=el('div',{class:'track',role:'img','aria-label':`MTD ${fmt(ov.mtd_cases)} of target ${fmt(tgt)}`},el('div',{class:'mtd',style:`width:${100*(ov.mtd_cases||0)/max}%`}),
-  fc.curve_range?el('div',{class:'fc',style:`left:${100*fc.curve_range[0]/max}%;width:${100*(fc.curve_range[1]-fc.curve_range[0])/max}%`}):null,
-  tgt?el('div',{class:'tick',style:`left:${100*tgt/max}%`,title:'Target'}):null,(wpace&&tgt)?el('div',{class:'tick',style:`left:${100*wpace*tgt/max}%;background:var(--ochre)`,title:'Pace needed today'}):null);
- const behind=wpace&&tgt?ov.mtd_cases-wpace*tgt:null;
- s.append(el('div',{class:'pace'},el('div',{class:'nums'},el('span',{class:'big'},fmt(ov.mtd_cases)),el('span',{class:'of'},'of '+fmt(tgt)+' target cases'),
-   el('span',{class:'of '+(behind==null?'':behind>=0?'good':'bad')},behind==null?'':(behind>=0?'+':'')+fmt(behind)+' vs working-day pace'),
-   fc.available?el('span',{class:'of'},`Projected ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} (${pct(fc.curve_achievement)})`):null),track,
-  el('div',{class:'legend'},el('span',{},el('i',{style:'background:var(--blue)'}),'Achieved so far'),el('span',{},el('i',{style:'background:var(--ochre)'}),'Projected month-end range'),el('span',{},el('i',{style:'background:var(--ink)'}),'Target'),el('span',{},el('i',{style:'background:var(--ochre);width:3px'}),'Pace needed by today')),
-  el('div',{class:'note'},'Projection = cases so far ÷ the share of a month normally done by this working day (from past months with daily reports); the shaded range is the weakest to strongest of those months. Run-rate and organic expectation are shown alongside for comparison.')));
- {const OT=og&&og.total||{};const tl=(k,v,n,cls,q)=>{const t=tile(k,v,n,cls);if(q)t.querySelector('.k').append(' ',q);return t};
-  s.append(el('div',{class:'tiles kpi4'},tl('Target',fmt(tgt)+' cases','goal for '+mlabel(m),'',hint('target')),
+ const B=await bmP;const fc=ov.forecast||{};const tgtC=ov.target_cases||0;const wpace=fc.workdays_in_month?fc.workdays_elapsed/fc.workdays_in_month:null;const OT=og&&og.total||{};
+ const tl=(k,v,n,cls,q)=>{const t=tile(k,v,n,cls);if(q)t.querySelector('.k').append(' ',q);return t};
+ /* Hero: one block, Revenue (expected, business) by default with a Cases toggle (shared measure state). Revenue projection uses the same share of month as the case projection. */
+ {const ok=B&&!B.error&&B.total,T=ok?B.total:{},Fi=ok?B.finance||{}:{};const rv=S.measure!=='cases'&&T.revenue_target>0&&ov.mtd_cases>0;
+  const F=rv?fmtL:fmt,so=rv?T.expected_revenue:ov.mtd_cases,tg=rv?T.revenue_target:tgtC;
+  const sc=rv?(fc.curve_projection&&T.projected_revenue?T.projected_revenue/fc.curve_projection:null):1;
+  const pj=rv?T.projected_revenue:fc.curve_projection,rg=fc.curve_range&&sc?fc.curve_range.map(x=>Math.round(x*sc)):null,ach=tg&&pj?pj/tg:null;
+  const max=(Math.max(tg,rg?rg[1]:0,so||0)||1)*1.06,behind=wpace&&tg?so-wpace*tg:null;
+  const seg=el('div',{class:'seg meas',role:'group','aria-label':'Overview measure'},[['expected','Revenue'],['cases','Cases']].map(([k,l])=>{const on=(k==='cases')!==rv;return el('button',{type:'button',class:'btn sm'+(on?' on':''),'aria-pressed':String(on),'data-hm':k,onclick:()=>setMeasure(k)},l)}));
+  const track=el('div',{class:'track',role:'img','aria-label':`So far ${F(so)} of target ${F(tg)}`},el('div',{class:'mtd',style:`width:${100*(so||0)/max}%`}),
+   rg?el('div',{class:'fc',style:`left:${100*rg[0]/max}%;width:${100*(rg[1]-rg[0])/max}%`}):null,
+   tg?el('div',{class:'tick',style:`left:${100*tg/max}%`,title:'Target'}):null,(wpace&&tg)?el('div',{class:'tick',style:`left:${100*wpace*tg/max}%;background:var(--ochre)`,title:'Pace needed today'}):null);
+  s.append(el('div',{class:'tools',id:'ovHero'},el('h2',{style:'margin:0'},(rv?'Revenue — ':'Cases — ')+mlabel(m)),seg),
+   el('p',{class:'lede'},rv?`Expected revenue (business) = Zonal Tracker cases × agreed rate, up to ${ddmm(B.as_of)}. Billed and collected are finance figures with their own dates.`:`Case volumes up to ${ddmm(ov.as_of||'')} (report date). Force1, TAT and forecast figures state their own period.`),
+   el('div',{class:'pace'},el('div',{class:'nums'},el('span',{class:'big'},F(so)),el('span',{class:'of'},'of '+F(tg)+(rv?' target revenue':' target cases')),
+    el('span',{class:'of '+(behind==null?'':behind>=0?'good':'bad')},behind==null?'':(behind>=0?'+':'−')+F(Math.abs(behind))+' vs working-day pace'),
+    fc.available&&rg?el('span',{class:'of'},`Projected ${F(rg[0])}–${F(rg[1])} (${pct(ach)})`):null),track,
+   el('div',{class:'legend'},el('span',{},el('i',{style:'background:var(--blue)'}),'Achieved so far'),el('span',{},el('i',{style:'background:var(--ochre)'}),'Projected month-end range'),el('span',{},el('i',{style:'background:var(--ink)'}),'Target'),el('span',{},el('i',{style:'background:var(--ochre);width:3px'}),'Pace needed by today')),
+   el('div',{class:'note'},(rv?'Projection = revenue so far':'Projection = cases so far')+' ÷ the share of a month normally done by this working day (past months with daily reports); the shaded range is the weakest to strongest of those months.')));
+  if(rv){const ip=T.expected_in_progress?T.billed_in_progress/T.expected_in_progress:null,cp=T.expected_complete?T.billed_complete/T.expected_complete:null,una=rcptUna(B);
+   s.append(el('div',{class:'tiles kpi4'},tl('Target',fmtL(tg),`goal for ${mlabel(m)} (target cases × rate)`,'',hint('revtarget')),
+    tl('Achieved so far',fmtL(so),`${pct(T.revenue_attainment)} of target · ${T.expected_revenue_change_pct!=null?sgnp(T.expected_revenue_change_pct).trim()+' vs the same working day of '+mlabel(mAdd(m,-1))+' · ':''}up to ${ddmm(B.as_of)}`,'',hint('achievement')),
+    tl('Projection — month end',pj?fmtL(pj):'–',rg?`range ${fmtL(rg[0])}–${fmtL(rg[1])} · ${pct(ach)} of target`:'needs 2+ months of daily reports','',hint('projection')),
+    T.organic_revenue_to_date!=null?tl('Organic expectation',fmtL(T.organic_revenue_to_date),`so far → actual ${T.effort_revenue>=0?'+':'−'}${fmtL(Math.abs(T.effort_revenue||0))}${sgnp(T.effort_pct)}`,T.effort_revenue>=0?'good':'bad',hint('organic')):null,
+    tl('Billed (finance)',fmtL(T.billed_in_progress),`${mlabel(Fi.billing_in_progress_month)} invoiced so far${ip!=null?' · '+pct(ip)+' of expected':''} · ${mlabel(Fi.last_complete_billing_month)} fully billed${cp!=null?' '+pct(cp)+' of expected':''}`,''),
+    tl('Collected (finance)',fmtL(T.collected_current),`${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)} · outstanding ${fmtL(T.outstanding)} on ${ddmm(Fi.outstanding_as_of)}${una>0.2?' · ⚠ '+pct(una)+' not yet tied to a location':''}`,'')))
+   const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))});
+   [[4,'business'],[5,'cash']].forEach(([i,v])=>{if(kt[i])ddTile(kt[i],()=>{FV.view=v;go('collections')})})}
+  else{s.append(el('div',{class:'tiles kpi4'},tl('Target',fmt(tgtC)+' cases','goal for '+mlabel(m),'',hint('target')),
    tl('Achieved so far',fmt(ov.mtd_cases),`${pct(ov.achievement)} of target · up to ${ddmm(ov.as_of||'')}`,'',hint('achievement')),
    tl('Projection — month end',fc.available&&fc.curve_projection?fmt(fc.curve_projection):'–',fc.available&&fc.curve_range?`range ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} · ${pct(fc.curve_achievement)} of target`:'needs 2+ months of daily reports','',hint('projection')),
-   og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null))}
- {const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((fc,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:fc}))})}
+   og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null));
+   const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))})}
+  if(ok){const bmb=el('div',{class:'card',style:'margin:12px 0',id:'bmPanel'});s.append(bmb);bmTable(bmb,B,m,f,{compact:true});bmb.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('people')},'All branch managers and hand-overs →')))}}
  const pcb=el('div',{class:'card',style:'margin:12px 0'},el('h3',{style:'margin-top:0'},'Period comparison'),el('p',{class:'note'},'Loading…'));s.append(pcb);
  growthApi(m,f).then(G=>{if(!pcb.isConnected)return;pcb.innerHTML='';const rev=G.measure==='revenue';
   pcb.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},rev?'Period comparison — billed revenue (finance)':isExp(G)?'Period comparison — expected revenue (business)':'Period comparison — cases'),measureSeg()));
@@ -991,39 +1003,12 @@ const bmData=(m,f,mgr)=>api('bm',{month:m,filters:f,...(mgr?{p:{manager:mgr}}:{}
 const bmCtx=(mgr,m,f)=>({kind:'bm',title:mgr,mgr,m,f:{...f}});
 const rcptUna=B=>{const Fi=B.finance||{},T=B.total||{};const u=(Fi.unallocated||{})['collected_'+String(Fi.receipt_month||'').slice(0,7).replace('-','_')]||0;return T.collected_current>0?u/T.collected_current:0};
 const mAdd=(m,k)=>{const d=new Date(String(m).slice(0,10)+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+k);return d.toISOString().slice(0,10)};
-function revNow(box,B){const T=B.total||{},Fi=B.finance||{};const pace=T.revenue_pace_target?T.expected_revenue/T.revenue_pace_target:null;
- const kr=Fi.receipt_workdays,kk=Fi.previous_receipt_workdays,pc1=kr?T.collected_current/kr:null,pc0=kk?T.collected_previous/kk:null;
- const una=Fi.unallocated||{},rcu=una['collected_'+String(Fi.receipt_month||'').slice(0,7).replace('-','_')];
- const bus=el('div',{class:'card','data-k':'business'},el('div',{class:'lbl'},el('b',{},'Business'),' · expected revenue (operations)'),
-  el('div',{class:'val'},fmtL(T.expected_revenue)),
-  el('div',{class:'per'},`${mlabel(B.month)}${B.partial?` to ${ddmm(B.as_of)} · working day ${B.workdays_elapsed} of ${B.workdays_in_month}`:''} · Zonal Tracker cases × rate`),
-  el('div',{},chgEl(T.expected_revenue-T.expected_revenue_prev_same_day,T.expected_revenue_change_pct,true),el('span',{class:'per'},` vs ${fmtL(T.expected_revenue_prev_same_day)} ${B.partial?'on the same working day of':'in'} ${mlabel(mAdd(B.month,-1))}`)),
-  el('div',{class:'per'},`Target ${fmtL(T.revenue_target)} · achieved ${pct(T.revenue_attainment)}${B.partial?` · needed by today ${fmtL(T.revenue_pace_target)} `:' '}`,B.partial&&pace!=null?el('span',{class:'chip '+(pace>=1?'good':pace>=0.9?'warn':'bad')},(pace>=1?'ahead by ':'behind by ')+fmtL(Math.abs(T.expected_revenue-T.revenue_pace_target))):null),
-  B.partial?el('div',{class:'per'},`Projected month end ${fmtL(T.projected_revenue)} (${pct(T.projected_revenue/T.revenue_target)} of target)`):null,
-  el('div',{class:'per'},`Organic ${B.partial?'to date ':''}${fmtL(T.organic_revenue_to_date)} → effort `,chgEl(T.effort_revenue,T.effort_pct,true)),
-  el('div',{class:'per'},`Cases ${fmt(T.cases)} of ${fmt(T.case_target)} · `,chgEl(T.cases-T.cases_prev_same_day,T.cases_change_pct,false)));
- const ip=Fi.billing_in_progress_month;
- const bil=el('div',{class:'card','data-k':'billing'},el('div',{class:'lbl'},el('b',{},'Billing'),' · billed revenue (finance)'),
-  el('div',{class:'val'},fmtL(ip?T.billed_in_progress:T.billed_complete)),
-  ip?el('div',{class:'per'},`${mlabel(ip)} invoiced so far (ex-GST) = ${pct(T.billed_in_progress/T.expected_in_progress)} of ${fmtL(T.expected_in_progress)} expected — still being billed`):null,
-  el('div',{class:'per'},`${mlabel(Fi.last_complete_billing_month)} completely billed: ${fmtL(T.billed_complete)} = ${pct(T.billed_complete/T.expected_complete)} of ${fmtL(T.expected_complete)} expected`),
-  el('div',{class:'per'},`${mlabel(B.month)}: invoices are raised at month end · outstanding snapshot ${ddmm(Fi.outstanding_as_of)}`));
- const col=el('div',{class:'card','data-k':'collection'},el('div',{class:'lbl'},el('b',{},'Collection done'),' (finance)'),
-  el('div',{class:'val'},fmtL(T.collected_current)),
-  el('div',{class:'per'},`${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)} (${kr} working days) · receipts incl. GST`),
-  pc1!=null&&pc0?el('div',{class:'per'},`Per working day ${fmtL(pc1)} so far vs ${fmtL(pc0)} over all of ${mlabel(Fi.previous_receipt_month)} `,el('span',{class:pc1>=pc0?'good':'bad'},pctS(pc1/pc0-1)),' (receipts often bunch late in the month; receipt dates within a month are not in the summary)'):null,
-  el('div',{class:'per'},`${mlabel(Fi.previous_receipt_month)} collected ${fmtL(T.collected_previous)} · outstanding ${fmtL(T.outstanding)} at ${ddmm(Fi.outstanding_as_of)}`),
-  rcu?el('div',{class:'warnline warn'},`⚠ ${fmtL(rcu)} of these receipts are not yet tied to a location (in the total, not in any manager's figure)`):null);
- const w=el('div',{class:'sc rnow'},bus,bil,col);box.append(w);
- ddTile(bus,()=>bizCtx(B.month,B.filters||{},{focus:'mtd'}),'Expected revenue');
- [bil,col].forEach(c=>{c.classList.add('dd');c.tabIndex=0;c.setAttribute('role','button');c.onclick=()=>{FV.view=c.dataset.k==='billing'?'business':'cash';go('collections')};c.onkeydown=e=>{if(e.key==='Enter'){FV.view=c.dataset.k==='billing'?'business':'cash';go('collections')}}});
- return w}
 function bmTable(box,B,m,f,opt={}){const Fi=B.finance||{};const R=(B.managers||[]).filter(r=>opt.all||r.current!==false);
  const P=R.filter(r=>r.pace_ratio!=null&&r.revenue_target>0&&r.manager!=='(not mapped)').sort((a,b)=>b.pace_ratio-a.pace_ratio);
  const ip=Fi.billing_in_progress_month;
  const A=(...xs)=>box.append(...xs.filter(x=>x!=null&&x!==false));
  A(opt.noTitle?null:el('h3',{style:'margin-top:0'},`Branch managers — ${mlabel(B.month)}${B.partial?' so far':''}`),
-  el('p',{class:'note'},`Expected revenue${B.partial?' to '+ddmm(B.as_of):''} under the branch manager mapped for each location × client · on course for = projected month end ÷ target (so far ÷ the share of a month normally done by this working day) · finance columns keep their own dates (billed ${mlabel(Fi.last_complete_billing_month)}${ip?', billing in progress '+mlabel(ip):''}; collected ${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)}) · * = includes zone-level invoices allocated by expected revenue.${rcptUna(B)>0.2?` ⚠ ${pct(rcptUna(B))} of ${mlabel(Fi.receipt_month)} receipts are not yet tied to a location, so the collected column is incomplete for every manager.`:''} Mapped responsibility, not proof of cause. Click a manager for the portfolio, trend and hand-overs.`),
+  el('p',{class:'note'},`Expected revenue${B.partial?' to '+ddmm(B.as_of):''} under the branch manager mapped for each location × client · on course for = projected month end ÷ target (so far ÷ the share of a month normally done by this working day) · finance columns keep their own dates (billed ${mlabel(Fi.last_complete_billing_month)}${ip?', billing in progress '+mlabel(ip):''}; collected ${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)}) · each invoice and receipt counts whole for one location × client (never shared) · * = includes zone-level invoices whose zone has this one manager for that client.${rcptUna(B)>0.2?` ⚠ ${pct(rcptUna(B))} of ${mlabel(Fi.receipt_month)} receipts are not yet tied to a location, so the collected column is incomplete for every manager.`:''} Mapped responsibility, not proof of cause. Click a manager for the portfolio, trend and hand-overs.`),
   P.length&&B.partial?el('div',{class:'insight'},el('div',{},el('strong',{},'On course to meet target: '),P.filter(r=>r.pace_ratio>=1).slice(0,4).map(r=>`${r.manager} (${pct(r.pace_ratio)})`).join(' · ')||'none at the current pace'),
    el('div',{},el('strong',{},'Furthest from target pace: '),P.slice(-3).reverse().map(r=>`${r.manager} (on course for ${pct(r.pace_ratio)})`).join(' · '))):null,
   table(R,[{key:'manager',label:'Branch manager'},{key:'n_locations',label:'Locations',num:1,fmt:(v,r)=>el('span',{title:(r.locations||[]).join(', ')},v==null?'–':fmt(v)),raw:r=>(r.locations||[]).join('; ')},
@@ -1033,7 +1018,7 @@ function bmTable(box,B,m,f,opt={}){const Fi=B.finance||{};const R=(B.managers||[
    {key:'revenue_change_pct',label:B.partial?'vs same day last month':'vs last month',num:1,fmt:(v,r)=>r.revenue_change==null?'–':chgEl(r.revenue_change,v,true),raw:r=>r.revenue_change_pct},
    {key:'effort_pct',label:'Effort vs organic',num:1,fmt:v=>v==null?'–':el('span',{class:v>0.05?'good':v<-0.05?'bad':''},pctS(v)),raw:r=>r.effort_pct},
    {key:'cases',label:'Cases',num:1,fmt:fmt},
-   {key:'billing_ratio',label:`Billed ÷ expected ${mlabel(Fi.last_complete_billing_month)}`,num:1,fmt:(v,r)=>v==null?'–':el('span',{title:r.billed_complete_allocated?`${fmtL(r.billed_complete_allocated)} of ${fmtL(r.billed_complete)} allocated from zone-level invoices`:`${fmtL(r.billed_complete)} billed`},pct(v)+(r.billed_complete_allocated?' *':''))},
+   {key:'billing_ratio',label:`Billed ÷ expected ${mlabel(Fi.last_complete_billing_month)}`,num:1,fmt:(v,r)=>v==null?'–':el('span',{title:r.billed_complete_allocated?`${fmtL(r.billed_complete_allocated)} of ${fmtL(r.billed_complete)} from zone-level invoices (location not identified; the zone has only this manager for that client)`:`${fmtL(r.billed_complete)} billed`},pct(v)+(r.billed_complete_allocated?' *':''))},
    ...(ip?[{key:'billing_progress_ratio',label:`${mlabel(ip)} billed so far`,num:1,fmt:pct}]:[]),
    {key:'collected_current',label:`Collected ${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)}`+(rcptUna(B)>0.2?' ⚠':''),num:1,fmt:fmtL},
    {key:'outstanding',label:'Outstanding',num:1,fmt:(v,r)=>v==null?'–':fmtL(v)+(r.outstanding_allocated?' *':'')},
@@ -1064,7 +1049,7 @@ async function ddBm(o,c){const B=await bmData(c.m,c.f,c.mgr);const r=(B.managers
    B.partial?tile('Projected month end',fmtL(r.projected_revenue),`${pct(r.projected_attainment)} of target`):null,
    tile('Effort vs organic',r.effort_pct==null?'–':pctS(r.effort_pct),`organic ${B.partial?'to date ':''}${fmtL(r.organic_revenue_to_date)} · ${sgF(r.effort_revenue,fmtL)}`,r.effort_pct>0.05?'good':r.effort_pct<-0.05?'bad':''),
    tile(`${mlabel(B.completed_month)} expected revenue`,fmtL(r.completed_month_revenue),`vs ${fmtL(r.completed_month_prev_revenue)} the month before${r.completed_month_change_pct!=null?' · '+pctS(r.completed_month_change_pct):''}`),
-   tile(`Billed — ${mlabel(Fi.last_complete_billing_month)}`,fmtL(r.billed_complete),`${pct(r.billing_ratio)} of ${fmtL(r.expected_complete)} expected${r.billed_complete_allocated?` · ${fmtL(r.billed_complete_allocated)} allocated from zone-level invoices`:''}`),
+   tile(`Billed — ${mlabel(Fi.last_complete_billing_month)}`,fmtL(r.billed_complete),`${pct(r.billing_ratio)} of ${fmtL(r.expected_complete)} expected${r.billed_complete_allocated?` · ${fmtL(r.billed_complete_allocated)} from zone-level invoices (zone has only this manager for the client)`:''}`),
    ip?tile(`Billed so far — ${mlabel(ip)}`,fmtL(r.billed_in_progress),`${pct(r.billing_progress_ratio)} of ${fmtL(r.expected_in_progress)} expected (still being billed)`):null,
    tile(`Collected — ${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)}`,fmtL(r.collected_current),`${mlabel(Fi.previous_receipt_month)}: ${fmtL(r.collected_previous)}`+(rcptUna(B)>0.2?` · ⚠ ${pct(rcptUna(B))} of this month's receipts are not yet tied to a location — incomplete, not comparable`:(r.collected_pace_change_pct!=null?' · pace '+pctS(r.collected_pace_change_pct):''))),
    tile('Outstanding',fmtL(r.outstanding),`at ${ddmm(Fi.outstanding_as_of)}${r.outstanding_allocated?` · ${fmtL(r.outstanding_allocated)} allocated from zone level`:''}`)));
