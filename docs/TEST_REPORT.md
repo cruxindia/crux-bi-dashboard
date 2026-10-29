@@ -531,3 +531,5 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Workforce rebuilt after the point refresh | 703 people, 3,685 person-months (25 s) |
 | Speed | 500k-row series 151 ms; landing calls 1.0–2.5 s |
 | Live | md5 61d3d0ea… unchanged; test_097_ui 14 / 14 |
+| Identity counts vs the 29-Oct morning record | cases: 0 stored-vs-rule differences, 25 not identified; points: 408 not identified, 4,786 without a matching case, 4,636 on own evidence — all unchanged |
+| Cached figures | no growth / organic / branch-manager / overview / meta answer older than 24 h; no light-refresh errors |
