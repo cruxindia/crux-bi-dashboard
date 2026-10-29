@@ -131,3 +131,9 @@ L48 and L49 above are superseded: finance is no longer shared out by expected re
 | L76 | Ask Crux's optional AI wording is skipped when the model takes more than 5 s or its daily quota is used up (D198) | Answers then show only the calculated text | Paid tier / key rotation (Q8) |
 | L74 | Free-plan (Nano) instance: disk IO bursts only for a short time each day, then runs at 5 MB/s and 250 IOPS. A day of heavy work (bulk saves, full test runs, refresh cascades) exhausts the burst and everything slows sharply | 29-Oct outage (SOW incident) | Pro plan / compute upgrade (Q19); background jobs one at a time |
 
+| L77 | Workforce comes from Force1 activity only (D208): leave, training, a role that does not use Force1 or a changed login name look like absence; the same person under two spellings counts twice; "activity days %" is not HR attendance | Read as Force1 presence | HR roster if ever needed |
+| L78 | People whose first Force1 activity is in the first 15 days of the data (1–16-Jan-2026) count as existing staff, so January joiners are under-counted | Jan-2026 only | — |
+| L79 | Six team locations have no territory (D213), so their branches are missing from coverage by location | Coverage for Nagpur / Lucknow teams | Owner confirms the client split |
+| L80 | The Force1 point table is rebuilt in full each night it changes (≈100 s) | Night window only | Incremental rebuild (needs row deletion — owner step) |
+| L81 | Lumen storage buckets (11 MB) stay until the owner runs the removal script and deletes them in Storage (D207) | File storage quota | Owner step |
+| L82 | Ageing remains calendar days until the owner chooses a rule (D209) | Operations ageing | Owner selection |

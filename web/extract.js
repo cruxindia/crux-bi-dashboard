@@ -155,9 +155,11 @@
 
   const OS_COLS = ['r', 'loc', 'im', 'ims', 'cl', 'br', 'inv', 'basic', 'gross', 'tds', 'net', 'partial', 'os', 'rk'];
   function extractOutstanding(wb, fileName) {
-    const sheets = []; const issues = [];
+    const sheets = []; const issues = []; let asOn = null;
     for (const name of wb.SheetNames) {
       const rows = sheetRows(wb.Sheets[name]);
+      // wave 098: an "As on" date written near the top of any sheet (the template puts it on the summary sheet) is the snapshot date
+      if (!asOn) for (let i = 0; i < Math.min(6, rows.length) && !asOn; i++) { const x = rows[i] || []; for (let j = 0; j < x.length - 1; j++) if (/^(as on|as at|as on date|snapshot date)\b/.test(lc(x[j]))) { const d = finDate(x[j + 1]); if (d) { asOn = d; break; } } }
       let hi = headerAt(rows, (x) => x.startsWith('actual outstanding'));
       if (hi >= 0 && !rows[hi].some((x) => /^inv/.test(lc(x)))) hi = -1; // no invoice column: a summary sheet
       if (hi < 0) { // location summary sheet ("Pvt")
@@ -207,7 +209,7 @@
       const ledTotal = led.reduce((a, s) => a + (s.controls.sheet_total ? s.controls.sheet_total.os : s.controls.os), 0);
       if (tot && Math.abs(tot.total - ledTotal) > 1) issues.push({ rule: 'summary_vs_sheets', severity: 'warn', detail: `Summary sheet total ${tot.total.toFixed(2)} vs location sheets ${ledTotal.toFixed(2)} (difference ${(ledTotal - tot.total).toFixed(2)}).` });
     }
-    return { kind: 'outstanding', file_name: fileName, name_period: nm, sheets, issues };
+    return { kind: 'outstanding', file_name: fileName, name_period: nm, as_on: asOn, sheets, issues };
   }
   function rowValues(ws, r) {
     const ref = ws['!ref']; if (!ref) return null;

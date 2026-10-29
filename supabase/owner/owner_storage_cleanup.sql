@@ -28,10 +28,16 @@ select public.bi_call('force1', jsonb_build_object('month', to_char(date_trunc('
        public.bi_call('coverage_status', '{}'::jsonb) is not null coverage_ok;
 select count(*) filter (where passed) passed, count(*) total from bi.test_identity();
 
--- Step 4 (optional, about 10 MB) — response-cache rows written under an older cache version. bi_call never serves them
--- (the version no longer matches) and recomputes a request the next time it is asked for. Rebuildable; nothing else reads them.
-select count(*) stale_rows, pg_size_pretty(sum(pg_column_size(v))) stale_payload from bi.api_cache where version < (select max(version) from bi.api_cache);
-delete from bi.api_cache where version < (select max(version) from bi.api_cache);
+-- Step 4 (optional) — response-cache rows that bi_call can no longer serve. Since wave 098 (29-Oct-2026) bi_call answers from
+-- an older-version row while it recomputes in the background, but only if that row is under 24 hours old and newer than the
+-- latest correction floor; older rows are never served and are recomputed when next asked for. Rebuildable; nothing else reads them.
+-- (Updated 29-Oct-2026: the earlier wording deleted every older-version row, which would also have removed rows still in use.)
+select count(*) unservable_rows, pg_size_pretty(sum(pg_column_size(v))) unservable_payload from bi.api_cache
+ where version < (select max(version) from bi.api_cache)
+   and (computed_at < now() - interval '24 hours' or computed_at < (select coalesce(max(floor_at), '-infinity'::timestamptz) from bi.api_cache_floor));
+delete from bi.api_cache
+ where version < (select max(version) from bi.api_cache)
+   and (computed_at < now() - interval '24 hours' or computed_at < (select coalesce(max(floor_at), '-infinity'::timestamptz) from bi.api_cache_floor));
 -- then, as separate runs (VACUUM cannot run inside a multi-statement transaction): vacuum (full, analyze) bi.api_cache;  and afterwards  vacuum (analyze) bi.api_cache;
 
 -- Step 5 (optional, under 1 MB) — pg_cron run history older than 14 days (job definitions are untouched).

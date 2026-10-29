@@ -86,7 +86,7 @@ h2{font:600 20px/1.25 var(--f);margin:0 0 4px}h3{font:600 15px/1.3 var(--f);marg
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
 .tile .k{font-size:12px;color:var(--muted)}.tile .v{font:700 26px/1.15 var(--fn);font-variant-numeric:tabular-nums}.tile .n{font-size:12px;color:var(--muted)}
 .good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--ochre)}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}.grid2>*{min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}.grid2>*{min-width:0}.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.grid3>*{min-width:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
 .chartbox{position:relative;height:260px}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;max-height:620px;overflow-y:auto}
@@ -334,7 +334,7 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
   ex.length?tatToggle():null,el('details',{},el('summary',{class:'btn'},'Columns'),el('div',{class:'colpick'},cols.map(c=>{const cb=el('input',{type:'checkbox'});cbs.push([cb,c.key]);cb.checked=!hidden.has(c.key);cb.onchange=()=>{cb.checked?hidden.delete(c.key):hidden.add(c.key);draw()};return el('label',{},cb,' ',c.label)}))),info);
  function view(){let r=rows;if(q)r=r.filter(x=>cols.some(c=>String(c.raw?c.raw(x):x[c.key]??'').toLowerCase().includes(q)));if(sk){const c=cols.find(c=>c.key===sk);const v=x=>c.raw?c.raw(x):x[sk];r=[...r].sort((a,b)=>{const A=v(a),B=v(b);return(A==null)-(B==null)||(A>B?1:A<B?-1:0)*sd})}return r}
  function draw(){drawn=true;cbs.forEach(([cb,k])=>{cb.checked=!hidden.has(k)});const r=view(),vc=cols.filter(c=>!hidden.has(c.key));const pages=Math.max(1,Math.ceil(r.length/pageSize));page=Math.min(page,pages-1);
-  const t=el('table',{},el('thead',{},el('tr',{},vc.map(c=>el('th',{class:c.num?'num':'',scope:'col',tabindex:0,onclick:()=>{sd=sk===c.key?-sd:(c.num?-1:1);sk=c.key;draw()},onkeydown:e=>{if(e.key==='Enter')e.currentTarget.click()},title:'Click to sort'},c.label,el('span',{class:'sorti'},sk===c.key?(sd>0?' ▲':' ▼'):' ↕'))))),
+  const t=el('table',{},el('thead',{},el('tr',{},vc.map(c=>el('th',{class:c.num?'num':'',scope:'col',tabindex:0,onclick:()=>{sd=sk===c.key?-sd:(c.num?-1:1);sk=c.key;draw()},onkeydown:e=>{if(e.key==='Enter')e.currentTarget.click()},title:c.title?c.title+' · click to sort':'Click to sort'},c.label,el('span',{class:'sorti'},sk===c.key?(sd>0?' ▲':' ▼'):' ↕'))))),
    el('tbody',{},r.slice(page*pageSize,(page+1)*pageSize).map(x=>{const tr=el('tr',{},vc.map(c=>{const v=c.fmt?c.fmt(x[c.key],x):x[c.key];return el('td',{class:c.num?'num':''},v&&v.nodeType?v:(v??'–'))}));
     if(rowAction){const cx=rowAction(x);if(cx)ddRow(tr,()=>cx,cx.title)}return tr})));
   tw.innerHTML='';tw.append(t);info.textContent=`${fmt(r.length)} rows`+(pages>1?` · page ${page+1}/${pages}`:'');pager.innerHTML='';if(pages>1){pager.append(el('button',{class:'btn',onclick:()=>{page=Math.max(0,page-1);draw()}},'Previous'),' ',el('button',{class:'btn',onclick:()=>{page=Math.min(pages-1,page+1);draw()}},'Next'))}}
@@ -698,13 +698,25 @@ async function forceBody(s,m,f){const [rows,trend,man]=await Promise.all([api('f
 /* ---------- TAT & operations ---------- */
 const openM=m=>m===(S.meta.months||[])[0];
 const TATG=[['zone','Zone'],['location','Location'],['client','Client'],['unit','Location group'],['branch','Branch'],['pin','PIN code (points only)'],['employee','Employee (points only)']];
-function opsFlow(box,O,D,m,f){const c=C(),Dy=O.daily||[],ok=O.closing_backlog===O.open_now_check,AG=O.ageing||[],T=O.tat||{};
+/* Ageing rule (owner 29-Oct-2026, 5.8.3): three rules side by side; an admin selects the one used everywhere. */
+function ageingRuleCompare(O){const X=O.ageing_compare;if(!X)return null;const RL=O.ageing_rule||'calendar';
+ const L={calendar:'Calendar days',working:'Working days',sla:'SLA (due time) — recommended'},T={calendar:'Days since received, counting Sundays and holidays.',working:'Days since received, counting only Mon–Sat and skipping days an admin marked as non-working.',sla:'Time past the case\'s own Force1 due time (SLAs differ by client and product). Shows whether a case is late and by how much.'};
+ const col=k=>el('div',{class:'card',style:k===RL?'outline:2px solid var(--blue)':''},el('h4',{style:'margin:0 0 4px'},L[k]+(k===RL?' · in use':'')),el('p',{class:'note',style:'margin:0 0 6px'},T[k]),
+  table(X[k]||[],[{key:'bucket',label:k==='sla'?'Against due time':'Age'},{key:'cases',label:'Open cases',num:1,fmt:fmt}],{search:false,name:`ageing_${k}.csv`}));
+ const d=el('details',{style:'margin-top:10px'},el('summary',{},'Compare the three ageing rules'+(S.role==='admin'?' and choose one':'')),el('div',{class:'grid3'},col('calendar'),col('working'),col('sla')));
+ if(S.role==='admin'){const sel=el('select',{'aria-label':'Ageing rule'},['calendar','working','sla'].map(k=>el('option',{value:k},L[k])));sel.value=RL;
+  const ed=el('input',{type:'text',placeholder:'Your name',size:14,'aria-label':'Your name'}),why=el('input',{type:'text',placeholder:'Reason (5+ characters)',size:28,'aria-label':'Reason'}),msg=el('span',{class:'note'});
+  const b=el('button',{class:'btn',type:'button',onclick:async()=>{if(!ed.value.trim()||why.value.trim().length<5){msg.textContent='Enter your name and a reason.';msg.className='bad';return}
+   try{await adminCall('setting',{op:'set',key:'ops_ageing_rule',value:sel.value,reason:why.value.trim(),editor:ed.value.trim()});msg.textContent='Saved — reloading with the new rule.';msg.className='good';setTimeout(()=>go(S.section),600)}catch(e){msg.textContent=e.message;msg.className='bad'}}},'Use this rule');
+  d.append(el('div',{class:'tools',style:'margin-top:8px'},el('strong',{},'Ageing rule used everywhere: '),sel,ed,why,b,msg))}
+ return d}
+function opsFlow(box,O,D,m,f){const c=C(),Dy=O.daily||[],ok=O.closing_backlog===O.open_now_check,AG=O.ageing||[],T=O.tat||{},AC=O.ageing_cols||['Older than 7 days','Older than 30 days','Oldest (days)'],RL=O.ageing_rule||'calendar';
  const trk=Object.fromEntries((Array.isArray(D)?D:(D&&D.days)||[]).map(d=>[String(d.date).slice(0,10),d.change]));
  box.append(el('div',{class:'card',style:'margin-top:14px'},el('h3',{style:'margin-top:0'},'Case flow — '+mlabel(O.month)+(O.as_of?' to '+ddmm(O.as_of):'')),
   el('p',{class:'note'},'Force1 cases (Operations). Opening backlog + received − completed = closing backlog, every day.'+(ok?' ✓ The closing backlog equals an independent count of open cases.':' ⚠ Closing backlog and open-case count differ — see the method.')),
   el('div',{class:'tiles kpi4'},tile('Opening backlog',fmt(O.opening_backlog),'open on '+ddmm(O.month)),tile('Received',fmt(O.received_mtd),'new Force1 cases this month'),
    tile('Completed',fmt(O.closed_mtd),T.median_hours!=null?`median ${T.median_hours} h · 90th percentile ${T.p90_hours} h`:''),
-   tile('Open now',fmt(O.closing_backlog),`${fmt(O.over_7_days)} older than 7 days · ${fmt(O.past_due)} past their due time (${pct(O.closing_backlog?O.past_due/O.closing_backlog:null)}) · oldest ${O.oldest_days} days`,O.over_7_days>0.3*O.closing_backlog?'bad':'')),
+   tile('Open now',fmt(O.closing_backlog),`${fmt(O.over_7_days)} ${AC[0].toLowerCase()} · ${fmt(O.past_due)} past their due time (${pct(O.closing_backlog?O.past_due/O.closing_backlog:null)}) · ${AC[2].toLowerCase().replace(/[()]/g,'')} ${O.oldest_days}`,O.over_7_days>0.3*O.closing_backlog?'bad':'')),
   (()=>{const cv=el('canvas');const w=el('div',{class:'chartbox'},cv);setTimeout(()=>chart(cv,{data:{labels:Dy.map(d=>d.date.slice(8)+'.'+d.date.slice(5,7)),datasets:[
     {type:'bar',label:'Received',data:Dy.map(d=>d.incoming),backgroundColor:c.blue+'cc'},{type:'bar',label:'Completed',data:Dy.map(d=>d.closed),backgroundColor:c.good+'cc'},
     {type:'line',label:'Closing backlog (open cases)',data:Dy.map(d=>d.closing),borderColor:c.ochre,backgroundColor:c.ochre}]},
@@ -714,14 +726,15 @@ function opsFlow(box,O,D,m,f){const c=C(),Dy=O.daily||[],ok=O.closing_backlog===
     {key:'opening',label:'Force1 opening backlog',num:1,fmt:fmt},{key:'incoming',label:'Received',num:1,fmt:fmt},{key:'closed',label:'Completed',num:1,fmt:fmt},{key:'closing',label:'Closing backlog',num:1,fmt:fmt}],{name:'case_flow.csv',search:false}))));
  const cv2=el('canvas');
  box.append(el('div',{class:'card',style:'margin-top:14px'},el('h3',{style:'margin-top:0'},'Open cases by age'),
-  el('p',{class:'note'},'Calendar days from the case\'s received time to the end of '+ddmm(O.as_of)+'. Buckets do not overlap. "Past due" = past the case\'s due time.'),
+  el('p',{class:'note'},({working:'Working days (Mon–Sat, minus days an admin marked as non-working) from the case\'s received time to the end of ',sla:'Time past each case\'s own Force1 due time at the end of ',calendar:'Calendar days from the case\'s received time to the end of '}[RL]||'')+ddmm(O.as_of)+'. Buckets do not overlap. "Past due" = past the case\'s due time. Rule in use: '+({working:'working days',sla:'SLA (due time)',calendar:'calendar days'}[RL]||RL)+'.'),
   el('div',{class:'grid2'},el('div',{class:'chartbox'},cv2),
    table(AG,[{key:'bucket',label:'Age'},{key:'cases',label:'Open cases',num:1,fmt:fmt},{key:'share',label:'Share',num:1,fmt:pct},{key:'past_due',label:'Past due',num:1,fmt:fmt}],{name:'open_case_ageing.csv',search:false})),
+  ageingRuleCompare(O),
   el('h4',{},'By location'),
-  table(O.ageing_by_location||[],[{key:'location',label:'Location',fmt:v=>v||'not identified'},{key:'open',label:'Open',num:1,fmt:fmt},{key:'over_7',label:'Older than 7 days',num:1,fmt:fmt},{key:'over_30',label:'Older than 30 days',num:1,fmt:v=>v>0?el('span',{class:'bad'},fmt(v)):'0'},
-   {key:'past_due',label:'Past due',num:1,fmt:fmt},{key:'oldest_days',label:'Oldest (days)',num:1,fmt:v=>v==null?'–':(+v).toFixed(0)},{key:'handler',label:'Operations handler',fmt:v=>v||el('span',{class:'note'},'not entered')},{key:'branch_manager',label:'Branch manager',fmt:v=>v||'–'}],
+  table(O.ageing_by_location||[],[{key:'location',label:'Location',fmt:v=>v||'not identified'},{key:'open',label:'Open',num:1,fmt:fmt},{key:'over_7',label:AC[0],num:1,fmt:fmt},{key:'over_30',label:AC[1],num:1,fmt:v=>v>0?el('span',{class:'bad'},fmt(v)):'0'},
+   {key:'past_due',label:'Past due',num:1,fmt:fmt},{key:'oldest_days',label:AC[2],num:1,fmt:v=>v==null?'–':(+v).toFixed(0)},{key:'handler',label:'Operations handler',fmt:v=>v||el('span',{class:'note'},'not entered'),title:'The mapped branch manager / location head unless a different person is set in Admin → Mapping → Roles'},{key:'branch_manager',label:'Branch manager',fmt:v=>v||'–'}],
    {name:'open_cases_by_location.csv',rowAction:r=>r.location?entityCtx('location',r.location,m,f):null}),
-  el('h4',{},'By client'),table(O.ageing_by_client||[],[{key:'client_family',label:'Client'},{key:'open',label:'Open',num:1,fmt:fmt},{key:'over_7',label:'Older than 7 days',num:1,fmt:fmt},{key:'over_30',label:'Older than 30 days',num:1,fmt:v=>v>0?el('span',{class:'bad'},fmt(v)):'0'},{key:'past_due',label:'Past due',num:1,fmt:fmt},{key:'oldest_days',label:'Oldest (days)',num:1,fmt:v=>v==null?'–':(+v).toFixed(0)}],{name:'open_cases_by_client.csv',search:false}),
+  el('h4',{},'By client'),table(O.ageing_by_client||[],[{key:'client_family',label:'Client'},{key:'open',label:'Open',num:1,fmt:fmt},{key:'over_7',label:AC[0],num:1,fmt:fmt},{key:'over_30',label:AC[1],num:1,fmt:v=>v>0?el('span',{class:'bad'},fmt(v)):'0'},{key:'past_due',label:'Past due',num:1,fmt:fmt},{key:'oldest_days',label:AC[2],num:1,fmt:v=>v==null?'–':(+v).toFixed(0)}],{name:'open_cases_by_client.csv',search:false}),
   el('p',{class:'note'},'Handler = operations handler mapped in Admin → Mapping (mapped responsibility, not proof of cause). Case-level records (case ID, branch, status) are in Records below for administrators.'),
   el('p',{class:'note'},O.method)));
  setTimeout(()=>chart(cv2,{type:'bar',data:{labels:AG.map(a=>a.bucket),datasets:[{label:'Open cases',data:AG.map(a=>a.cases),backgroundColor:AG.map((a,i)=>c.ochre+(['38','5c','80','a3','d1','ff'][i]||'ff')),borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}}),0)}
@@ -858,7 +871,7 @@ const vCollections=guard(async s=>{const m=$('#fMonth').value,f=filters();
  chart(c4,{type:'line',data:{labels:P.map(p=>mlabel(p.month)),datasets:[{label:'Expected revenue per case',data:P.map(p=>p.revenue_per_case),borderColor:cc.blue},{label:'Tracker rate',data:P.map(p=>p.tracker_rate),borderColor:cc.muted,borderDash:[4,4]},{label:'Invoiced per case',data:P.map(p=>p.invoiced_per_case),borderColor:cc.ochre},{label:'Collected per case (so far)',data:P.map(p=>p.collected_per_case),borderColor:cc.good}]},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'₹ per case'}}}}});
  // C — detail tables
  s.append(el('h3',{},'By location'),el('p',{class:'note'},'Zone lines (for example "Gujarat Zone") hold amounts whose city is not stated in the workbook. '+(S.role==='admin'?'Click a row for its open invoices.':'')),
-  table(d.by_location||[],[{key:'location',label:'Location'},{key:'zone',label:'Zone'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_90',label:'Over 90 days',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},
+  table(d.by_location||[],[{key:'location',label:'Location'},{key:'zone',label:'Zone'},{key:'collections_owner',label:'Collections owner',fmt:v=>v||'–'},{key:'outstanding',label:'Outstanding',num:1,fmt:fmtL},{key:'over_90',label:'Over 90 days',num:1,fmt:fmtL},{key:'over_180',label:'Over 180 days',num:1,fmt:fmtL},
    {key:'over_180_share',label:'Share over 180',num:1,fmt:v=>v==null?'–':el('span',{class:v>0.3?'bad':''},pct(v))},{key:'unadjusted',label:'Unadjusted receipts',num:1,fmt:fmtL},{key:'net_receivable',label:'Net receivable',num:1,fmt:fmtL},
    {key:'collected_last_month',label:'Collected '+mlabel(rc.last_complete_month),num:1,fmt:fmtL},{key:'collected_fytd',label:'Collected this year',num:1,fmt:fmtL},{key:'cash_cover_3m',label:'Cash cover (3 m)',num:1,fmt:pct},
    {key:'months_outstanding',label:'Months outstanding',num:1,fmt:v=>v==null?'–':(+v).toFixed(1)},{key:'avg_days_to_collect',label:'Days to collect',num:1,fmt:fmt},{key:'receipts_not_in_ledger',label:'Receipts not in ledger',num:1,fmt:fmtL}],
@@ -950,18 +963,19 @@ function finFresh(s){const b=el('div',{class:'banner',id:'finFresh',role:'note'}
    '. Upload newer workbooks in Admin workspace → File uploads.')})}
 function osReconCard(s,m){const ob=el('div',{class:'card',style:'margin-bottom:14px',id:'osRecon'},el('h3',{style:'margin-top:0'},'Outstanding — collection and reconciliation workload'),el('p',{class:'note'},'Loading…'));s.append(ob);
  api('os_recon',{month:m,filters:{}}).then(R=>{if(!ob.isConnected)return;ob.lastChild.remove();if(!R||!R.available){ob.append(el('p',{class:'note'},'No outstanding workbook imported yet.'));return}
-  const adj=(R.adjustments||[]).filter(a=>a.amount!=null),X=R.cross_sheet_invoices||{},LM=R.line_measures||{},D=R.definitions||{},sc=R.sheet_checks||[],dl=R.duplicate_lines||{};
+  const adj=(R.adjustments||[]).filter(a=>a.amount!=null),X=R.cross_sheet_invoices||{},LM=R.line_measures||{},D=R.definitions||{},sc=R.sheet_checks||[],dl=R.duplicate_lines||{},ex=R.excluded_duplicates||{},GR=R.gross_as_recorded!=null?R.gross_as_recorded:R.gross;
   ob.append(el('p',{class:'note'},`Whole company (filters do not apply) · snapshot ${ddmm(R.as_of)} · ${fmt(R.lines)} invoice lines · three separate measures, never netted silently`),
    el('div',{class:'tiles kpi4'},tile('Gross — collect and reconcile',fmtL(R.gross),'Managers\' target: open invoices, including money already received but not yet linked to them'),
     tile('Received, not yet linked to an invoice',fmtL(R.unadjusted),'The workbook\'s "unadjusted" receipts — reconcile them against invoices',R.unadjusted>0?'warn':''),
     tile('Net invoice balance to collect',fmtL(R.net),'Gross − received but not linked'),
-    tile('Workbook status',R.reconciled?'✓ Reconciled':Math.abs(R.unexplained||0)<1?'⚠ Not reconciled':'⚠ Unreconciled',R.status+(R.reconciled?'':` · summary ${fmtL(R.summary&&R.summary.gross)} vs sheets ${fmtL(R.gross)}`),R.reconciled?'good':'bad')),
+    tile('Workbook status',R.reconciled?'✓ Reconciled':Math.abs(R.unexplained||0)<1?'⚠ Not reconciled':'⚠ Unreconciled',R.status+(R.reconciled?'':` · summary ${fmtL(R.summary&&R.summary.gross)} vs sheets ${fmtL(GR)} (as recorded)`),R.reconciled?'good':'bad')),
    R.gross>0?strip([{k:'Net invoice balance',v:R.net,col:'var(--blue)'},{k:'Received, not linked to an invoice',v:R.unadjusted,col:'var(--ochre)'}],'Gross outstanding',fmtL):null,
    el('ul',{class:'hl'},
-    el('li',{},`Difference summary vs sheets ${fmtL((R.gross||0)-((R.summary||{}).gross||0))}: explained ${fmtL(R.explained)} (location sheets left out of the summary), unexplained ${fmtL(R.unexplained)}.`),
+    ex.lines?el('li',{},`Duplicate lines removed (owner decision, 29-Oct-2026): ${fmt(ex.lines)} lines, ${fmtL(ex.amount)} — each repeats another line of the same sheet (same invoice, client, location, month and amounts). The workbook shows ${fmtL(GR)}; the figures here use ${fmtL(R.gross)}. The source rows are kept.`):null,
+    el('li',{},`Difference summary vs sheets (as recorded) ${fmtL((GR||0)-((R.summary||{}).gross||0))}: explained ${fmtL(R.explained)} (location sheets left out of the summary), unexplained ${fmtL(R.unexplained)}.`),
     ...sc.map(c=>el('li',{class:'bad'},`${c.sheet}: received but not linked ${fmtL(c.unadjusted)} exceeds its outstanding ${fmtL(c.outstanding)} — net ${fmtL(c.net)}; check this sheet before collecting against it.`)),
     X.numbers?el('li',{},`${fmt(X.numbers)} invoice numbers appear in two sheets: ${fmt(X.same_lines)} look like the same line in both (same client, month and amounts — up to ${X.same_lines_counted_twice>=1e5?fmtL(X.same_lines_counted_twice):'₹'+fmt(X.same_lines_counted_twice)} may be counted twice; the branch is not stored, so confirm in the workbook), ${fmt(X.different_invoices_sharing_a_number)} are different invoices that share a number.`):null,
-    dl.open_groups?el('li',{},`${fmt(dl.open_groups)} possible duplicate lines (same invoice, same amount) — ${fmtL(dl.amount)} — open in Finance review; nothing is removed automatically.`):null,
+    dl.open_groups?el('li',{},`${fmt(dl.open_groups)} lines that look alike (same invoice and amount, but the client, location or TDS differs) — ${fmtL(dl.amount)} — kept and open in Finance review.`):null,
     adj.length?el('li',{},'Workbook adjustments listed, not deducted (they need approval first): '+adj.map(a=>`${a.label} ${fmtL(a.amount)}`).join(' · ')):null),
    el('details',{},el('summary',{},'Summary sheet vs location sheets — row by row'),
     table(R.rows||[],[{key:'summary_row',label:'Summary row',fmt:v=>v||'–'},{key:'sheet',label:'Location sheet',fmt:v=>v||'–'},{key:'summary_total',label:'Summary total',num:1,fmt:fmtL},{key:'sheet_total',label:'Sheet total',num:1,fmt:fmtL},
@@ -976,12 +990,12 @@ function collReconCard(s){const cb=el('div',{class:'card',style:'margin-bottom:1
   const Mn=C.main||{},vb=(Mn.vs_bank_sheets||{}),RV=C.review||{},pv=Object.values(C.pivots||{}),NT=C.not_tied_by_month||{};
   const apr=Object.entries(vb).reduce((a,[k,v])=>({main:a.main+(+v.main||0),bank:a.bank+(+v.bank_sheets||0)}),{main:0,bank:0});
   cb.append(el('p',{class:'note'},`${C.file_name} · imported as upload ${C.upload_id}`),
-   el('div',{class:'tiles kpi4'},tile('Bank receipts (ledger)',fmtL(C.bank_credit),`${fmt(C.bank_rows)} bank-sheet rows · ${(C.bank_sheets||[]).length} accounts`),
+   el('div',{class:'tiles kpi4'},tile('Bank receipts (ledger)',fmtL(C.bank_credit_after_exclusions!=null?C.bank_credit_after_exclusions:C.bank_credit),`${fmt(C.bank_rows)} bank-sheet rows · ${(C.bank_sheets||[]).length} accounts`+((C.excluded_duplicates||{}).rows?` · ${fmt(C.excluded_duplicates.rows)} double entries (${fmtL(C.excluded_duplicates.amount)}) removed from the file total ${fmtL(C.bank_credit)}`:'')),
     tile('Last receipt in the file',ddmm(C.last_receipt),C.file_label?`file labelled “${C.file_label}” — the label is not the cut-off`:'',C.file_label?'warn':''),
     tile('"Main" cross-check',Mn.credit!=null?fmtL(Mn.credit):'–',Mn.credit!=null?`months it covers: Main ${fmtL(apr.main)} vs bank sheets ${fmtL(apr.bank)} (difference ${fmtL(apr.main-apr.bank)}); never added`:'no Main sheet'),
     tile('Pivot sheets',pv.length?fmtL(pv[0]):'–',pv.length?`summaries of Main; vs Main ${fmtL((pv[0]||0)-(Mn.credit||0))} — compared, never added`:'none')),
    el('ul',{class:'hl'},
-    el('li',{},`Possible double entries (same sheet, date, amount, narration and invoice): ${fmt((RV.receipt_duplicate||{}).open||0)} open review items (${fmtL((RV.receipt_duplicate||{}).amount||0)}) — kept, not removed.`),
+    el('li',{},`Double entries removed (identical in every stored field — owner decision, 29-Oct-2026): ${fmt((C.excluded_duplicates||{}).rows||0)} (${fmtL((C.excluded_duplicates||{}).amount||0)}); look-alike credits still in review: ${fmt((RV.receipt_duplicate||{}).open||0)} (${fmtL((RV.receipt_duplicate||{}).amount||0)}).`),
     el('li',{},`Receipts quoting several invoices: ${fmt((RV.multi_invoice_ref||{}).open||0)} (${fmtL((RV.multi_invoice_ref||{}).amount||0)}); unreadable invoice references: ${fmt((RV.odd_invoice_ref||{}).open||0)} (${fmtL((RV.odd_invoice_ref||{}).amount||0)}).`),
     el('li',{},`Receipts against invoices still fully open in the outstanding file: ${fmt((RV.receipt_still_open||{}).open||0)} (${fmtL((RV.receipt_still_open||{}).amount||0)}).`),
     el('li',{},`Receipts repeated across uploads: ${fmt(C.repeated_across_uploads||0)} (counted once).`)),
@@ -1092,6 +1106,7 @@ function finPrepare(it,x,file){const L=x.sheets.filter(s=>s.rows.length);const n
  else{const led=L.filter(s=>s.role==='ledger');const os=led.reduce((a,s)=>a+s.controls.os,0),un=led.reduce((a,s)=>a+s.controls.unadj.reduce((b,u)=>b+u.amount,0),0);
   const nm=x.name_period,lm=new Date(file.lastModified||Date.now()).toISOString().slice(0,10),today=new Date().toISOString().slice(0,10);
   const endOf=ym=>{const d=new Date(ym+'-01T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+1);d.setUTCDate(0);return d.toISOString().slice(0,10)};
+  if(!it.asof&&x.as_on){it.asof=x.as_on;it.asofBasis=`As-on date written in the workbook (${ddmm(x.as_on)})`}
   if(!it.asof){if(nm&&lm.slice(0,7)===nm){it.asof=lm;it.asofBasis=`Inferred from the file date ${ddmm(lm)}; workbook labelled ${mlabel(nm+'-01')}`}else if(nm){const e=endOf(nm);it.asof=e<today?e:today;it.asofBasis=`Inferred from the workbook label ${mlabel(nm+'-01')}`}else{it.asof=lm;it.asofBasis='Inferred from the file date'}}
   it.summary=`${led.length} location sheets · ${fmt(n)} invoice lines · outstanding ${fmtL(os)} · unadjusted receipts ${fmtL(un)} · snapshot date ${ddmm(it.asof)} (check)`;it.period=it.asof;it.status='Ready'}
  it.issues=x.issues||[]}
@@ -1168,7 +1183,24 @@ const ADM={exp:null,t1:null,t2:null,
   this.paint();if(this.on()&&S.mode!=='mcp')this.check().then(()=>this.schedule())}};
 const ADMDENY=/admin key required|not authorised|42501|session has ended/i;
 function admHead(s,k){const g=ADM_GROUPS.find(x=>x[0]===k)||[k,k,''];s.append(el('p',{class:'note',style:'margin:0 0 4px'},'Admin workspace'),el('h2',{},g[1]),el('p',{class:'lede'},g[2]));return adminGate(s,g[1])}
-const vAdmUpload=guard(async s=>{if(!admHead(s,'adm_upload'))return;uploadUI(s)});
+const vAdmUpload=guard(async s=>{if(!admHead(s,'adm_upload'))return;uploadUI(s);const rc=el('div',{class:'card',id:'reportCal',style:'margin-top:14px'});s.append(rc);reportCalendarUI(rc)});
+/* wave 098: report calendar — holidays and days without a tracker report, past or future, with a reason from a list */
+async function reportCalendarUI(box){box.innerHTML='';
+ box.append(el('h3',{style:'margin-top:0'},'Report calendar — holidays and days without a tracker report'),
+  el('p',{class:'note'},'Mark any date, past or future. Holiday-type reasons make the day a non-working day, so run-rate, required per day and the month-end projection leave it out; "report missing" reasons keep it a working day. Withdrawing keeps the entry in the history.'));
+ let L;try{L=await adminCall('report_calendar',{op:'list'})}catch(e){box.append(el('p',{class:'bad'},'Calendar unavailable: '+e.message));return}
+ const R=L.reasons||[];const dI=el('input',{type:'date','aria-label':'Date'});const rS=el('select',{'aria-label':'Reason'},el('option',{value:''},'Choose a reason…'),R.map(r=>el('option',{value:r.code},r.label+(r.working_day?' (stays a working day)':' (not a working day)'))));
+ const nI=el('input',{type:'text',placeholder:'Note (optional; required for "Other")','aria-label':'Note',style:'min-width:240px'});
+ const ed=el('input',{type:'text',placeholder:'Your name (audit trail)','aria-label':'Your name for the audit trail',style:'max-width:200px'});try{ed.value=localStorage.getItem('crux_editor')||''}catch{}
+ const msg=el('p',{class:'note'});const showW=el('input',{type:'checkbox','aria-label':'Show withdrawn'});
+ const save=el('button',{class:'btn primary',type:'button',onclick:async()=>{msg.className='note';if(!ed.value.trim()){msg.textContent='Enter your name for the audit trail first.';msg.className='bad';return}
+   try{localStorage.setItem('crux_editor',ed.value.trim())}catch{};try{const r=await adminCall('report_calendar',{op:'set',date:dI.value,reason_code:rS.value,note:nI.value,editor:ed.value.trim()});msg.textContent=`Saved: ${ddmm(r.date)} — ${r.reason}${r.working_day?' (still a working day)':' (not a working day)'}. Figures recalculate on the next load.`;msg.className='good';await draw()}catch(e){msg.textContent=e.message;msg.className='bad'}}},'Save');
+ box.append(el('div',{class:'tools'},dI,rS,nI,ed,save),msg);const tb=el('div');box.append(el('label',{class:'note'},showW,' show withdrawn'),tb);showW.onchange=()=>draw();
+ async function draw(){const X=await adminCall('report_calendar',{op:'list',include_withdrawn:showW.checked});tb.innerHTML='';
+  tb.append(table((X.rows||[]).map(r=>({...r,act:r})),[{key:'date',label:'Date',fmt:v=>ddmm(v)},{key:'reason',label:'Reason'},{key:'working_day',label:'Working day?',fmt:v=>v?'yes — report missing':'no'},{key:'note',label:'Note',fmt:v=>v||'–'},{key:'set_by',label:'Marked by'},{key:'active',label:'Status',fmt:v=>v?'active':el('span',{class:'note'},'withdrawn')},
+   {key:'act',label:'',fmt:r=>r.active?el('button',{class:'btn sm',type:'button',onclick:async()=>{if(!ed.value.trim()){msg.textContent='Enter your name for the audit trail first.';msg.className='bad';return}const why=prompt(`Withdraw ${ddmm(r.date)}? Reason (5+ characters):`);if(!why)return;
+     try{await adminCall('report_calendar',{op:'withdraw',date:r.date,reason:why,editor:ed.value.trim()});msg.textContent=`Withdrawn: ${ddmm(r.date)}.`;msg.className='good';await draw()}catch(e){msg.textContent=e.message;msg.className='bad'}}},'Withdraw'):''}],{name:'report_calendar.csv',search:false}))}
+ await draw()}
 const vAdmMapping=guard(async s=>{if(!admHead(s,'adm_mapping'))return;await mappingUI(s)});
 const vAdmDq=guard(async s=>{if(!admHead(s,'adm_dq'))return;const ib=el('div',{class:'card',id:'identityCard',style:'margin-bottom:14px'});s.append(ib);identityUI(ib);await dqUI(s,$('#fMonth').value,filters())});
 const vAdmBranch=guard(async s=>{if(!admHead(s,'adm_branch'))return;const a=el('div');s.append(a);await branchResearchSection(a);const b=el('div');s.append(b);await branchReviewSection(b)});
@@ -1531,7 +1563,7 @@ async function mdRun(kind,P,dry,editor,onProgress){const CH=4000;const tot={rows
 function mdCrossChunkDups(kind,P){const seen=new Map(),out=[];const k=kind==='branch'?r=>(String(r.client||'').toUpperCase().trim()+'|'+String(r.branch_code||'').toUpperCase().trim()):r=>(r.employee_id?String(r.employee_id).toUpperCase().trim():'N:'+String(r.name||'').toUpperCase().replace(/\s+/g,' ').trim());
  P.rows.forEach((r,i)=>{const key=k(r);if(seen.has(key))out.push([seen.get(key),i]);else seen.set(key,i)});return out}
 function masterUI(box,opt={}){box.append(el('h3',{},opt.fixed?(opt.kind==='workforce'?'Workforce master list':'Client branch master list'):'Master data — client branch list & workforce list'));
- const ms=(S.meta&&S.meta.masters)||{};box.append(el('p',{class:'note'},'These two lists unlock branch coverage (Business tracker → Branch coverage) and headcount/attrition (People). Neither exists in Force1 or the tracker, so nothing is shown for them until a verified list is uploaded here.'),
+ const ms=(S.meta&&S.meta.masters)||{};box.append(el('p',{class:'note'},'The branch master unlocks branch coverage (Business tracker → Branch coverage). Headcount and attrition (People) now come from Force1 activity only (owner rule 29-Oct-2026), so the workforce list is optional: keep it if HR wants a reference copy of joining and exit dates.'),
   el('div',{class:'tiles'},tile('Branch master rows',fmt(ms.branch_rows||0),ms.branch_last_update?'updated '+String(ms.branch_last_update).slice(0,10):'not uploaded yet'),tile('Workforce master rows',fmt(ms.workforce_rows||0),ms.workforce_last_update?'updated '+String(ms.workforce_last_update).slice(0,10):'not uploaded yet')));
  const kindSel=el('div',{class:'seg',role:'group','aria-label':'Which list'});let kind='branch';
  const segB=el('button',{type:'button',class:'btn on','aria-pressed':'true'},'Client branch master'),segW=el('button',{type:'button',class:'btn','aria-pressed':'false'},'Workforce master');kindSel.append(segB,segW);
@@ -1630,22 +1662,33 @@ async function branchReviewSection(box){box.append(el('h3',{},'Branch review que
  box.append(table(rows,[{key:'id',label:'#',num:1},{key:'client_family',label:'Client'},{key:'issue',label:'Issue',fmt:v=>(v||'').replace(/_/g,' ')},{key:'branch_uid',label:'Branch'},{key:'reason',label:'Reason'},
   {key:'evidence',label:'Evidence',fmt:v=>v?JSON.stringify(v).slice(0,160):'–',raw:r=>JSON.stringify(r.evidence)},{key:'opened_at',label:'Opened',fmt:dts},{key:'status',label:'Action',fmt:act}],{name:'branch_review_queue.csv'}))}
 
-async function attritionSection(box,m,f){box.append(el('h3',{},'Headcount & attrition — '+mlabel(m)));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
- let a;try{a=await api('attrition',{month:m,filters:f})}catch(e){msg.textContent='Attrition unavailable: '+e.message;return}msg.remove();
- if(!a||!a.master_rows){box.append(el('div',{class:'banner'},el('p',{style:'margin:0'},'Attrition needs a joining date and exit date for each person. Force1 visit data only shows who verified work, so it cannot tell a resignation from a quiet month. An administrator uploads the HR workforce list in Admin workspace → HR / workforce master data to switch this on.'),
-  S.role==='admin'?el('button',{class:'btn',style:'margin-top:8px',onclick:()=>go('adm_hr')},'Open HR / workforce master data'):null));return}
- const h=a.headcount||{};box.append(el('div',{class:'tiles'},tile('Opening headcount',fmt(h.opening)),tile('Joined',fmt(h.joined),'','good'),tile('Left',fmt(h.left),'',h.left?'bad':''),tile('Closing headcount',fmt(h.closing)),tile('Attrition (month)',pct(h.attrition_rate),'leavers ÷ average headcount')));
- const tr=a.trend||[];if(tr.length){const cv=el('canvas');box.append(el('div',{class:'card'},el('h4',{style:'margin:0 0 6px'},'Last 12 months'),el('div',{class:'chartbox'},cv)));const k=C();
-  chart(cv,{data:{labels:tr.map(x=>mlabel(x.month)),datasets:[{type:'bar',label:'Joined',data:tr.map(x=>x.joined),backgroundColor:k.good,yAxisID:'y'},{type:'bar',label:'Left',data:tr.map(x=>x.left),backgroundColor:k.bad,yAxisID:'y'},
-   {type:'line',label:'Attrition %',data:tr.map(x=>x.attrition_rate==null?null:+(x.attrition_rate*100).toFixed(2)),borderColor:k.ochre,backgroundColor:k.ochre,yAxisID:'y1',tension:.2}]},
-   options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,title:{display:true,text:'People'}},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Attrition %'}}}}})}
- const gc=[{key:'group',label:'Group'},{key:'opening',label:'Opening',num:1,fmt:fmt},{key:'left',label:'Left',num:1,fmt:fmt},{key:'closing',label:'Closing',num:1,fmt:fmt},{key:'attrition_rate',label:'Attrition',num:1,fmt:pct}];
- box.append(el('div',{class:'grid2'},el('div',{},el('h4',{},'By role'),table(a.by_role||[],gc,{search:false,name:`attrition_by_role_${m}.csv`})),el('div',{},el('h4',{},'By location'),table(a.by_location||[],gc,{search:false,name:`attrition_by_location_${m}.csv`}))));
- if((a.leavers||[]).length)box.append(el('h4',{},'Leavers this month'),table(a.leavers,[{key:'name',label:'Name'},{key:'role',label:'Role'},{key:'location',label:'Location'},{key:'exit_date',label:'Exit date'},{key:'prior_points_per_month',label:'Points / month before exit',num:1,fmt:fmt},
-   {key:'points_after_exit_month',label:'Points after exit month',num:1,fmt:v=>v>0?el('span',{class:'chip warn',title:'Work is still verified under this name after the exit month: check the exit date or a shared login'},fmt(v)):fmt(v)}],{name:`leavers_${m}.csv`}),
-  a.names_hidden?el('p',{class:'note'},'Names are shown to admins only.'):null);
- box.append(el('p',{class:'note'},`${fmt(a.force_people_not_in_master)} people who verified Force1 visits are not in the workforce list (matched by name).`),
-  el('details',{class:'note'},el('summary',{},'Definitions'),Object.entries(a.definitions||{}).map(([k,v])=>el('p',{},el('strong',{},k.replace(/_/g,' ')+': '),v))))}
+async function attritionSection(box,m,f){box.append(el('h3',{},'Workforce & attrition from Force1 — '+mlabel(m)));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
+ let a;try{a=await api('workforce',{month:m,filters:f})}catch(e){msg.textContent='Workforce unavailable: '+e.message;return}msg.remove();
+ if(!a||!a.ready){box.append(el('div',{class:'banner'},el('p',{style:'margin:0'},(a&&a.note)||'Workforce activity is not built yet.')));return}
+ const dday=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}):'–',L=a.left_after_days||15,h=a.headcount||{},t=a.today||{};
+ const asof=dday(a.as_of),cur=a.month&&a.as_of&&a.month.slice(0,7)===a.as_of.slice(0,7);
+ box.append(el('p',{class:'note'},`Owner rule: everyone who works in Force1 (creates, verifies or completes a point) is on the roll. Not seen on a report day = absent; not seen for more than ${L} days = left (exit date = last day seen). Anyone who appears again is back on the roll and the gap counts as absent days, not attrition. Latest Force1 report day: ${asof}.`),
+  el('div',{class:'tiles'},tile('On the roll',fmt(t.on_roll),'as of '+asof),tile('Worked on '+asof,fmt(t.active),fmt(t.worked_last_7_days)+' worked in the last 7 days','good'),tile('Absent now',fmt(t.absent),`not seen for 1–${L} days`,t.absent?'warn':''),
+   tile('Joined',fmt(h.joined),mlabel(m),'good'),tile('Left',fmt(h.left),mlabel(m)+(cur?' · so far':''),h.left?'bad':''),tile('Attrition (month)',pct(h.attrition_rate),'leavers ÷ average headcount'),
+   tile('Activity days',pct(h.attendance_rate),`${fmt(h.active_workdays)} of ${fmt(h.on_roll_workdays)} working days on the roll`)),
+  el('p',{class:'note'},`Opening ${fmt(h.opening)} + joined ${fmt(h.joined)} − left ${fmt(h.left)} = closing ${fmt(h.closing)}.`+(cur?` People absent now stay on the roll until day ${L+1} without Force1 activity, so this month's leavers can still rise.`:'')));
+ const tr=a.trend||[];if(tr.length){const cv=el('canvas');box.append(el('div',{class:'card'},el('h4',{style:'margin:0 0 6px'},'By month since the Force1 data starts ('+mlabel(a.data_start)+')'),el('div',{class:'chartbox'},cv)));const k=C();
+  chart(cv,{data:{labels:tr.map(x=>mlabel(x.month)+(x.partial?' (so far)':'')),datasets:[
+   {type:'line',label:'Attrition %',data:tr.map(x=>x.attrition_rate==null?null:+(x.attrition_rate*100).toFixed(2)),borderColor:k.ochre,backgroundColor:k.ochre,yAxisID:'y1',tension:.2,order:0},
+   {type:'line',label:'Activity days %',data:tr.map(x=>x.attendance_rate==null?null:+(x.attendance_rate*100).toFixed(1)),borderColor:k.muted,backgroundColor:k.muted,borderDash:[4,3],yAxisID:'y1',tension:.2,order:1},
+   {type:'bar',label:'Joined',data:tr.map(x=>x.joined),backgroundColor:k.good,yAxisID:'y',order:2},{type:'bar',label:'Left',data:tr.map(x=>x.left),backgroundColor:k.bad,yAxisID:'y',order:3}]},
+   options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,title:{display:true,text:'People'}},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'%'}}}}});
+  box.append(table(tr.map(x=>({...x,month:mlabel(x.month)+(x.partial?' (so far)':'')})),[{key:'month',label:'Month'},{key:'opening',label:'Opening',num:1,fmt:fmt},{key:'joined',label:'Joined',num:1,fmt:fmt},{key:'left',label:'Left',num:1,fmt:fmt},{key:'closing',label:'Closing',num:1,fmt:fmt},{key:'attrition_rate',label:'Attrition',num:1,fmt:pct},{key:'attendance_rate',label:'Activity days',num:1,fmt:pct}],{search:false,name:'workforce_by_month.csv'}))}
+ const gc=[{key:'group',label:'Group'},{key:'opening',label:'Opening',num:1,fmt:fmt},{key:'joined',label:'Joined',num:1,fmt:fmt},{key:'left',label:'Left',num:1,fmt:fmt},{key:'closing',label:'Closing',num:1,fmt:fmt},{key:'attrition_rate',label:'Attrition',num:1,fmt:pct},{key:'attendance_rate',label:'Activity days',num:1,fmt:pct}];
+ box.append(el('div',{class:'grid2'},el('div',{},el('h4',{},'By role'),table((a.by_classification||[]).filter(x=>x.opening||x.closing||x.left||x.joined),gc,{search:false,name:`workforce_by_role_${m}.csv`})),el('div',{},el('h4',{},'By location'),table(a.by_location||[],gc,{search:false,name:`workforce_by_location_${m}.csv`}))));
+ const nm={key:'name',label:'Name'},cl={key:'classification',label:'Role',fmt:v=>(v||'').replace('_',' ')},lc={key:'location',label:'Location'},dc=(k,l)=>({key:k,label:l,fmt:dday});
+ if(cur&&(a.absent_now||[]).length)box.append(el('h4',{},`Absent now — not seen in Force1 for 1–${L} days (as of ${asof})`),table(a.absent_now,[nm,cl,lc,dc('last_seen','Last seen'),{key:'days_since',label:'Days not seen',num:1,fmt:fmt},{key:'absent_workdays',label:'Absent working days',num:1,fmt:fmt},dc('marked_left_after','Counts as left from')],{name:`absent_now_${a.as_of}.csv`}));
+ if((a.leavers||[]).length)box.append(el('h4',{},`Left in ${mlabel(m)} — not seen for more than ${L} days`),table(a.leavers,[nm,cl,lc,dc('first_seen','First seen'),dc('last_seen','Exit date (last seen)'),{key:'actions_3m_before',label:'Force1 actions in the 3 months before',num:1,fmt:fmt}],{name:`leavers_${m}.csv`}));
+ if((a.returned||[]).length)box.append(el('h4',{},`Back on the roll in ${mlabel(m)} — gap counted as absence, not attrition`),table(a.returned,[nm,cl,lc,dc('gap_from','Last seen before the gap'),dc('back_on','Back on'),{key:'days_without_activity',label:'Days not seen',num:1,fmt:fmt},{key:'absent_workdays',label:'Absent working days',num:1,fmt:fmt}],{name:`back_on_roll_${m}.csv`}));
+ if((a.joiners||[]).length)box.append(el('h4',{},`Joined in ${mlabel(m)} — first seen in Force1`),table(a.joiners,[nm,cl,lc,dc('first_seen','First seen')],{name:`joiners_${m}.csv`}));
+ if(a.names_hidden)box.append(el('p',{class:'note'},'Names are shown to admins only.'));
+ const dq=a.data||{};box.append(el('p',{class:'note'},`${fmt(dq.people_seen)} people seen in Force1 since ${dday(a.data_start)}.`+(dq.out_of_range_events?` ${fmt(dq.out_of_range_events)} Force1 actions carry a date outside the report period (before the data starts or after the latest report day) and are not counted.`:'')),
+  el('details',{class:'note'},el('summary',{},'Definitions and limits'),Object.entries(a.definitions||{}).map(([k,v])=>el('p',{},el('strong',{},k.replace(/_/g,' ')+': '),v))))}
 
 /* ---------- Organic benchmark, remaining-days potential, zone highlights ---------- */
 const STAT_LBL={above:['Effort growth','good'],in_line:['In line','' ],below:['Below organic','bad'],new:['New business','good'],none:['—','']};
@@ -2061,7 +2104,7 @@ function penaltySection(box,month,f,manage=false){const host=el('div'),form=el('
 /* ---------- Branch managers (effective-dated; Admin → Master data & mapping) ---------- */
 /* Operations handlers and collections owners (separate from branch managers; never replace them) */
 async function roleUI(box){const RL={operations_handler:'Operations handler',collections_owner:'Collections owner'};
- box.append(el('h3',{style:'margin-top:0'},'Operations handlers and collections owners (WEF-dated)'),el('p',{class:'note'},'Separate roles by location and (optionally) client. They never replace the branch manager, and nothing is filled in from the branch manager. Several people can share one role ("additional person"). A correction keeps the old row (withdrawn, with the reason) and adds the corrected row; ending a role sets its last day; history is never overwritten. Preview shows what the person would be responsible for before you save.'));
+ box.append(el('h3',{style:'margin-top:0'},'Operations handlers and collections owners (WEF-dated)'),el('p',{class:'note'},'Owner rule (29-Oct-2026): the operations handler of a location is its mapped branch manager / location head, following that mapping\'s dates — add a row here only when a different person handles it. Collections owner: the Finance & Collections stakeholder, entered for every location. Roles are kept by location and (optionally) client. Several people can share one role ("additional person"). A correction keeps the old row (withdrawn, with the reason) and adds the corrected row; ending a role sets its last day; history is never overwritten. Preview shows what the person would be responsible for before you save.'));
  const editor=el('input',{type:'text',placeholder:'Your name (audit trail)','aria-label':'Your name for the audit trail',style:'max-width:200px'});try{editor.value=localStorage.getItem('crux_editor')||''}catch{}
  const call=async p=>{if(p.op==='list'||p.op==='preview')return adminCall('person_role',p);const ed=editor.value.trim();if(!ed)throw new Error('Enter your name for the audit trail first.');try{localStorage.setItem('crux_editor',ed)}catch{}return adminCall('person_role',{...p,editor:ed})};
  const locs=(S.meta.locations||[]).filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label));
@@ -2654,7 +2697,7 @@ const GLOSS={
  target:['Target','The month\'s goal set by management — in cases, or in ₹ for revenue target. It does not change with performance.'],
  achievement:['Achievement (% Achmt)','How much of the target is already done: achieved so far ÷ target. Example: 4,000 of 10,000 cases = 40%. Compare it with how much of the month has passed.'],
  projection:['Projection','Our estimate of where the month will end if the current pace continues. It is not a target and not a guarantee; the range shows how far it could reasonably move.'],
- runrate:['Run-rate','Average business per working day so far × working days in the month. Working days are Monday–Saturday minus declared no-report days.'],
+ runrate:['Run-rate','Average business per working day so far × working days in the month. Working days are Monday–Saturday minus the holidays marked in Admin → File uploads → Report calendar.'],
  required:['Required per day','Cases (or ₹) needed on each remaining working day to reach the target: (target − achieved) ÷ working days left.'],
  shortfall:['Shortfall','How much is still missing to reach the target: target − achieved (negative means ahead of target).'],
  daily:['Daily count','Cases added since the previous report: today\'s MTD − the previous report\'s MTD. After a holiday it covers more than one day.'],
@@ -2673,7 +2716,7 @@ const GLOSS={
  organic:['Organic expectation','The business we would expect with no special effort: a blend of each location–client\'s last month (MoM 50%), last quarter with its trend (QoQ 40%) and its own pattern for this month last year (YoY 10%), with the usual seasonal pattern and the number of working days. Click the ? next to a figure to see exactly how it was calculated.'],
  effort:['Effort growth','Business above the organic expectation (actual − organic). A negative value means the location is below what it would normally do — investigate.'],
  coverage:['Coverage','Share of a client\'s verified active branches that sent Crux at least one case in the last 6 months.'],
- attrition:['Attrition','People who left in the month ÷ average headcount of the month.'],
+ attrition:['Attrition','People who left in the month ÷ average headcount of the month. From Force1 only: a person not seen in Force1 for more than 15 days counts as left; if they appear again the gap counts as absence.'],
  stakeholder:['Stakeholder','The manager responsible for the location in the tracker.'],
  penalty:['Penalty','A ₹ amount charged against Crux (e.g. by a client for a delay or quality issue). Entered by admins with a reason; shown as a report and not deducted from revenue.'],
  potential:['Remaining-days potential','What the rest of the month can still add, based on the pace so far and how earlier months finished from the same day. Shown as low / likely / high.'],

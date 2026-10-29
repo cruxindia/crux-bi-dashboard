@@ -495,3 +495,24 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 - Light refresh first run 18:40 IST: overview, daily, zonal, tracker sheet recomputed in 0.4–4.6 s each.
 - Ask timing (direct calls, 19:05 IST): 12–13 s with an 8 s cap, then the cap set to 5 s; the primary model normally answers in 0.5–2 s.
 - Register workbook: 0 baseline cells changed (cell-by-cell comparison); no key or token in the file.
+
+## 29-Oct-2026 (night) — wave 098b: owner answers (bi_098c–bi_098k, 098l–098t)
+### Database checks
+| Check | Result |
+|---|---|
+| Lumen dependency scan: every occurrence of the 12 Lumen table names in dashboard functions | strings / JSON keys / comments only; 0 FROM / JOIN / UPDATE / INSERT references; 0 foreign keys, views or triggers outside Lumen; 0 front-end or Edge Function calls |
+| Lumen backup | 12 tables (rows 6 / 570 / 28 / 3 / 1 / 52 / 0 / 46 / 9 / 2 / 0 / 0 = counts in the database) + 7 storage objects, byte sizes equal |
+| After the move to `lumen_archive` | 39 of 39 dashboard endpoints recomputed without the cache: all answered; anon / authenticated have no access to `lumen_archive` |
+| Workforce (Oct-26, as of 28-Oct) | opening 398 + joined 32 − left 22 = closing 408; on roll 408 = active 268 + absent 140; 703 people = 408 on roll + 295 left; closing(M) = opening(M+1) for all 10 months; viewer call returns 0 names |
+| Ageing rules (Oct-26) | calendar, working and SLA each sum to 6,379 = closing backlog = open-case count; SLA overdue buckets 4,229 = past due; rule switch tested inside a rolled-back transaction (rule still calendar, no audit or floor row left) |
+| Handlers | 34 of 34 locations with open cases have a handler (Lucknow / ROUP Zone → zone team managers) |
+| Rates | 21-Oct 388 / 392, 22-Oct 388 / 393 leaf rows with a rate (23-Oct 388 / 392) |
+| api_meta | identical freshness values; warm 3.6 s → 0.7 s |
+| Cache version | all 5 readers / writers use `bi.cache_version()` |
+| Finance templates | outstanding template parses as kind outstanding, as on 15-Oct-2026, gross 112,415,790.23, unadjusted 27,315,945.77 (= dashboard); receipts template parses as kind collection, 0 lines |
+### Browser suites (local, against the live API)
+| Suite | Result |
+|---|---|
+| test_098b_ui (W1–W7: workforce, ageing comparison, handlers, report calendar, cash view, admin names) | 8 / 8 (a first run had one proxy-cut call during cold recompute; re-run clean) |
+| test_097_ui (V1–V14; V6 now compares the bank tile after exclusions; V10/V11 count only the form's own checkboxes now that role rows exist) | 14 / 14 |
+| test_098_fin (finance upload, commits mocked) | 4 / 4 |

@@ -218,3 +218,14 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.zt_month_history.superseded_by / superseded_at / superseded_reason` | A month-history row replaced by the same month and client at another location (after a tracker-label retarget); kept for audit, ignored by `bi.v_month_business` |
 | `bi.api_cache_floor` (wave 098) | id, floor_at, reason, set_by, set_at — cached figures computed before the latest floor_at are never served stale (D197) |
 | `bi.api_revalidate_light(p_budget_s)` (wave 098) | Daytime refresh of queued landing figures (allow-list; skips items whose last run took ≥ 15 s); shares the night job's advisory lock |
+| `bi.person_month` (wave 098b) | emp_id (bi.dim id), month, active_days, active_wd (working days with activity), actions, first_d, last_d, max_gap / gap_from / gap_to (longest run without activity ending in the month), location_id, recon_unit, run — Force1 activity per person and month (D208) |
+| `bi.person_activity_state` | Single row: run, as_of (latest Force1 report day), data_start, people, person_months, out_of_range_events (actions dated outside the report period), refreshed_at, ms |
+| `bi.person_activity_refresh()` / `_if_stale()` | Rebuild of `bi.person_month`; the cron job runs it only when Force1 data or the report calendar changed |
+| `bi.api_workforce(month, filters)`; `bi_call('workforce')` | basis, as_of, headcount (opening, joined, left, closing, attrition_rate, on_roll_workdays, active_workdays, absent_workdays, attendance_rate), today (on_roll, active, absent, left_total, worked_last_7_days), trend, by_classification, by_location, absent_now, leavers, joiners, returned, definitions; names admin-only |
+| `bi.app_setting` | key, value, note, updated_by, updated_at — `ops_ageing_rule` = calendar \| working \| sla (D209) |
+| `bi.setting_admin(actor, p)`; `bi_admin('setting')` | op get (settings, options, recommendation) / set (key, value, reason) — audited as `setting_change`, adds a cache floor |
+| `bi.api_ops` ageing fields (wave 098b) | ageing (selected rule), ageing_rule, ageing_cols (labels of over_7 / over_30 / oldest under that rule), ageing_compare {calendar, working, sla}, ageing_calendar (stable labels, used by Ask) |
+| `bi.cache_version()` | The response-cache version: data-changing audit rows × 100000 + latest derived-table refresh (D210) |
+| `bi.fin_line_exclusion` (wave 098) | Finance lines excluded as exact duplicates (D200): upload_id, sheet, r (excluded row), kind, keep_r (the row kept), amount, reason, approved_by, approved_at — source rows stay in `bi.fin_part` |
+| `bi.report_calendar_exception` (wave 098) | report_date, reason_code, reason, working_day, note, active, set_by / set_at, withdrawn_by / withdrawn_at (D204) |
+| `lumen_archive` schema | Lumen tables and functions moved out of the API on 29-Oct-2026 (D207); removed by the owner script |
