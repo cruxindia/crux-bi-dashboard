@@ -624,3 +624,5 @@ Status values: verified complete · incomplete · blocked · failed. Evidence is
 | 5.8.5 workforce from Force1 (15-day rule) | person-month store, API, People view (D208) | chain checks; W1, W2 | done |
 | 5.8.6 territories "already updated" | checked the data: not updated for six team locations (D213) | location_territory last change 14-Oct | open — conflict reported |
 | "Move on … finish the SOW, revalidate the Blocked requests" | every Blocked item re-checked; register "29-Oct night" columns | register workbook | done |
+
+**Live verification (29-Oct-2026 21:20–21:40 IST, commit fc6c627, live md5 = repository):** test_098b_ui 8/8, test_097_ui 14/14, test_security 51/51; Lumen calls and tables return 404 through the public key and the bill PDF can no longer be downloaded (bi_098v closed the old storage policy). Migrations 098l–098t were named without the `bi_` prefix and were missed by the GitHub export; bi_098u widened the export so they are included.

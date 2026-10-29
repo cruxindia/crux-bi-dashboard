@@ -24,7 +24,8 @@ select (select count(*) from pg_class where relnamespace = 'lumen_archive'::regn
 -- Step 1 — remove the quarantined Lumen tables and functions
 drop schema lumen_archive cascade;
 
--- Step 2 — remove the storage policy that let anyone read and write the "bills" bucket
+-- Step 2 — remove the storage policy that let anyone read and write the "bills" bucket (already closed on 29-Oct-2026 by
+--          migration bi_098v: it now matches no rows; this drops it)
 drop policy if exists lumen_bills_all on storage.objects;
 
 -- Step 3 — remove the two buckets. Supabase does not allow deleting files with SQL, so use the dashboard:

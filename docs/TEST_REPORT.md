@@ -516,3 +516,10 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | test_098b_ui (W1–W7: workforce, ageing comparison, handlers, report calendar, cash view, admin names) | 8 / 8 (a first run had one proxy-cut call during cold recompute; re-run clean) |
 | test_097_ui (V1–V14; V6 now compares the bank tile after exclusions; V10/V11 count only the form's own checkboxes now that role rows exist) | 14 / 14 |
 | test_098_fin (finance upload, commits mocked) | 4 / 4 |
+### Live (GitHub Pages, commit fc6c627, web/index.html md5 61d3d0ea… = repository; 29-Oct-2026 21:20–21:40 IST)
+| Suite | Result |
+|---|---|
+| test_098b_ui live | 8 / 8 |
+| test_097_ui live | 14 / 14 |
+| test_security live | 51 / 51 |
+| Lumen through the public key (after 098l / bi_098v) | reset_data, sync_invoice: 404; tables invoices, applicant_lines, branches: 404; private bill download: blocked |
