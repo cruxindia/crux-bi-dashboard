@@ -215,3 +215,4 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.person_role_admin` ops | list, preview, add (additional), edit (withdraw + corrected row), end, withdraw |
 | `bi.api_coverage_status()`, `bi.api_coverage_codes()` → `bi_call('coverage_status')` | Monitor status (live) + Force1 codes vs branch list (cached) |
 | `bi.ask_h_cases(month, filters)`; `bi_ask3` intent `cases` | "Show me the cases behind it" |
+| `bi.zt_month_history.superseded_by / superseded_at / superseded_reason` | A month-history row replaced by the same month and client at another location (after a tracker-label retarget); kept for audit, ignored by `bi.v_month_business` |

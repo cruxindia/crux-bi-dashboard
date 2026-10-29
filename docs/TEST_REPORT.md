@@ -427,7 +427,7 @@ Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5
 ### SQL (production, after the changes)
 | Check | Result |
 |---|---|
-| `bi.test_identity()` — 15 known examples and reconciliations (tracker suffix → Amaravati; latest tracker fully mapped; case rules 1, 3, 5; Nagpur team rule; a "PUNE EAST" area-office case stored in Pune; stored = rules; point policy; point branch place; derived = source; MUM series → Mumbai; BOM branch 2483 → Nanded; finance totals; client aliases; no unknown client) | **15 / 15** |
+| `bi.test_identity()` — 16 known examples and checks (I16 added after T28: no month-history row counted under the old location of a retargeted label — failed with 99 rows before the repair, passes after) and reconciliations (tracker suffix → Amaravati; latest tracker fully mapped; case rules 1, 3, 5; Nagpur team rule; a "PUNE EAST" area-office case stored in Pune; stored = rules; point policy; point branch place; derived = source; MUM series → Mumbai; BOM branch 2483 → Nanded; finance totals; client aliases; no unknown client) | **16 / 16** |
 | Identity register run 2 (29-Oct) | cases 238,040: 0 stored ≠ rules, Σ locations = rows, 25 not identified, 1,737 area office vs branch name disagree (area office wins by rule order); points 819,949: 814,905 follow their case, 4,636 on own evidence (4,786 without a matching case incl. not identified), 408 not identified, 382 file unit ≠ case unit; tracker 46,219 rows, latest report 0 unmapped; finance tied to a location: billed 99.89 %, collected 97.54 %, outstanding 99.97 %; branch master 92,239 |
 | Point policy (dry-run, then apply) | 4,950 points moved off the case location; 0 points lost or double-counted (derived 819,949 = source) |
 | Utilisation re-check | Sep-2026 61.09 % (29,192 of 47,782; unchanged by the point policy); Oct-2026 63.08 % (29,152 of 46,216); 1,440 Force1 cases above the business count listed, none above 100 % |
@@ -451,4 +451,23 @@ Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5
 | `test_096_ui` (W5 now counts the reconciliation table only; W9 expects "Save role" and two date fields) · `test_094_ui` · `test_rev_ui` · `test_093_ui` · `test_stage2` · `test_ask_ui` | **11 / 11 · 13 / 13 · 14 / 14 · 11 / 11 · 13 / 13 · 15 / 15** (first run while all suites ran together: `test_ask_ui` 10 / 15 and `test_094_ui` 12 / 13 — calls cut by this workspace's proxy at ≈30 s; re-run 15 / 15 and 13 / 13) |
 | `test_adm` | **39 / 40** — Z1: one branch-level TAT drill (Sep, one location, SBI; 12.5 s alone) cut by this workspace's proxy at ≈30 s under concurrent load |
 | `test_security` | **51 / 51** |
+
+### Acceptance and the fixes it triggered (29-Oct, during the wave)
+| Run | Result | Action |
+|---|---|---|
+| `run_acceptance_tests()` 05:56 UTC | 25 / 27 — T21 (known: three block totals in the tracker file itself) and **T28** (potential 61,890 ≠ forecast 62,077) | T28 traced to two causes: the forecast counted a month with a Saturday and a Sunday report twice (D188) and the Amaravati month history was counted under two locations (D187) |
+| after bi_097k / bi_097l | `bi.test_identity` I16 failed with 99 rows before the repair, passed after; Aug / Sep-26 totals −349 / −389 cases exactly; T28 passes (61,890 = 61,890) | — |
+| 06:10 UTC | 25 / 27 — T21 and **T27** (organic store 58,017 vs formula 57,702) | the organic store kept the empty Amaravati team pairs (D189); after bi_097n `bi.test_organic` passes (57,697 vs 57,702, within 0.1 %) |
+| 06:27 UTC | **26 / 27** — T21 only (known source-file issue) | — |
+| `bi.api_ops` | 7–9 s → 1–2 s; md5 of the full response identical for all, Pune-September and SBI | bi_097m / bi_097o (D190) |
+
+### Live (deployed commit b9c80e0; live page md5 7cf1aea9… equals the build), 06:35–07:10 UTC
+| Suite | Result |
+|---|---|
+| `test_097_ui live` (twice) · `test_097_ask live` · `test_096_ui live` | **14 / 14 · 8 / 8 · 11 / 11** |
+| `test_094_ui live` · `test_ask_ui live` · `test_adm live` | **12 / 13 · 14 / 15 · 38 / 40** — the misses are console errors from API calls cut at ≈30 s by this workspace's proxy and one admin screen (database health) that timed out, while the instance was already slowing (see the incident) |
+| `test_rev_ui live` | not completed (run stopped when the incident was found) |
+
+### Incident 29-Oct ≈ 14:00–15:42 IST (details in SOW)
+Measured during the incident (disk-IO bound: the instance was at its post-burst baseline): `count(*)` over `generate_series` — which spills to a temporary file — 2.5–33 s (normally a fraction of a second); `pg_timezone_names` 38–60 s; the API answered "Could not query the database for the schema cache". After D191–D193 the API answered again at 15:42 IST (meta 16–24 s, other landing figures 3–15 s from the cache while the disk-IO budget refills).
 

@@ -1106,12 +1106,18 @@ async function finImport(it,progress){const x=it.x;const data=x.sheets.filter(s=
   as_of_basis:x.kind==='collection'?'last receipt date in the file':(it.asofBasis||'entered at upload'),period_from:x.period_from||null,period_to:x.period_to||null,name_period:x.name_period?x.name_period+'-01':null,controls,content_sha256:await finContentHash(data)});
  if(b.duplicate)return b.duplicate_content?'Already imported (same rows as an earlier file, different file copy) — unchanged':'Already imported (identical file) — unchanged';
  const N=S.mode==='mcp'?400:2000;let done=0;const tot=data.reduce((a,s)=>a+s.rows.length,0);
+ let c=null,staged=false;
  try{for(const sh of data)for(let i=0,seq=0;i<sh.rows.length;i+=N,seq++){await finIngest('stage',{upload_id:b.upload_id,sheet:sh.sheet,seq,role:sh.role,cols:sh.cols,rows:sh.rows.slice(i,i+N)});done+=Math.min(N,sh.rows.length-i);progress(`Staging ${fmt(done)}/${fmt(tot)}`)}
-  const c=await finIngest('commit',{upload_id:b.upload_id,expected:Object.fromEntries(data.map(s=>[s.sheet,s.rows.length]))});
-  if(c.duplicate_content)return`Already imported (same rows as upload ${c.same_as}) — not added`;
-  progress('Rebuilding finance figures…');let dv=null;try{dv=await finIngest('derive',{})}catch(e){}
-  return`Imported ${fmt(tot)} rows`+(c.status==='superseded'?' (kept; a file with later receipts is current)':'')+(dv?' · figures rebuilt':' · figures refresh within 10 minutes')}
- catch(e){try{await finIngest('reject',{upload_id:b.upload_id,reason:'upload interrupted: '+e.message})}catch{}throw e}}
+  staged=true;progress('Committing…');c=await finIngest('commit',{upload_id:b.upload_id,expected:Object.fromEntries(data.map(s=>[s.sheet,s.rows.length]))})}
+ catch(e){/* a slow reply after a real commit: asking 'begin' again with the same file returns the stored upload when it was committed */
+  if(staged){try{const again=await finIngest('begin',{kind:x.kind,file_name:it.file.name,file_hash:it.hash,source_ref:'upload:'+it.file.name,as_of:x.kind==='collection'?x.data_through:it.asof,controls});
+   if(again.duplicate&&!again.duplicate_content&&['committed','superseded'].includes(again.status))return`Imported ${fmt(tot)} rows · confirmed by the server (reply was slow) · figures refresh within 10 minutes`;
+   if(again.upload_id)await finIngest('reject',{upload_id:again.upload_id,reason:'upload interrupted: '+e.message})}catch{}}
+  try{await finIngest('reject',{upload_id:b.upload_id,reason:'upload interrupted: '+e.message})}catch{}throw new Error(e.message+' — not imported; nothing from this file was saved. Upload it again.')}
+ if(c.duplicate_content)return`Already imported (same rows as upload ${c.same_as}) — not added`;
+ if(c.ok!==true||!['committed','superseded'].includes(c.status))throw new Error(`the server did not confirm the import (status "${c.status||'unknown'}") — open Data health to check before uploading again`);
+ progress('Rebuilding finance figures…');let dv=null;try{dv=await finIngest('derive',{})}catch(e){}
+ return`Imported ${fmt(tot)} rows · confirmed by the server`+(c.status==='superseded'?' (kept; a file with later receipts is current)':'')+(dv?' · figures rebuilt':' · figures refresh within 10 minutes')}
 
 /* ---------- Admin key ---------- */
 /* ---------- Admin workspace: one entry point in the top bar ---------- */
@@ -2604,7 +2610,7 @@ function uploadUI(s){
  const items=[];const runBtn=el('button',{class:'btn primary',disabled:''},'Import validated files');list.append(el('div',{class:'tools'},runBtn));const tb=el('div');list.append(tb);
  async function handle(files){for(const file of files){const it={file,status:'Reading…'};items.push(it);draw();try{const buf=await file.arrayBuffer();it.hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');
    const wb=XLSX.read(buf,{type:'array',cellFormula:true,sheets:undefined});const x=CruxExtract.extractWorkbook(wb,file.name);it.x=x;it.kind=x.kind;
-   if(!x.kind){it.status='Not recognised';it.err=true}else if(x.kind==='collection'||x.kind==='outstanding'){finPrepare(it,x,file)}else if(x.kind==='zonal'){it.snapshot=x.snapshot_date;it.period=x.report_month;const leaf=x.rows.filter(r=>r.row_type==='leaf');const t=leaf.reduce((a,r)=>a+(r.mtd_cases||0),0);it.summary=`${leaf.length} leaf rows · MTD ${fmt(t)}`+(x.control?` · file's own Pan India total ${fmt(x.control.mtd)}`+(Math.abs(t-x.control.mtd)>0.5?' (differs — will be logged)':' ✓'):'');it.status=x.snapshot_date?'Ready':'Needs snapshot date'}
+   if(!x.kind){it.status='Not recognised';it.err=true}else if(x.kind==='collection'||x.kind==='outstanding'){finPrepare(it,x,file)}else if(x.kind==='zonal'){it.snapshot=x.snapshot_date;it.period=x.report_month;const leaf=x.rows.filter(r=>r.row_type==='leaf');const t=leaf.reduce((a,r)=>a+(r.mtd_cases||0),0);const valOnly=!x.rows.some(r=>r.row_type==='zone_client_rollup');it.summary=(valOnly&&x.control&&Math.abs(t-x.control.mtd)>0.5)?`${x.rows.length} rows · values only (no formulas): zone roll-up rows are separated on the server and the leaf total is checked against the file's own Pan India total ${fmt(x.control.mtd)} at import`:`${leaf.length} leaf rows · MTD ${fmt(t)}`+(x.control?` · file's own Pan India total ${fmt(x.control.mtd)}`+(Math.abs(t-x.control.mtd)>0.5?' (differs — will be logged)':' ✓'):'');it.status=x.snapshot_date?'Ready':'Needs snapshot date'}
    else{const base=file.name.replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)$/,'');const tok=base.replace(/_[A-Za-z]+$/,'').toUpperCase().replace(/[^A-Z]/g,'');it.group=UNITS[tok]||null;
     const months={};x.rows.forEach(r=>{const d=r.received_at||r.created_at;if(d){const ist=new Date(Date.parse(d)+19800000).toISOString().slice(0,7);months[ist]=(months[ist]||0)+1}});const top=Object.entries(months).sort((a,b)=>b[1]-a[1])[0];it.period=top?top[0]+'-01':null;
     it.summary=`${fmt(x.rows.length)} rows`+(x.issues.length?` · ${x.issues.length} issue(s)`:'');it.status=(it.group&&it.period)?'Ready':'Needs location group / month'}}catch(e){it.status='Failed: '+e.message;it.err=true}draw()}}
@@ -2619,15 +2625,28 @@ function uploadUI(s){
  runBtn.onclick=async()=>{runBtn.disabled=true;for(const it of items.filter(i=>i.status==='Ready')){try{it.status='Uploading…';draw();it.status=await importOne(it,p=>{it.status=p;draw()});if(it.kind==='collection'||it.kind==='outstanding'){draw();await finAfter(it)}}catch(e){it.status='Failed: '+e.message}draw()}S.meta=await api('meta');renderFresh()};
 }
 async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.kind==='outstanding')return finImport(it,progress);
+ /* Success is reported only after the server confirms the batch is committed (read back with 'finalize', which returns the stored batch row).
+    A failed step marks the batch rejected so a retry starts clean; a slow reply after a real commit is recognised by the read-back. */
+ const readBack=async id=>{try{return await ingest('finalize',{batch_id:id})}catch{return null}};
  if(x.kind==='zonal'){const b=await ingest('begin',{category:'zonal',file_name:it.file.name,file_hash:it.hash,snapshot_date:it.snapshot,period_month:x.report_month});if(b.duplicate)return'Already imported (identical file) — unchanged';
-  await ingest('stage',{batch_id:b.batch_id,seq_start:0,rows:[{snapshot_date:it.snapshot,report_month:x.report_month,control:x.control,issues:x.issues}]});const n=S.mode==='mcp'?40:150;
-  for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});progress(`Staging ${Math.min(i+n,x.rows.length)}/${x.rows.length}`)}
-  progress('Committing…');const c=await ingest('commit',{batch_id:b.batch_id});return`Imported snapshot ${it.snapshot}: ${fmt(c.rows||c.rows_in||x.rows.length)} rows`}
+  let cz=null;try{await ingest('stage',{batch_id:b.batch_id,seq_start:0,rows:[{snapshot_date:it.snapshot,report_month:x.report_month,control:x.control,issues:x.issues}]});const n=S.mode==='mcp'?40:150;
+   for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});progress(`Staging ${Math.min(i+n,x.rows.length)}/${x.rows.length}`)}
+   progress('Committing…');cz=await ingest('commit',{batch_id:b.batch_id})}
+  catch(e){const st=await readBack(b.batch_id);if(st&&st.status==='committed'&&st.rows_in===x.rows.length)return`Imported snapshot ${ddmm(it.snapshot)}: ${fmt(st.rows_in)} rows · confirmed by the server (reply was slow)`;
+   try{await ingest('reject',{batch_id:b.batch_id,reason:'upload interrupted: '+e.message})}catch{}throw new Error(e.message+' — not imported; nothing from this file was saved. Upload it again.')}
+  progress('Confirming with the server…');const st=await readBack(b.batch_id);
+  if(!st)throw new Error('the server did not confirm the import — open Data health to check before uploading again');
+  if(st.status!=='committed'||st.rows_in!==x.rows.length)throw new Error(`the server reports status "${st.status}" with ${fmt(st.rows_in||0)} of ${fmt(x.rows.length)} rows — not confirmed`);
+  const pan=cz&&x.control&&cz.leaf_mtd!=null?(Math.abs(cz.leaf_mtd-x.control.mtd)<=0.5?` · leaf total ${fmt(cz.leaf_mtd)} = file's Pan India total ✓`:` · leaf total ${fmt(cz.leaf_mtd)} ≠ file's Pan India total ${fmt(x.control.mtd)} (logged in Data health)`):'';
+  return`Imported snapshot ${ddmm(it.snapshot)}: ${fmt(st.rows_in)} rows · confirmed by the server`+pan}
  const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group,period_month:it.period});if(b.duplicate)return'Already imported (identical file) — unchanged';
- const n=S.mode==='mcp'?250:600;const acc={new:0,changed:0,unchanged:0};
- try{for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});const c=await ingest('commit',{batch_id:b.batch_id});for(const k in acc)acc[k]+=c[k]||0;progress(`${Math.min(i+n,x.rows.length)}/${x.rows.length} · new ${acc.new} · changed ${acc.changed}`)}
-  await ingest('finalize',{batch_id:b.batch_id})}catch(e){try{await ingest('reject',{batch_id:b.batch_id,reason:'upload interrupted: '+e.message})}catch{}throw e}
- return`Imported: ${fmt(acc.new)} new · ${fmt(acc.changed)} changed · ${fmt(acc.unchanged)} unchanged`}
+ const n=S.mode==='mcp'?250:600;const acc={new:0,changed:0,unchanged:0};let saved=0,st=null;
+ try{for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});const c=await ingest('commit',{batch_id:b.batch_id});for(const k in acc)acc[k]+=c[k]||0;saved=Math.min(i+n,x.rows.length);progress(`${saved}/${x.rows.length} · new ${acc.new} · changed ${acc.changed}`)}
+  st=await ingest('finalize',{batch_id:b.batch_id})}
+ catch(e){try{await ingest('reject',{batch_id:b.batch_id,reason:'upload interrupted: '+e.message})}catch{}
+  throw new Error(e.message+(saved?` — stopped after ${fmt(saved)} of ${fmt(x.rows.length)} rows; those rows are saved. Upload the file again to finish (saved rows will show as unchanged).`:' — not imported; nothing from this file was saved. Upload it again.'))}
+ if(!st||st.status!=='committed')throw new Error('the server did not confirm the import'+(st?` (status "${st.status}")`:'')+' — open Data health to check before uploading again');
+ return`Imported: ${fmt(acc.new)} new · ${fmt(acc.changed)} changed · ${fmt(acc.unchanged)} unchanged · confirmed by the server`}
 
 /* ---------- Plain-language explanations: "?" buttons and automatic hints on technical terms ---------- */
 const GLOSS={
