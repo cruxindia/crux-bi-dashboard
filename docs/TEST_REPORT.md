@@ -523,3 +523,11 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | test_097_ui live | 14 / 14 |
 | test_security live | 51 / 51 |
 | Lumen through the public key (after 098l / bi_098v) | reset_data, sync_invoice: 404; tables invoices, applicant_lines, branches: 404; private bill download: blocked |
+### Night check 30-Oct-2026 05:10 IST (scheduled)
+| Check | Result |
+|---|---|
+| Night jobs since 00:30 IST | all succeeded (revalidate 57 runs, point refresh 8, organic 8, TAT month stats 2, branch activity 2, Force1 attribution 2, workforce 2, finance derive 28); queue 0 waiting, 0 errors in 12 h |
+| Point refresh after the 29-Oct mapping saves (CR-036) | refreshed 00:30 IST, source version 5150 ≥ last mapping save 5135; 819,949 derived = 819,949 source; bi.test_identity 16 / 16 |
+| Workforce rebuilt after the point refresh | 703 people, 3,685 person-months (25 s) |
+| Speed | 500k-row series 151 ms; landing calls 1.0–2.5 s |
+| Live | md5 61d3d0ea… unchanged; test_097_ui 14 / 14 |

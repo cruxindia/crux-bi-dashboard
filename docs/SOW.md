@@ -626,3 +626,5 @@ Status values: verified complete · incomplete · blocked · failed. Evidence is
 | "Move on … finish the SOW, revalidate the Blocked requests" | every Blocked item re-checked; register "29-Oct night" columns | register workbook | done |
 
 **Live verification (29-Oct-2026 21:20–21:40 IST, commit fc6c627, live md5 = repository):** test_098b_ui 8/8, test_097_ui 14/14, test_security 51/51; Lumen calls and tables return 404 through the public key and the bill PDF can no longer be downloaded (bi_098v closed the old storage policy). Migrations 098l–098t were named without the `bi_` prefix and were missed by the GitHub export; bi_098u widened the export so they are included.
+
+**Night check 30-Oct-2026 05:10 IST:** every night job succeeded; the point refresh picked up the owner's 61 mapping saves (source version 5150 ≥ 5135) and bi.test_identity passes 16 / 16 — CR-036 verified; workforce rebuilt after it; landing calls 1.0–2.5 s; test_097_ui 14 / 14 live.
