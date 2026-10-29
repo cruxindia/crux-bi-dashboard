@@ -471,3 +471,27 @@ Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5
 ### Incident 29-Oct ≈ 14:00–15:42 IST (details in SOW)
 Measured during the incident (disk-IO bound: the instance was at its post-burst baseline): `count(*)` over `generate_series` — which spills to a temporary file — 2.5–33 s (normally a fraction of a second); `pg_timezone_names` 38–60 s; the API answered "Could not query the database for the schema cache". After D191–D193 the API answered again at 15:42 IST (meta 16–24 s, other landing figures 3–15 s from the cache while the disk-IO budget refills).
 
+## 29-Oct-2026 (evening) — wave 098: upload confirmation, light refresh, bounded stale cache, Ask timeout
+**This table is the authoritative suite record for 29-Oct (AG-026).** Earlier sections are kept as history; their partial counts (12/13, 14/15, 38/40) were runs during the incident and are superseded by the runs below. Acceptance `run_acceptance_tests()` stays 26/27: T21 is a known source-file issue (three block totals inside the tracker file itself differ from their rows), not a dashboard defect.
+
+### Data actions
+| Action | Result |
+|---|---|
+| Batch 699 (28-Oct tracker, staged 151 of 572 rows during the incident) | rejected with reason (audit 5137) |
+| Same file (SHA-256 d0f0177d… = batch 699) imported through the Upload Centre | batch 700 committed: 571 rows, 393 leaf rows, leaf target 84,395 / MTD 56,932 = file's Pan India row, 0 unmapped; repeat upload "Already imported (identical file) — unchanged" |
+
+### Live (deployed commit fc86587; live index.html md5 476943c8… equals the build)
+| Suite | 18:37–18:46 IST | after bi_098b and the Ask timeout (18:53–19:10 IST) |
+|---|---|---|
+| `test_098_upload` (new: U0–U6; failures and slow replies mocked, real import run once with `import`) | **6 / 6** (real import: U4/U5 pass; preview assertion updated for value-only files) | — |
+| `test_098_fin` (new: F1–F4; finance commits mocked, nothing written) | 4 / 4 local | **4 / 4** |
+| `test_097_ui` · `test_097_ask` | **14 / 14 · 8 / 8** | **14 / 14 · 8 / 8** |
+| `test_096_ui` · `test_094_ui` · `test_rev_ui` · `test_adm` · `test_stage2` · `test_security` | **11 / 11 · 13 / 13 · 14 / 14 · 40 / 40 · 13 / 13 · 51 / 51** | — |
+| `test_ask_ui` | 13 / 15 — A15 answer took 34 s (fallback AI model after the primary's quota ran out; the workspace proxy cuts at ≈30 s) and A12 its console error | **15 / 15** (D198) |
+| `test_093_ui` | 10 / 11 — B6 organic by branch manager Σ 58,454 ≠ by zone 58,065: a pre-correction cached figure served stale | **11 / 11** (D197) |
+
+### Other checks
+- Landing calls on the live API: meta 1.5 s, overview 1.0 s, daily 0.4 s, insights 1.0 s, branch managers 0.6 s, operations 0.9 s (19:00 IST).
+- Light refresh first run 18:40 IST: overview, daily, zonal, tracker sheet recomputed in 0.4–4.6 s each.
+- Ask timing (direct calls, 19:05 IST): 12–13 s with an 8 s cap, then the cap set to 5 s; the primary model normally answers in 0.5–2 s.
+- Register workbook: 0 baseline cells changed (cell-by-cell comparison); no key or token in the file.

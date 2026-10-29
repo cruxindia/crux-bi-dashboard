@@ -216,3 +216,5 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.api_coverage_status()`, `bi.api_coverage_codes()` → `bi_call('coverage_status')` | Monitor status (live) + Force1 codes vs branch list (cached) |
 | `bi.ask_h_cases(month, filters)`; `bi_ask3` intent `cases` | "Show me the cases behind it" |
 | `bi.zt_month_history.superseded_by / superseded_at / superseded_reason` | A month-history row replaced by the same month and client at another location (after a tracker-label retarget); kept for audit, ignored by `bi.v_month_business` |
+| `bi.api_cache_floor` (wave 098) | id, floor_at, reason, set_by, set_at — cached figures computed before the latest floor_at are never served stale (D197) |
+| `bi.api_revalidate_light(p_budget_s)` (wave 098) | Daytime refresh of queued landing figures (allow-list; skips items whose last run took ≥ 15 s); shares the night job's advisory lock |
