@@ -199,3 +199,19 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.client_name_alias` | Public client names → client family for Ask Crux (e.g. "bank of maharashtra" → BOM) |
 | `bi.ask_h_ops(month, filters, q)` | Ask Crux operations answer (open cases, ageing, oldest, TAT) |
 | `bi_ask3` intents `ops`; lead sentences | Premise check vs working-day pace, mapped people for "who handles", summary-vs-sheets gap, receipts not tied, gross / not linked / net |
+
+## Identity, reconciliation, operations and roles (29-Oct-2026, wave 097)
+| Object | Purpose |
+|---|---|
+| `bi.resolve_location_suffix_base(text)` | Normalised tracker label without a trailing "(…)" team suffix |
+| `bi.point_loc` | Point Wise location by policy: point_id, location, basis, case location, reason, active, run, time (old rows kept inactive) |
+| `bi.point_locate_apply(run, apply)` | Dry-run (apply = false) or apply of the point policy; returns moved / unchanged / not identified counts |
+| `bi.case_locate_detail(case_ids[])` | Case location with each rule's own answer (area office, branch name, customers' area, pincode) for exceptions |
+| `bi.identity_run`, `bi.identity_exception`, `bi.identity_audit_run(cap)` | Identity register per source with complete counts and capped exceptions; `bi_call('identity')`, `bi_admin` 'identity_exceptions' / 'identity_run' |
+| `bi.test_identity()` | 15 known examples and reconciliations |
+| `bi.api_os_recon()` (v2) | adds status, sheet checks, cross-sheet invoice numbers, possible duplicate lines, line measures, definitions |
+| `bi.api_coll_recon()` → `bi_call('coll_recon')` | Bank sheets, by month, Main and pivot cross-checks, review queue counts, cut-off vs label, not-tied share by month |
+| `bi.api_ops()` (v2) | adds per-day median TAT and open > 7 days, past due, ageing by location with handler and branch manager, ageing by client |
+| `bi.person_role_admin` ops | list, preview, add (additional), edit (withdraw + corrected row), end, withdraw |
+| `bi.api_coverage_status()`, `bi.api_coverage_codes()` → `bi_call('coverage_status')` | Monitor status (live) + Force1 codes vs branch list (cached) |
+| `bi.ask_h_cases(month, filters)`; `bi_ask3` intent `cases` | "Show me the cases behind it" |

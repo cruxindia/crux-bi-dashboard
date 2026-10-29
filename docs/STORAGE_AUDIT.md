@@ -6,7 +6,7 @@ Project `czdjbbhxboweawqbjywr` (free plan). Measured on 14-Oct-2026 from the liv
 
 | Metric | Value |
 |---|---|
-| Free-plan database limit | 500 MB. Over the limit the project becomes **read-only** and cron jobs stop ([Supabase docs](https://supabase.com/docs/guides/platform/database-size)) |
+| Free-plan database limit | 500 MB — **corrected 29-Oct-2026 (§11):** a billing quota per organisation (average daily size over the billing period; a breach can bring a Fair Use restriction with HTTP 402 responses). Read-only mode is triggered by disk use (95 % of the fixed 2 GB Free disk), not by the 500 MB quota ([Supabase docs](https://supabase.com/docs/guides/platform/database-size)) |
 | Database `postgres` before this audit | 428 MB (448,457,875 bytes) |
 | Database `postgres` after safe cleanup | 413 MB (432,958,611 bytes) — **15.5 MB reclaimed** |
 | All databases (Supabase's own measure sums `template0/1`, about 7 MB each) | about 427 MB right after cleanup; 450,187,441 bytes (429 MiB) at the end of the session |
@@ -247,3 +247,21 @@ Row counts were checked after the rewrite (92,239 / 13,272 / 63,465 / 686 / 4,29
 | Not candidates | — | Audit log, raw case/visit history, tracker rows, finance uploads and parts (evidence), invoice/receipt identity, mapping history, branch master/history | Kept |
 
 **Headroom and forecast:** 486.2 MB (all databases, 486,158,513 bytes at 05:37 UTC after the live test runs refilled the response cache) → 13.8 MB below 500,000,000 bytes, 38.1 MB below 500 MiB. At ≈ 42 MB of new Force1 data per month that is about **10 days (≈ 1-Nov-2026)**, or ≈ 27 days if the limit is 500 MiB. The owner script (≈ 29 MB) adds about 3 weeks. The Pro-plan or archive decision is urgent.
+
+## 11. Re-measure and corrected limit facts — 29-Oct-2026 (wave 097)
+**What the limit does (Supabase docs, "Understanding Database and Disk Size", read 29-Oct-2026).** "The database size quota is a billing quota for your organization." When an organisation's database size exceeds the plan quota it "can be placed under a Fair Use service restriction (requests return a 402 status code)"; the quota is "based on the average daily database size over the billing period, not the live size", "summing the database size across all of your projects"; "Reducing your database size does not immediately lift the restriction"; it lifts on upgrade, by disabling the Spend Cap, or at the next billing cycle. Read-only mode is separate: "When disk usage reaches 95%, Supabase puts your database into read-only mode"; "Free Plan projects have a fixed disk size of 2 GB." Pro: 8 GB disk per project, from $25 per month (pricing page, read 29-Oct-2026). Earlier sections of this file said "read-only at 500 MB" — that was wrong.
+
+**Risk for this project.** The project has been above 500 MB since about 21-Oct (519.5 million bytes that evening, 553.7 million on 29-Oct); if the billing-period average passes the quota, the dashboard's API calls (and the Lumen app's, which shares this project) can start returning HTTP 402 until the owner upgrades or the cycle resets. This is an availability risk, not a data-loss risk.
+
+| Measure (29-Oct-2026) | Bytes |
+|---|---:|
+| All databases (Supabase's measure) | 553,734,321 |
+| Database `postgres` | 538,619,027 |
+| `bi.point_store` / `bi.point_derived` / `bi.case_store` / `bi.client_branch_master` | 187.3 M / 98.4 M / 60.2 M / 51.5 M |
+| `bi.api_cache` (total incl. TOAST) | 12.1 M |
+| Unused indexes: `point_derived_pkey` (0 scans), `client_branch_master_fam_pin` (0 scans) | 24.1 M, 1.8 M |
+
+**Done in this wave (no data removed).** `stg_row` primary-key index rebuilt; one-off night compaction scheduled 29-Oct 20:31–21:09 UTC (VACUUM FULL of `organic_store`, `api_cache`, `zt_row`, `case_store`, `point_store`, then VACUUM ANALYZE; expected ≈ 20 MB); owner script updated (§6 file): unused index on the rebuildable visit cache (≈ 24 MB), optional unused branch-master index (≈ 1.8 MB), stale cache rows (≈ 10 MB), old cron history. Together ≈ 55 MB — back to about 500 MB, with ≈ 40 MB of growth per month.
+
+**Decision needed (unchanged, now urgent):** Pro plan, or an archive design for Force1 visit history (§7). Clean-up alone does not keep the project under the quota beyond a few weeks.
+

@@ -422,3 +422,33 @@ Note. After a cache refresh the background warm-up (every 10 minutes, up to ≈5
 |---|---|
 | `test_096_ui live` · `test_094_ui live` · `test_ask_ui live` · `test_adm live` · `test_rev_ui live` | **11 / 11 · 13 / 13 · 15 / 15 · 40 / 40 · 14 / 14** (no failed API call in the run; CDN libraries and fonts served locally in this workspace; page and data live) |
 | Storage after the wave | 554,758,321 bytes (all databases) after rebuilding the case-move log's index (9.9 MB → 2.3 MB); still above the 500 MB Free-plan limit (Q10, Q19) |
+
+## 29-Oct-2026 — wave 097: gap closure, data reconciliation and acceptance (bi_097a–bi_097j)
+### SQL (production, after the changes)
+| Check | Result |
+|---|---|
+| `bi.test_identity()` — 15 known examples and reconciliations (tracker suffix → Amaravati; latest tracker fully mapped; case rules 1, 3, 5; Nagpur team rule; a "PUNE EAST" area-office case stored in Pune; stored = rules; point policy; point branch place; derived = source; MUM series → Mumbai; BOM branch 2483 → Nanded; finance totals; client aliases; no unknown client) | **15 / 15** |
+| Identity register run 2 (29-Oct) | cases 238,040: 0 stored ≠ rules, Σ locations = rows, 25 not identified, 1,737 area office vs branch name disagree (area office wins by rule order); points 819,949: 814,905 follow their case, 4,636 on own evidence (4,786 without a matching case incl. not identified), 408 not identified, 382 file unit ≠ case unit; tracker 46,219 rows, latest report 0 unmapped; finance tied to a location: billed 99.89 %, collected 97.54 %, outstanding 99.97 %; branch master 92,239 |
+| Point policy (dry-run, then apply) | 4,950 points moved off the case location; 0 points lost or double-counted (derived 819,949 = source) |
+| Utilisation re-check | Sep-2026 61.09 % (29,192 of 47,782; unchanged by the point policy); Oct-2026 63.08 % (29,152 of 46,216); 1,440 Force1 cases above the business count listed, none above 100 % |
+| `bi.api_os_recon()` (15-Oct workbook) | gross ₹11,28,16,964 = net ₹8,55,01,019 + not linked ₹2,73,15,946; summary ₹11,07,85,671; difference ₹20,31,293 explained, ₹0 unexplained → "Not reconciled — difference explained"; second Nagpur team sheet net −₹1,81,118; 101 invoice numbers in two sheets: 11 look like the same line by the stored fields (₹25,670), an independent check of the workbook with the branch column found 8 identical (₹12,805) — the note was corrected (bi_097j); 255 possible duplicate-line groups (₹4.90 L) open in review |
+| Independent recompute of the two workbooks (`w097/scripts/os_recompute.py`, `coll_recompute.py`, openpyxl, not the import code) | outstanding sheets, summary rows and adjustments equal the stored controls; bank sheets 28,430 rows / ₹11,77,91,329 equal; Main's April differs from the bank sheets by ₹3,561 (₹7.10 L dated Apr-2025 in Main) |
+| `bi.api_coll_recon()` | last receipt 13-Oct-2026 vs file label "Sep26"; pivot sheets ₹63,288 below Main (stale, compared only); review: 19 possible double entries (₹13,976), 56 receipts quoting several invoices (₹3.46 L), 25 unreadable references (₹51,617), 592 receipts against invoices still fully open (₹33.5 L); repeated across uploads 0 |
+| Operations (`bi.api_ops` Oct-2026, to 28-Oct) | 4,221 + 32,863 − 30,705 = 6,379 = independent open count; every day opens at the previous close |
+| Roles workflow (`bi.person_role_admin`, one transaction rolled back by a final exception) | add; overlap refused; "additional person" accepted; holders on 15-Oct = both; preview = 2 holders, 2,476 cases; reason < 5 characters refused; edit keeps the old row withdrawn ("corrected: …") and adds the new one; end sets the last day; withdraw; 5 audit rows; afterwards 0 rows and 0 audit rows remain |
+| Coverage status | before 11–43 s per call (uncached, under load); after bi_097h 3.5 s cold, 0.4 s warm; same numbers (142 codes not in the list / 4,789 cases; 3,979 codes; 1,046 possible duplicates; monitor "skipped" 28-Oct, last success 14-Oct, RBI release 1-Sep-2026) |
+| `bi.test_bm()` · `bi.test_fin_attr()` · `bi.test_fin_fixtures()` · `bi.test_growth()` · `bi.test_growth_rev()` | **11 / 11 · 5 / 5 · 15 / 15 · 14 / 14 · 14 / 14** |
+| Ask Crux, 30 questions (`w096/ask_eval.py`) | **30 / 30**; slowest 12 s (open cases and data health were 30–45 s before bi_097i) |
+| Ask Crux, earlier 30 questions (`test_ask3.py`) | **30 / 30** |
+| Ask multi-turn (`w097/ask_multiturn.py`, SQL engine) | why? / what about last month? / who owns this? / show me the cases behind it / yes-no / "and what about Mumbai?" / ambiguity note — all as designed |
+| Names in bi_097 migrations | none except the tracker's own location label for the Amaravati team (a first name inside a location label, as in the existing Nagpur labels since bi_003) in one comment of bi_097a and the Nagpur team hint in `bi.test_identity` |
+
+### Browser (local build against the live API; CDN libraries and web fonts served locally)
+| Suite | Result |
+|---|---|
+| `test_097_ui` V1–V14 (sequence placement after the daily count, labels and order, every day's numbers = APIs; TAT by location / client; Cash freshness banner, outstanding status and sheet checks; collection-workbook card; Overview seven answers in order and clickable; coverage strip; identity card + exception rows; roles preview and controls; roles Edit / End / Withdraw with network mocking (nothing written); Upload Centre guide and pre-import checks on the two attached workbooks (not imported); mobile 390 px; console) | **14 / 14** |
+| `test_097_ask` K1–K8 (Ask conversation in the browser) | **8 / 8** |
+| `test_096_ui` (W5 now counts the reconciliation table only; W9 expects "Save role" and two date fields) · `test_094_ui` · `test_rev_ui` · `test_093_ui` · `test_stage2` · `test_ask_ui` | **11 / 11 · 13 / 13 · 14 / 14 · 11 / 11 · 13 / 13 · 15 / 15** (first run while all suites ran together: `test_ask_ui` 10 / 15 and `test_094_ui` 12 / 13 — calls cut by this workspace's proxy at ≈30 s; re-run 15 / 15 and 13 / 13) |
+| `test_adm` | **39 / 40** — Z1: one branch-level TAT drill (Sep, one location, SBI; 12.5 s alone) cut by this workspace's proxy at ≈30 s under concurrent load |
+| `test_security` | **51 / 51** |
+

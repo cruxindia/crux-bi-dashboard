@@ -217,3 +217,15 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 | Net invoice balance | gross − received not linked; workbook adjustments listed, never deducted |
 | Workbook check | summary-sheet rows matched to location sheets by total (within ₹1); a missing sheet or a difference ≥ ₹1 = "not reconciled" |
 | Receipts not tied to a location | receipt-month receipts with no location ÷ all receipts of that month |
+
+## Identity, reconciliation and operations views (29-Oct-2026, wave 097)
+| Item | Rule |
+|---|---|
+| Point location | the case's location only when the case exists and the point's branch equals the case's branch; otherwise place in the point's branch name → point pincode → the point file's usual location → not identified. A point's unit is its own file's unit |
+| Tracker label with a team suffix | "Label (team)" resolves to the location whose label (without the suffix) is already known; logged for review |
+| Daily case sequence (Business Tracker) | per day: opening backlog, Zonal Tracker dated count (that report's MTD − the previous report's MTD; unchanged, never added), received, completed, closing = opening + received − completed, median TAT of the day's completions, open > 7 days at day end; check = the identity holds and each day opens where the previous closed |
+| Outstanding status | "Reconciled" when summary = sheets row by row; "Not reconciled — difference explained" when every difference is traced (e.g. sheets left out of the summary); "Unreconciled" when a material difference is unexplained |
+| Invoice numbers in two sheets | "look like the same line" = same client, invoice month, basic and outstanding (branch is not stored) — an upper bound for lines counted twice |
+| Collection cut-off | the last receipt date in the bank sheets, not the file label |
+| Receipts not credited to one manager | no location, or a zone with more than one manager, or no client — reported separately from "no location" |
+| Coverage codes | Force1 branch codes of the last 6 months for clients with an RBI branch list; "not in the list" = code not in the branch master for that client |

@@ -172,3 +172,11 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 - **Outstanding reconciliation:** `select public.bi_call('os_recon', '{}');` — `reconciled`, the row-by-row table and the listed adjustments.
 - **Roles:** Admin workspace → Mapping → "Operations handlers and collections owners" (add with a start date, tick "end the current one", withdraw with a reason). Every change is in `bi.audit_log` (`branch_role_*`).
 - **Branch coverage:** the monthly monitor (cron `bi-branch-monitor`, 2nd of the month) compares with the latest RBI IFSC release; a manual run is `select bi.call_edge('branch-monitor', '{"trigger":"manual"}');` — "skipped" means the source has not changed.
+
+## Identity register, reconciliation and roles (29-Oct-2026, wave 097)
+- **Identity register:** weekly (cron `bi-identity-weekly`, Sunday 02:20 IST) or Admin → Data quality → "Rebuild the register now". Check: `select * from bi.test_identity();` (15 rows, all true).
+- **Point policy after a Point Wise upload:** applied by `refresh_if_stale` before the derived table is rebuilt. Dry-run: `select bi.point_locate_apply('check', false);`.
+- **Tracker labels with a new team suffix** are mapped to the existing location and listed under Admin → Mapping for review; change the target with "retarget" if the team really is a new location.
+- **Finance workbooks:** Admin → File uploads shows the detected dates and per-sheet checks before import; after import the live status appears; Revenue & collections → Cash shows the outstanding status and the collection-workbook check.
+- **Roles:** Admin → Mapping → "Operations handlers and collections owners": Preview first; tick "additional person" for a shared role; Edit asks for a reason and keeps the old row; End sets the last day; Withdraw is for a row entered by mistake.
+- **Night compaction 29-Oct (one-off):** cron jobs `bi-claude-compact-1…6` and `-end` (20:31–21:09 UTC) run VACUUM FULL on five tables and remove themselves. Check: `select command, status, return_message, start_time, end_time from cron.job_run_details where command like 'vacuum%' and start_time > '2026-10-29';` (the job definitions remove themselves; the run history stays) and the size query in STORAGE_AUDIT.

@@ -115,3 +115,13 @@ L48 and L49 above are superseded: finance is no longer shared out by expected re
 | L63 | Operations handlers and collections owners are not yet entered | Ask's "who handles" lists only branch managers | Q26 |
 | L64 | The zone tile map colours zones by distance from the organic level (or likely vs target); zones with under 100 organic cases so far are grey ("too small to compare") | Small zones never show a colour | Value and text are printed on every tile |
 | L65 | First names that appear only inside a location label are now replaced by [name] before text reaches the AI provider; the shown answer is unchanged | AI wording may read "Nagpur ([name])" internally | The calculated answer is always shown word for word |
+
+## Identity, reconciliation, operations and roles (29-Oct-2026, wave 097)
+| # | Limitation | Effect | Mitigation |
+|---|---|---|---|
+| L66 | Outstanding lines are stored without the branch, so "invoice numbers in two sheets that look like the same line" is an upper bound | 15-Oct workbook: 11 numbers / ₹25,670 by the stored fields; an independent check with the branch column found 8 identical (₹12,805) and 3 with a different branch text | Confirm in the workbook before correcting it |
+| L67 | Ageing and TAT are in calendar days (IST); no working-day ageing | A case received on Saturday is ">1–3 days" on Monday | Stated on the page and in Ask; same rule everywhere |
+| L68 | The Amaravati branch-manager hand-over from 26-Oct is inferred from the tracker's team label | Amaravati figures from 26-Oct are shown under the second Nagpur team's manager | Q27 — confirm or withdraw the row |
+| L69 | Operations handlers and collections owners are still not entered | The handler column shows "not entered"; Ask lists branch managers only | Q26 lists the records needed |
+| L70 | The upload's post-import status line was not exercised end-to-end (no new finance workbook in this wave) | — | It reads the same reconciliation APIs that are tested on the Cash view |
+| L71 | The coverage status's code counts are cached with the data version; the monitor status is live | Codes refresh on the next data change, not on every page load | — |
