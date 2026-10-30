@@ -2681,15 +2681,19 @@ async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.k
   if(!st)throw new Error('the server did not confirm the import — open Data health to check before uploading again');
   if(st.status!=='committed'||st.rows_in!==x.rows.length)throw new Error(`the server reports status "${st.status}" with ${fmt(st.rows_in||0)} of ${fmt(x.rows.length)} rows — not confirmed`);
   const pan=cz&&x.control&&cz.leaf_mtd!=null?(Math.abs(cz.leaf_mtd-x.control.mtd)<=0.5?` · leaf total ${fmt(cz.leaf_mtd)} = file's Pan India total ✓`:` · leaf total ${fmt(cz.leaf_mtd)} ≠ file's Pan India total ${fmt(x.control.mtd)} (logged in Data health)`):'';
-  return`Imported snapshot ${ddmm(it.snapshot)}: ${fmt(st.rows_in)} rows · confirmed by the server`+pan}
+  return`Imported snapshot ${ddmm(it.snapshot)}: ${fmt(st.rows_in)} rows · confirmed by the server`+pan+' · the dashboard shows it within about 10 minutes'}
  const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group,period_month:it.period});if(b.duplicate)return'Already imported (identical file) — unchanged';
- const n=S.mode==='mcp'?250:600;const acc={new:0,changed:0,unchanged:0};let saved=0,st=null;
- try{for(let i=0;i<x.rows.length;i+=n){await ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)});const c=await ingest('commit',{batch_id:b.batch_id});for(const k in acc)acc[k]+=c[k]||0;saved=Math.min(i+n,x.rows.length);progress(`${saved}/${x.rows.length} · new ${acc.new} · changed ${acc.changed}`)}
+ /* 30-Oct-2026: case files are committed in smaller pieces (each piece re-checks every case's location) and a piece that hits the
+    server time limit is retried twice after a pause — a commit that timed out was rolled back, so retrying it is safe. */
+ const n=S.mode==='mcp'?250:(x.kind==='case'?300:600);const acc={new:0,changed:0,unchanged:0};let saved=0,st=null;
+ const retry=async(step,fn)=>{for(let a=0;;a++){try{return await fn()}catch(e){if(a>=2||!/timeout|canceling statement|57014|504|502|503|Failed to fetch|NetworkError/i.test(e.message||''))throw e;
+   progress(`${saved}/${x.rows.length} · server busy — retrying ${step} (${a+1}/2)…`);await new Promise(r=>setTimeout(r,a?12000:4000))}}};
+ try{for(let i=0;i<x.rows.length;i+=n){await retry('upload',()=>ingest('stage',{batch_id:b.batch_id,seq_start:i+1,rows:x.rows.slice(i,i+n)}));const c=await retry('save',()=>ingest('commit',{batch_id:b.batch_id}));for(const k in acc)acc[k]+=c[k]||0;saved=Math.min(i+n,x.rows.length);progress(`${saved}/${x.rows.length} · new ${acc.new} · changed ${acc.changed}`)}
   st=await ingest('finalize',{batch_id:b.batch_id})}
  catch(e){try{await ingest('reject',{batch_id:b.batch_id,reason:'upload interrupted: '+e.message})}catch{}
   throw new Error(e.message+(saved?` — stopped after ${fmt(saved)} of ${fmt(x.rows.length)} rows; those rows are saved. Upload the file again to finish (saved rows will show as unchanged).`:' — not imported; nothing from this file was saved. Upload it again.'))}
  if(!st||st.status!=='committed')throw new Error('the server did not confirm the import'+(st?` (status "${st.status}")`:'')+' — open Data health to check before uploading again');
- return`Imported: ${fmt(acc.new)} new · ${fmt(acc.changed)} changed · ${fmt(acc.unchanged)} unchanged · confirmed by the server`}
+ return`Imported: ${fmt(acc.new)} new · ${fmt(acc.changed)} changed · ${fmt(acc.unchanged)} unchanged · confirmed by the server · case counts update within about 10 minutes; visit, TAT and workforce figures after the night refresh`}
 
 /* ---------- Plain-language explanations: "?" buttons and automatic hints on technical terms ---------- */
 const GLOSS={

@@ -137,3 +137,5 @@ L48 and L49 above are superseded: finance is no longer shared out by expected re
 | L80 | The Force1 point table is rebuilt in full each night it changes (≈100 s) | Night window only | Incremental rebuild (needs row deletion — owner step) |
 | L81 | Lumen storage buckets (11 MB) stay until the owner runs the removal script and deletes them in Storage (D207) | File storage quota | Owner step |
 | L82 | Ageing remains calendar days until the owner chooses a rule (D209) | Operations ageing | Owner selection |
+| L83 | On the Free plan an upload made while the instance is IO-limited can still stop after its retries (D215); the saved part stays and a repeat upload finishes it | Case Wise uploads at busy times | Compute upgrade (OD-022) |
+| L84 | meta row counts are planner estimates (D214) | Not shown on any page | — |

@@ -533,3 +533,12 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Live | md5 61d3d0ea… unchanged; test_097_ui 14 / 14 |
 | Identity counts vs the 29-Oct morning record | cases: 0 stored-vs-rule differences, 25 not identified; points: 408 not identified, 4,786 without a matching case, 4,636 on own evidence — all unchanged |
 | Cached figures | no growth / organic / branch-manager / overview / meta answer older than 24 h; no light-refresh errors |
+
+## 30-Oct-2026 — uploads not reflecting (D214, D215)
+| Check | Result |
+|---|---|
+| Stored uploads 30-Oct | tracker 29-Oct committed (3 uploads, the last one kept); point files 15 / 15 groups committed; case files 13 / 14 committed, Gujarat stopped after 3,600 rows (5 attempts, statement timeout) |
+| Before the fix (live, 13:15 IST) | "Data up to 28.10.2026"; meta last computed 05:25 IST, last run 15.5 s, skipped by the daytime refresh |
+| After (live, 13:30 IST) | "Data up to 29.10.2026"; Overview ₹2.20 cr / 65.3%, 6,744 open cases, latest daily change 2,958 (28 → 29-Oct); meta 3.2 s |
+| test_098c_case_retry (mocked: one timeout retried; three timeouts → stop message, reject) | 3 / 3 |
+| test_098_upload (tracker, mocked) | 6 / 6 |
