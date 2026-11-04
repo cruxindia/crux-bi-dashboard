@@ -139,3 +139,5 @@ L48 and L49 above are superseded: finance is no longer shared out by expected re
 | L82 | Ageing remains calendar days until the owner chooses a rule (D209) | Operations ageing | Owner selection |
 | L83 | On the Free plan an upload made while the instance is IO-limited can still stop after its retries (D215); the saved part stays and a repeat upload finishes it | Case Wise uploads at busy times | Compute upgrade (OD-022) |
 | L84 | meta row counts are planner estimates (D214) | Not shown on any page | — |
+| L85 | Re-uploading a full month's Case / Point Wise file rewrites changed rows; the old row versions stay in the files until vacuumed, so the database grows (+44 MB 29-Oct → 4-Nov) | Storage quota | Compute / plan decision; owner storage script |
+| L86 | Ask Crux AI wording is accepted for about a quarter of answers (direction and format checks reject the rest) | The calculated answer is always shown | Prompt and model review (CR-049) |

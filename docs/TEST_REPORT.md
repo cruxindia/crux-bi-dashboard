@@ -542,3 +542,13 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | After (live, 13:30 IST) | "Data up to 29.10.2026"; Overview ₹2.20 cr / 65.3%, 6,744 open cases, latest daily change 2,958 (28 → 29-Oct); meta 3.2 s |
 | test_098c_case_retry (mocked: one timeout retried; three timeouts → stop message, reject) | 3 / 3 |
 | test_098_upload (tracker, mocked) | 6 / 6 |
+
+## 4-Nov-2026 — wave 099 re-measure and closure
+| Check | Result |
+|---|---|
+| Night jobs 30-Oct → 4-Nov | every run succeeded (point refresh 40, revalidate 300, light 570, workforce 10, organic 40, TAT stats 10, finance derive 720); 0 queue errors |
+| Uploads since 30-Oct 14:00 IST | tracker 30-Oct; Point Wise Mumbai, one Nagpur team file, Gujarat, Pune, Bangalore committed; Delhi stopped at 1,200 rows (closed, D217); no Case Wise, finance or November files |
+| Identity | 15 / 16 on the stored run (I08: 6 drifted cases) → corrected (D216); full rule run now 0 differences; 25 cases and 402 points not identified; 9,390 points without a matching case (Case Wise files older than the Point Wise files; Gujarat Case Wise partial) |
+| Database size | 573.3 million bytes (all databases); bi schema 533.8 MB; point_store 78,514 and case_store 41,097 dead rows from re-uploads of full-month files |
+| Ask Crux AI wording (7 days) | 93 wording calls: 24 accepted, 36 rejected by the direction check, 17 by the format check, 11 timeouts, 5 quota — answers show the calculated text when wording is rejected |
+| Live | Overview: data up to 30-Oct-2026; Revenue page caveats present |
