@@ -239,3 +239,10 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 - **Zone tile split**: each team against its own target to date (on track ≥ 90%, behind 60–90%, far behind < 60%); amber when the total looks fine but ≥ 3 teams with a target are mostly behind, or the zone is carried (half from one team or ≤ 20% of teams).
 - Each metric's math, sources and API names are stored in `bi.metric_doc` and shown behind every "?".
 
+## Wave 102 rules (7-Nov-2026 night)
+- **Clients inactive PAN India** = no tracker cases in any team in the last three months incl. the latest month → out of potential, targets and branch lists.
+- **Target floor** = previous month's target × 1.02 per team × client (month 1: latest tracker target); **strong signal** = a month that fell ≥ 5% vs the month before in every year on record → may fall by the smallest fall on record (April today: 26.2%).
+- **Target sheet**: last month = actual | actual so far ÷ s(k) | pace forecast; base = max(plan, previous target × 1.02, last month × 1.02, BAU × 1.02); catch-up = quarter shortfall so far × plan_M ÷ Σ plan of the remaining quarter months, added up to min(potential, last month × 1.5); cases = ⌈revenue ÷ rate⌉.
+- **Variance** = outlook − plan; variance % = variance ÷ plan; levels add up (zone = Σ teams = Σ team × client).
+- **Branch status** (verified branches of active clients): active = Force1 case in the last 3 months; dormant = earlier cases only; never active = none since Jan-2026.
+

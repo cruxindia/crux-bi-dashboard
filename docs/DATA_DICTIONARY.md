@@ -257,3 +257,17 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | API `market_potential` → `by_bm` | potential per branch manager (current, layers, headroom, potential, penetration, branches) |
 | Ask Crux handlers | `bi.ask_scope(f)`, `bi.ask_h_potential(m, f, q, bm)` (scope, manager, rankings), `bi.ask_h_plan(m, f, q)` (quarters, targets), `bi.ask_h_split(m, f, q, bm)` (who carries a group) |
 
+## Planning & forecasting (7-Nov-2026 night, wave 102)
+| Object | Meaning |
+|---|---|
+| `potential_run.inputs.inactive_clients` | client families with no tracker cases anywhere in India in the last three months; removed from potential, targets and branch lists |
+| `bi.plan_signals(from, to)` | per month: strong (fell ≥ 5% vs the month before in every year on record), allowed_drop (smallest fall on record), falls by year |
+| `bi.plan_cells2()` | team × client: pace0, potential, t0 (reference month tracker target, or current business when higher) |
+| `bi.plan_compute(params)` | suggested targets with the never-below-previous floor (same signature as before) |
+| API `targets` | adds reference.previous_target, signals[], months[].strong_signal |
+| API `plan` | adds actual_this per group and by_cell (team × client) for the variance tree |
+| API `target_sheet` (`month` = target month; `p.catchup`, `p.cap_over_last`, `p.gmin`) | previous_basis, last3, quarter context, totals, bridge (last month → BAU change → plan above BAU → floors → catch-up → target), rows per team × client code, method |
+| API `branch_list` (`p.status` = inactive · dormant · never · active · all; `p.limit`, `p.offset`) | summary, by_client, total_rows, rows with branch name, code, IFSC, city, district, state, PIN, team, zone, status, last / first case month, cases, estimated cases and ₹ a month; not cached |
+| `bi.organic_pairs(month)` | BAU basis; the running tracker month is now projected to month end when it is part of the history window (coming months only) |
+| Ask Crux handlers | `bi.ask_h_target_month`, `bi.ask_h_inactive`, `bi.ask_h_branch_names` |
+

@@ -586,3 +586,16 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Browser, live (62d29c5, live md5 f0edd43… = local build) | test_101_ui 12/12 (first run on 32007f3 also 12/12, with the tile split in cases): Z1 zone split bars = API members, potential line = API · Z2 Rest Of Maharashtra amber "⚠ 8 of 10 teams behind" (revenue split, same as the split card and Ask Crux) · H1 / H2 "?" with math, live figure and database sources · L1 Overview quarter cards = API · L2 Growth plan 6 months, 14 zones, chart · A1a admin preview = API · A1b save refused without a reason (nothing saved) · B1 BM potential column 21 / 21 · D1 drawer potential = API · N1 no "Organic business" left · E1 no console errors |
 | Regression, live | 32007f3: test_100_ui 8/8 · test_097_ui 14/14 · test_098b_ui 8/8; 62d29c5: test_100_ui 8/8 |
 
+## 7-Nov-2026 night — wave 102 (Planning & forecasting, target download, branch names, inactive clients removed, one home per topic)
+| Check | Result |
+|---|---|
+| Inactive clients | 12 families in `inactive_clients`; 0 potential cells left for them; potential ₹86,259,291 (was ₹100,033,890; −₹13,774,599); BAU for them was already 0; no Force1 case for them since Jan-2026 |
+| Target rule | suggested targets Nov ₹35,486,642 → Oct-27 ₹51,717,001; every month ≥ previous × 1.02 except Apr-27 (−24.3%, allowed 26.2%: April fell 29.5% in 2025 and 26.2% in 2026) |
+| Target sheet Nov-26 | 402 team × client rows; last month = Oct expected closure ₹25,390,799; target ₹36,891,177 / 92,023 cases; bridge sums to the target (±₹1); no row below previous target + 2% |
+| Target sheet Dec-26 | 388 rows; last month = Nov forecast ₹23,760,408 (no November tracker yet); target ₹39,635,117; catch-up wanted ₹19,978,926, added ₹2,178,278 after caps |
+| Quarter plan | Q3 FY27 plan ₹106,706,323, outlook ₹76,696,063, shortfall ₹30,010,260; 469 team × client rows (by_cell) |
+| Branch list | PAN India (active clients): 65,968 verified branches — 2,883 active, 1,316 dormant, 61,769 never active, 9,449 with no team; 2.2 s uncached; Delhi+Rajasthan 8,206 (122 / 82 / 8,002) |
+| Ask Crux (SQL) | target for December → target_month (₹3.96 cr with build-up); inactive clients → 12 listed; SBI dormant branches in Pune → 10 named; never-active BOM branches → named; will we hit the target this month → forecast (unchanged); next 3/6/12 months → plan; manager ranking → potential |
+| Browser, local | test_102_ui 10/10; test_101_ui 12/12, test_100_ui 8/8 (selectors moved to Planning / People), test_097_ui 14/14, test_098b_ui 8/8 |
+| Browser, live (76e98a1, live md5 039073d… = local build) | test_102_ui 10/10: N1 one home per topic · S1 snapshot = API · P1 quarter cards + plan → outlook bridge = API · P2 variance tree zones 14 = API, opens to teams and clients · T1 target tiles and build-up = API · T2 floor rule holds · T3 admin Excel has all 10 required columns · B1 potential ₹8.63 cr and branch names by status = API · H1 "?" references · E1 no errors. Regression live: test_101_ui 12/12 · test_100_ui 8/8 · test_097_ui 14/14 · test_098b_ui 8/8 |
+
