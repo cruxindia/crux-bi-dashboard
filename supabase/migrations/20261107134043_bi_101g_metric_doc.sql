@@ -1,0 +1,135 @@
+-- Applied to Supabase project via MCP on 20261107134043
+-- Wave 101b (owner 7-Nov-2026 18:39 IST: "I need to see the complete math, references in the DB and everything when clicked on ?").
+-- One row per help-icon term: plain definition (the page's glossary), the math, and the database objects and API calls behind it.
+-- Served by bi_call('metric_doc'); the page adds the live inputs of the figure on screen where the card provides them.
+create table if not exists bi.metric_doc (
+  key text primary key, title text not null, math text not null, sources jsonb not null, api text[] not null default '{}',
+  updated_at timestamptz not null default now());
+alter table bi.metric_doc enable row level security;
+
+insert into bi.metric_doc(key, title, math, sources, api) values
+('mtd','MTD (month-to-date)',
+ 'MTD(team × client, report date) = cumulative cases from the 1st of the month to the report date, as reported in that day''s Zonal Tracker (MTD column). A selection = Σ of its team × client rows.',
+ '[{"name":"bi.zt_snapshot","role":"one row per uploaded tracker (report month, snapshot date)"},{"name":"bi.zt_row","role":"every row of every tracker snapshot"},{"name":"bi.v_zt_leaf","role":"leaf rows: location × client with mtd_cases, target_cases, revenue_actual, revenue_target"},{"name":"bi.v_latest_snapshot","role":"latest snapshot per month"}]',
+ array['overview','daily','zonal','tracker_sheet']),
+('target','Target',
+ 'Target cases = the month''s target per team × client in the latest tracker snapshot of the month (Target column); admin corrections in bi.zt_control_override take precedence. Revenue target: see "Revenue target".',
+ '[{"name":"bi.v_zt_leaf.target_cases","role":"target per team × client"},{"name":"bi.zt_control_override","role":"admin corrections"}]',
+ array['overview','drill','zonal']),
+('achievement','Achievement (% Achmt)',
+ 'Achievement = MTD ÷ target (cases) or revenue so far ÷ revenue target. Compare with the share of the month passed = working days elapsed ÷ working days in the month (bi.workdays).',
+ '[{"name":"bi.v_zt_leaf","role":"MTD and target"},{"name":"bi.workdays(d1, d2)","role":"Mon–Sat minus non-working days"},{"name":"bi.report_calendar_exception","role":"holidays / no-report days"}]',
+ array['overview','drill']),
+('projection','Projection',
+ 'Likely month end = business so far × m(k), where m(k) = median of (final month total ÷ total at working day k) over earlier months with daily reports (own row if ≥ 2 months, else PAN India); low / high = the weakest / strongest of those months. The potential, plan and business-as-usual pages project an incomplete month with s(k) = average share of a month reached by working day k (bi.organic_share), so the two can differ slightly until the month closes.',
+ '[{"name":"bi.api_potential","role":"likely / low / high (remaining days)"},{"name":"bi.organic_share(month, k)","role":"usual share of a month reached by working day k"},{"name":"bi.v_zt_daily","role":"daily snapshots"},{"name":"bi.v_month_business","role":"final month totals"}]',
+ array['overview','forecast','potential']),
+('runrate','Run-rate',
+ 'Run-rate month end = (MTD ÷ working days elapsed) × working days in the month.',
+ '[{"name":"bi.v_zt_leaf","role":"MTD"},{"name":"bi.workdays","role":"working days"},{"name":"bi.report_calendar_exception","role":"holidays"}]',
+ array['overview','potential']),
+('required','Required per day',
+ 'Required per working day = max(target − achieved, 0) ÷ working days left (working days after the report date to month end).',
+ '[{"name":"bi.v_zt_leaf","role":"target and MTD"},{"name":"bi.workdays","role":"working days left"}]',
+ array['overview','potential']),
+('shortfall','Shortfall',
+ 'Shortfall = target − achieved (negative = ahead). In the quarter plan: shortfall = plan − outlook when positive.',
+ '[{"name":"bi.v_zt_leaf","role":"target and MTD"},{"name":"bi.api_plan","role":"quarter plan shortfall"}]',
+ array['overview','plan']),
+('daily','Daily count',
+ 'Daily count(report date) = MTD(report date) − MTD(previous report date in the same month); after a holiday it covers several days.',
+ '[{"name":"bi.v_zt_daily","role":"MTD per snapshot and the previous snapshot"},{"name":"bi.report_calendar_exception","role":"declared no-report days"}]',
+ array['daily','business_count']),
+('revenue','Revenue',
+ 'Revenue = Σ over days of (cases reported that day × rate in force that day) per team × client; the tracker''s revenue column when rates did not change.',
+ '[{"name":"bi.v_zt_leaf.revenue_actual","role":"revenue so far"},{"name":"bi.rate_change","role":"mid-month rate changes with effective date"},{"name":"bi.v_month_business.revenue","role":"monthly revenue (history + latest snapshot)"}]',
+ array['overview','business_count','growth']),
+('revtarget','Revenue target',
+ 'Revenue target = target cases × rate; with a mid-month rate change: cases already done valued at the rates applied + remaining target cases at the new rate.',
+ '[{"name":"bi.v_zt_leaf.revenue_target","role":"revenue target"},{"name":"bi.rate_change","role":"rate history"}]',
+ array['overview','tracker_sheet']),
+('rate','Rate',
+ 'Rate = ₹ per case for that client at that location (tracker rate column; rate changes from their effective date).',
+ '[{"name":"bi.v_zt_leaf","role":"rate per leaf"},{"name":"bi.rate_change","role":"changes"}]',
+ array['tracker_sheet']),
+('rate_change','Rate change from a date',
+ 'For days on or after the effective date: revenue = cases × new rate; earlier days keep the old rate. Every change is audited (bi.audit_log) and reversible.',
+ '[{"name":"bi.rate_change","role":"rate, effective date, reason, who"},{"name":"bi.audit_log","role":"audit trail"}]',
+ array['tracker_sheet']),
+('tat','TAT (turnaround time)',
+ 'Case TAT = completed_at − received_at (Force1 Case Wise). Field TAT = report reviewed − visit assigned (Force1 Point Wise). Monthly median / P90 per group.',
+ '[{"name":"bi.case_store","role":"received_at, completed_at, due_at per case"},{"name":"bi.point_derived","role":"field visit timings (rebuilt nightly from bi.point_store)"},{"name":"bi.tat_month_stat","role":"monthly TAT statistics (nightly)"},{"name":"bi.tat_rule","role":"TAT rules"}]',
+ array['case_tat','point_tat','tat_summary','tat_trend']),
+('sla','SLA (service level agreement)',
+ 'SLA met % = completed cases with completed_at ≤ due_at ÷ completed cases. Open-case ageing (SLA rule): time past due_at.',
+ '[{"name":"bi.case_store.due_at","role":"Force1 due time per case"},{"name":"bi.app_setting (ops_ageing_rule)","role":"ageing rule in use (sla since 7-Nov-2026)"}]',
+ array['ops','tat_summary']),
+('median','Median','Median = middle value (50th percentile, percentile_cont(0.5)).','[{"name":"bi.tat_month_stat","role":"stored medians"}]', array['tat_summary']),
+('p90','P90','P90 = 90th percentile (percentile_cont(0.9)).','[{"name":"bi.tat_month_stat","role":"stored P90"}]', array['tat_summary']),
+('force1','Force1 utilisation',
+ 'Case level = min(Force1 cases, tracker cases) ÷ tracker cases per month × team × client, summed; Force1 cases above the tracker are counted separately and flagged. Field level = field visits submitted by field executives in Force1 ÷ all field visits.',
+ '[{"name":"bi.case_store","role":"Force1 cases (location by rules)"},{"name":"bi.v_month_business","role":"tracker cases"},{"name":"bi.point_derived","role":"field visits"},{"name":"bi.employee","role":"field executive / back office"}]',
+ array['force1','force1_recon']),
+('fieldexec','Field executive','Classification rule: only submits field visit reports in Force1 (never creates cases or handles document / tele checks).','[{"name":"bi.employee","role":"classification, rule, evidence, override"},{"name":"bi.person_month","role":"monthly activity per person"}]', array['employees','workforce']),
+('backoffice','Back office','Classification rule: creates cases or points, or handles document / tele checks.','[{"name":"bi.employee","role":"classification"},{"name":"bi.person_month","role":"monthly activity"}]', array['employees','workforce']),
+('lfl','Like-for-like','LFL growth = (this month up to working day k ÷ previous month up to working day k) − 1, same for quarter / year.','[{"name":"bi.v_zt_daily","role":"daily MTD per snapshot"},{"name":"bi.workdays","role":"aligning days"}]', array['lfl','compare']),
+('organic','Business as usual (BAU)',
+ 'BAU(month) per team × client = 50% MoM basis + 40% QoQ basis + 10% YoY basis (5/9 MoM + 4/9 QoQ without a usable month last year). MoM basis = last month''s cases per working day ÷ its seasonal effect × this month''s seasonal effect × working days. QoQ basis = the same for the last three months × QoQ trend (0.5–2×). YoY basis = last three months per working day × working days × own pattern for this month last year (0.67–1.5×). Seasonal effect = business per working day vs the surrounding 12 months, average of the previous two years. BAU to date = BAU × s(k). Revenue view: BAU cases × current rate. Back-test Dec-25 → Sep-26: 5.8% average error PAN India.',
+ '[{"name":"bi.organic_store","role":"BAU per month × team × client with its inputs (v1–v3, wd, si, b_mom, b_qoq, b_yoy)"},{"name":"bi.organic_refresh()","role":"nightly rebuild"},{"name":"bi.organic_si(month)","role":"seasonal effect"},{"name":"bi.organic_ratio()","role":"monthly ratios behind the seasonal effect"},{"name":"bi.organic_share(month, k)","role":"share of month by working day k"},{"name":"bi.v_month_business","role":"monthly history"}]',
+ array['organic','organic_trend','growth','bm']),
+('effort','Effort growth',
+ 'Effort = actual − BAU (to date for an incomplete month); effort % = actual ÷ BAU − 1. Above +5% = effort growth; below −5% = needs attention.',
+ '[{"name":"bi.organic_store","role":"BAU"},{"name":"bi.v_month_business","role":"actual"}]',
+ array['organic','bm','growth']),
+('coverage','Coverage',
+ 'Coverage = verified active, code-matchable branches with ≥ 1 Force1 case in the last 6 months ÷ verified active, code-matchable branches (website-only lists excluded).',
+ '[{"name":"bi.client_branch_master","role":"branch universe (RBI IFSC + official locators)"},{"name":"bi.branch_cov_mv","role":"universe snapshot"},{"name":"bi.branch_activity","role":"Force1 activity per branch"},{"name":"bi.v_branch_family_rule","role":"team for shared districts (OD-010)"}]',
+ array['branch_coverage','branches']),
+('attrition','Attrition',
+ 'Attrition = people who left in the month ÷ average headcount of the month; left = not seen in Force1 for more than 15 days.',
+ '[{"name":"bi.person_month","role":"active days per person per month"},{"name":"bi.person_activity_state","role":"activity state"},{"name":"bi.employee","role":"names and classification"}]',
+ array['workforce','attrition']),
+('stakeholder','Stakeholder','The location''s responsible manager as listed in the tracker (bi.location.stakeholder).','[{"name":"bi.location","role":"stakeholder per location"}]', array['zonal']),
+('penalty','Penalty','Penalty total = Σ of admin-entered penalty amounts (each with reason); shown separately, not deducted from revenue.','[{"name":"bi.penalty","role":"entries"},{"name":"bi.audit_log","role":"who / when"}]', array['penalty']),
+('potential','Remaining-days potential',
+ 'Likely = MTD × median(final ÷ MTD at this working day) over earlier months with daily reports; low / high = min / max of those months; required per day = (target − MTD) ÷ working days left.',
+ '[{"name":"bi.api_potential","role":"remaining-days potential"},{"name":"bi.v_zt_daily","role":"daily history"}]',
+ array['potential']),
+('working','Working days','Working days = Monday–Saturday minus dates marked non-working in the report calendar.','[{"name":"bi.workdays(d1, d2)","role":"counter"},{"name":"bi.report_calendar_exception","role":"marked dates"}]', array['daily']),
+('bizpotential','Potential (all client branches)',
+ 'Potential = current + back to own best + dormant + never-active. Current = latest tracker month projected to month end (÷ s(k)). Back to own best = Σ over team × client of max(best 3-month average since Apr-2024 − current, 0), less the dormant value of the same pair. Dormant = Force1 branches with cases since Jan-2026 but none in the last 3 months, at their own average monthly cases while active × rate. Never-active = verified, code-matchable branches with no Force1 case since Jan-2026 × median monthly cases of active branches (same client and team if ≥ 5, else same client PAN India if ≥ 5, else all) × rate. Rate = team × client ₹/case in the latest month, else client PAN India, else overall. Groups: never-active branches of clients the team serves; clients Crux has but the team does not serve; areas without a team; banks with no Crux business yet. Penetration = current ÷ potential.',
+ '[{"name":"bi.potential_run","role":"one row per refresh: month, as-of, inputs, totals"},{"name":"bi.potential_cell","role":"zone × team × client × layer → branches, cases, ₹"},{"name":"bi.potential_top","role":"largest branch opportunities"},{"name":"bi.potential_refresh()","role":"builder (nightly when data changed)"},{"name":"bi.client_branch_master","role":"branch universe"},{"name":"bi.case_store","role":"Force1 branch activity"},{"name":"bi.v_month_business","role":"tracker history and rates"},{"name":"bi.v_branch_family_rule","role":"team in shared districts"}]',
+ array['market_potential']),
+('split','Inside each group',
+ 'Per member: achievement to date = actual ÷ (monthly target × s(k)); on track ≥ 90%, behind 60–90%, far behind < 60%. Share = member actual ÷ group actual. n50 = smallest number of members (largest first) whose actuals reach 50% of the group. Carried = n50 = 1 or n50 ≤ 20% of members (groups of 3+). Flag "group on track but most behind" = group achievement ≥ 90% and more than half of members with a target behind. People: Force1 actions, compared with the median of the same role in the same team (well below = under half the median).',
+ '[{"name":"bi.api_split","role":"the calculation"},{"name":"bi.v_month_business","role":"actual and targets"},{"name":"bi.branch_manager_code_at","role":"manager of each team × client"},{"name":"bi.person_month","role":"Force1 actions per person"},{"name":"bi.employee","role":"role and display name (admin only)"}]',
+ array['split']),
+('pace','Current pace',
+ 'Pace(month k) = P0 ÷ (wd0 × si0) × wd(k) × si(k), per team × client; P0 = latest tracker month revenue (projected to month end when incomplete), wd = working days, si = seasonal effect (bi.organic_si). It is what the business brings if it keeps its current daily level.',
+ '[{"name":"bi.plan_cells()","role":"P0 per team × client (from bi.potential_cell, layer current)"},{"name":"bi.plan_factors(ref, from, to)","role":"month factors wd × si"},{"name":"bi.organic_si","role":"seasonal effect"},{"name":"bi.workdays","role":"working days"}]',
+ array['targets','plan']),
+('opportunity','Opportunity','Opportunity = potential − current pace (per team × client, never below 0).','[{"name":"bi.plan_cells()","role":"potential and pace per team × client"}]', array['targets','market_potential']),
+('targets','Targets (X / Y / Z months)',
+ 'Adjusted level a_k = P0 + C × (k ÷ H) × O, clamped so a_k ÷ a_(k−1) − 1 lies between the minimum and maximum growth; target_k = a_k × factor_k (seasonal basis) — or the clamp is applied to rupee targets (rupee basis). Each team × client: target = (pace0 + c_k × own opportunity) × factor_k with c_k = (a_k − P0) ÷ O. Defaults: horizon H = 12, capture C = 30%, growth 2–12% a month, milestones 3 / 6 / 12.',
+ '[{"name":"bi.plan_compute(params)","role":"the calculation"},{"name":"bi.api_targets","role":"preview / saved plan view"},{"name":"bi.plan_version","role":"saved plans (latest = the plan)"},{"name":"bi.plan_target","role":"saved monthly targets per team × client"}]',
+ array['targets']),
+('plan','Quarter plan vs actual',
+ 'Plan(month) = saved plan; else the tracker target; else the suggested target. Outlook = actual (completed months) | actual so far ÷ s(k) (current month) | pace forecast (future months). Delta = outlook − plan; shortfall = max(plan − outlook, 0). Needed per working day = (quarter plan − actual so far) ÷ working days left in the quarter, compared with current pace per working day. Quarters: Indian financial year.',
+ '[{"name":"bi.api_plan","role":"the calculation"},{"name":"bi.plan_target / bi.plan_version","role":"saved plan"},{"name":"bi.v_month_business","role":"actuals and tracker targets"},{"name":"bi.plan_cells / bi.plan_factors","role":"pace forecast"}]',
+ array['plan'])
+on conflict (key) do nothing;
+
+create or replace function bi.api_metric_doc() returns jsonb language sql stable security definer set search_path to 'bi', 'public' as $f$
+  select jsonb_build_object('docs', coalesce(jsonb_object_agg(key, jsonb_build_object('title', title, 'math', math, 'sources', sources, 'api', api, 'updated_at', updated_at)), '{}'::jsonb))
+    from bi.metric_doc $f$;
+revoke all on function bi.api_metric_doc() from public, anon, authenticated;
+
+do $m$
+declare d text := pg_get_functiondef('bi.call_compute(text, jsonb)'::regprocedure);
+begin
+  if position('''metric_doc''' in d) = 0 then
+    d := replace(d, 'when ''organic'' then', 'when ''metric_doc'' then bi.api_metric_doc()
+      when ''organic'' then');
+    execute d;
+  end if;
+end $m$;
