@@ -59,6 +59,7 @@ body.ddopen,body.fopen{overflow:hidden}
 .asof{font-size:12px;padding:3px 9px;border-radius:12px;background:var(--blue-soft);color:var(--ink);white-space:nowrap}
 .kpi4 .tile .v{font-size:26px}
 .ico{display:inline-flex;vertical-align:-3px;margin-right:8px;opacity:.85}.navh .ico{margin-right:6px}
+.sgrps{margin-top:6px}.sgrp{border-top:1px solid var(--line);padding:7px 2px}.sgrp>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;list-style:none}.sgrp>summary::-webkit-details-marker{display:none}.sgrp>summary::before{content:'\25B8';color:var(--muted);width:10px}.sgrp[open]>summary::before{content:'\25BE'}.sgrp .sg-name{font-weight:600;min-width:170px}.sgrp .sg-meta{color:var(--muted);font-size:12.5px}.sgrp>div{margin:6px 0 4px 14px}
 .dbar{display:inline-block;min-width:64px;padding:1px 5px;border-radius:3px;text-align:right;background:linear-gradient(90deg,color-mix(in srgb,var(--blue) 22%,transparent) var(--w),transparent var(--w))}
 .stripw{margin-top:8px}.strip{display:flex;height:12px;border-radius:4px;overflow:hidden;gap:2px;background:var(--panel)}.strip i{display:block;min-width:3px}
 .stripw .legend{margin-top:4px;font-size:11.5px}
@@ -380,6 +381,7 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    tl('Projection — month end',fc.available&&fc.curve_projection?fmt(fc.curve_projection):'–',fc.available&&fc.curve_range?`range ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} · ${pct(fc.curve_achievement)} of target`:'needs 2+ months of daily reports','',hint('projection')),
    og&&OT.organic_month!=null?tl('Organic expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Organic expectation — this selection')):null));
    const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))})}
+  {const pc=el('div',{class:'card',id:'potCard',style:'margin:12px 0'});s.append(pc);potentialCard(pc,m,f,{compact:true})}
   {const sa=el('div',{class:'card',id:'sevenQ',style:'margin:12px 0'});s.append(sa);sevenAnswers(sa,B,ok,m,f)}
   {const tb=el('div',{class:'card teams',style:'margin:12px 0',id:'teamCards'},el('h3',{style:'margin-top:0'},'Operations and Collections — '+mlabel(m)),el('p',{class:'note'},'Loading…'));s.append(tb);
    Promise.all([api('ops',{month:m,filters:f}).catch(()=>null),api('os_recon',{month:m,filters:{}}).catch(()=>null)]).then(([O,R])=>{if(!tb.isConnected)return;tb.lastChild.remove();
@@ -407,6 +409,7 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('growth')},rev?'All billing unit × client movements →':'All client × location movements →'),rev?el('button',{class:'btn',onclick:()=>{FV.view='cash';go('collections')}},'Collections and outstanding →'):null))})
   .catch(e=>{if(!pcb.isConnected)return;pcb.innerHTML='';pcb.append(el('p',{class:'note'},'Period comparison unavailable: '+e.message))});
  const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f);
+ {const spc=el('div',{class:'card',style:'margin:12px 0',id:'splitCard'});s.append(spc);splitCard(spc,m,f,{levels:['zone','bm','location','people']})}
  const ovx=el('div',{class:'split'});s.append(ovx);ovStrip(ovx,m,f);
  const f2=ov.force||{},ct=ov.case_tat||{};
  s.append(el('div',{class:'tiles ovsec'},tile('Achievement',pct(ov.achievement),`Shortfall ${fmt(ov.shortfall_cases)} cases`,ov.achievement<(wpace||0)?'bad':''),
@@ -668,6 +671,7 @@ const vGrowth=guard(async s=>{const f=filters();const months=S.meta.months;const
  if(rev&&G.billing)s.append(el('p',{class:'note'},G.billing.rule));
  const rk=el('div',{class:'card',style:'margin-top:6px'});s.append(rk);RKH=growthRanking(rk,G,f);
  const og=el('div');s.append(og);organicSection(og,to,f,G);
+ {const pt=el('div',{class:'card',id:'potSec',style:'margin:12px 0'});s.append(pt);potentialCard(pt,to,f).then(()=>{if(S.potJump&&pt.isConnected){S.potJump=0;pt.scrollIntoView({block:'start'})}})}
  if(rev)revTrend(s,G,f);
  else{const gsel=el('select',{'aria-label':'Breakdown'},GROUPS.monthly.map(x=>el('option',{value:x},x==='total'?'Total':'By '+x)));const box=el('div');
  s.append(el('h3',{},exp?'Monthly trend — expected revenue':'Monthly trend — cases'),el('p',{class:'note'},`Monthly business from ${mlabel(from)} to ${mlabel(to)}. The current month is month to date and is marked as such.`),el('div',{class:'tools'},gsel),box);
@@ -781,6 +785,7 @@ const vTat=guard(async s=>{const m=$('#fMonth').value,f=filters();
 const vPeople=guard(async s=>{const m=$('#fMonth').value,f=filters();
  s.append(el('h2',{},'Branch managers — '+mlabel(m)),el('p',{class:'lede'},'How each branch manager’s portfolio is doing this month on expected revenue (business), with billing and collections (finance) beside it, and what changed after each hand-over. Managers are maintained in Admin → Master data & mapping.'));
  const bx=el('div',{class:'card',id:'bmPeople'},el('p',{class:'note'},'Loading…')),hx=el('div',{class:'card',style:'margin:14px 0',id:'hoPeople'});s.append(bx,hx);
+ {const spp=el('div',{class:'card',style:'margin:14px 0',id:'splitPeople'});s.append(spp);splitCard(spp,m,f,{levels:['bm','people','location','zone'],level:'bm'})}
  bmData(m,f).then(B=>{if(!bx.isConnected)return;bx.innerHTML='';if(!B||B.error)throw new Error(B&&B.error||'no data');bmTable(bx,B,m,f,{noTitle:true});hoTable(hx,B,m,f)}).catch(e=>{if(!bx.isConnected)return;bx.innerHTML='';bx.append(el('p',{class:'note'},'Branch managers unavailable: '+e.message));hx.remove()});
  const r=await api('employees',{month:m,filters:f});
  s.append(el('h2',{},'People — '+mlabel(m)),el('p',{class:'lede'},'Workload by employee from Force1 visits ("Verified By"). Counts are not comparable across roles: field, document and tele points differ in effort.'));
@@ -1502,6 +1507,61 @@ function adminGate(s,what){if(S.role==='admin')return true;const inp=el('input',
 /* ---------- Branch lifecycle (Business tracker + Overview) ---------- */
 const ST={growing:'Growing',stable:'Stable',new:'New',reactivated:'Reactivated',losing_traction:'Losing traction',dormant:'Dormant',insufficient_data:'Insufficient data'};
 const stLabel=v=>ST[v]||v;
+/* ---------- wave 100: business potential across all client branches, and the split inside each group ---------- */
+const POTG=[['current','Current business','var(--blue)'],['recover','Back to own best','#3E8EA8'],['dormant','Reactivate dormant branches','#2D7A57'],['never_served','Never-active branches of clients the team serves','var(--ochre)'],['extend_team','Clients Crux has, team not serving them yet','#8A6D3B'],['extend_no_team','Clients Crux has, area with no Crux team yet','#6B5CA5'],['new_client','New clients (no Crux business yet)','#B23A30']];
+const POTL=Object.fromEntries(POTG.map(([k,l])=>[k,l]));
+function sbar(v,t){return v==null?'–':el('span',{class:'dbar',style:`--w:${Math.max(0,Math.min(100,v*100)).toFixed(1)}%`,title:t||pct(v)},pct(v))}
+async function potentialCard(box,m,f,{compact=false}={}){
+ box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Business potential — all client branches'),hint('potential')));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
+ let P,O=null;try{P=await api('market_potential',{month:m,filters:f});O=await api('organic',{month:P.month,filters:f,group:'total',measure:'revenue'}).catch(()=>null)}catch(e){msg.textContent='Potential unavailable: '+e.message;return}
+ msg.remove();const T=P.total||{};if(!box.isConnected)return;if(!T.potential){box.append(el('p',{class:'note'},'No branch potential for this selection.'));return}
+ const near=(T.current||0)+(T.recover||0)+(T.dormant||0)+(T.never_served||0),org=O&&O.total?O.total.organic_month:null;
+ box.append(el('p',{class:'note'},`Monthly revenue, ${mlabel(P.month)} basis (tracker to ${ddmm(P.as_of)}, projected to month end) · ${fmt(T.active_branches+T.dormant_branches+T.never_branches)} client branches: ${fmt(T.active_branches)} active, ${fmt(T.dormant_branches)} dormant, ${fmt(T.never_branches)} never active.`),
+  el('div',{class:'tiles kpi4'},tile('Potential per month',fmtL(T.potential),`${fmt(T.potential_cases)} cases · if every branch did business like a typical active branch of the same client`),
+   tile('Current business',fmtL(T.current),`${pct(T.penetration)} of the potential · ${fmt(T.current_cases)} cases`),
+   tile('Organic expectation',fmtL(org),'trend of the current business only — what comes without new branches'),
+   tile('Reachable with existing clients and teams',fmtL(near),`current + back to best + dormant + never-active branches of clients each team already serves (${pct(near/T.potential)})`)),
+  strip(POTG.map(([k,l,c])=>({k:l,v:T[k]||0,col:c})),'Business potential by source',fmtL),
+  el('details',{class:'note'},el('summary',{},'Organic and potential are different questions'),
+   el('p',{},`Organic (${fmtL(org)} for ${mlabel(P.month)}) asks: what will the business we already have bring if nothing changes? It is projected from our own recent months, so it can never show business we have not started.`),
+   el('p',{},`Potential (${fmtL(T.potential)}) asks: how much could all our clients' branches bring? Every verified branch, active or not, is valued at what a typical active branch of the same client gives today. The difference (${fmtL(T.headroom)}) is the business-development headroom: ${fmtL(T.recover)} by getting each location × client back to its best three months, ${fmtL(T.dormant)} by reactivating branches that stopped, ${fmtL(T.never_served)} from branches of clients the team already serves, ${fmtL((T.extend_team||0)+(T.extend_no_team||0))} by taking clients we already have to more teams or areas${T.no_team_branches?` (${fmt(T.no_team_branches)} branches are in areas with no Crux team yet)`:''}, and ${fmtL(T.new_client)} from banks with no Crux business yet.`),
+   el('p',{},P.method)));
+ if(compact){box.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>{S.potJump=1;go('growth')}},'Potential by zone, team, client and the top branches →')));return}
+ const cols=lead=>[...lead,...POTG.map(([k,l])=>({key:k,label:l,num:1,fmt:fmtL})),{key:'potential',label:'Potential',num:1,fmt:fmtL},{key:'penetration',label:'Current ÷ potential',num:1,fmt:v=>sbar(v,pct(v)+' of the potential is current business')},{key:'never_branches',label:'Never-active branches',num:1,fmt:fmt},{key:'dormant_branches',label:'Dormant branches',num:1,fmt:fmt},{key:'no_team_branches',label:'Branches with no team',num:1,fmt:fmt}];
+ const hide=['recover','dormant','extend_no_team','dormant_branches','no_team_branches'];
+ const tsel=el('div',{class:'seg',role:'group','aria-label':'Potential breakdown'}),host=el('div');let cur='zone';
+ const views={zone:['By zone',()=>table((P.by_zone||[]).map(r=>({...r,zone:zoneLabel(r.zone_group)})),cols([{key:'zone',label:'Zone'}]),{name:'potential_by_zone.csv',defaultHidden:hide,rowAction:r=>r.zone_group?bizCtx(P.month,{...f,zone_group:r.zone_group}):null})],
+  location:['By team',()=>table((P.by_location||[]).map(r=>({...r,zone:zoneLabel(r.zone_group)})),cols([{key:'location',label:'Team (location)'},{key:'zone',label:'Zone'}]),{name:'potential_by_team.csv',defaultHidden:hide,rowAction:r=>r.location_id?bizCtx(P.month,{...f,location_id:r.location_id}):null})],
+  client:['By client',()=>table(P.by_client||[],cols([{key:'client_family',label:'Client'}]),{name:'potential_by_client.csv',defaultHidden:hide,rowAction:r=>bizCtx(P.month,{...f,client_family:r.client_family})})],
+  top:['Top branches to win',()=>el('div',{},table((P.top||[]).map(r=>({...r,src:POTL[r.group]||r.group,zone:zoneLabel(r.zone_group)})),[{key:'src',label:'Opportunity'},{key:'client_family',label:'Client'},{key:'branch',label:'Branch'},{key:'branch_code',label:'Code'},{key:'city',label:'City'},{key:'location',label:'Team'},{key:'zone',label:'Zone'},{key:'cases',label:'Cases / month',num:1,fmt:v=>v==null?'–':(+v).toFixed(1)},{key:'revenue',label:'₹ / month',num:1,fmt:fmtL},{key:'last_case_month',label:'Last case',fmt:v=>v?mlabel(v):'never'}],{name:'potential_top_branches.csv',rowAction:r=>r.branch_code?{kind:'branch',title:r.branch||r.branch_code,fam:r.client_family,code:r.branch_code}:null}),
+   el('p',{class:'note'},'The 40 largest single-branch opportunities for this selection (dormant and never-active branches). Never-active values are peer medians — an indication of what a typical branch gives, not a promise. Branch lists: Business tracker → Branch coverage.'))]};
+ Object.entries(views).forEach(([k,[l]])=>tsel.append(el('button',{type:'button',class:'btn sm'+(k===cur?' on':''),'aria-pressed':String(k===cur),'data-pv':k,onclick:()=>{cur=k;tsel.querySelectorAll('button').forEach(b=>{const on=b.dataset.pv===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
+ const draw=()=>{host.innerHTML='';host.append(views[cur][1]())};box.append(el('div',{class:'tools',style:'margin-top:10px'},tsel),host);draw()}
+const SPLITL={zone:'Zone → teams',bm:'Branch manager → accounts',location:'Team → clients',people:'Team → people (Force1)'};
+async function splitCard(box,m,f,{levels=['zone','bm','location','people'],level=null}={}){let lv=level||levels[0],only=false;
+ const seg=el('div',{class:'seg wrap',role:'group','aria-label':'Split level'}),onlyB=el('label',{class:'note'},el('input',{type:'checkbox',onchange:e=>{only=e.target.checked;if(J)paint()}}),' Flagged groups only'),body=el('div');let J=null;
+ levels.forEach(k=>seg.append(el('button',{type:'button',class:'btn sm'+(k===lv?' on':''),'aria-pressed':String(k===lv),'data-lv':k,onclick:()=>{lv=k;seg.querySelectorAll('button').forEach(b=>{const on=b.dataset.lv===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});load()}},SPLITL[k])));
+ box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Inside each group — who carries it'),hint('split')),el('p',{class:'note'},'A group can look fine in total while most of its members are behind and one or two carry it. Open a group to see every member.'),el('div',{class:'tools'},seg,onlyB),body);
+ async function load(){body.innerHTML='';body.append(el('p',{class:'note'},'Loading…'));J=null;
+  try{J=await api('split',{month:m,filters:f,p:{level:lv,measure:S.measure==='cases'?'cases':'revenue'}})}catch(e){body.innerHTML='';body.append(el('p',{class:'note'},'Split unavailable: '+e.message));return}if(box.isConnected)paint()}
+ function paint(){body.innerHTML='';const ppl=J.level==='people',G=(J.groups||[]),M={};(J.members||[]).forEach(x=>(M[x.group]=M[x.group]||[]).push(x));
+  const F=ppl?fmt:(J.measure==='cases'?fmt:fmtL),gl=g=>J.level==='zone'?zoneLabel(g):g;const fl=G.filter(g=>g.flag),mk=G.filter(g=>g.masked),ca=G.filter(g=>g.carried);
+  body.append(el('p',{class:'note'},ppl?`Force1 actions in ${mlabel(J.month)}${J.month!==J.requested_month?' (latest month with Force1 activity)':''} · each person compared with the median of the same role in the same team.${J.names_hidden?' Names are shown to admins only; people are numbered by rank in their team.':''}`:`${mlabel(J.month)} to ${ddmm(J.as_of)}${J.month!==J.requested_month?' (latest month with tracker data)':''} · ${J.measure==='cases'?'cases':'expected revenue'} · target to date = monthly target × ${pct(J.share_to_date)}.`),
+   el('div',{class:'tiles'},tile('Groups',fmt(G.length),SPLITL[J.level]),ppl?null:tile('Look fine, most members behind',fmt(mk.length),'group on track; more than half of its members behind',mk.length?'bad':''),tile('Carried by a few',fmt(ca.length),'half the '+(ppl?'actions':'business')+' from one member or 20% of members',ca.length?'warn':''),tile('Flagged',fmt(fl.length),'any of the warnings',fl.length?'warn':'')));
+  const list=el('div',{class:'sgrps'});(only?fl:G).forEach(g=>{const mem=M[g.group]||[];
+   const sum=el('summary',{},el('span',{class:'sg-name'},gl(g.group)),
+    ppl?el('span',{class:'sg-meta'},`${fmt(g.members)} people · ${fmt(g.total)} actions · median ${fmt(g.median)}`):el('span',{class:'sg-meta'},F(g.actual),' · ',sbar(g.achievement,pct(g.achievement)+' of the group target to date')),
+    ppl?el('span',{class:'sg-meta'},`${fmt(g.low)} well below median`):el('span',{class:'sg-meta'},`${fmt(g.on_track)} on track · ${fmt(g.behind)} behind · ${fmt(g.far_behind)} far behind${g.no_target?` · ${fmt(g.no_target)} no target`:''}`),
+    el('span',{class:'sg-meta',title:g.carry50?'Half from: '+g.carry50:''},`top: ${g.top1||'–'} ${pct(g.top1_share)} · half from ${g.n50||'–'} of ${fmt(g.members)}`),
+    g.flag?el('span',{class:'chip '+(g.masked?'bad':'warn')},g.flag):null);
+   const det=el('details',{class:'sgrp'+(g.flag?' flagged':'')},sum);
+   det.addEventListener('toggle',()=>{if(!det.open||det.dataset.ok)return;det.dataset.ok=1;
+    det.append(ppl?table(mem,[{key:'member',label:'Person'},{key:'role',label:'Role'},{key:'value',label:'Actions',num:1,fmt:fmt},{key:'share',label:'Share of team',num:1,fmt:v=>sbar(v,pct(v)+' of the team\'s actions')},{key:'active_workdays',label:'Working days active',num:1,fmt:fmt},{key:'per_day',label:'Per active day',num:1,fmt:fmt},{key:'vs_median',label:'× team median',num:1,fmt:v=>v==null?'–':(+v).toFixed(2)+'×'},{key:'status',label:'Status',fmt:v=>el('span',{class:'chip '+(/below/.test(v)?'bad':/above/.test(v)?'good':'')},v)}],{name:'split_people.csv',search:mem.length>12})
+     :table(mem,[{key:'member',label:J.level==='zone'?'Team':J.level==='bm'?'Account (team · client)':'Client'},{key:'value',label:J.measure==='cases'?'Cases':'Expected revenue',num:1,fmt:F},{key:'target_to_date',label:'Target to date',num:1,fmt:F},{key:'achievement',label:'Achieved',num:1,fmt:v=>sbar(v,pct(v)+' of target to date')},{key:'share',label:'Share of group',num:1,fmt:v=>sbar(v,pct(v)+' of the group')},{key:'status',label:'Status',fmt:v=>el('span',{class:'chip '+(v==='far behind'?'bad':v==='behind'?'warn':v==='on track'?'good':'')},v)}],
+      {name:'split_'+J.level+'.csv',search:mem.length>12,rowAction:x=>x.location_id?bizCtx(J.month,{...f,location_id:x.location_id,...(J.level==='zone'?{}:{client_family:famOf(x.client_code)||undefined})}):null}))});
+   list.append(det)});
+  body.append(list,el('details',{class:'note'},el('summary',{},'How this is worked out'),J.method))}
+ load()}
 function topOpportunities(box,f){box.append(el('h3',{},'Top branch opportunities'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  api('branches',{filters:f}).then(b=>{msg.remove();const top=(b.priority||[]).slice(0,5);if(!top.length){box.append(el('p',{class:'note'},'No branch signals for this filter.'));return}
   box.append(el('ol',{class:'opps'},top.map(p=>ddEl(el('li',{},el('strong',{},`${p.client} · ${p.branch}`),` — ${stLabel(p.status)}, ${fmt(p.prior3m)} → ${fmt(p.last3m)} cases (prior vs last 3 months)`,
@@ -2697,6 +2757,8 @@ async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.k
 
 /* ---------- Plain-language explanations: "?" buttons and automatic hints on technical terms ---------- */
 const GLOSS={
+ potential:['Business potential','What all our clients\' branches could bring each month: current business + each location × client back to its best three months + dormant branches reactivated + never-active branches valued at what a typical active branch of the same client gives. Headroom, not a forecast. Organic is different: the trend of the business we already have.'],
+ split:['Inside each group','Each group (zone, branch manager, team) broken into its members. On track = 90% or more of its own target to date; behind = 60–90%; far behind = under 60%. "Half from" = the smallest number of members that make half of the group\'s business; people are compared with the median of the same role in the same team.'],
  mtd:['MTD (month-to-date)','The total from the 1st of this month up to the report date. Example: MTD on 9-Oct = all cases from 1-Oct to 9-Oct.'],
  target:['Target','The month\'s goal set by management — in cases, or in ₹ for revenue target. It does not change with performance.'],
  achievement:['Achievement (% Achmt)','How much of the target is already done: achieved so far ÷ target. Example: 4,000 of 10,000 cases = 40%. Compare it with how much of the month has passed.'],
