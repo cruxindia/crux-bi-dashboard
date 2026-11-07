@@ -566,3 +566,10 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Browser, live (8c052db, after the glossary fix and docs) | test_100_ui 8/8 |
 | Regression, local against the live database | test_098b_ui 8/8 (W3: the three ageing rules each = 6,744 open cases; SLA marked in use) · test_097_ui 14/14 · test_100_ui 8/8 (P8: the potential help icon explains business potential) |
 | Cache after the ageing-rule floor | 0 → 270 queued keys warmed by the light job (4 manual runs of 50 s, 0 errors); trigger added so future floors queue figures automatically (D226) |
+
+## 7-Nov-2026 evening — wave 101 (wording: organic business / business as usual)
+| Check | Result |
+|---|---|
+| API wording | api_organic formula starts "Business as usual (BAU) = …"; api_market_potential method starts "Organic business = …"; 9 functions reworded, no logic change |
+| Live page scan (Overview, Growth, Tracker, People) | 0 occurrences of "organic" other than "organic business" after the last fixes; BAU / business-as-usual labels present |
+| Browser, live (749830f) | test_100_ui 8/8 with the new labels (P1 tiles "Organic business per month" ₹10.00 cr, "Business-as-usual expectation" ₹2.01 cr; P8 help icon explains organic business) |

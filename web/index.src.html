@@ -1401,7 +1401,7 @@ function growthRanking(box,G,f){const rev=G.measure==='revenue',exp=isExp(G),mny
  const PER=rev?[['mom','Month on month'],['qtd','Quarter to date'],['qoq','Quarter on quarter'],['yoy','Year on year']].filter(([k])=>C[k]&&C[k].available)
   :[...(G.partial?[['mtd','Month to date']]:[]),['mom','Month on month'],['qoq','Quarter on quarter'],['yoy','Year on year']];
  if(!PER.length)PER.push(['mom','Month on month']);if(!PER.some(p=>p[0]===RK.period))RK.period=PER[0][0];
- const VIEWS=[['gain','Biggest gains'],['gainp','Fastest growth %'],['loss','Biggest declines'],['lossp','Steepest declines %'],['effort','Above organic'],['effortneg','Below organic'],...(rev?[]:[['prio','Priority opportunities']])];
+ const VIEWS=[['gain','Biggest gains'],['gainp','Fastest growth %'],['loss','Biggest declines'],['lossp','Steepest declines %'],['effort','Above business as usual'],['effortneg','Below business as usual'],...(rev?[]:[['prio','Priority opportunities']])];
  if(!VIEWS.some(v=>v[0]===RK.view))RK.view='gain';
  const perSel=el('select',{'aria-label':'Comparison period'},PER.map(([k,l])=>el('option',{value:k},l)));perSel.value=RK.period;
  const seg=el('div',{class:'seg wrap',role:'group','aria-label':'Ranking'},VIEWS.map(([k,l])=>el('button',{type:'button',class:'btn sm'+(RK.view===k?' on':''),'aria-pressed':String(RK.view===k),'data-v':k,onclick:()=>{RK.view=k;draw()}},l)));
@@ -1751,7 +1751,7 @@ async function attritionSection(box,m,f){box.append(el('h3',{},'Workforce & attr
   el('details',{class:'note'},el('summary',{},'Definitions and limits'),Object.entries(a.definitions||{}).map(([k,v])=>el('p',{},el('strong',{},k.replace(/_/g,' ')+': '),v))))}
 
 /* ---------- Organic benchmark, remaining-days potential, zone highlights ---------- */
-const STAT_LBL={above:['Effort growth','good'],in_line:['In line','' ],below:['Below organic','bad'],new:['New business','good'],none:['—','']};
+const STAT_LBL={above:['Effort growth','good'],in_line:['In line','' ],below:['Below business as usual','bad'],new:['New business','good'],none:['—','']};
 const POT_LBL={on_track:['On track','good'],stretch:['Stretch','warn'],at_risk:['At risk','bad'],no_target:['No target','']};
 const chipS=(map,v)=>{const x=map[v]||[v||'—',''];return el('span',{class:'chip '+x[1]},x[0])};
 const sgn=v=>v==null||isNaN(v)?'–':(v>0?'+':v<0?'−':'')+fmt(Math.abs(v));
@@ -1796,7 +1796,7 @@ function organicSection(box,month,f,G){const rev=S.measure==='revenue',exp=S.mea
  async function load(){host.innerHTML='';if(!PER.length)return;const per=ps.value;OG.period=per;const c=C0[per]||{};const O=c.organic||{};
   host.append(el('div',{class:'tiles orgcmp'},tile('Actual',F(O.actual_current),`${((c.current||{}).label||[]).join(' + ')} · earlier ${F(O.actual_previous)} (${((c.previous||{}).label||[]).join(' + ')})`),
    tile('Actual growth',sgF(O.actual_growth,F),O.actual_growth_pct!=null?pctS(O.actual_growth_pct):'',O.actual_growth>=0?'good':'bad'),
-   tile('Business-as-usual expectation',F(O.organic_current),`earlier ${F(O.organic_previous)} · organic growth ${sgF(O.organic_growth,F)}${O.organic_growth_pct!=null?' ('+pctS(O.organic_growth_pct)+')':''}`),
+   tile('Business-as-usual expectation',F(O.organic_current),`earlier ${F(O.organic_previous)} · BAU growth ${sgF(O.organic_growth,F)}${O.organic_growth_pct!=null?' ('+pctS(O.organic_growth_pct)+')':''}`),
    tile('Growth beyond business as usual',sgF(O.beyond_organic,F),`effort now ${sgF(O.effort_current,F)}${O.effort_current_pct!=null?' ('+pctS(O.effort_current_pct)+')':''} · effort then ${sgF(O.effort_previous,F)}`,O.beyond_organic>=0?'good':'bad')),
    O.covered_share!=null&&(O.covered_share<0.98||O.covered_share_prev<0.98)?el('p',{class:'note'},`Business-as-usual estimates cover ${pct(O.covered_share)} of actual in the current period and ${pct(O.covered_share_prev)} in the earlier one (new pairs have no estimate); the figures above use covered pairs only.`):null);
   const wait=el('p',{class:'note'},'Loading breakdown…');host.append(wait);
