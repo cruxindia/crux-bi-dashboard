@@ -573,3 +573,16 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | API wording | api_organic formula starts "Business as usual (BAU) = …"; api_market_potential method starts "Organic business = …"; 9 functions reworded, no logic change |
 | Live page scan (Overview, Growth, Tracker, People) | 0 occurrences of "organic" other than "organic business" after the last fixes; BAU / business-as-usual labels present |
 | Browser, live (749830f) | test_100_ui 8/8 with the new labels (P1 tiles "Organic business per month" ₹10.00 cr, "Business-as-usual expectation" ₹2.01 cr; P8 help icon explains organic business) |
+
+## 7-Nov-2026 night — wave 101b (potential everywhere, targets, quarter plan, zone split in tiles, full math behind "?")
+| Check | Result |
+|---|---|
+| Targets reconciliation | zone, team and client monthly targets each sum to the PAN India target for all 12 months (largest rounding difference ₹3); preview 0.32 s, plan 0.77 s |
+| Quarter plan breakdown | by zone, team and client: plan and outlook for both quarters sum to the quarter totals (rounding ≤ ₹3) |
+| Quarter plan | Q3 FY27 plan ₹90,761,971 = Oct tracker target ₹33,662,000 + Nov and Dec suggested; outlook ₹76,696,063 = Oct actual ₹22,930,431 ÷ 0.9031 + pace Nov + Dec; by_zone 14, by_location 38, by_client 29 rows |
+| Potential by manager | 22 managers; sum ₹100,033,889 = total ₹100,033,890 (rounding) |
+| Ask Crux (SQL, 17 questions) | targets 3 / 6 / 12 months → plan; potential of Gujarat; shortfall this quarter; needed per working day; plan vs actual next quarter; which manager / zone / team / client (rankings); opportunity in SBI; is Rest of Maharashtra carried; will we hit the target this month → forecast; BAU for October → revenue growth with "BAU change"; who handles Pune → bm |
+| Browser, local | test_101_ui 12/12; test_100_ui 8/8 (labels updated to "Potential per month") |
+| Browser, live (32007f3) | test_101_ui 12/12: Z1 zone split bars = API members, potential line = API · Z2 Rest Of Maharashtra amber "⚠ 8 of 10 teams behind" (revenue split, same as the split card and Ask Crux) · H1 / H2 "?" with math, live figure and database sources · L1 Overview quarter cards = API · L2 Growth plan 6 months, 14 zones, chart · A1a admin preview = API · A1b save refused without a reason (nothing saved) · B1 BM potential column 21 / 21 · D1 drawer potential = API · N1 no "Organic business" left · E1 no console errors |
+| Regression, live | test_100_ui 8/8 · test_097_ui 14/14 · test_098b_ui 8/8 |
+

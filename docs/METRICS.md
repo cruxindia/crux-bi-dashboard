@@ -229,3 +229,13 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 | Collection cut-off | the last receipt date in the bank sheets, not the file label |
 | Receipts not credited to one manager | no location, or a zone with more than one manager, or no client — reported separately from "no location" |
 | Coverage codes | Force1 branch codes of the last 6 months for clients with an RBI branch list; "not in the list" = code not in the branch master for that client |
+
+## Potential, targets and the quarter plan (7-Nov-2026, wave 101b — owner wording: BAU = trend, Potential = all client branches)
+- **Potential** (all client branches) = current + back to own best + dormant + never-active (served / clients Crux has / areas without a team / new banks). Oct-2026 basis ₹10.00 cr a month; current ₹2.54 cr = 25.4% captured.
+- **Current pace** (month k) = P0 ÷ (wd0 × si0) × wd(k) × si(k) per team × client; P0 = the latest tracker month's revenue projected to month end (÷ the usual share of a month reached by that working day); wd = working days; si = seasonal index (`bi.organic_si`).
+- **Opportunity** = potential × factor − pace (per team × client, never below 0).
+- **Target** (month k) = (pace0 + c_k × opportunity) × factor_k; c_k = C × k ÷ H; growth from month to month kept between gmin and gmax after seasonality (default) or in rupees. Each team × client gets its pace plus its share of the captured opportunity. Defaults H 12, C 30%, gmin 2%, gmax 12%.
+- **Quarter plan**: plan(month) = saved plan → tracker target → suggested target; outlook = actual (completed) · actual so far ÷ share of month (current) · pace (later); delta = outlook − plan; shortfall = max(plan − outlook, 0); needed per working day = (quarter plan − actual so far) ÷ working days left in the quarter, against pace per working day. Quarters: Indian financial year (Q1 Apr–Jun … Q4 Jan–Mar).
+- **Zone tile split**: each team against its own target to date (on track ≥ 90%, behind 60–90%, far behind < 60%); amber when the total looks fine but ≥ 3 teams with a target are mostly behind, or the zone is carried (half from one team or ≤ 20% of teams).
+- Each metric's math, sources and API names are stored in `bi.metric_doc` and shown behind every "?".
+

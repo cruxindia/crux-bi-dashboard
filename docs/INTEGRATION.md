@@ -3,6 +3,8 @@
 The owner's new tool runs on GitHub, keeps its data in its own Supabase project, and brings in Zonal Tracker information and
 more. This note explains how to connect it to the Crux BI dashboard safely. It contains no keys or tokens.
 
+> **Update 7-Nov-2026 18:39 IST — the owner chose full unification (option D, one product).** The new tool's Claude chat takes over as the development platform: it audits the tool first (fitment, opportunities, user experience, dashboard integration, UI/UX), then designs one Supabase project in the operations.alert@cruxindia.com organisation with one database (no duplicated tables or data), one logic layer, one login with role-scoped data, and the tool's data as the primary source. The Force1 Case Wise / Point Wise uploads and the Zonal Excel upload stay live until the tool's MTD equals the Excel for every location × client on 10 consecutive working report days including a month-end (D233). The role prompt, technical pack and deck were handed to the owner directly; they hold business figures and are not in this repository. Options A–C below remain valid for the transition period only.
+
 ## What exists on the dashboard side
 
 - **One database** (Supabase project `czdjbbhxboweawqbjywr`, schema `bi`). Every figure on the pages is computed there and served through `public.bi_call` with a response cache.

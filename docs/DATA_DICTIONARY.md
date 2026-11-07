@@ -241,3 +241,19 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | API `market_potential` | totals, by zone / team / client, top 40 branches, group definitions, method. API groups: current, recover, dormant, never_served, extend_team (client Crux has, team does not serve it), extend_no_team (client Crux has, no team for the area), new_client (no Crux business anywhere) |
 | API `split` (`p.level` = zone · bm · location · people; `p.measure` = revenue · cases) | per group: members, actual, target, achievement to date, on track / behind / far behind / no target, top member and share, n50 (members making half), carry50, top-20% share, median member achievement, masked / carried flags; per member: value, target to date, achievement, share, status. People level: Force1 actions, active working days, × team median, status; names admin-only |
 | `bi.token_label(token, scope)` | label of a valid token of that scope; `public.bi_ingest` accepts scope `ingest` (batches only) |
+
+## Targets, quarter plan, metric references (7-Nov-2026, wave 101b)
+| Object | Meaning |
+|---|---|
+| `bi.plan_version` | one row per saved plan: name, params (horizon, capture, gmin, gmax, basis, milestones), reference month and share, first / last month, created_by, reason, totals per month. The newest row is the plan. RLS on, no API grant |
+| `bi.plan_target` | per version × month × zone × team × client: pace, potential (`organic` column), target |
+| `bi.plan_factors(ref, from, to)` | month factor = working days × seasonal index ÷ the reference month's, from one `organic_ratio()` call |
+| `bi.plan_cells()` | current pace and potential per zone × team × client from the latest `potential_cell` run |
+| `bi.plan_compute(params)` | the targets per month × cell (formula in METRICS / metric_doc "targets") |
+| API `targets` (`p.source` = plan for the saved plan; else preview with `p` params) | reference {pace, organic = potential, opportunity}, months [k, month, factor, pace, target, organic, opportunity, stretch], milestones, by_zone / by_location / by_client (monthly arrays), method |
+| API `plan` | this and next quarter: months (plan, plan_source, tracker_target, actual, outlook, basis, delta, shortfall, workdays), quarters (plan, actual_to_date, outlook, delta, shortfall, remaining_workdays, needed_per_workday, pace_per_workday, needed_vs_pace), by_zone / by_location / by_client, method |
+| Admin action `plan` (`bi.plan_admin`) | op `list` (versions) · op `save` (params, name, reason ≥ 5 characters, editor) → new version + audit `plan_save` |
+| `bi.metric_doc` / API `metric_doc` | 34 metric references: title, math, sources [{name, role}], api names, updated_at — shown in every "?" popup |
+| API `market_potential` → `by_bm` | potential per branch manager (current, layers, headroom, potential, penetration, branches) |
+| Ask Crux handlers | `bi.ask_scope(f)`, `bi.ask_h_potential(m, f, q, bm)` (scope, manager, rankings), `bi.ask_h_plan(m, f, q)` (quarters, targets), `bi.ask_h_split(m, f, q, bm)` (who carries a group) |
+

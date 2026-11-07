@@ -2012,13 +2012,13 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
   const lab=mode==='organic'?['below business as usual','above business as usual']:['below target','above target'];scale.innerHTML='';
   scale.append(el('span',{},lab[0]),...[-0.3,-0.15,0,0.15,0.3].map(x=>el('i',{style:'background:'+tint(x)})),el('span',{},lab[1]),
    el('i',{style:'background:color-mix(in srgb,var(--ochre) 30%,var(--panel));margin-left:10px'}),el('span',{},'looks fine in total, but carried by a few or most teams behind'),
-   el('span',{class:'note',style:'margin-left:8px'},'Grey = within ±5 %. Bar in each zone = its teams (width = share of the zone; green on track, amber behind, red far behind, grey no target). Line at the bottom = likely % of target. Click a zone for its drill-down.'))};
+   el('span',{class:'note',style:'margin-left:8px'},`Grey = within ±5 %. Bar in each zone = its teams (width = share of the zone's ${SP&&SP.measure==='cases'?'cases':'expected revenue'}; each team against its own target to date: green on track ≥ 90%, amber behind, red far behind < 60%, grey no target) — the same split as "Inside each group". Potential = what all the zone's client branches could bring a month. Line at the bottom = likely % of the case target. Click a zone for its drill-down.`))};
  const seg=el('div',{class:'seg',role:'group','aria-label':'Colour zones by'},[['organic','vs business as usual'],['target','likely vs target']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-zm':k,
   onclick:e=>{mode=k;seg.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
  box.append(el('div',{class:'tools'},el('span',{class:'note'},'Colour by'),seg),scale,grid);draw()}
 async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance'));const host=el('div',{class:'grid3'});
  let O,P,SP=null,MP=null;try{[O,P,SP,MP]=await Promise.all([api('organic',{month,filters:f,group:'zone',measure:'cases'}),api('potential',{month,filters:f,group:'zone',measure:'cases'}),
-   api('split',{month,filters:f,p:{level:'zone',measure:'cases'}}).catch(()=>null),api('market_potential',{month,filters:f}).catch(()=>null)])}catch(e){box.append(el('p',{class:'note'},'Zone view unavailable: '+e.message));return}
+   api('split',{month,filters:f,p:{level:'zone',measure:S.measure==='cases'?'cases':'revenue'}}).catch(()=>null),api('market_potential',{month,filters:f}).catch(()=>null)])}catch(e){box.append(el('p',{class:'note'},'Zone view unavailable: '+e.message));return}
  zoneGrid(box,O,P,month,f,SP,MP);box.append(host);
  const pz={},sz={};((P&&P.rows)||[]).forEach(r=>pz[r.group]=r);((SP&&SP.groups)||[]).forEach(g=>{sz[zoneLabel(g.group)]=g});
  const rows=(O.rows||[]).filter(r=>r.organic_to_date>=100).map(r=>{const g=sz[r.group];const wt=g?g.members-(g.no_target||0):0,beh=g?(g.behind||0)+(g.far_behind||0):0;
