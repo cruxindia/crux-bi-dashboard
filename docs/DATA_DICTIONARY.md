@@ -229,3 +229,15 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.fin_line_exclusion` (wave 098) | Finance lines excluded as exact duplicates (D200): upload_id, sheet, r (excluded row), kind, keep_r (the row kept), amount, reason, approved_by, approved_at — source rows stay in `bi.fin_part` |
 | `bi.report_calendar_exception` (wave 098) | report_date, reason_code, reason, working_day, note, active, set_by / set_at, withdrawn_by / withdrawn_at (D204) |
 | `lumen_archive` schema | Lumen tables and functions moved out of the API on 29-Oct-2026 (D207); removed by the owner script |
+
+## Business potential, group split, territory rules (7-Nov-2026, wave 100)
+| Object | Meaning |
+|---|---|
+| `bi.territory_family_rule` | OD-010 rules: zone (+ optional district pattern) × client family → team (location) for districts shared by two teams; basis, decided by, dates. Read through `bi.v_branch_family_rule` (branch → team for branches without a master location). |
+| `bi.potential_run` | one row per potential refresh: month, as-of, inputs (share of month, rates, medians, universe size), totals by layer |
+| `bi.potential_cell` | latest run only: zone × team × client family × layer → branches, cases / month, ₹ / month. Layers: `current`, `recover` (back to own best), `dormant`, `never_served`, `never_not_served`, `never_no_team` |
+| `bi.potential_top` | latest run only: the 25 largest dormant / never-active branch opportunities per team and layer and per client and layer |
+| `bi.potential_refresh()` / `_if_stale()` | rebuilds the three tables (≈ 9–13 s); `_if_stale` skips when no data changed this month (`bi.potential_source_version()`) |
+| API `market_potential` | totals, by zone / team / client, top 40 branches, group definitions, method. API groups: current, recover, dormant, never_served, extend_team (client Crux has, team does not serve it), extend_no_team (client Crux has, no team for the area), new_client (no Crux business anywhere) |
+| API `split` (`p.level` = zone · bm · location · people; `p.measure` = revenue · cases) | per group: members, actual, target, achievement to date, on track / behind / far behind / no target, top member and share, n50 (members making half), carry50, top-20% share, median member achievement, masked / carried flags; per member: value, target to date, achievement, share, status. People level: Force1 actions, active working days, × team median, status; names admin-only |
+| `bi.token_label(token, scope)` | label of a valid token of that scope; `public.bi_ingest` accepts scope `ingest` (batches only) |

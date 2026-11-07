@@ -1512,7 +1512,7 @@ const POTG=[['current','Current business','var(--blue)'],['recover','Back to own
 const POTL=Object.fromEntries(POTG.map(([k,l])=>[k,l]));
 function sbar(v,t){return v==null?'–':el('span',{class:'dbar',style:`--w:${Math.max(0,Math.min(100,v*100)).toFixed(1)}%`,title:t||pct(v)},pct(v))}
 async function potentialCard(box,m,f,{compact=false}={}){
- box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Business potential — all client branches'),hint('potential')));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
+ box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Business potential — all client branches')));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let P,O=null;try{P=await api('market_potential',{month:m,filters:f});O=await api('organic',{month:P.month,filters:f,group:'total',measure:'revenue'}).catch(()=>null)}catch(e){msg.textContent='Potential unavailable: '+e.message;return}
  msg.remove();const T=P.total||{};if(!box.isConnected)return;if(!T.potential){box.append(el('p',{class:'note'},'No branch potential for this selection.'));return}
  const near=(T.current||0)+(T.recover||0)+(T.dormant||0)+(T.never_served||0),org=O&&O.total?O.total.organic_month:null;
@@ -2757,7 +2757,7 @@ async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.k
 
 /* ---------- Plain-language explanations: "?" buttons and automatic hints on technical terms ---------- */
 const GLOSS={
- potential:['Business potential','What all our clients\' branches could bring each month: current business + each location × client back to its best three months + dormant branches reactivated + never-active branches valued at what a typical active branch of the same client gives. Headroom, not a forecast. Organic is different: the trend of the business we already have.'],
+ bizpotential:['Business potential','What all our clients\' branches could bring each month: current business + each location × client back to its best three months + dormant branches reactivated + never-active branches valued at what a typical active branch of the same client gives. Headroom, not a forecast. Organic is different: the trend of the business we already have.'],
  split:['Inside each group','Each group (zone, branch manager, team) broken into its members. On track = 90% or more of its own target to date; behind = 60–90%; far behind = under 60%. "Half from" = the smallest number of members that make half of the group\'s business; people are compared with the median of the same role in the same team.'],
  mtd:['MTD (month-to-date)','The total from the 1st of this month up to the report date. Example: MTD on 9-Oct = all cases from 1-Oct to 9-Oct.'],
  target:['Target','The month\'s goal set by management — in cases, or in ₹ for revenue target. It does not change with performance.'],
@@ -2790,7 +2790,7 @@ const GLOSS={
 const GLOSS_AUTO=[[/\bMTD\b/,'mtd'],[/% ?Achmt|Achievement/,'achievement'],[/Projection|Projected|Forecast/,'projection'],[/Run-?rate/i,'runrate'],[/Required (per|\/) ?day|Needed per day/i,'required'],
  [/Shortfall/,'shortfall'],[/\bTAT\b/,'tat'],[/\bSLA\b/,'sla'],[/\bP90\b/,'p90'],[/[Mm]edian/,'median'],[/Force1 utilisation|Force usage/,'force1'],[/Like-for-like/i,'lfl'],
  [/Organic/,'organic'],[/Effort/,'effort'],[/Coverage/,'coverage'],[/Attrition/,'attrition'],[/Revenue target|Revenue Tgt/i,'revtarget'],[/Daily count|Day's addition|Daily change/i,'daily'],
- [/Penalt/,'penalty'],[/potential/i,'potential'],[/Field executive/,'fieldexec'],[/Back office/,'backoffice'],[/^Target\b|\bTarget$/,'target'],[/^Stakeholder$/,'stakeholder'],[/^Rate$/,'rate']];
+ [/Penalt/,'penalty'],[/Business potential|Potential per month|÷ potential/i,'bizpotential'],[/potential/i,'potential'],[/Field executive/,'fieldexec'],[/Back office/,'backoffice'],[/^Target\b|\bTarget$/,'target'],[/^Stakeholder$/,'stakeholder'],[/^Rate$/,'rate']];
 let QPOP=null;
 function qclose(){if(QPOP){QPOP.remove();QPOP=null}}
 function qi(title,body){const b=el('button',{type:'button',class:'qi','aria-label':'Explain: '+title,title:'What does this mean?'},'?');

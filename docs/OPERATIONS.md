@@ -204,3 +204,9 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 - **After an upload (D214, D215).** Tracker and case counts show within about 10 minutes; Force1 visit, TAT and workforce figures after the night refresh. If an upload stops with "stopped after N of M rows", upload the same file again — saved rows show as unchanged and the rest is added. The daytime refresh (`bi.api_revalidate_light`) always refreshes meta first, then any queued figure that last took under 15 s.
 - **Weekly case re-check (D216).** Cron `bi-case-relocate-weekly` (Sun 02:00 IST) re-applies the location rules to every case and logs changes in `bi.case_loc_change`; the weekly identity audit follows at 02:20 IST.
 - **Re-uploading.** Upload Case Wise files at least as new as the Point Wise files; otherwise Force1 points arrive before their cases and are placed on their own evidence until the case file is uploaded.
+
+## Wave 100 (7-Nov-2026) — potential, split, ingest tokens
+- **Cron `bi-potential-refresh`** (20:45 and 22:45 UTC = 02:15 / 04:15 IST): `bi.potential_refresh_if_stale()` rebuilds the potential tables when data changed this month. Run `select bi.potential_refresh();` by hand after a large upload if the figure must change the same day (≈ 10 s).
+- **After a correction floor** (setting change, mapping correction) the figures computed in the last 7 days are queued automatically; the light job refreshes them by day (20 s every 10 min), the night job the rest. To warm faster: `call bi.api_revalidate_light(50);` (repeatable).
+- **Territory rules for shared districts**: `bi.territory_family_rule`; to change one, end the row (`effective_to`) and insert the new rule; coverage and potential read it on the next call / refresh.
+- **Tokens for external tools**: scope `ingest` only (docs/INTEGRATION.md). Issue with a label and expiry; revoke with `revoked = true`.

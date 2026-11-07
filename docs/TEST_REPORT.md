@@ -552,3 +552,16 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Database size | 573.3 million bytes (all databases); bi schema 533.8 MB; point_store 78,514 and case_store 41,097 dead rows from re-uploads of full-month files |
 | Ask Crux AI wording (7 days) | 93 wording calls: 24 accepted, 36 rejected by the direction check, 17 by the format check, 11 timeouts, 5 quota — answers show the calculated text when wording is rejected |
 | Live | Overview: data up to 30-Oct-2026; Revenue page caveats present |
+
+## 7-Nov-2026 — wave 100 (business potential, split inside groups, delegated decisions)
+| Check | Result |
+|---|---|
+| Potential reconciliation | current ₹25,391,658 = organic projected for Oct (same share 0.9031 at working day 24); never-active branches 80,460 = Branch coverage never-activated; universe 84,659 = coverage verified-matchable; by zone / team / client totals = ₹100,033,890 (±2 rounding) |
+| Potential filters | zone LUCKNOW ₹75.0 L; team 22 (Lucknow / Mukesh team) active branches 93 after roll-up re-homing (0 before the fix); client SBI ₹3.37 cr |
+| Split reconciliation | zone, branch manager and team → clients each sum to ₹22,930,431 (Oct actual to 30-Oct); people level sums to 361,747 Force1 actions = person_month |
+| Names | people split as viewer: "Person n" and names_hidden = true; as admin: names |
+| Ingest token scope | `ingest` token reaches `ingest_as` (authorised), a wrong token is refused, the test token revoked at once |
+| Browser, local | test_100_ui 7/7 after fixing the test's label match (labels are upper-cased by CSS) |
+| Browser, live (30bdbe8) | test_100_ui 7/7: P1 potential tiles = API, 7-part legend, explainer · P2 zone split 14 groups = API, first group 10 members · P3 viewer sees "Person n" · P4 Growth zone 14 / team 41 / top 40 rows = API · P5 People opens at branch manager, 21 groups · P6 admin sees names · P7 no console errors or failed calls |
+| Regression, local against the live database | test_098b_ui 8/8 (W3: the three ageing rules each = 6,744 open cases; SLA marked in use) · test_097_ui 14/14 · test_100_ui 8/8 (P8: the potential help icon explains business potential) |
+| Cache after the ageing-rule floor | 0 → 270 queued keys warmed by the light job (4 manual runs of 50 s, 0 errors); trigger added so future floors queue figures automatically (D226) |
