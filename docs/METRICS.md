@@ -241,8 +241,8 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 
 ## Wave 102 rules (7-Nov-2026 night)
 - **Clients inactive PAN India** = no tracker cases in any team in the last three months incl. the latest month → out of potential, targets and branch lists.
-- **Target floor** = previous month's target × 1.02 per team × client (month 1: latest tracker target); **strong signal** = a month that fell ≥ 5% vs the month before in every year on record → may fall by the smallest fall on record (April today: 26.2%).
-- **Target sheet**: last month = actual | actual so far ÷ s(k) | pace forecast; base = max(plan, previous target × 1.02, last month × 1.02, BAU × 1.02); catch-up = quarter shortfall so far × plan_M ÷ Σ plan of the remaining quarter months, added up to min(potential, last month × 1.5); cases = ⌈revenue ÷ rate⌉.
+- **Target floor** (owner 8-Nov, D254) = last month's actual business × 1.02 per team × client (complete month: actual; running: expected closure; not started: forecast); in the suggested path each later month ≥ the month before × 1.02; old tracker targets are not a floor; dormant pairs keep their old target; **strong signal** = a month that fell ≥ 5% vs the month before in every year on record → may fall by the smallest fall on record (April today: 26.2%).
+- **Target sheet**: last month = actual | actual so far ÷ s(k) | pace forecast; capacity C = max(last month, last 3 months average, BAU), ceiling U = 1.5 × C; base = max(min(plan, U), last month × 1.02 [signal month × (1 − allowed fall)], BAU × 1.02); catch-up = quarter shortfall so far × plan_M ÷ Σ plan of the remaining quarter months, added up to min(potential, U); viewers get zone / team roll-ups and one team at a time, admins the full sheet (D255); cases = ⌈revenue ÷ rate⌉.
 - **Variance** = outlook − plan; variance % = variance ÷ plan; levels add up (zone = Σ teams = Σ team × client).
 - **Branch status** (verified branches of active clients): active = Force1 case in the last 3 months; dormant = earlier cases only; never active = none since Jan-2026.
 

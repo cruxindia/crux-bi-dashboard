@@ -333,12 +333,12 @@ function strip(parts,label,F=fmt){const P=parts.filter(p=>p.v>0),t=P.reduce((a,p
   el('div',{class:'legend'},...P.map(p=>el('span',{},el('i',{style:'background:'+p.col}),`${p.k} ${F(p.v)}`))))}
 function csv(rows,cols,name){const esc=v=>{v=v==null?'':String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};const t=[cols.map(c=>esc(c.label)).join(','),...rows.map(r=>cols.map(c=>esc(c.raw?c.raw(r):r[c.key])).join(','))].join('\n');
  const save=async()=>{if(window.claude&&claude.use){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data:t});return}}catch(e){if(e&&e.code==='cancelled')return}}const a=el('a',{href:URL.createObjectURL(new Blob([t],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()};save()}
-function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[],rowAction=null,expand=null}={}){
+function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidden=[],rowAction=null,expand=null,exportable=true}={}){
  const wrap=el('div');const hidden=new Set(defaultHidden);let q='',sk=null,sd=1,page=0,drawn=false;const cbs=[];
  const ex=expand&&expand.keys?expand.keys.filter(k=>cols.some(c=>c.key===k)):[];if(ex.length&&!TATX.on)ex.forEach(k=>hidden.add(k));
  const tw=el('div',{class:'tablewrap'});const info=el('span',{class:'note'});
  const tools=el('div',{class:'tools'},search?el('input',{type:'search',placeholder:'Search this table',oninput:e=>{q=e.target.value.toLowerCase();page=0;draw()},'aria-label':'Search table'}):null,
-  el('button',{class:'btn',onclick:()=>csv(view(),cols.filter(c=>!hidden.has(c.key)),name)},'Export CSV'),
+  exportable?el('button',{class:'btn',onclick:()=>csv(view(),cols.filter(c=>!hidden.has(c.key)),name)},'Export CSV'):null,
   el('button',{class:'btn',title:'Show this table full screen (Esc to exit)',onclick:e=>{const on=!tw.classList.contains('full');tw.classList.toggle('full',on);document.body.classList.toggle('noscroll',on);e.target.textContent=on?'✕ Close':'⤢ Full screen';if(on){const x=ev=>{if(ev.key==='Escape'){tw.classList.remove('full');document.body.classList.remove('noscroll');e.target.textContent='⤢ Full screen';document.removeEventListener('keydown',x)}};document.addEventListener('keydown',x)}}},'⤢ Full screen'),
   ex.length?tatToggle():null,el('details',{},el('summary',{class:'btn'},'Columns'),el('div',{class:'colpick'},cols.map(c=>{const cb=el('input',{type:'checkbox'});cbs.push([cb,c.key]);cb.checked=!hidden.has(c.key);cb.onchange=()=>{cb.checked?hidden.delete(c.key):hidden.add(c.key);draw()};return el('label',{},cb,' ',c.label)}))),info);
  function view(){let r=rows;if(q)r=r.filter(x=>cols.some(c=>String(c.raw?c.raw(x):x[c.key]??'').toLowerCase().includes(q)));if(sk){const c=cols.find(c=>c.key===sk);const v=x=>c.raw?c.raw(x):x[sk];r=[...r].sort((a,b)=>{const A=v(a),B=v(b);return(A==null)-(B==null)||(A>B?1:A<B?-1:0)*sd})}return r}
@@ -1606,7 +1606,7 @@ async function planTabPlan(box,m,f){const msg=el('p',{class:'note'},'Loading…'
   const items=[{label:`Plan ${q.label}`,value:q.plan,kind:'total'},...Z.map(z=>({...z,kind:'delta'})),{label:`Outlook ${q.label}`,value:q.outlook,kind:'total'}];
   const cv=el('canvas',{'aria-label':`Bridge from the ${q.label} plan to the outlook, zone by zone`});wbox.append(el('div',{class:'chartbox',style:'height:320px'},cv));waterfall(cv,items);
   wbox.append(el('details',{class:'note'},el('summary',{},'Bridge as a table'),bridgeTable(items)),el('p',{class:'note'},`Blue = totals; red = a zone's outlook below its plan, green = above. ${q.label}: plan ${fmtL(q.plan)} → outlook ${fmtL(q.outlook)} (${sL(q.delta)}).`))}
- function paintT(){tbox.innerHTML='';vtree(tbox,J,qq)}
+ function paintT(){tbox.innerHTML='';vtree(tbox,J,qq,{m,f})}
  paintB();paintT();
  // monthly view
  const cv=el('canvas',{'aria-label':'Plan and outlook by month'});const c=C();
@@ -1619,86 +1619,125 @@ async function planTabPlan(box,m,f){const msg=el('p',{class:'note'},'Loading…'
  box.append(el('p',{class:'note'},'Blue = actual (lighter: current month, actual so far ÷ the usual share of a month done by this working day); ochre = forecast at the current pace; grey = plan; red dot = the tracker\'s own monthly target.'),
   table(M.map(x=>({...x,q:(Q.find(q=>q.quarter===x.quarter)||{}).label})),[{key:'month',label:'Month',fmt:mlabel},{key:'q',label:'Quarter'},{key:'plan',label:'Plan',num:1,fmt:fmtL},
   {key:'plan_source',label:'Plan from',fmt:v=>el('span',{class:'chip '+(PSRCC[v]||'')},v||'–')},{key:'tracker_target',label:'Tracker target',num:1,fmt:fmtL},{key:'actual',label:'Actual so far',num:1,fmt:fmtL},
-  {key:'outlook',label:'Outlook',num:1,fmt:fmtL},{key:'basis',label:'Outlook basis'},{key:'delta',label:'Delta (outlook − plan)',num:1,fmt:v=>signed(v,fmtL)},{key:'shortfall',label:'Shortfall',num:1,fmt:v=>v>0?fmtL(v):'–'},{key:'workdays',label:'Working days',num:1,fmt:fmt}],{name:'quarter_plan_months.csv',search:false}),
+  {key:'outlook',label:'Outlook',num:1,fmt:fmtL},{key:'basis',label:'Outlook basis'},{key:'delta',label:'Delta (outlook − plan)',num:1,fmt:v=>signed(v,fmtL)},{key:'shortfall',label:'Shortfall',num:1,fmt:v=>v>0?fmtL(v):'–'},{key:'workdays',label:'Working days',num:1,fmt:fmt}],{name:'quarter_plan_months.csv',search:false,exportable:S.role==='admin'}),
   el('details',{class:'note'},el('summary',{},'How the plan and outlook are calculated'),el('p',{},J.method)))}
-/* variance tree: PAN → zone → team → client, expandable, worst first; Excel export of every level */
-function vtree(box,J,qq){const K=k=>k+'_'+qq,thisQ=qq==='this';
+/* variance tree: PAN → zone → team → client, expandable, worst first. Admins: Excel export of every level.
+   wave 102p: viewers get zones and teams; a team's clients load when it is opened (one team at a time, no full download) */
+function vtToggle(tb,tg,path){const open=tg.getAttribute('aria-expanded')!=='true';tg.setAttribute('aria-expanded',String(open));tg.textContent=open?'▾':'▸';
+ tb.querySelectorAll('tr').forEach(r=>{const p=r.dataset.path||'';if(open){if(r.dataset.parent===path)r.hidden=false}else if(p.startsWith(path+'/')){r.hidden=true;const b=r.querySelector('.vtg');if(b){b.setAttribute('aria-expanded','false');b.textContent='▸'}}})}
+function vtLazy(tb,tr,tg,path,load){let done=false;tg.onclick=async()=>{if(!done){done=true;tg.disabled=true;tg.textContent='…';let K=null;try{K=await load()}catch(e){done=false;toast('Could not load: '+e.message)}tg.disabled=false;tg.textContent='▸';
+  if(!done)return;let after=tr;(K||[]).forEach(t2=>{t2.hidden=true;after.after(t2);after=t2});if(!(K||[]).length){tg.replaceWith(el('span',{class:'vtsp',title:'Nothing below this row'}));return}}vtToggle(tb,tg,path)}}
+function vtree(box,J,qq,ctx={}){const K=k=>k+'_'+qq,thisQ=qq==='this',isAdm=S.role==='admin',lazy=!!J.by_cell_hidden;
  const zones=(J.by_zone||[]).slice(),locs=J.by_location||[],cells=J.by_cell||[];
  const node=o=>({plan:+o[K('plan')]||0,act:thisQ?(+o.actual_this||0):null,out:+o[K('outlook')]||0});
  const tb=el('tbody');const byV=(a,b)=>((+a[K('outlook')]||0)-(+a[K('plan')]||0))-((+b[K('outlook')]||0)-(+b[K('plan')]||0));
- const row=(lvl,name,o,path,parent,kids)=>{const d=o.out-o.plan;const tg=kids?el('button',{type:'button',class:'vtg','aria-expanded':'false','aria-label':'Show what is inside '+name},'▸'):el('span',{class:'vtsp'});
+ const mk=(lvl,name,o,path,parent,kids)=>{const d=o.out-o.plan;const tg=kids?el('button',{type:'button',class:'vtg','aria-expanded':'false','aria-label':'Show what is inside '+name},'▸'):el('span',{class:'vtsp'});
   const tr=el('tr',{class:'vt'+lvl,'data-path':path,'data-parent':parent||'',hidden:lvl>1?'':null},el('th',{scope:'row',style:`padding-left:${6+lvl*16}px`},tg,' ',name),
    el('td',{class:'num'},fmtL(o.plan)),thisQ?el('td',{class:'num'},fmtL(o.act)):null,el('td',{class:'num'},fmtL(o.out)),el('td',{class:'num'},signed(d,fmtL)),
    el('td',{class:'num'},o.plan?el('span',{class:d<-0.5?'bad':d>0.5?'good':''},pctS(d/o.plan)):'–'));
-  if(kids)tg.onclick=()=>{const open=tg.getAttribute('aria-expanded')!=='true';tg.setAttribute('aria-expanded',String(open));tg.textContent=open?'▾':'▸';
-   tb.querySelectorAll('tr').forEach(r=>{const p=r.dataset.path;if(open){if(r.dataset.parent===path)r.hidden=false}else if(p.startsWith(path+'/')){r.hidden=true;const b=r.querySelector('.vtg');if(b){b.setAttribute('aria-expanded','false');b.textContent='▸'}}})};
-  tb.append(tr)};
+  if(kids)tg.onclick=()=>vtToggle(tb,tg,path);return tr};
+ const row=(...a)=>{const tr=mk(...a);tb.append(tr);return tr};
  const tot={plan:sumK(zones,K('plan')),act:thisQ?sumK(zones,'actual_this'):null,out:sumK(zones,K('outlook'))};row(0,'All (this selection)',tot,'all','',false);
  zones.sort(byV).forEach(z=>{const zp='z:'+z.zone_group;const L=locs.filter(l=>l.zone_group===z.zone_group).sort(byV);row(1,zoneLabel(z.zone_group)||'(no zone)',node(z),zp,'all',L.length>0);
-  L.forEach(l=>{const lp=zp+'/l:'+l.location_id;const C2=cells.filter(c=>c.location_id===l.location_id).sort(byV);row(2,l.location||'No team yet',node(l),lp,zp,C2.length>0);
+  L.forEach(l=>{const lp=zp+'/l:'+l.location_id;
+   if(lazy){const tr=row(2,l.location||'No team yet',node(l),lp,zp,!!l.location_id);if(l.location_id)vtLazy(tb,tr,tr.querySelector('.vtg'),lp,async()=>{
+     const R=await api('plan',{month:ctx.m,filters:ctx.f,team:l.location_id});return((R&&R.by_cell)||[]).filter(c=>c.location_id===l.location_id).sort(byV).map(c=>mk(3,c.client_family,node(c),lp+'/c:'+c.client_family,lp,false))});return}
+   const C2=cells.filter(c=>c.location_id===l.location_id).sort(byV);row(2,l.location||'No team yet',node(l),lp,zp,C2.length>0);
    C2.forEach(c=>row(3,c.client_family,node(c),lp+'/c:'+c.client_family,lp,false))})});
  tb.querySelectorAll('tr.vt1').forEach(r=>r.hidden=false);
  const q=(J.quarters||[]).find(x=>x.quarter===qq)||{};
- const xb=el('button',{type:'button',class:'btn sm',onclick:()=>{const wb=XLSX.utils.book_new();const H=['Plan','Actual to date','Outlook','Variance','Variance %'];
-   const mk=(rows,lead)=>{const a=[[...lead.map(x=>x[0]),...H]];rows.forEach(r=>{const o=node(r),d=o.out-o.plan;a.push([...lead.map(x=>x[1](r)),Math.round(o.plan),o.act==null?'':Math.round(o.act),Math.round(o.out),Math.round(d),o.plan?+(d/o.plan).toFixed(4):''])});return XLSX.utils.aoa_to_sheet(a)};
-   XLSX.utils.book_append_sheet(wb,mk(zones,[['Zone',r=>zoneLabel(r.zone_group)]]),'Zones');
-   XLSX.utils.book_append_sheet(wb,mk(locs,[['Zone',r=>zoneLabel(r.zone_group)],['Team',r=>r.location]]),'Teams');
-   XLSX.utils.book_append_sheet(wb,mk(cells,[['Zone',r=>zoneLabel(r.zone_group)],['Team',r=>r.location],['Client',r=>r.client_family]]),'Team x client');
-   XLSX.writeFile(wb,`Crux_variance_${(q.label||qq).replace(/\s+/g,'_')}_${J.data_as_of||''}.xlsx`)}},'Export every level (Excel)');
- box.append(el('div',{class:'tools'},xb,el('span',{class:'note'},`${q.label||''}: ${zones.length} zones · ${locs.length} teams · ${cells.length} team × client rows`)),
+ const xb=isAdm&&!lazy?el('button',{type:'button',class:'btn sm',onclick:()=>{const wb=XLSX.utils.book_new();const H=['Plan','Actual to date','Outlook','Variance','Variance %'];
+   const mkS=(rows,lead)=>{const a=[[...lead.map(x=>x[0]),...H]];rows.forEach(r=>{const o=node(r),d=o.out-o.plan;a.push([...lead.map(x=>x[1](r)),Math.round(o.plan),o.act==null?'':Math.round(o.act),Math.round(o.out),Math.round(d),o.plan?+(d/o.plan).toFixed(4):''])});return XLSX.utils.aoa_to_sheet(a)};
+   XLSX.utils.book_append_sheet(wb,mkS(zones,[['Zone',r=>zoneLabel(r.zone_group)]]),'Zones');
+   XLSX.utils.book_append_sheet(wb,mkS(locs,[['Zone',r=>zoneLabel(r.zone_group)],['Team',r=>r.location]]),'Teams');
+   XLSX.utils.book_append_sheet(wb,mkS(cells,[['Zone',r=>zoneLabel(r.zone_group)],['Team',r=>r.location],['Client',r=>r.client_family]]),'Team x client');
+   XLSX.writeFile(wb,`Crux_variance_${(q.label||qq).replace(/\s+/g,'_')}_${J.data_as_of||''}.xlsx`)}},'Export every level (Excel)'):null;
+ box.append(el('div',{class:'tools'},xb,el('span',{class:'note'},`${q.label||''}: ${zones.length} zones · ${locs.length} teams · `+(lazy?'open a team to see its clients (the full export is for admins)':`${cells.length} team × client rows`))),
   el('div',{class:'tablewrap'},el('table',{class:'vtree'},el('thead',{},el('tr',{},el('th',{scope:'col'},'Zone / team / client'),el('th',{scope:'col',class:'num'},'Plan'),thisQ?el('th',{scope:'col',class:'num'},'Actual to date'):null,
    el('th',{scope:'col',class:'num'},'Outlook'),el('th',{scope:'col',class:'num'},'Variance'),el('th',{scope:'col',class:'num'},'Variance %'))),tb)))}
+/* wave 102p: target sheet as zone → team → client drill-down for everyone. Viewers get zone and team totals from the server and one team's
+   clients at a time (loaded when the team is opened); admins have every row (and the Excel download). */
+function sheetRoll(rows,by){const g=new Map();(rows||[]).forEach(r=>{const k=by==='zone'?String(r.zone_group):String(r.location_id);let o=g.get(k);
+  if(!o){o={zone_group:r.zone_group,location_id:by==='zone'?null:r.location_id,location:by==='zone'?null:r.location,rows:0,falling_rows:0,dormant_rows:0};['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev'].forEach(x=>o[x]=0);g.set(k,o)}
+  o.rows++;['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev'].forEach(x=>o[x]+=(+r[x]||0));if(/last month fell/.test(r.note||''))o.falling_rows++;if(!(+r.cap_rev>0))o.dormant_rows++});
+ return[...g.values()].map(o=>({...o,vs_last:o.lm_rev?o.tgt_rev/o.lm_rev-1:null})).sort((a,b)=>b.tgt_rev-a.tgt_rev)}
+function sheetTree(SH,loadTeam){const local=!SH.rows_hidden,rows=SH.rows||[];
+ const Z=local?sheetRoll(rows,'zone'):(SH.by_zone||[]),L=local?sheetRoll(rows,'location'):(SH.by_location||[]);
+ const OPL=(SH.opportunities&&SH.opportunities.list)||[];
+ const tb=el('tbody');const cell=(v,F)=>el('td',{class:'num'},v==null||v===''?'–':F(v));
+ const mk=(lvl,name,o,path,parent,kids,extra)=>{const tg=kids?el('button',{type:'button',class:'vtg','aria-expanded':'false','aria-label':'Show what is inside '+name},'▸'):el('span',{class:'vtsp'});
+  const flags=lvl<3?[o.falling_rows?el('span',{class:'chip warn',title:'rows where last month fell below half of the 3-month average: check before sending'},`${o.falling_rows} falling`):null,o.dormant_rows?el('span',{class:'chip',title:'no business in 3 months: old target kept'},`${o.dormant_rows} dormant`):null]:[];
+  const tr=el('tr',{class:'vt'+lvl,'data-path':path,'data-parent':parent||'',hidden:lvl>1?'':null},el('th',{scope:'row',style:`padding-left:${6+lvl*16}px`},tg,' ',name,...flags.filter(Boolean).map(x=>[' ',x]).flat()),
+   cell(o.lm_cases,fmt),cell(o.lm_rev,fmtL),cell(o.l3_cases,v=>fmt(Math.round(v*10)/10)),cell(o.bau_cases,fmt),el('td',{class:'num'},el('strong',{},o.tgt_cases==null?'–':fmt(o.tgt_cases))),cell(o.tgt_rev,fmtL),
+   el('td',{class:'num'},o.vs_last==null?'–':el('span',{class:o.vs_last<0?'bad':''},pctS(o.vs_last))),el('td',{class:'note',style:'min-width:240px'},extra||''));
+  if(kids)tg.onclick=()=>vtToggle(tb,tg,path);return tr};
+ const kidsOf=(lp,lid,R,OP)=>[...R.filter(r=>String(r.location_id)===String(lid)).sort((a,b)=>(+b.tgt_rev||0)-(+a.tgt_rev||0)).map(r=>mk(3,r.client||r.client_code,r,lp+'/c:'+r.client_code,lp,false,r.note)),
+   ...OP.map(o=>mk(3,o.client,{lm_cases:0,lm_rev:0,l3_cases:0,bau_cases:null,tgt_cases:null,tgt_rev:null,vs_last:null},lp+'/o:'+o.client,lp,false,`New business — no target set (no business, no old target); potential ${fmtL(o.pot_rev)} a month (${fmt(o.pot_cases)} cases)`))];
+ const T=SH.totals||{};tb.append(mk(0,'All (this selection)',{...T,vs_last:T.lm_rev?T.tgt_rev/T.lm_rev-1:null,falling_rows:T.falling_rows,dormant_rows:T.dormant_rows},'all','',false));
+ Z.forEach(z=>{const zp='z:'+z.zone_group;const LL=L.filter(l=>l.zone_group===z.zone_group);tb.append(mk(1,zoneLabel(z.zone_group)||'(no zone)',z,zp,'all',LL.length>0));
+  LL.forEach(l=>{const lp=zp+'/l:'+l.location_id;const tr=mk(2,l.location||'No team yet',l,lp,zp,!!l.location_id);tb.append(tr);if(!l.location_id)return;
+   if(local){const K=kidsOf(lp,l.location_id,rows,OPL.filter(o=>o.location===l.location));K.forEach(k=>tb.append(k));if(!K.length)tr.querySelector('.vtg').replaceWith(el('span',{class:'vtsp'}))}
+   else vtLazy(tb,tr,tr.querySelector('.vtg'),lp,async()=>{const R=await loadTeam(l.location_id);return kidsOf(lp,l.location_id,(R&&R.rows)||[],((R&&R.opportunities&&R.opportunities.list)||[]).filter(o=>o.location===l.location))})})});
+ tb.querySelectorAll('tr.vt1').forEach(r=>r.hidden=false);
+ return el('div',{class:'tablewrap'},el('table',{class:'vtree',id:'tgtTree'},el('thead',{},el('tr',{},el('th',{scope:'col'},'Zone / team / client'),el('th',{scope:'col',class:'num'},`${mlabel(SH.previous_month)} cases`),el('th',{scope:'col',class:'num'},`${mlabel(SH.previous_month)} revenue`),
+  el('th',{scope:'col',class:'num'},'Last 3 m avg cases'),el('th',{scope:'col',class:'num'},'Organic (BAU) cases'),el('th',{scope:'col',class:'num'},'Target cases'),el('th',{scope:'col',class:'num'},'Target revenue'),el('th',{scope:'col',class:'num'},'vs last month'),el('th',{scope:'col'},'How it was set'))),tb))}
 
 /* ---- Targets by month: target sheet for any coming month, bridge, path of the next 12 months, admin Excel download ---- */
 async function planTabTargets(box,m,f){const msg=el('p',{class:'note'},'Loading…');box.append(msg);let T;
  try{T=await api('targets',{month:m,filters:f,p:{}})}catch(e){msg.textContent='Targets unavailable: '+e.message;return}msg.remove();if(!box.isConnected)return;
  const MS=T.months||[];if(!MS.length){box.append(el('p',{class:'note'},'No targets for this selection.'));return}
  const sig=(T.signals||[]).filter(x=>x.month<=MS[MS.length-1].month);
- const rule=`Each team × client: never below the previous month's target + 2% (the first month starts from the ${mlabel(T.reference_month)} tracker target), but never above 1.5× what the team actually does (best of last month, 3-month average and BAU) — an old target far above that is capped. A pair with no business in 3 months keeps its old target unchanged; a pair with no business and no old target gets no target (shown as a new-business opportunity). `+
-  (sig.length?`Exception: ${sig.map(x=>`${mlabel(x.month)} (fell ${x.falls.map(y=>pct(-y.change)).join(' and ')} in the last ${x.falls.length} years; may fall at most ${pct(x.allowed_drop)})`).join('; ')} — a month that fell 5% or more in every year on record.`:'No month has a strong seasonal signal, so every month is at least the one before.');
+ const rule=`Each team × client: never below what it actually did last month + 2% (the latest month at its expected closure, or a forecast if its tracker has not arrived) — old tracker targets are not a floor; never above 1.5× what the team actually does (best of last month, 3-month average and BAU). In the path of coming months each month is at least the month before + 2%. A pair with no business in 3 months keeps its old target unchanged; a pair with no business and no old target gets no target (shown as a new-business opportunity). `+
+  (sig.length?`Exception: ${sig.map(x=>`${mlabel(x.month)} (fell ${x.falls.map(y=>pct(-y.change)).join(' and ')} in the last ${x.falls.length} years; may fall at most ${pct(x.allowed_drop)})`).join('; ')} — a month that fell 5% or more in every year on record.`:'No month has a strong seasonal signal, so no team × client goes below last month + 2%.');
  let sel=MS[0].month,prm={catchup:100,cap:50,gmin:2};
  const ms=el('select',{'aria-label':'Target month',id:'tgtMonth',onchange:e=>{sel=e.target.value;load()}},MS.map(x=>el('option',{value:x.month},mlabel(x.month))));
  const host=el('div');const isAdm=S.role==='admin';
  const set=el('details',{class:'note'},el('summary',{},'Download settings'),el('div',{class:'pgrid'},
-   ...[['catchup','Quarter catch-up added (%)','share of the quarter shortfall so far'],['cap','Cap over last month (%)','catch-up stops at last month + this, or at potential'],['gmin','Minimum growth (%)','over the previous month\'s target, last month and BAU']].map(([k,l,h])=>
+   ...[['catchup','Quarter catch-up added (%)','share of the quarter shortfall so far'],['cap','Ceiling over capacity (%)','no target above the best of last month, 3-month average and BAU + this'],['gmin','Minimum growth (%)','over last month\'s actual business and BAU']].map(([k,l,h])=>
     el('label',{class:'pfield'},el('span',{},l),el('input',{type:'number',min:0,max:k==='cap'?300:100,step:k==='gmin'?0.5:5,value:prm[k],'aria-label':l,oninput:e=>{prm[k]=+e.target.value}}),el('small',{class:'note'},h))),
    el('div',{},el('button',{type:'button',class:'btn sm',onclick:()=>load()},'Recalculate'))));
  const dl=el('button',{type:'button',class:'btn primary',id:'tgtDownload',onclick:()=>downloadTargets()},'Download target (Excel)');
  box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Target build-up for a month')),el('p',{class:'note'},rule),
-  el('div',{class:'tools'},el('strong',{},'Target month'),ms,isAdm?dl:el('span',{class:'note'},'Admins can download the target sheet (Excel).')),isAdm?set:null,host);
+  el('div',{class:'tools'},el('strong',{},'Target month'),ms,isAdm?dl:el('span',{class:'note'},'Admins can download the target sheet (Excel).')),isAdm?set:'',host);
  // 12-month path
  const cv=el('canvas',{'aria-label':'Targets, pace and potential for the next months'});const c=C();
  box.append(el('h3',{},'Targets for the next months'),el('div',{class:'chartbox',style:'height:280px'},cv));
  chart(cv,{type:'line',data:{labels:MS.map(x=>mlabel(x.month)+(x.strong_signal?' ↓':'')),datasets:[{label:'Target',data:MS.map(x=>x.target),borderColor:c.blue,backgroundColor:c.blue,pointRadius:3,tension:.15},
    {label:'Current pace',data:MS.map(x=>x.pace),borderColor:c.muted,backgroundColor:c.muted,borderDash:[5,4],pointRadius:2},{label:'Potential',data:MS.map(x=>x.organic),borderColor:c.ochre,backgroundColor:c.ochre,borderDash:[2,3],pointRadius:0}]},
   options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:t=>`${t.dataset.label}: ${fmtL(t.raw)}`}}},scales:{y:{ticks:{callback:v=>fmtL(v)}}}}});
- box.append(table(MS.map((x,i)=>({...x,mom:i?x.target/MS[i-1].target-1:x.target/((T.reference||{}).previous_target||x.target)-1})),[{key:'month',label:'Month',fmt:(v,r)=>mlabel(v)+(r.strong_signal?' ↓ strong seasonal signal':'')},{key:'pace',label:'Current pace',num:1,fmt:fmtL},{key:'target',label:'Suggested target',num:1,fmt:fmtL},
-  {key:'mom',label:'vs previous month',num:1,fmt:pctS},{key:'stretch',label:'Target ÷ pace − 1',num:1,fmt:pctS},{key:'organic',label:'Potential',num:1,fmt:fmtL}],{name:'targets_next_months.csv',search:false}),
+ box.append(table(MS.map((x,i)=>({...x,mom:i?x.target/MS[i-1].target-1:x.target/((T.reference||{}).pace||x.target)-1})),[{key:'month',label:'Month',fmt:(v,r)=>mlabel(v)+(r.strong_signal?' ↓ strong seasonal signal':'')},{key:'pace',label:'Current pace',num:1,fmt:fmtL},{key:'target',label:'Suggested target',num:1,fmt:fmtL},
+  {key:'mom',label:'vs previous month',num:1,fmt:pctS},{key:'stretch',label:'Target ÷ pace − 1',num:1,fmt:pctS},{key:'organic',label:'Potential',num:1,fmt:fmtL}],{name:'targets_next_months.csv',search:false,exportable:isAdm}),
   el('details',{class:'note'},el('summary',{},'How the suggested targets are calculated'),el('p',{},T.method)));
  let SH=null;
  async function load(){host.innerHTML='';chartsGc();host.append(el('p',{class:'note'},'Calculating the target sheet…'));SH=null;
-  try{SH=await api('target_sheet',{month:sel,filters:f,p:{catchup:prm.catchup/100,cap_over_last:prm.cap/100,gmin:prm.gmin/100}})}catch(e){host.innerHTML='';host.append(el('p',{class:'bad'},'Target sheet unavailable: '+e.message));return}
+  const pp={catchup:prm.catchup/100,cap_over_last:prm.cap/100,gmin:prm.gmin/100};
+  try{SH=await api('target_sheet',{month:sel,filters:f,p:pp})}catch(e){host.innerHTML='';host.append(el('p',{class:'bad'},'Target sheet unavailable: '+e.message));return}
   if(!host.isConnected)return;host.innerHTML='';if(SH.error){host.append(el('p',{class:'bad'},SH.error));return}
   const t=SH.totals||{},q=SH.quarter||{},pm=mlabel(SH.previous_month);
   LIVE.targets=()=>[`${mlabel(SH.month)}: target ${fmtL(t.tgt_rev)} (${fmt(t.tgt_cases)} cases) = last month ${fmtL(t.lm_rev)} (${SH.previous_basis}) ${sL(t.bau_rev-t.lm_rev)} BAU change ${sL(t.plan_rev-t.bau_rev)} plan above BAU ${sL(t.base_rev-t.plan_rev)} floors ${sL(t.catchup_rev)} quarter catch-up.`];
   host.append(el('p',{class:'note'},`${pm} is taken as ${SH.previous_basis==='actual'?'the actual (complete month)':SH.previous_basis==='expected closure'?`its expected closure (actual to ${ddmm(SH.data_as_of)} ÷ ${pct(SH.share_to_date)} of a month)`:`a forecast at the current pace — no ${pm} tracker has arrived yet (latest data ${ddmm(SH.data_as_of)})`}. Last 3 complete months: ${(SH.last3||[]).map(mlabel).join(', ')}.`),
    el('div',{class:'tiles kpi4'},tile(`Last month (${pm})`,fmtL(t.lm_rev),`${fmt(t.lm_cases)} cases · ${SH.previous_basis}`),tile('Last 3 months average',fmtL(t.l3_rev),`${fmt(t.l3_cases)} cases a month`),
     tile('Organic (BAU)',fmtL(t.bau_rev),`${fmt(t.bau_cases)} cases · business as usual for ${mlabel(SH.month)}`),tile('Potential',fmtL(t.pot_rev),`${fmt(t.pot_cases)} cases · all branches of active clients`),
-    tile(`Previous month's target`,fmtL(t.prev_rev),`${pm} — the floor (+2%)`),tile('Plan',fmtL(t.plan_rev),SH.plan_version?'saved plan version '+SH.plan_version:'suggested target (no plan saved)'),
+    tile(`Previous month's target`,fmtL(t.prev_rev),`${pm} tracker target — for reference, not a floor`),tile('Plan',fmtL(t.plan_rev),SH.plan_version?'saved plan version '+SH.plan_version:'suggested target (no plan saved)'),
     tile(`Target ${mlabel(SH.month)}`,fmtL(t.tgt_rev),`${fmt(t.tgt_cases)} cases · ${pctS(t.lm_rev?t.tgt_rev/t.lm_rev-1:null)} vs last month`,'good'),
     tile('Quarter catch-up added',fmtL(t.catchup_rev),`${SH.quarter_label}: short ${fmtL(Math.max(0,q.shortfall_before||0))} before ${mlabel(SH.month)} · ${fmtL(t.cu_wanted)} wanted, rest capped`,t.cu_wanted>t.catchup_rev+1?'warn':'')));
   const cv2=el('canvas',{'aria-label':`How the ${mlabel(SH.month)} target is built`});host.append(el('div',{class:'chartbox',style:'height:300px'},cv2));waterfall(cv2,SH.bridge||[]);
   host.append(el('details',{class:'note'},el('summary',{},'Build-up as a table'),bridgeTable(SH.bridge||[])),
-   el('h4',{},`Target by team × client — ${mlabel(SH.month)}`),
+   el('h4',{},`Target by zone → team → client — ${mlabel(SH.month)}`),
+   el('p',{class:'note'},'Open a zone to see its teams and a team to see its clients, with how each target was set. '+(isAdm?'The full team × client sheet is below and in the Excel download.':SH.rows_hidden?'The full team × client sheet is downloaded by admins only; each team\'s clients load when you open it.':'The full sheet is downloaded by admins only.')),
+   sheetTree(SH,id=>api('target_sheet',{month:sel,filters:f,p:pp,team:id})),
+   (SH.rows||[]).length?el('details',{class:'card',style:'margin-top:10px',open:isAdm?'':null},el('summary',{},isAdm?`Full sheet — every team × client code (${fmt((SH.rows||[]).length)} rows)`:`Every client of this team (${fmt((SH.rows||[]).length)} rows)`),
    table(SH.rows||[],[{key:'zone_group',label:'Zone',fmt:v=>zoneLabel(v)},{key:'location',label:'Location'},{key:'client',label:'Client'},
     {key:'lm_cases',label:`${pm} cases`,num:1,fmt:fmt},{key:'lm_rev',label:`${pm} revenue`,num:1,fmt:fmtL},{key:'l3_cases',label:'Last 3 m avg cases',num:1,fmt:fmt},{key:'l3_rev',label:'Last 3 m avg revenue',num:1,fmt:fmtL},
     {key:'bau_cases',label:'Organic (BAU) cases',num:1,fmt:fmt},{key:'bau_rev',label:'Organic (BAU) revenue',num:1,fmt:fmtL},{key:'tgt_cases',label:'Target cases',num:1,fmt:fmt},{key:'tgt_rev',label:'Target revenue',num:1,fmt:fmtL},
     {key:'vs_last',label:'vs last month',num:1,fmt:pctS},{key:'vs_l3',label:'vs 3-month average',num:1,fmt:pctS},{key:'prev_cases',label:'Previous target cases',num:1,fmt:fmt},{key:'cap_rev',label:'Ceiling (1.5× capacity)',num:1,fmt:fmtL},
     {key:'pot_rev',label:'Potential revenue',num:1,fmt:fmtL},{key:'prev_rev',label:'Previous target',num:1,fmt:fmtL},{key:'plan_rev',label:'Plan',num:1,fmt:fmtL},
     {key:'catchup_rev',label:'Catch-up',num:1,fmt:fmtL},{key:'rate',label:'₹ / case',num:1,fmt:fmt},{key:'rate_source',label:'Rate from'},{key:'note',label:'How it was set'}],
-    {name:`targets_${SH.month}.csv`,defaultHidden:['vs_l3','cap_rev','pot_rev','prev_rev','plan_rev','catchup_rev','rate','rate_source'],rowAction:r=>r.location_id?bizCtx(SH.data_month,{...f,location_id:r.location_id,client_family:r.client_family}):null}),
+    {name:`targets_${SH.month}.csv`,exportable:isAdm,defaultHidden:['vs_l3','cap_rev','pot_rev','prev_rev','plan_rev','catchup_rev','rate','rate_source'],rowAction:r=>r.location_id?bizCtx(SH.data_month,{...f,location_id:r.location_id,client_family:r.client_family}):null})):'',
    (SH.opportunities&&SH.opportunities.rows)?el('details',{class:'card',style:'margin-top:10px'},el('summary',{},`New-business opportunities — ${fmt(SH.opportunities.rows)} team × client pairs with no business and no old target (no target set) · potential ${fmtL(SH.opportunities.pot_rev)} a month`),
-    table(SH.opportunities.list||[],[{key:'zone_group',label:'Zone',fmt:v=>zoneLabel(v)},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'pot_cases',label:'Potential cases / month',num:1,fmt:fmt},{key:'pot_rev',label:'Potential ₹ / month',num:1,fmt:fmtL}],{name:`new_business_${SH.month}.csv`})):null,
+    (SH.opportunities.list||[]).length?table(SH.opportunities.list,[{key:'zone_group',label:'Zone',fmt:v=>zoneLabel(v)},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'pot_cases',label:'Potential cases / month',num:1,fmt:fmt},{key:'pot_rev',label:'Potential ₹ / month',num:1,fmt:fmtL}],{name:`new_business_${SH.month}.csv`,exportable:isAdm})
+    :table(SH.opportunities.by_location||[],[{key:'zone_group',label:'Zone',fmt:v=>zoneLabel(v)},{key:'location',label:'Team'},{key:'rows',label:'Clients with no target',num:1,fmt:fmt},{key:'pot_cases',label:'Potential cases / month',num:1,fmt:fmt},{key:'pot_rev',label:'Potential ₹ / month',num:1,fmt:fmtL}],{search:false,exportable:false}),
+    SH.rows_hidden?el('p',{class:'note'},'Open a team in the table above to see which clients these are.'):null):'',
    el('details',{class:'note'},el('summary',{},'How the target sheet is calculated'),el('p',{},SH.method)))}
  function downloadTargets(){if(!SH||SH.error){toast('Load a target month first.');return}const pm=mlabel(SH.previous_month),bs=SH.previous_basis==='actual'?'actual':SH.previous_basis==='expected closure'?'expected closure':'forecast';
   const H=['Zone','Location','Client','Client code',`Last month actual cases (${pm}, ${bs})`,`Last month actual revenue (${pm}, ${bs})`,'Last 3 months average cases','Last 3 months average revenue','Organic (BAU) cases','Organic (BAU) revenue','Target cases','Target revenue',
@@ -1784,7 +1823,7 @@ function targetsView(box,T,f){box.innerHTML='';const R=T.reference||{},M=T.month
 const vAdmPlan=guard(async s=>{if(!admHead(s,'adm_plan'))return;const m=$('#fMonth').value,f=filters();
  let par={...PLAN0};try{Object.assign(par,JSON.parse(localStorage.getItem('crux_plan_par')||'{}'))}catch{}
  const fld=(k,lab,attrs,help)=>el('label',{class:'pfield'},el('span',{},lab),el('input',{...attrs,'data-k':k,'aria-label':lab,value:par[k],oninput:e=>{par[k]=e.target.value}}),help?el('small',{class:'note'},help):null);
-/* wave 102: no basis setting (rule: never below the previous month's target) */
+/* wave 102: no basis setting. wave 102o (owner 8-Nov): floor = last month's actual business + minimum growth, not the old target */
  const out=el('div',{class:'card',style:'margin-top:12px'}),pmsg=el('span',{class:'note'});let mode='preview';
  const msel=el('div',{class:'seg',role:'group','aria-label':'Show'},[['preview','Preview with these settings'],['plan','Saved plan']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-pm':k,onclick:()=>{mode=k;msel.querySelectorAll('button').forEach(b=>{const on=b.dataset.pm===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});load()}},l)));
  async function load(){out.innerHTML='';out.append(el('p',{class:'note'},'Calculating…'));pmsg.textContent='';
@@ -1792,7 +1831,7 @@ const vAdmPlan=guard(async s=>{if(!admHead(s,'adm_plan'))return;const m=$('#fMon
   if(mode==='preview')try{localStorage.setItem('crux_plan_par',JSON.stringify(par))}catch{}
   try{const T=await api('targets',{month:m,filters:f,p});if(out.isConnected)targetsView(out,T,f)}catch(e){out.innerHTML='';out.append(el('p',{class:'bad'},'Targets unavailable: '+e.message))}}
  s.append(el('div',{class:'card'},el('h3',{style:'margin-top:0'},'Settings'),
-  el('p',{class:'note'},'Target for month k = (current pace + c × opportunity) × the month\'s seasonal and working-day factor, never below the previous month\'s target + the minimum growth for the same team × client (the first month starts from the latest tracker target), except a month that fell 5% or more in every year on record (only April today). c rises in equal steps until the chosen share of the opportunity is captured at the horizon; growth from one month to the next stays between the minimum and the maximum, so targets keep rising but stay reachable. Opportunity = potential − current pace, per team × client.'),
+  el('p',{class:'note'},'Target for month k = (current pace + c × opportunity) × the month\'s seasonal and working-day factor, never below last month\'s actual business + the minimum growth in the first month and the previous month\'s target + the minimum growth after that, for the same team × client (old tracker targets are not a floor), except a month that fell 5% or more in every year on record (only April today). c rises in equal steps until the chosen share of the opportunity is captured at the horizon; growth from one month to the next stays between the minimum and the maximum, so targets keep rising but stay reachable. Opportunity = potential − current pace, per team × client.'),
   el('div',{class:'pgrid'},fld('horizon','Horizon (months)',{type:'number',min:1,max:24,step:1},'targets for this many months after the latest tracker month'),
    fld('capture','Share of the opportunity captured by the horizon (%)',{type:'number',min:0,max:100,step:1},'30% = a third of the gap to potential closed in a year'),
    fld('gmin','Minimum growth per month (%)',{type:'number',min:-20,max:50,step:0.5},'targets never grow less than this'),
@@ -3059,11 +3098,11 @@ const GLOSS={
  bizpotential:['Potential (all client branches)','What all our clients\' branches could bring each month: current business + each location × client back to its best three months + dormant branches reactivated + never-active branches valued at what a typical active branch of the same client gives. Headroom, not a forecast. Business as usual is different: the trend of the business we already have (the yardstick for effort).'],
  pace:['Current pace','What the business would bring each month if it simply kept today\'s speed: the latest tracker month (projected to month end) per working day, scaled by each month\'s working days and its usual seasonal level.'],
  opportunity:['Opportunity','Potential − current pace for every team × client (never below zero): the extra business available if every client branch performed at its own best, dormant branches came back and never-active branches started.'],
- targets:['Targets (next months)','Suggested monthly targets: today\'s pace plus a growing share of the opportunity (potential − pace). For each team × client a target is never below the previous month\'s target + 2%, except April (a proven seasonal dip), and never above 1.5× what the team actually does: an old target far above that is capped. A pair with no business keeps its old target; a pair with no business and no old target gets none. Clients with no business anywhere in India in the last three months are left out.'],
+ targets:['Targets (next months)','Suggested monthly targets: today\'s pace plus a growing share of the opportunity (potential − pace). For each team × client the first month is never below what it actually did last month + 2% and each later month never below the month before + 2%, except April (a proven seasonal dip), and never above 1.5× what the team actually does. Old tracker targets are not a floor. A pair with no business keeps its old target; a pair with no business and no old target gets none. Clients with no business anywhere in India in the last three months are left out.'],
  plan:['Quarter plan vs actual','This and next quarter, month by month. Plan = the saved plan, else the tracker target, else the suggested target. Completed months show the actual, the current month its likely month end, later months the current pace. Delta = outlook − plan; shortfall = the part of the plan the outlook does not reach.'],
  variance:['Variance','Outlook − plan for the same months and the same team × client: negative = the outlook is short of the plan. Outlook = actual for completed months, actual so far ÷ the usual share of a month for the running month, current pace for later months.'],
  branch_list:['Branches by status','Every verified branch of our active clients: active = a Force1 case in the last three months; dormant = cases earlier, none in the last three months; never active = no Force1 case since Jan-2026. Estimated value: the branch\'s own average, or the median of active branches of the same client in the same team.'],
- target_sheet:['Target for a month','Starts from last month (actual, expected closure or forecast), adds the BAU change, the plan above BAU, the floors (never below the previous month\'s target, last month or BAU + 2%) and the quarter catch-up (capped at potential and +50% over last month).'],
+ target_sheet:['Target for a month','Starts from last month (actual, expected closure or forecast), adds the BAU change, the plan above BAU, the floors (never below last month\'s actual business or BAU + 2%) and the quarter catch-up (only up to the ceiling — 1.5× the best of last month, 3-month average and BAU — and potential). Viewers see zone and team totals and one team\'s clients at a time; the full sheet is downloaded by admins.'],
  split:['Inside each group','Each group (zone, branch manager, team) broken into its members. On track = 90% or more of its own target to date; behind = 60–90%; far behind = under 60%. "Half from" = the smallest number of members that make half of the group\'s business; people are compared with the median of the same role in the same team.'],
  mtd:['MTD (month-to-date)','The total from the 1st of this month up to the report date. Example: MTD on 9-Oct = all cases from 1-Oct to 9-Oct.'],
  target:['Target','The month\'s goal set by management — in cases, or in ₹ for revenue target. It does not change with performance.'],
