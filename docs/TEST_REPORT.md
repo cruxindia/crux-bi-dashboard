@@ -599,3 +599,13 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Browser, local | test_102_ui 10/10; test_101_ui 12/12, test_100_ui 8/8 (selectors moved to Planning / People), test_097_ui 14/14, test_098b_ui 8/8 |
 | Browser, live (76e98a1, live md5 039073d… = local build) | test_102_ui 10/10: N1 one home per topic · S1 snapshot = API · P1 quarter cards + plan → outlook bridge = API · P2 variance tree zones 14 = API, opens to teams and clients · T1 target tiles and build-up = API · T2 floor rule holds · T3 admin Excel has all 10 required columns · B1 potential ₹8.63 cr and branch names by status = API · H1 "?" references · E1 no errors. Regression live: test_101_ui 12/12 · test_100_ui 8/8 · test_097_ui 14/14 · test_098b_ui 8/8 |
 
+## 8-Nov-2026 00:30 IST — wave 102k–n (owner review of the November target sheet)
+| Check | Result |
+|---|---|
+| Audit of the owner's CSV (402 rows) | 207 rows without business or old target (188 under ₹5,000); 78 rows with an old target above 1.5× capacity; 44 dormant rows raised; product codes converted at the family rate (Bilaspur BOM MSME PRE 56 cases for ₹51,000) |
+| After (Nov sheet) | 195 rows; ₹34,285,354 / 88,059 cases; 0 rows above the ceiling; 44 dormant rows = old target; 206 new-business pairs listed (₹22,862,272 potential); 31 rows flagged for a sharp fall; bridge sums to the target (±₹1) |
+| Owner examples | Bengaluru BOM MSME PRE 31 → 14 (average 9.3, last month 1, old 30); Bilaspur BOM MSME PRE 56 → 20 (no business, old 20, rate ₹2,500 from the tracker target) |
+| Suggested path | month to month ≥ +2% except Apr-27 (strong signal); Nov ₹32,628,483 → Oct-27 ₹40,506,201 |
+| Browser, local | test_102_ui 11/11 (new T4), test_101_ui 12/12 |
+| Browser, live (bfa34b1, md5 87123253… = local build) | test_102_ui 11/11 · test_101_ui 12/12 · test_100_ui 8/8 |
+
