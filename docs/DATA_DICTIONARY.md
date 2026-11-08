@@ -88,6 +88,8 @@ Confidence: H = verified against values/formulas; M = consistent evidence, not f
 |---|---|---|---|
 | `bi.mapping_correction` | History of mapping corrections: kind, source, alias, old → new target, effective date, reason, actor, affected counts | id | `bi_admin('mapping_retarget')` (admin key) |
 | `bi.api_drill(month, filters, level, p)` | Drawer data: selected, parent, children with ids, organic to date, 12-month history, branch rows (level = branch) | — | read via `bi_call('drill')` |
+| `bi.fmt_rs(v)` | Exact rupees with Indian digit grouping (₹4,41,535) | — | target maths (wave 103) |
+| `bi.ask_h_rca(m, f, q)` | Ask Crux root-cause answer: gap, business slowdown vs target stretch per child | — | `bi_ask3` intent `rca` |
 | `bi.sheet_roll(rows, by)` | Zone (`by`='zone') or team (`by`='location') roll-up of target-sheet rows: rows, teams, dormant / falling rows, last month, 3-month average, BAU, potential, previous target, plan, base, ceiling, catch-up, target cases and revenue, vs last month | — | used by `bi_call('target_sheet')` for viewers (wave 102p) |
 | `bi.api_branch_detail(p)` | One client branch: master record, monthly Force1 cases, first/last month, peer median | — | read via `bi_call('branch_detail')` |
 | `bi.api_drill_ops(month, filters, level, part)` | Drawer parts: tat, force1, coverage, lifecycle, revenue, penalty — selection total and per child | — | read via `bi_call('drill_ops')` |

@@ -26,3 +26,19 @@ Evidence references are queries or tests recorded in TEST_REPORT.md.
 | A18 | **Growth not attributable to client × location** | Management cannot see where the business is improving | Rankings only by zone/location | Client-family × location ranking with organic, contribution, targets, branches, Force1, TAT, owner and confidence; pair drill | Fixed (validated) | UI G4–G10; SQL L5–L10 |
 | A19 | **Lumen functions in the shared project callable with the public key** (e.g. reset_data empties Lumen tables) | Anyone with the public page key could wipe Lumen data | Lumen RPCs granted to anon | Owner decision (Lumen may call them); revoke script prepared, commented | Open — owner (Q17) | Function grants listed in TEST_REPORT §security |
 | A20 | **Several charts and tables had no drill-down** (organic trend, Force1 and TAT trends, daily business count) | Investigation stops at the chart | Drill added only where requested | Added drills; finance aggregate charts left non-drillable by design (invoice detail is admin-only) | Fixed (validated) | Drill audit table (TEST_REPORT) |
+
+## Wave 103 UX audit (8-Nov-2026) — by use case
+Method: every page walked as viewer (1440 px and 390 px) and admin, with page height, tables, rows, charts, headings and screenshots (scratchpad w103/audit); eight use cases run end to end; Ask Crux asked eight typical questions.
+
+| # | Use case / problem found | Evidence | Fix | Status |
+|---|---|---|---|---|
+| A21 | **Admin cannot find the target download** | download only on Planning → "Targets by month"; Admin → Plan & targets had none | menu quick action + Admin → Plan & targets + Planning header (D257) | Fixed (test_103 D2) |
+| A22 | **No way to find why a zone / team is behind** — numbers per page, no cause | Overview, Growth, Planning each show part of the picture | Root cause (why) page: gap split into business slowdown vs target stretch, signals and actions, drill down (D262) | Fixed (R1) |
+| A23 | **Ask Crux answers "why is Rest of Maharashtra behind" with "not lower than last month"; "which teams are furthest from target" with the PAN total** | 8-question check | bi.ask_h_rca + routing (D262) | Fixed (A1) |
+| A24 | **Nothing to present to management** | only CSV exports per table | Management summary (print / PDF) (D263) | Fixed (M1) |
+| A25 | **Two different "likely month end" figures** (Overview ₹2.54 cr vs drill ₹2.39 cr) | hero uses so far ÷ usual share; drill uses the day-curve multiple | Root cause, summary and Ask use the Overview projection | Fixed for the new pages; the drawer still shows the day-curve figure (L110) |
+| A26 | **Overview 6,252 px (13,437 px on a phone) with duplicates** — outstanding twice, revenue so far twice, case achievement 74.0% next to revenue 68.1% unlabelled | audit metrics | reordered; duplicate cards and tiles removed; Operations pulse (D264) | Fixed (O1); still long on phones (L111) |
+| A27 | **Internal tags and raw numbers in "What needs attention"** (behind_pro_rata, 65027, 2026-10-30) | screenshot | plain labels, Indian grouping, dd-Mon-yy | Fixed (O1) |
+| A28 | **Data 9 days old with no warning** (header chip only) | latest report 30-Oct on 8-Nov | stale-data banner on every page | Fixed (O1) |
+| A29 | **Business tracker 10,012 px with 10 sections; People 8,518 px** | audit metrics | 4 and 3 views | Fixed (T1) |
+| A30 | **Zone tiles show cases on a revenue page without a unit** | screenshot | heading and note say cases | Mitigated (L112) |

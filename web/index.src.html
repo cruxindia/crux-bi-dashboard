@@ -71,7 +71,7 @@ body.ddopen,body.fopen{overflow:hidden}
 .zscale{display:flex;align-items:center;gap:4px;font-size:11.5px;flex-wrap:wrap}.zscale i{display:inline-block;width:22px;height:10px;border-radius:2px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 14px;margin:8px 0}.pfield{display:flex;flex-direction:column;gap:3px;font-size:13px}.pfield input,.pfield select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}.pfield small{font-size:11.5px}
 .ptabs{margin:4px 0 12px}.ptabs .btn{font-weight:600}
-table.vtree{border-collapse:collapse;width:100%;font-size:13px}table.vtree th,table.vtree td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}table.vtree td.num,table.vtree th.num{text-align:right;font-variant-numeric:tabular-nums}table.vtree tr.vt0 th,table.vtree tr.vt0 td{font-weight:700;background:var(--bg)}table.vtree tr.vt1 th{font-weight:600}table.vtree tr.vt3 th{font-weight:400;color:var(--muted)}.vtg{border:0;background:none;cursor:pointer;font-size:12px;width:18px;color:var(--ink);padding:0}.vtsp{display:inline-block;width:18px}.tablewrap{overflow-x:auto}
+/* wave 103 pages */.banner.stale{margin:0 0 12px;background:var(--warn-soft);border-left:4px solid var(--ochre)}.ovact{margin:10px 0 4px;flex-wrap:wrap}.ovsub{margin:18px 0 6px}.crumbs{margin:2px 0 10px;gap:4px}.rca-answer{border-left:4px solid var(--blue)}.present .pres-head{margin:6px 0 12px}.pres-title{font-size:22px;font-weight:700}.pres-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}.pres-sec{margin:12px 0}.pres-sec h3{margin:6px 0}.pres-sec ul{margin:4px 0 0 18px;padding:0;line-height:1.55}table.pres-t{width:100%;border-collapse:collapse;font-size:12.5px}table.pres-t th,table.pres-t td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}table.pres-t .num{text-align:right}table.pres-t td.small{font-size:11.5px;color:var(--muted)}@media (max-width:760px){.pres-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}@media print{.topbar,#drawer,#fpanel,#dd,#admMenu,.noprint,.banner.stale button,.askfab,#askFab,[id^=ask]{display:none!important}body{background:#fff}#view{padding:0!important;margin:0!important}.present .tile{break-inside:avoid}.pres-sec{break-inside:avoid}@page{size:A4 landscape;margin:12mm}}/* wave 103 */.chip.muted{background:var(--line);color:var(--muted)}.chip.sit{font-size:11px;padding:0 6px;margin-left:2px;white-space:nowrap}.sitmix{display:inline-flex;gap:3px;flex-wrap:wrap;margin-left:4px;vertical-align:middle}.sitbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0}.linkbtn{background:none;border:0;padding:0;color:var(--blue);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px}table.vtree tr.vtcalc td{background:var(--blue-soft);line-height:1.45}.vtcalcbox{white-space:normal;max-width:min(1100px,92vw);font-size:12px}table.vtree th.vtname{min-width:340px;white-space:normal}.vtreason{font-weight:400;font-size:12px;color:var(--muted);white-space:normal;max-width:620px;margin-top:2px;line-height:1.4}.tgtdl-bar{margin:0 0 12px;border-left:4px solid var(--blue)}.tgtdl-bar .tools{margin:0}.ai.ai-quick{background:var(--blue-soft);font-weight:600}table.vtree{border-collapse:collapse;width:100%;font-size:13px}table.vtree th,table.vtree td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}table.vtree td.num,table.vtree th.num{text-align:right;font-variant-numeric:tabular-nums}table.vtree tr.vt0 th,table.vtree tr.vt0 td{font-weight:700;background:var(--bg)}table.vtree tr.vt1 th{font-weight:600}table.vtree tr.vt3 th{font-weight:400;color:var(--muted)}.vtg{border:0;background:none;cursor:pointer;font-size:12px;width:18px;color:var(--ink);padding:0}.vtsp{display:inline-block;width:18px}.tablewrap{overflow-x:auto}
 table.bridge{border-collapse:collapse;margin-top:6px;font-size:12.5px}table.bridge th,table.bridge td{padding:3px 10px;border-bottom:1px solid var(--line);text-align:left}table.bridge td.num{text-align:right;font-variant-numeric:tabular-nums}table.bridge tr.total th,table.bridge tr.total td{font-weight:700}
 .qplan .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .zt2.zwarn{border-color:var(--ochre);border-width:2px}.zt2 .zflag{font-size:11px;font-weight:600;color:var(--ochre)}.zt2 .zpot{color:var(--ink);opacity:.85}
@@ -280,7 +280,7 @@ async function boot(){
 function showLoginMsg(t){$('#loginMsg').textContent=t}
 
 
-const AREAS=[['Executive overview',[['overview','Executive overview']]],['Business performance',[['tracker','Business tracker'],['growth','Growth & trends'],['planning','Planning & forecasting'],['people','People']]],
+const AREAS=[['Executive overview',[['overview','Executive overview'],['present','Management summary']]],['Business performance',[['tracker','Business tracker'],['rca','Root cause (why)'],['growth','Growth & trends'],['planning','Planning & forecasting'],['people','People']]],
  ['Operations & TAT',[['tat','TAT & operations'],['force1','Force1 utilisation']]],['Revenue & collections',[['collections','Revenue & collections']]],
  ['Data readiness',[['health','Data readiness']]],['Ask Crux',[['ask','Ask Crux']]]];
 const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_finance','Admin · Finance review'],['adm_plan','Admin · Plan & targets'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health']];
@@ -349,8 +349,8 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
   tw.innerHTML='';tw.append(t);info.textContent=`${fmt(r.length)} rows`+(pages>1?` · page ${page+1}/${pages}`:'');pager.innerHTML='';if(pages>1){pager.append(el('button',{class:'btn',onclick:()=>{page=Math.max(0,page-1);draw()}},'Previous'),' ',el('button',{class:'btn',onclick:()=>{page=Math.min(pages-1,page+1);draw()}},'Next'))}}
  const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();
  if(ex.length)tatOnToggle(wrap,v=>{ex.forEach(k=>v?hidden.delete(k):hidden.add(k));if(drawn)draw()});return wrap}
-function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
-function render(){for(const k in LIVE)delete LIVE[k];({overview:vOverview,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb}[S.section]||vOverview)()}
+function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';const sb=staleBanner();if(sb)v.insertBefore(sb,s);await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
+function render(){for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb}[S.section]||vOverview)()}
 
 /* ---------- Overview ---------- */
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
@@ -389,8 +389,11 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    tl('Projection — month end',fc.available&&fc.curve_projection?fmt(fc.curve_projection):'–',fc.available&&fc.curve_range?`range ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} · ${pct(fc.curve_achievement)} of target`:'needs 2+ months of daily reports','',hint('projection')),
    og&&OT.organic_month!=null?tl('Business-as-usual expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Business-as-usual expectation — this selection')):null));
    const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))})}
-  {const pq=el('div',{class:'card',id:'planCard',style:'margin:12px 0'});s.append(pq);planSnapshot(pq,m,f)}
+  s.append(el('div',{class:'tools ovact',id:'ovActions'},el('button',{type:'button',class:'btn primary',onclick:()=>go('rca')},'Why? Root cause by zone, team and client →'),el('button',{type:'button',class:'btn',onclick:()=>go('present')},'Management summary (print / PDF) →'),
+   S.role==='admin'?el('button',{type:'button',class:'btn',onclick:()=>go('adm_plan')},'⬇ Target sheet (admin)'):null));
   {const sa=el('div',{class:'card',id:'sevenQ',style:'margin:12px 0'});s.append(sa);sevenAnswers(sa,B,ok,m,f)}
+  {const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f)}
+  {const pq=el('div',{class:'card',id:'planCard',style:'margin:12px 0'});s.append(pq);planSnapshot(pq,m,f)}
   {const tb=el('div',{class:'card teams',style:'margin:12px 0',id:'teamCards'},el('h3',{style:'margin-top:0'},'Operations and Collections — '+mlabel(m)),el('p',{class:'note'},'Loading…'));s.append(tb);
    Promise.all([api('ops',{month:m,filters:f}).catch(()=>null),api('os_recon',{month:m,filters:{}}).catch(()=>null)]).then(([O,R])=>{if(!tb.isConnected)return;tb.lastChild.remove();
     const T2=ok?B.total:{},F2=ok?B.finance||{}:{},una=ok?rcptUna(B):0;
@@ -416,24 +419,129 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    el('p',{class:'note'},'Branch managers and stakeholders are the people mapped for the period — responsibility, not proof of cause. Business as usual is an estimate.'),
    el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>go('growth')},rev?'All billing unit × client movements →':'All client × location movements →'),rev?el('button',{class:'btn',onclick:()=>{FV.view='cash';go('collections')}},'Collections and outstanding →'):null))})
   .catch(e=>{if(!pcb.isConnected)return;pcb.innerHTML='';pcb.append(el('p',{class:'note'},'Period comparison unavailable: '+e.message))});
- const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f);
- const ovx=el('div',{class:'split'});s.append(ovx);ovStrip(ovx,m,f);
  const f2=ov.force||{},ct=ov.case_tat||{};
- s.append(el('div',{class:'tiles ovsec'},tile('Achievement',pct(ov.achievement),`Shortfall ${fmt(ov.shortfall_cases)} cases`,ov.achievement<(wpace||0)?'bad':''),
-  tile('Latest daily change',fmt(ov.latest_change),`${ov.prev_snapshot||''} → ${ov.as_of||''} (${(ov.latest_change_basis||'').replace(/_/g,' ')})`),
-  tile('Expected revenue (MTD)',inr(ov.revenue_actual),`${pct(ov.revenue_achievement)} of ${inr(ov.revenue_target)} · Zonal Tracker cases × rate, not invoiced`),
-  tile('Same day last month',fmt(ov.prev_month_same_day&&ov.prev_month_same_day.mtd),ov.prev_month_same_day?'as of '+ov.prev_month_same_day.snapshot:''),
-  tile('Last month final',fmt(ov.prev_month_final),'Same month last year '+fmt(ov.same_month_last_year)),
+ s.append(el('h3',{class:'ovsub'},'Operations pulse'),el('div',{class:'tiles ovsec'},tile('Latest daily change',fmt(ov.latest_change),`${ddmm(ov.prev_snapshot||'')} → ${ddmm(ov.as_of||'')} (${(ov.latest_change_basis||'').replace(/_/g,' ')})`),
   tile('Force1 utilisation (cases)',pct(f2.usage_pct),`${fmt(f2.matched_cases)} validated Force1 cases of ${fmt(f2.tracker_cases_covered)} business cases${f2.excess_cases?` · ${fmt(f2.excess_cases)} Force1 cases above the business count in ${fmt(f2.units_with_force_gt_tracker)} rows are under reconciliation (Data Health)`:''} · ${fmt(f2.tracker_cases_not_covered)} cases in locations not yet on Force1 reports`,f2.excess_cases?'warn':''),
   tatTile(ct,m,f),
   tile('SLA met',pct(ct.sla_met_pct),`Against each case's due time in Force1; ${fmt(ct.open)} open`,ct.sla_met_pct<.8?'warn':'')));
- {const st=s.querySelectorAll('.ovsec .tile');const lastD=daily[daily.length-1];const pm=S.meta.months[S.meta.months.indexOf(m)+1];
-  if(st[0])ddTile(st[0],()=>bizCtx(m,f,{focus:'mtd'}));if(st[1]&&lastD)ddTile(st[1],()=>({kind:'day',title:'Report '+ddmm(lastD.date),date:lastD.date,change:lastD.change,mtd:lastD.mtd,basis:lastD.basis,f}));
-  if(st[3])ddTile(st[3],()=>bizCtx(m,f,{focus:'previous'}));if(st[4]&&pm)ddTile(st[4],()=>bizCtx(pm,f,{title:ctxTitle(f)+' — '+mlabel(pm)}));if(st[2])ddTile(st[2],()=>bizCtx(m,f,{focus:'revenue'}),'Revenue');if(st[5])ddTile(st[5],()=>bizCtx(m,f,{focus:'force1'}),'Force1 utilisation');if(st[6])ddTile(st[6],()=>bizCtx(m,f,{focus:'tat'}),'Case TAT');if(st[7])ddTile(st[7],()=>bizCtx(m,f,{focus:'sla'}),'SLA met')}
+ {const st=s.querySelectorAll('.ovsec .tile');const lastD=daily[daily.length-1];
+  if(st[0]&&lastD)ddTile(st[0],()=>({kind:'day',title:'Report '+ddmm(lastD.date),date:lastD.date,change:lastD.change,mtd:lastD.mtd,basis:lastD.basis,f}));if(st[1])ddTile(st[1],()=>bizCtx(m,f,{focus:'force1'}),'Force1 utilisation')}
  const g=el('div',{class:'grid2'});const c1=el('canvas');g.append(el('div',{class:'card'},el('h3',{},'Daily additions and MTD'),el('div',{class:'chartbox'},c1),el('div',{class:'note'},'Daily change = cases added since the previous report. Orange bars cover more than one day (e.g. after a holiday).')));
- const insBox=el('div',{class:'card'},el('h3',{},'What needs attention'));(ins||[]).slice(0,10).forEach(i=>insBox.append(el('div',{class:'insight '+(i.type||'')},i.text,el('small',{},[i.type,i.evidence&&i.evidence.as_of].filter(Boolean).join(' · ')))));if(!(ins||[]).length)insBox.append(el('p',{class:'note'},'No material findings for this selection.'));g.append(insBox);s.append(g);
+ const insBox=el('div',{class:'card'},el('h3',{},'What needs attention'));(ins||[]).slice(0,10).forEach(i=>insBox.append(el('div',{class:'insight '+(i.type||'')},humanText(i.text),el('small',{},[INSL[i.type]||String(i.type||'').replace(/_/g,' '),i.evidence&&i.evidence.as_of&&ddmm(String(i.evidence.as_of).slice(0,10))].filter(Boolean).join(' · ')))));if(!(ins||[]).length)insBox.append(el('p',{class:'note'},'No material findings for this selection.'));g.append(insBox);s.append(g);
  const cc=C();chart(c1,{drill:(ds,i)=>{const d=daily[i];return d?{kind:'day',title:'Report '+ddmm(d.date),date:d.date,change:d.change,mtd:d.mtd,basis:d.basis,f}:null},data:{labels:daily.map(d=>d.date.slice(5)),datasets:[{type:'bar',label:'Added since previous report',data:daily.map(d=>d.change),backgroundColor:daily.map(d=>d.basis==='one_working_day'||d.basis==='from_month_start'?cc.blue:cc.ochre),yAxisID:'y'},{type:'line',label:'MTD',data:daily.map(d=>d.mtd),borderColor:cc.muted,pointRadius:2,yAxisID:'y1'}]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
  const opp=el('div',{class:'card',style:'margin-top:14px'});s.append(opp);topOpportunities(opp,f);
+});
+
+/* wave 103: readable text for machine-written findings (dates, big numbers, tags) */
+const INSL={forecast:'Forecast',behind_pro_rata:'Behind pace',low_force_usage:'Low Force1 use',ahead_pro_rata:'Ahead of pace',negative_change:'Went down',data_gap:'Data gap',concentration:'Concentration'};
+function humanText(t){return String(t||'').replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g,(x,y,mo,d)=>`${d}-${MON3[+mo-1]}-${y.slice(2)}`).replace(/\b\d{4,}\b/g,n=>(+n).toLocaleString('en-IN'))}
+/* wave 103: stale data warning on every page */
+function staleBanner(){const fr=(S.meta&&S.meta.freshness)||{};const d=String(fr.zonal_latest_snapshot||'').slice(0,10);if(!d)return null;
+ const now=new Date(Date.now()+5.5*36e5),today=now.toISOString().slice(0,10);const days=Math.round((Date.parse(today)-Date.parse(d))/864e5);if(days<3)return null;
+ const curM=today.slice(0,7),dm=d.slice(0,7);const nm=mlabel(curM+'-01');
+ return el('div',{class:'banner stale',role:'status'},el('strong',{},`Latest Zonal Tracker report: ${ddmm(d)} (${days} days ago). `),
+  curM>dm?`No ${nm} report has been uploaded yet, so the dashboard shows ${mlabel(dm+'-01')}. `:'Recent days are missing, so month-to-date figures understate the month. ',
+  S.role==='admin'?el('button',{type:'button',class:'linkbtn',onclick:()=>go('adm_upload')},'Upload the tracker →'):'Ask an admin to upload the tracker.')}
+
+/* ---------- wave 103: Root cause (why) — where the gap to target sits and what is behind it, one level at a time ---------- */
+const RCA={f:null};
+const CAUSE={on_track:['On track','good'],slowdown:['Business slowdown','bad'],stretch:['Target stretch','warn'],no_target:['No target','muted'],ahead:['Ahead','good']};
+async function rcaData(m,f){const level=f.location_id?'client':f.zone_group?'location':'zone';
+ const [D,RV,TT,LC,CV,BM]=await Promise.all([api('drill',{month:m,filters:f,level,p:{}}),api('drill_ops',{month:m,filters:f,level,part:'revenue'}),
+  api('drill_ops',{month:m,filters:f,level,part:'tat'}).catch(()=>null),api('drill_ops',{month:m,filters:f,level,part:'lifecycle'}).catch(()=>null),api('drill_ops',{month:m,filters:f,level,part:'coverage'}).catch(()=>null),api('bm',{month:m,filters:f}).catch(()=>null)]);
+ const sh=BM&&!BM.error&&BM.partial&&BM.share_of_month_done>0?+BM.share_of_month_done:null;const proj=(mtd,lk)=>sh?mtd/sh:(BM&&BM.partial===false?mtd:(+lk||mtd));
+ const by=(P)=>{const o={};((P&&P.children)||[]).forEach(c=>o[String(c.id)]=c);return o};const rv=by(RV),tt=by(TT),lc=by(LC),cv=by(CV);
+ const kids=(D.children||[]).map(c=>{const id=String(c.id),r=rv[id]||{},t=(tt[id]||{}).case||{},l=lc[id]||{},v=cv[id]||{};
+   const tgt=+r.target||0,mtd=+r.mtd||0,lik=proj(mtd,r.likely),org=+r.organic||0,gap=tgt-lik,vsB=org?mtd/org-1:null,vsL=c.previous?(c.mtd-c.previous)/c.previous:null,ach=tgt?lik/tgt:null;
+   let cause=!tgt?'no_target':ach>=1?'ahead':ach>=.95?'on_track':(vsB!=null&&vsB<-.05)?'slowdown':'stretch';
+   const sig=[],act=[];
+   if(vsL!=null&&vsL<-.1)sig.push(`down ${pct(-vsL)} vs the same point last month`);else if(vsL!=null&&vsL>.1)sig.push(`up ${pct(vsL)} vs the same point last month`);
+   if(vsB!=null)sig.push(`${vsB>=0?'+':'−'}${pct(Math.abs(vsB))} vs business as usual`);
+   if((+l.losing_traction||0)>=3)sig.push(`${fmt(l.losing_traction)} branches losing traction`);if((+l.dormant||0)>=5)sig.push(`${fmt(l.dormant)} branches dormant`);
+   if((+t.open_past_due||0)>=50)sig.push(`${fmt(t.open_past_due)} cases past due (SLA ${pct(t.sla_met_pct)})`);
+   if(v.coverage_6m!=null&&v.coverage_6m<.2&&(+v.never_activated||0)>50)sig.push(`only ${pct(v.coverage_6m)} of branches active in 6 months; ${fmt(v.never_activated)} never activated`);
+   if(cause==='slowdown')act.push('Ask the branch manager which clients and branches dropped; reactivate dormant and losing branches');
+   if(cause==='stretch')act.push('Business is at or above its usual level: review the target — next month\'s target is set from what the team actually does (Planning → Targets)');
+   if((+t.open_past_due||0)>=50)act.push(`Clear the ${fmt(t.open_past_due)} past-due cases (TAT & operations)`);
+   if((+v.never_activated||0)>50&&cause!=='ahead')act.push('Activate never-active branches (Planning → Potential & branches)');
+   return{id,name:c.group,level,tgt,lik,mtd,org,gap,ach,vsB,vsL,cause,sig,act,cases:c,rev:r,tat:t,life:l,cov:v}});
+ const sel=RV.total||{},cs=D.selected||{};const T={tgt:+sel.target||0,mtd:+sel.mtd||0,org:+sel.organic||0};T.lik=proj(T.mtd,sel.likely);T.share=sh;T.gap=T.tgt-T.lik;T.vsB=T.org?T.mtd/T.org-1:null;
+ const lfl=D.lfl||{};T.vsL=lfl.previous?(lfl.current-lfl.previous)/lfl.previous:null;T.ach=T.tgt?T.lik/T.tgt:null;T.ach0=T.tgt?T.mtd/T.tgt:null;
+ const short=kids.filter(k=>k.gap>0),sumBy=c=>short.filter(k=>k.cause===c).reduce((a,k)=>a+k.gap,0);
+ T.by={slowdown:sumBy('slowdown'),stretch:sumBy('stretch'),on_track:sumBy('on_track')};T.short=short.reduce((a,k)=>a+k.gap,0);T.over=kids.filter(k=>k.gap<0).reduce((a,k)=>a-k.gap,0);
+ return{level,kids,T,D,RV,TT:TT&&TT.total,LC:LC&&LC.total,CV:CV&&CV.total,lfl}}
+const vRca=guard(async s=>{const m=$('#fMonth').value;if(!RCA.f||RCA.base!==JSON.stringify(filters())){RCA.f=filters();RCA.base=JSON.stringify(RCA.f)}const f=RCA.f;
+ s.append(el('h2',{},'Root cause — why'),el('p',{class:'lede'},'Where the gap to target sits and what is behind it: business slowdown (below its usual level), target stretch (business normal, target higher), branches lost, backlog. Open any row to go one level deeper. Money = expected revenue (Zonal Tracker cases × rate).'));
+ const crumbs=el('div',{class:'tools crumbs'});const segs=[['Pan India',{}]];if(f.zone_group)segs.push([zoneLabel(f.zone_group),{zone_group:f.zone_group}]);if(f.location_id){const l=(S.meta.locations||[]).find(x=>+x.id===+f.location_id);segs.push([l?l.label:'Team',{...(f.zone_group?{zone_group:f.zone_group}:{}),location_id:f.location_id}])}
+ segs.forEach(([lab,ff],i)=>{crumbs.append(i===segs.length-1?el('strong',{},lab):el('button',{type:'button',class:'linkbtn',onclick:()=>{RCA.f=ff;render()}},lab),i<segs.length-1?el('span',{class:'note'},' › '):'')});
+ s.append(crumbs);const msg=el('p',{class:'note'},'Working out the causes…');s.append(msg);
+ let R;try{R=await rcaData(m,f)}catch(e){msg.textContent='Root cause unavailable: '+e.message;return}msg.remove();const T=R.T,lv=R.level,LV={zone:'zone',location:'team',client:'client'}[lv];
+ const scope=segs[segs.length-1][0];
+ LIVE.rca=()=>[`${scope} ${mlabel(m)}: target ${fmtL(T.tgt)}, so far ${fmtL(T.mtd)} (${pct(T.ach0)}), likely ${fmtL(T.lik)} (${pct(T.ach)}), gap ${fmtL(Math.max(T.gap,0))}. Shortfall by cause: business slowdown ${fmtL(T.by.slowdown)}, target stretch ${fmtL(T.by.stretch)}.`];
+ s.append(el('div',{class:'tiles kpi4'},tile('Target',fmtL(T.tgt),mlabel(m)),tile('So far',fmtL(T.mtd),`${pct(T.ach0)} of target · to ${ddmm(R.lfl.current_snapshot||'')}`),
+  tile('Likely month end',fmtL(T.lik),`${pct(T.ach)} of target`,T.ach<.9?'bad':T.ach<1?'warn':'good'),tile('Gap at month end',T.gap>0?fmtL(T.gap):'none',T.gap>0?'target − likely month end':'ahead of target',T.gap>0?'bad':'good'),
+  tile('vs same point last month',pctS(T.vsL),'cases, same working day'),tile('vs business as usual',pctS(T.vsB),'expected revenue so far vs its usual level',T.vsB<-.05?'bad':'')));
+ // the answer in words
+ const top=R.kids.filter(k=>k.gap>0).sort((a,b)=>b.gap-a.gap);const t3=top.slice(0,3);
+ const ans=T.gap<=0?`${scope} is on course to beat its target (${pct(T.ach)}).`:
+  `${scope} is likely to finish at ${pct(T.ach)} of target, short by ${fmtL(T.gap)}. `+(T.short?`Of the ${fmtL(T.short)} short across ${top.length} ${LV}s, ${fmtL(T.by.slowdown)} is business slowdown (running below its usual level) and ${fmtL(T.by.stretch)} is target stretch (business at its usual level, target higher)`+(T.over?`; ${fmtL(T.over)} is made up by ${LV}s ahead of target.`:'.'):'')+
+  (t3.length?` Biggest gaps: ${t3.map(k=>`${k.name} ${fmtL(k.gap)} (${CAUSE[k.cause][0].toLowerCase()})`).join(', ')}.`:'');
+ s.append(el('div',{class:'card rca-answer'},el('h3',{style:'margin-top:0'},'The answer'),el('p',{style:'font-size:15px;line-height:1.5'},ans),
+  el('div',{class:'tiles'},tile('Business slowdown',fmtL(T.by.slowdown),`${top.filter(k=>k.cause==='slowdown').length} ${LV}s below their usual level`,'bad'),tile('Target stretch',fmtL(T.by.stretch),`${top.filter(k=>k.cause==='stretch').length} ${LV}s at their usual level`,'warn'),
+   tile('Ahead of target',fmtL(T.over),`${R.kids.filter(k=>k.gap<0).length} ${LV}s`,'good'))));
+ // waterfall target → gaps by child → likely
+ if(T.tgt){const items=[{label:'Target',value:T.tgt,kind:'total'}];const srt=R.kids.slice().sort((a,b)=>b.gap-a.gap);const big=srt.filter(k=>Math.abs(k.gap)>=Math.max(1,T.tgt*0.005)).slice(0,10);const rest=srt.filter(k=>!big.includes(k)).reduce((a,k)=>a+k.gap,0);
+  big.forEach(k=>items.push({label:k.name,value:-k.gap,kind:'delta'}));if(Math.abs(rest)>=1)items.push({label:'Others',value:-rest,kind:'delta'});items.push({label:'Likely month end',value:T.lik,kind:'total'});
+  const cv=el('canvas',{'aria-label':'From target to likely month end, '+LV+' by '+LV});s.append(el('h3',{},`Where the gap sits — ${LV} by ${LV}`),el('div',{class:'chartbox',style:'height:300px'},cv),el('p',{class:'note'},'Red = a '+LV+' expected to finish below its target; green = above. Bars add up from the target to the likely month end.'));waterfall(cv,items)}
+ // table
+ s.append(el('h3',{},`Every ${LV} — gap, cause, signals and what to do`),table(R.kids.slice().sort((a,b)=>b.gap-a.gap),[
+  {key:'name',label:LV[0].toUpperCase()+LV.slice(1),fmt:(v,r)=>lv==='client'?v:el('button',{type:'button',class:'linkbtn',title:'Why — one level deeper',onclick:e=>{e.stopPropagation();RCA.f=lv==='zone'?{zone_group:r.id}:{...f,location_id:+r.id};render()}},v+' ›')},
+  {key:'tgt',label:'Target',num:1,fmt:fmtL},{key:'mtd',label:'So far',num:1,fmt:fmtL},{key:'lik',label:'Likely',num:1,fmt:fmtL},{key:'ach',label:'Likely % of target',num:1,fmt:v=>v==null?'–':el('span',{class:'chip '+(v>=.95?'good':v>=.8?'warn':'bad')},pct(v))},
+  {key:'gap',label:'Gap',num:1,fmt:v=>v>0?el('span',{class:'bad'},fmtL(v)):v<0?el('span',{class:'good'},'+'+fmtL(-v)):'–'},{key:'vsL',label:'vs last month',num:1,fmt:pctS},{key:'vsB',label:'vs business as usual',num:1,fmt:pctS},
+  {key:'cause',label:'Cause',fmt:v=>el('span',{class:'chip '+CAUSE[v][1]},CAUSE[v][0]),raw:r=>CAUSE[r.cause][0]},{key:'sig',label:'Signals',fmt:v=>v.join(' · ')||'–',raw:r=>r.sig.join('; ')},{key:'act',label:'What to do',fmt:v=>v.join(' · ')||'–',raw:r=>r.act.join('; ')}],
+  {name:`root_cause_${m}.csv`,search:true,rowAction:r=>bizCtx(m,lv==='zone'?{zone_group:r.id}:lv==='location'?{...f,location_id:+r.id}:{...f,client_family:r.id})}));
+ // operations and branches of the whole scope
+ const TT=R.TT&&R.TT.case||{},LC=R.LC||{},CV=R.CV||{};
+ s.append(el('h3',{},'Behind the numbers — branches and operations for '+scope),el('div',{class:'tiles'},
+  tile('Branches losing traction',fmt(LC.losing_traction),`of ${fmt(LC.branches_seen)} seen · ${fmt(LC.dormant)} dormant · ${fmt(LC.growing)} growing`),
+  tile('Branch coverage (6 months)',pct(CV.coverage_6m),`${fmt(CV.active_6m)} active of ${fmt(CV.matchable)} · ${fmt(CV.never_activated)} never activated`),
+  tile('Cases past due',fmt(TT.open_past_due),`${fmt(TT.open)} open · SLA met ${pct(TT.sla_met_pct)}`,(TT.open_past_due||0)>100?'warn':''),
+  tile('Median case TAT',TT.median!=null?TT.median+' h':'–',`P90 ${TT.p90!=null?TT.p90+' h':'–'}`)),
+  el('details',{class:'note'},el('summary',{},'How the causes are decided'),el('p',{},'Gap = target − likely month end; likely month end = expected revenue so far ÷ the usual share of a month reached by this working day (the same projection as the Overview, Planning and the target sheet). Business slowdown = expected revenue so far more than 5% below its business-as-usual level (bi.organic_*). Target stretch = business within 5% of or above its usual level, but the likely month end is under 95% of target — the target asks more than the business normally does. On track = likely ≥ 95% of target. Signals: same point last month (cases), branches losing traction / dormant (Force1 branch lifecycle), cases past due and SLA (Force1), branch coverage (verified client branches). Sources: bi.api_drill, bi.api_drill_ops (revenue, tat, lifecycle, coverage).')));
+});
+
+/* ---------- wave 103: Management summary — one page to present (print or save as PDF) ---------- */
+const vPresent=guard(async s=>{const m=$('#fMonth').value,f=filters();const scope=ctxTitle(f)||'Pan India';const fr=S.meta.freshness||{};
+ const nm=tgtMonths()[0];
+ s.classList.add('present');
+ s.append(el('div',{class:'tools noprint'},el('h2',{style:'margin:0'},'Management summary'),el('button',{type:'button',class:'btn primary',onclick:()=>window.print()},'🖨 Print / save as PDF'),el('span',{class:'note'},'One page for a review meeting. Uses the month and filters at the top.')));
+ const head=el('div',{class:'pres-head'},el('div',{class:'pres-title'},`Crux — ${scope} — ${mlabel(m)}`),el('div',{class:'note'},`Business figures to ${ddmm(String(fr.zonal_latest_snapshot||'').slice(0,10))} · prepared ${ddmm(new Date().toISOString().slice(0,10))} · expected revenue = Zonal Tracker cases × rate`));
+ s.append(head);const msg=el('p',{class:'note'},'Preparing…');s.append(msg);
+ const [Rz,PL,SH,MP]=await Promise.all([rcaData(m,f).catch(e=>({error:e.message})),api('plan',{month:m,filters:f}).catch(()=>null),nm?api('target_sheet',{month:nm,filters:f,p:{catchup:1,cap_over_last:0.5,gmin:0.02}}).catch(()=>null):null,api('market_potential',{month:m,filters:f}).catch(()=>null)]);
+ msg.remove();if(Rz.error){s.append(el('p',{class:'bad'},'Unavailable: '+Rz.error));return}const T=Rz.T,LV={zone:'Zone',location:'Team',client:'Client'}[Rz.level];
+ // 1. headline
+ s.append(el('div',{class:'pres-kpis'},tile('Target',fmtL(T.tgt)),tile('So far',fmtL(T.mtd),pct(T.ach0)+' of target'),tile('Likely month end',fmtL(T.lik),pct(T.ach)+' of target',T.ach<.9?'bad':T.ach<1?'warn':'good'),
+  tile('Gap',T.gap>0?fmtL(T.gap):'none',T.gap>0?'to target':'ahead',T.gap>0?'bad':'good'),tile('vs last month',pctS(T.vsL),'same working day'),tile('vs business as usual',pctS(T.vsB),'so far')));
+ const top=Rz.kids.filter(k=>k.gap>0).sort((a,b)=>b.gap-a.gap);
+ s.append(el('div',{class:'pres-sec'},el('h3',{},'1 · The story'),el('ul',{},
+  el('li',{},T.gap>0?`Likely to finish at ${pct(T.ach)} of target — short by ${fmtL(T.gap)}.`:`On course to beat target (${pct(T.ach)}).`),
+  T.short?el('li',{},`Cause of the shortfall: business slowdown ${fmtL(T.by.slowdown)} (${top.filter(k=>k.cause==='slowdown').length} ${LV.toLowerCase()}s below their usual level) · target stretch ${fmtL(T.by.stretch)} (${top.filter(k=>k.cause==='stretch').length} ${LV.toLowerCase()}s at their usual level, target higher).`):'',
+  top.length?el('li',{},`Biggest gaps: ${top.slice(0,5).map(k=>`${k.name} ${fmtL(k.gap)}`).join(' · ')}.`):'',
+  PL&&(PL.quarters||[])[0]?el('li',{},`${PL.quarters[0].label}: plan ${fmtL(PL.quarters[0].plan)}, outlook ${fmtL(PL.quarters[0].outlook)} (${sL(PL.quarters[0].outlook-PL.quarters[0].plan)}); needs ${fmtL(PL.quarters[0].needed_per_workday)} a working day vs ${fmtL(PL.quarters[0].pace_per_workday)} now.`):'',
+  SH&&!SH.error&&SH.totals?el('li',{},`Next month (${mlabel(SH.month)}): target ${fmtL(SH.totals.tgt_rev)} · ${fmt(SH.totals.tgt_cases)} cases (${pctS(SH.totals.lm_rev?SH.totals.tgt_rev/SH.totals.lm_rev-1:null)} on last month) — ${Object.entries(SH.totals.situations||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${SITL[k]||k} ${v}`).join(', ')}.`):'',
+  MP&&MP.total?el('li',{},`Potential: ${fmtL(MP.total.potential)} a month from all branches of active clients; ${pct(MP.total.penetration)} captured today.`):'')));
+ // 2. by zone / team
+ s.append(el('div',{class:'pres-sec'},el('h3',{},`2 · ${LV}s — where the gap is and why`),el('table',{class:'pres-t'},el('thead',{},el('tr',{},...[LV,'Target','So far','Likely %','Gap','vs LM','vs BAU','Cause','What to do'].map((h,i)=>el('th',{class:i&&i<7?'num':''},h)))),
+  el('tbody',{},Rz.kids.slice().sort((a,b)=>b.gap-a.gap).slice(0,16).map(k=>el('tr',{},el('td',{},k.name),el('td',{class:'num'},fmtL(k.tgt)),el('td',{class:'num'},fmtL(k.mtd)),el('td',{class:'num'},el('span',{class:'chip '+(k.ach>=.95?'good':k.ach>=.8?'warn':'bad')},pct(k.ach))),
+   el('td',{class:'num'},k.gap>0?fmtL(k.gap):k.gap<0?'+'+fmtL(-k.gap):'–'),el('td',{class:'num'},pctS(k.vsL)),el('td',{class:'num'},pctS(k.vsB)),el('td',{},el('span',{class:'chip '+CAUSE[k.cause][1]},CAUSE[k.cause][0])),el('td',{class:'small'},k.act[0]||'–'))))),
+  Rz.kids.length>16?el('p',{class:'note'},`Top 16 of ${Rz.kids.length} by gap; full list on Root cause (why).`):''));
+ // 3. risks
+ const TT=(Rz.TT&&Rz.TT.case)||{},LC=Rz.LC||{};const days=Math.round((Date.now()-Date.parse(String(fr.zonal_latest_snapshot||'').slice(0,10)+'T18:30:00Z'))/864e5);
+ s.append(el('div',{class:'pres-sec'},el('h3',{},'3 · Risks and levers'),el('ul',{},
+  el('li',{},`Operations: ${fmt(TT.open_past_due)} cases past due · SLA met ${pct(TT.sla_met_pct)} · median TAT ${TT.median??'–'} h.`),
+  el('li',{},`Branches: ${fmt(LC.losing_traction)} losing traction, ${fmt(LC.dormant)} dormant, ${fmt(LC.growing)} growing (Force1 branch lifecycle).`),
+  days>2?el('li',{class:'bad'},`Data: the latest tracker report is ${days} days old — figures may understate the month.`):el('li',{},'Data: tracker reports are up to date.'))),
+  el('p',{class:'note pres-foot'},'Gap = target − likely month end. Business slowdown = expected revenue so far >5% below business as usual; target stretch = business at its usual level but likely month end under 95% of target. Sources: bi.api_drill, bi.api_drill_ops, bi.api_plan, bi.api_target_sheet, bi.api_market_potential.'));
 });
 
 /* ---------- Force1 utilisation ---------- */
@@ -587,7 +695,12 @@ async function trackerZoneChart(box,m,f){try{const lv=f.location_id?'client':f.z
 const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const daily=await api('daily',{month:m,filters:{}});const snaps=daily.map(d=>d.date);
  s.append(el('h2',{},'Business tracker'),el('p',{class:'lede'},'Month-to-date business by zone → location → client, with every total worked out for you. Collapse to zones or locations, compare with another date, add monthly history or the business-as-usual benchmark, and export to Excel. Filters at the top apply.'));
  if(!snaps.length){s.append(el('div',{class:'banner'},'No business reports yet for '+mlabel(m)+'.'));return}
- {const zc=el('div',{class:'card',style:'margin-bottom:14px'});s.append(zc);trackerZoneChart(zc,m,f)}
+ // wave 103: one view at a time instead of ten sections on one page
+ const TTB=[['sheet','Tracker sheet'],['daily','Daily count & case flow'],['branches','Branches & coverage'],['more','Penalties & pivot']];const tbx={};TTB.forEach(([k])=>tbx[k]=el('div',{class:'ttab','data-tt':k}));
+ let tcur=TTB.some(t=>t[0]===S.trTab)?S.trTab:'sheet';const tseg=el('div',{class:'seg ptabs',role:'tablist','aria-label':'Tracker views'});
+ const tshow=()=>{TTB.forEach(([k])=>{tbx[k].hidden=k!==tcur});tseg.querySelectorAll('button').forEach(b=>{const on=b.dataset.tt===tcur;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))})};
+ TTB.forEach(([k,l])=>tseg.append(el('button',{type:'button',role:'tab',class:'btn','data-tt':k,onclick:()=>{tcur=k;S.trTab=k;tshow()}},l)));s.append(tseg,...TTB.map(([k])=>tbx[k]));tshow();
+ {const zc=el('div',{class:'card',style:'margin-bottom:14px'});tbx.sheet.append(zc);trackerZoneChart(zc,m,f)}
  const pick=el('select',{'aria-label':'Report date'},snaps.slice().reverse().map(d=>el('option',{value:d},ddmm(d))));
  const cmpSel=el('select',{'aria-label':'Compare with'},[['none','No comparison'],['prev','Previous report'],['lm','Same day last month'],['ly','Same day last year'],['custom','Pick a date…']].map(([v,l])=>el('option',{value:v},l)));cmpSel.value=ZT.cmp;
  const cmpDate=el('input',{type:'date','aria-label':'Compare date',value:ZT.cmpDate,class:ZT.cmp==='custom'?'':'hidden'});
@@ -601,7 +714,7 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
  const panel=el('div',{class:'zt-panel'},el('div',{class:'tools'},el('label',{},'Report date ',pick),el('label',{},'Compare ',cmpSel,cmpDate),el('label',{},'History ',histSel),lvlBtns,search),
   el('div',{class:'tools'},chk('bm','Branch manager','Branch manager mapped on the report date (Admin → Master data & mapping)'),chk('rev','Revenue'),chk('bd','BD revenue'),chk('sf','Shortfall'),chk('dr','Daily revenue'),chk('org','BAU','Business-as-usual expectation per row, with the calculation behind each figure'),
    el('label',{class:'chk'},zeroCb,' Hide zero rows'),xBtn,fsBtn),info,host,notes);
- s.append(panel);
+ tbx.sheet.append(panel);
  let J=null,model=null;
  const cmpTarget=()=>{const d=pick.value;if(ZT.cmp==='prev'){const i=snaps.indexOf(d);return i>0?snaps[i-1]:addMonths(d,-1)}if(ZT.cmp==='lm')return addMonths(d,-1);if(ZT.cmp==='ly')return addMonths(d,-12);if(ZT.cmp==='custom')return ZT.cmpDate||null;return null};
  function draw(){if(!J)return;ztRender(host,J,model);
@@ -619,13 +732,13 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
  fsBtn.onclick=()=>{const on=!panel.classList.contains('zt-full');panel.classList.toggle('zt-full',on);fsBtn.textContent=on?'✕ Exit full screen':'⤢ Full screen';document.body.classList.toggle('noscroll',on)};
  panel.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('zt-full'))fsBtn.click()});
  await load();
- const bc=el('div');s.append(bc);businessCountSection(bc,m,f);
- const sq=el('div',{class:'card',style:'margin-top:14px',id:'trackerSeq'});s.append(sq);trackerSeq(sq,m,f);
- const pt=el('div');s.append(pt);potentialSection(pt,m,f);
- const pn=el('div');s.append(pn);penaltySection(pn,m,f);
+ const bc=el('div');tbx.daily.append(bc);businessCountSection(bc,m,f);
+ const sq=el('div',{class:'card',style:'margin-top:14px',id:'trackerSeq'});tbx.daily.append(sq);trackerSeq(sq,m,f);
+ const pt=el('div');tbx.daily.append(pt);potentialSection(pt,m,f);
+ const pn=el('div');tbx.more.append(pn);penaltySection(pn,m,f);
  // Intelligence below the sheet
- const br=el('div');s.append(br);await branchSection(br,f);
- const pv=el('div');s.append(pv);pv.append(el('h3',{},'Pivot: group this report by any dimension'));const gsel=el('select',{'aria-label':'Group by'},['location','client','zone','stakeholder','region','none'].map(x=>el('option',{value:x},'By '+x)));
+ const br=el('div');tbx.branches.append(br);await branchSection(br,f);
+ const pv=el('div');tbx.more.append(pv);pv.append(el('h3',{},'Pivot: group this report by any dimension'));const gsel=el('select',{'aria-label':'Group by'},['location','client','zone','stakeholder','region','none'].map(x=>el('option',{value:x},'By '+x)));
  const ph=el('div');pv.append(el('div',{class:'tools'},gsel),ph);
  async function loadPivot(){ph.innerHTML='Loading…';const rows=await api('zonal',{snapshot:pick.value,filters:f});ph.innerHTML='';const g=gsel.value;let data=rows;
   if(g!=='none'){const agg={};rows.forEach(r=>{const k=(g==='client'?(r.client_group||r.client):r[g])||'(none)';const a=agg[k]||(agg[k]={name:k,rows:0,target:0,mtd:0,revenue_target:0,revenue:0,change:0});a.rows++;a.target+=+r.target||0;a.mtd+=+r.mtd||0;a.revenue_target+=+r.revenue_target||0;a.revenue+=+r.revenue||0;a.change+=+r.change||0});
@@ -634,7 +747,7 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
   ph.append(table(data,g==='none'?[{key:'stakeholder',label:'Stakeholder'},{key:'zone',label:'Zone'},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved',num:1,fmt:ach},{key:'change',label:'Daily change',num:1,fmt:fmt},{key:'revenue',label:'Revenue',num:1,fmt:inr}]
    :[{key:'name',label:g[0].toUpperCase()+g.slice(1)},{key:'rows',label:'Rows',num:1},{key:'target',label:'Target',num:1,fmt:fmt},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'achievement',label:'Achieved (cases)',num:1,fmt:ach},{key:'shortfall',label:'vs target',num:1,fmt:fmt},{key:'change',label:'Daily change',num:1,fmt:fmt},{key:'revenue_target',label:'Revenue target',num:1,fmt:inr},{key:'revenue',label:'Revenue',num:1,fmt:inr}],{name:`pivot_${pick.value}_${g}.csv`}))}
  gsel.onchange=loadPivot;pick.addEventListener('change',loadPivot);await loadPivot();
- s.append(el('h3',{},'Report dates this month'),table(daily,[{key:'date',label:'Report date'},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'basis',label:'Basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'gap_days',label:'Gap days',num:1},{key:'negative_rows',label:'Clients that went down',num:1}],{name:'report_dates.csv',search:false}));
+ tbx.daily.append(el('h3',{},'Report dates this month'),table(daily,[{key:'date',label:'Report date'},{key:'mtd',label:'MTD',num:1,fmt:fmt},{key:'change',label:'Change',num:1,fmt:fmt},{key:'basis',label:'Basis',fmt:v=>(v||'').replace(/_/g,' ')},{key:'gap_days',label:'Gap days',num:1},{key:'negative_rows',label:'Clients that went down',num:1}],{name:'report_dates.csv',search:false}));
 });
 
 /* ---------- Compare two periods (Growth & trends) ---------- */
@@ -791,10 +904,15 @@ const vTat=guard(async s=>{const m=$('#fMonth').value,f=filters();
 /* ---------- People ---------- */
 const vPeople=guard(async s=>{const m=$('#fMonth').value,f=filters();
  s.append(el('h2',{},'Branch managers — '+mlabel(m)),el('p',{class:'lede'},'How each branch manager’s portfolio is doing this month on expected revenue (business), with billing and collections (finance) beside it, and what changed after each hand-over. Managers are maintained in Admin → Master data & mapping.'));
- const bx=el('div',{class:'card',id:'bmPeople'},el('p',{class:'note'},'Loading…')),hx=el('div',{class:'card',style:'margin:14px 0',id:'hoPeople'});s.append(bx,hx);
- {const spp=el('div',{class:'card',style:'margin:14px 0',id:'splitPeople'});s.append(spp);splitCard(spp,m,f,{levels:['bm','people','location','zone'],level:'bm'})}
+ // wave 103: one view at a time
+ const PTB=[['bm','Branch managers & hand-overs'],['split','Inside each group'],['people','People & workforce']],tp={};PTB.forEach(([k])=>tp[k]=el('div',{class:'ttab','data-pp':k}));
+ let pcur=PTB.some(t=>t[0]===S.pTab)?S.pTab:'bm';const pseg=el('div',{class:'seg ptabs',role:'tablist','aria-label':'People views'});
+ const pshow=()=>{PTB.forEach(([k])=>{tp[k].hidden=k!==pcur});pseg.querySelectorAll('button').forEach(b=>{const on=b.dataset.pp===pcur;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))})};
+ PTB.forEach(([k,l])=>pseg.append(el('button',{type:'button',role:'tab',class:'btn','data-pp':k,onclick:()=>{pcur=k;S.pTab=k;pshow()}},l)));s.append(pseg,...PTB.map(([k])=>tp[k]));pshow();
+ const bx=el('div',{class:'card',id:'bmPeople'},el('p',{class:'note'},'Loading…')),hx=el('div',{class:'card',style:'margin:14px 0',id:'hoPeople'});tp.bm.append(bx,hx);
+ {const spp=el('div',{class:'card',style:'margin:14px 0',id:'splitPeople'});tp.split.append(spp);splitCard(spp,m,f,{levels:['bm','people','location','zone'],level:'bm'})}
  bmData(m,f).then(B=>{if(!bx.isConnected)return;bx.innerHTML='';if(!B||B.error)throw new Error(B&&B.error||'no data');bmTable(bx,B,m,f,{noTitle:true});hoTable(hx,B,m,f)}).catch(e=>{if(!bx.isConnected)return;bx.innerHTML='';bx.append(el('p',{class:'note'},'Branch managers unavailable: '+e.message));hx.remove()});
- const r=await api('employees',{month:m,filters:f});
+ s=tp.people;const r=await api('employees',{month:m,filters:f});
  s.append(el('h2',{},'People — '+mlabel(m)),el('p',{class:'lede'},'Workload by employee from Force1 visits ("Verified By"). Counts are not comparable across roles: field, document and tele points differ in effort.'));
  if(S.role==='admin')s.append(el('p',{class:'note'},'Classification overrides and the workforce list are in ',el('button',{type:'button',class:'lnk',onclick:()=>go('adm_hr')},'Admin workspace → HR / workforce master data'),'.'));
  const cls=(v,row)=>el('span',{class:'chip'},(v||'').replace('_',' ')+(row.override?' (reviewed)':''));
@@ -1173,6 +1291,7 @@ const ADM={exp:null,t1:null,t2:null,
    btn.onclick=go2;inp.addEventListener('keydown',e=>{if(e.key==='Enter')go2()});
    mm.append(el('h4',{},'Admin login'),el('p',{class:'note',style:'margin-top:0'},'Uploads, corrections, mappings, review queues, penalties and maintenance need the admin key. The server checks the key on every admin action; this browser tab keeps it until you lock or close the tab.'),inp,el('div',{class:'tools'},btn),msg)}
   else{mm.append(...[el('h4',{},'Admin workspace'),el('p',{class:'note',style:'margin-top:0'},S.mode==='mcp'?'Signed in through your Supabase connector.':this.exp?'Session valid until '+dts(this.exp)+'.':'Session active.'),
+   el('button',{type:'button',class:'ai ai-quick',id:'admTgt',onclick:()=>{ADM.close(true);go('adm_plan')}},'⬇ Download a target sheet',el('small',{},'Zonal Tracker format · any coming month · branches, reason and maths per row')),
    ...ADM_GROUPS.map(([k,l,d])=>el('button',{type:'button',class:'ai','data-k':k,'aria-current':S.section===k?'page':'false',onclick:()=>{ADM.close(true);go(k)}},l,el('small',{},d))),
    S.mode==='mcp'?null:el('div',{class:'tools',style:'border-top:1px solid var(--line);padding-top:8px;margin-top:6px'},el('button',{type:'button',class:'btn',id:'admLock',onclick:()=>{ADM.close(true);ADM.lock('locked')}},'Lock admin'))].filter(Boolean))}
   const f=mm.querySelector('input,button.ai,button');f&&f.focus()},
@@ -1581,6 +1700,7 @@ async function planSnapshot(box,m,f){box.append(el('div',{class:'tools'},el('h3'
 
 const vPlanning=guard(async s=>{const m=$('#fMonth').value,f=filters();
  s.append(el('h2',{},'Planning & forecasting'),el('p',{class:'lede'},'Plan vs actual, monthly targets, potential and the branches to activate, in one place. Money = expected revenue (Zonal Tracker cases × rate). Every figure follows the filters at the top.'));
+ {const tb=tgtDownloadBar(f);if(tb)s.append(tb)}
  const T=[['plan','Plan vs actual'],['targets','Targets by month'],['potential','Potential & branches']];let cur=T.some(t=>t[0]===S.planTab)?S.planTab:'plan';
  const seg=el('div',{class:'seg ptabs',role:'tablist','aria-label':'Planning views'}),body=el('div',{id:'planBody'});
  T.forEach(([k,l])=>seg.append(el('button',{type:'button',role:'tab',class:'btn'+(k===cur?' on':''),'aria-selected':String(k===cur),'data-pt':k,onclick:()=>{cur=k;S.planTab=k;seg.querySelectorAll('button').forEach(b=>{const on=b.dataset.pt===k;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))});draw()}},l)));
@@ -1655,48 +1775,178 @@ function vtree(box,J,qq,ctx={}){const K=k=>k+'_'+qq,thisQ=qq==='this',isAdm=S.ro
  box.append(el('div',{class:'tools'},xb,el('span',{class:'note'},`${q.label||''}: ${zones.length} zones · ${locs.length} teams · `+(lazy?'open a team to see its clients (the full export is for admins)':`${cells.length} team × client rows`))),
   el('div',{class:'tablewrap'},el('table',{class:'vtree'},el('thead',{},el('tr',{},el('th',{scope:'col'},'Zone / team / client'),el('th',{scope:'col',class:'num'},'Plan'),thisQ?el('th',{scope:'col',class:'num'},'Actual to date'):null,
    el('th',{scope:'col',class:'num'},'Outlook'),el('th',{scope:'col',class:'num'},'Variance'),el('th',{scope:'col',class:'num'},'Variance %'))),tb)))}
+/* ---- wave 103: target sheet in the Zonal Tracker layout (admin download). Same rows, order, totals and colours as the Main Tracker
+   (zone header → client roll-ups → zone total → location blocks → location totals → Region & Pan India → client-wise → stakeholder-wise),
+   with the owner's columns, branch counts, situation, reason and the full maths per row. ExcelJS is loaded only when an admin downloads. ---- */
+let EXJ=null;
+function loadExcelJS(){if(window.ExcelJS)return Promise.resolve(window.ExcelJS);if(EXJ)return EXJ;
+ EXJ=new Promise((res,rej)=>{const add=(u,next)=>{const s=document.createElement('script');s.src=u;s.onload=()=>window.ExcelJS?res(window.ExcelJS):next();s.onerror=next;document.head.append(s)};
+  add('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js',()=>add('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js',()=>{EXJ=null;rej(new Error('The Excel library could not be loaded — check the connection and try again.'))}))});return EXJ}
+function saveBlob(blob,name){const a=el('a',{href:URL.createObjectURL(blob),download:name});document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+const SITL={new:'New',growing:'Growing',stable:'Stable',declining:'Declining',collapsed:'Collapsed',dormant:'Dormant','bau only':'BAU only'};
+const SITC={new:'good',growing:'good',stable:'',declining:'warn',collapsed:'bad',dormant:'muted','bau only':''};
+function sitChip(r){if(!r||!r.situation)return null;return el('span',{class:'chip sit '+(SITC[r.situation]||''),title:r.modifier?SITL[r.situation]+' · '+r.modifier:SITL[r.situation]},SITL[r.situation]+(r.modifier==='under-penetrated'?' · under-penetrated':r.modifier==='near potential'?' · near potential':''))}
+function tgtMonths(){const d=String((S.meta&&S.meta.freshness||{}).zonal_latest_snapshot||'').slice(0,7);if(!d)return[];const out=[];for(let i=1;i<=12;i++)out.push(addMonths(d+'-01',i).slice(0,7)+'-01');return out}
+/* the download bar admins see on Planning (every view) and Admin → Plan & targets */
+function tgtDownloadBar(f,{compact=false}={}){if(S.role!=='admin')return null;const ms=tgtMonths();if(!ms.length)return null;
+ const sel=el('select',{'aria-label':'Target month to download',class:'tgtdl-month'},ms.map(x=>el('option',{value:x},mlabel(x))));const msg=el('span',{class:'note',role:'status'});
+ const b=el('button',{type:'button',class:'btn primary tgtdl',onclick:async()=>{b.disabled=true;try{await targetSheetXlsx(sel.value,f,{},{onStatus:t=>msg.textContent=t});msg.textContent='Downloaded.'}catch(e){msg.textContent='';toast('Target sheet: '+e.message)}b.disabled=false}},'⬇ Download target sheet (Zonal Tracker format)');
+ return el('div',{class:'card tgtdl-bar'+(compact?' compact':'')},el('div',{class:'tools'},el('strong',{},'Admin · target sheet'),el('span',{},'Month'),sel,b,msg),
+  compact?null:el('p',{class:'note',style:'margin:4px 0 0'},'Excel in the Zonal Tracker layout: every location × client with last month, last 3 months average, organic (BAU), target cases and revenue, active and inactive branches, the situation, the reason and the full maths. Uses the filters at the top (none = Pan India).'))}
+async function targetSheetXlsx(month,f,p,{onStatus}={}){const st=t=>onStatus&&onStatus(t);
+ st('Calculating the target sheet…');const snap=String((S.meta.freshness||{}).zonal_latest_snapshot||'').slice(0,10);
+ const pp={catchup:1,cap_over_last:0.5,gmin:0.02,...(p||{})};
+ const [SH,ZJ,EJ]=await Promise.all([api('target_sheet',{month,filters:f,p:pp}),snap?api('tracker_sheet',{snapshot:snap,filters:f,compare:null,history:0}).catch(()=>null):null,loadExcelJS()]);
+ if(!SH||SH.error)throw new Error((SH&&SH.error)||'no target sheet');if(SH.rows_hidden)throw new Error('the full sheet is for admins — sign in with the admin key');
+ st('Building the Excel file…');
+ const R=SH.rows||[],key=(l,c)=>l+'|'+c,byKey=new Map(R.map(r=>[key(r.location_id,r.client_code),r])),used=new Set();
+ const OPP=((SH.opportunities||{}).list)||[],excl=new Set((SH.excluded_clients||[]).map(x=>String(x).toUpperCase()));
+ const pm=mlabel(SH.previous_month),mm=monShort(SH.month),mL=mlabel(SH.month);
+ // ---- model: tracker rows in order; leaves matched to target rows; extras (target rows not in the latest tracker) inside their location block
+ const rows=[];let lidAttr={};
+ if(ZJ&&ZJ.rows&&ZJ.rows.length){const model=ztModel(ZJ);const leaves=model.filter(x=>x.kind==='row'&&x.t==='leaf');
+  leaves.forEach(x=>{if(x.lid!=null&&!lidAttr[x.lid])lidAttr[x.lid]={z:x.z,reg:x.reg,tier:x.tier,stk:x.stk,bm:x.bm,loc:x.loc}});
+  const extrasBy={};R.forEach(r=>{if(!leaves.some(x=>x.lid===r.location_id&&x.cc===r.client_code))(extrasBy[r.location_id]=extrasBy[r.location_id]||[]).push(r)});
+  let pend=new Set();const flush=()=>{pend.forEach(lid=>{(extrasBy[lid]||[]).forEach(r=>{const a=lidAttr[lid]||{};rows.push({kind:'leaf',extra:true,lid,cc:r.client_code,loc:a.loc||r.location,cli:r.client,z:a.z,reg:a.reg,tier:a.tier,stk:a.stk,bm:a.bm,blk:curBlk,T:r});used.add(key(r.location_id,r.client_code))});delete extrasBy[lid]});pend=new Set()};
+  let curBlk=null;
+  model.forEach(x=>{if(x.kind==='zh'){rows.push({kind:'zh',z:x.z});return}if(x.kind==='sec'){flush();rows.push({kind:'sec',title:x.title});return}
+   if(x.t==='leaf'){curBlk=x.blk;const T=byKey.get(key(x.lid,x.cc));if(T)used.add(key(x.lid,x.cc));pend.add(x.lid);rows.push({kind:'leaf',lid:x.lid,cc:x.cc,loc:x.loc,cli:x.cli,z:x.z,reg:x.reg,tier:x.tier,stk:x.stk,bm:x.bm,blk:x.blk,single:x.single,T});return}
+   if(x.t==='location_total'||x.t==='zone_total')flush();
+   rows.push({kind:x.t,r:x.r,z:x.z,loc:x.loc,cli:x.cli,blk:x.blk,zoneLevel:x.zoneLevel})});
+  flush();const rest=Object.values(extrasBy).flat();
+  if(rest.length){rows.push({kind:'sec',title:'Teams not in the latest tracker'});rest.forEach(r=>{rows.push({kind:'leaf',extra:true,lid:r.location_id,cc:r.client_code,loc:r.location,cli:r.client,z:null,T:r});used.add(key(r.location_id,r.client_code))})}
+ }else{ // no tracker structure for this selection: zone → location → client
+  const zs=[...new Set(R.map(r=>r.zone_group))];zs.forEach(z=>{rows.push({kind:'zh',z:zoneLabel(z)});const ls=[...new Set(R.filter(r=>r.zone_group===z).map(r=>r.location_id))];
+   ls.forEach(l=>{const rr=R.filter(r=>r.location_id===l);rr.forEach(r=>{rows.push({kind:'leaf',lid:l,cc:r.client_code,loc:r.location,cli:r.client,z:zoneLabel(z),blk:'L'+l,T:r});used.add(key(l,r.client_code))});rows.push({kind:'location_total',loc:rr[0].location,blk:'L'+l,z:zoneLabel(z)})});rows.push({kind:'zone_total',loc:zoneLabel(z),z:zoneLabel(z)})});
+  rows.push({kind:'sec',title:'Pan India'});rows.push({kind:'summary',loc:'Pan India'})}
+ const L=rows.filter(x=>x.kind==='leaf');const mumbai=(L.find(x=>/^mumbai$/i.test(String(x.loc||'').trim()))||{}).lid;
+ const low=s=>String(s||'').trim().toLowerCase();
+ const members=x=>{switch(x.kind){case'location_total':return L.filter(l=>l.blk===x.blk);case'zone_total':return L.filter(l=>l.z===x.z);
+   case'zone_client_rollup':return L.filter(l=>l.z===x.z&&low(l.cli)===low(x.cli));
+   case'summary':{const k=low(x.loc);return L.filter(l=>k==='zone a'?l.tier==='Zone A':k==='zone b'?l.tier==='Zone B':k==='north zone'?l.reg==='North':k==='south zone'?l.reg==='South':k==='east zone'?l.reg==='East':k==='west zone'?l.reg==='West':k==='roi'?l.lid!==mumbai:k==='pan india')}
+   case'client_summary':{const k=low(x.cli||x.loc);return k==='total'?L:L.filter(l=>low(l.cli)===k)}
+   case'stakeholder_summary':{const k=low(x.loc).replace(/\s*'s?\s+zone\s*$/,'');return k==='total'?L:L.filter(l=>low(l.stk)===k)}default:return[]}};
+ const NUM=['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev','prev_cases','prev_rev','pot_rev'];
+ const agg=ms=>{const o={};NUM.forEach(k=>o[k]=0);const seen=new Set(),fam=new Set();let a=0,i=0,n=0;const sits={};
+  ms.forEach(l=>{const T=l.T;if(!T)return;const kk=key(T.location_id,T.client_code);if(seen.has(kk))return;seen.add(kk);n++;NUM.forEach(k=>o[k]+=(+T[k]||0));sits[T.situation]=(sits[T.situation]||0)+1;
+   const fk=T.location_id+'|'+T.client_family;if(!fam.has(fk)){fam.add(fk);a+=(+T.br_active||0);i+=(+T.br_inactive||0)}});
+  o.br_active=a;o.br_inactive=i;o.n=n;o.sits=sits;o.vs_last=o.lm_rev?o.tgt_rev/o.lm_rev-1:null;return o};
+ // ---- workbook
+ const wb=new EJ.Workbook();wb.creator='Crux BI';wb.created=new Date();
+ const ws=wb.addWorksheet('Target '+mm.replace(' ','-'),{views:[{state:'frozen',xSplit:2,ySplit:3}],properties:{outlineLevelRow:2,defaultRowHeight:15},pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
+ ws.properties.outlineProperties={summaryBelow:true,summaryRight:false};
+ const COLS=[['Location',32],['Client',18],['Branch manager',16],[`Last month actual cases (${pm})`,12],[`Last month actual revenue (${pm})`,14],['Last 3 months average cases',11],['Last 3 months average revenue',14],
+  ['Organic (BAU) cases',11],['Organic (BAU) revenue',14],[`Target cases (Target ${mm})`,11],[`Target revenue (Revenue Tgt ${mm})`,15],['Growth vs last month',10],['Active branches',9],['Inactive branches',9],['Total branches',9],
+  ['Situation',20],['Reason',60],['Calculation (maths)',90],['Previous target cases',10],['Previous target revenue',13],['Potential revenue',13],['₹ per case',9]];
+ ws.columns=COLS.map(([h,w])=>({width:w}));
+ const scope=ctxTitle(f)||'Pan India';
+ ws.mergeCells(1,1,1,COLS.length);const t1=ws.getCell(1,1);t1.value=`Crux — Target ${mL} · Zonal Tracker layout · ${scope} · data to ${ddmm(SH.data_as_of||'')} · last month (${pm}) = ${SH.previous_basis}`;t1.font={bold:true,size:13};
+ ws.mergeCells(2,1,2,COLS.length);ws.getCell(2,1).value='Each row: situation (new / growing / stable / declining / collapsed / dormant) decides the rule; never below last month + 2%, never above 1.5× capacity; dormant pairs keep the old target. Branch counts are the client family\'s verified branches in the team (active = Force1 case in the last 3 months). Full method on the "Method" sheet.';ws.getCell(2,1).font={italic:true,size:9,color:{argb:'FF555555'}};ws.getCell(2,1).alignment={wrapText:true,vertical:'top'};ws.getRow(2).height=26;
+ const hr=ws.getRow(3);COLS.forEach(([h],i)=>{const c=hr.getCell(i+1);c.value=h;c.font={bold:true};c.alignment={wrapText:true,vertical:'middle',horizontal:'center'};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+ZTF.hdr.slice(1)}};c.border={top:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}}});hr.height=44;
+ [10,11].forEach(i=>hr.getCell(i).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE699'}});
+ const INR='[>=10000000]##\\,##\\,##\\,##0;[>=100000]##\\,##\\,##0;##,##0',CNT='#,##0',PCT='0.0%';
+ const fmts=[null,null,null,CNT,INR,'#,##0.0',INR,CNT,INR,CNT,INR,PCT,CNT,CNT,CNT,null,null,null,CNT,INR,INR,CNT];
+ const fill=x=>{const k=x.kind;if(k==='leaf')return x.extra?'#FFF2CC':x.single?ZTF.single:ZTF.leaf;if(k==='zone_client_rollup')return ZTF.roll;if(k==='zone_total')return ZTF.ztot;if(k==='location_total')return x.zoneLevel?ZTF.ztot:ZTF.ltot;
+  if(k==='summary'){const l=low(x.loc);return l==='pan india'?ZTF.pan:l==='roi'?ZTF.roi:/^zone [ab]$/.test(l)?ZTF.zab:ZTF.reg}if(k==='stakeholder_summary')return low(x.loc)==='total'?ZTF.pan:'#FFF2CC';if(k==='client_summary')return low(x.cli||x.loc)==='total'?ZTF.pan:'#FFFFFF';if(k==='zh')return ZTF.zh;return'#FFFFFF'};
+ const situ=o=>Object.entries(o.sits||{}).filter(([k])=>k&&k!=='undefined').sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${SITL[k]||k} ${v}`).join(' · ');
+ let rn=4;const put=(vals,x,lvl)=>{const row=ws.getRow(rn++);vals.forEach((v,i)=>{const c=row.getCell(i+1);c.value=v==null||v===''?null:v;if(fmts[i]&&typeof v==='number')c.numFmt=fmts[i]});
+  const fc='FF'+fill(x).slice(1).toUpperCase();for(let i=1;i<=COLS.length;i++){const c=row.getCell(i);c.fill={type:'pattern',pattern:'solid',fgColor:{argb:fc}};c.border={bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'hair',color:{argb:'FFBFBFBF'}}};if(i>=17&&i<=18)c.alignment={wrapText:false,vertical:'top'}}
+  if(x.kind!=='leaf')row.font={bold:true};if(lvl)row.outlineLevel=lvl;return row};
+ const oppFor=(l)=>OPP.find(o=>low(o.location)===low(l.loc)&&(low(o.client)===low(l.cli)||low(o.client_family)===low(l.cc)));
+ rows.forEach(x=>{
+  if(x.kind==='zh'){put([x.z],x,0);return}
+  if(x.kind==='sec'){const row=put([x.title],{kind:'sec'},0);row.font={bold:true,size:12};return}
+  if(x.kind==='leaf'){const T=x.T;
+   if(!T){const op=oppFor(x),ex=excl.has(String(x.cc||'').toUpperCase())||excl.has(String(x.cli||'').toUpperCase());
+    put([x.loc,x.cli,x.bm||'',null,null,null,null,null,null,null,null,null,null,null,null,ex?'Excluded':op?'No target · opportunity':'No target',
+     ex?'Client inactive PAN India (no business anywhere for 3 months): left out of targets.':op?`No business and no old target: no target set. New-business opportunity — potential ${fmtL(op.pot_rev)} a month (${fmt(op.pot_cases)} cases).`:'No business in the last 3 months and no old target: no target set.',null,null,null,op?Math.round(op.pot_rev):null,null],x,2);return}
+   put([x.loc,x.cli+(x.extra?' (not in the latest tracker)':''),x.bm||'',T.lm_cases,T.lm_rev,T.l3_cases,T.l3_rev,T.bau_cases,T.bau_rev,T.tgt_cases,T.tgt_rev,T.vs_last,T.br_active,T.br_inactive,(+T.br_active||0)+(+T.br_inactive||0),
+    (SITL[T.situation]||T.situation||'')+(T.modifier?' · '+T.modifier:''),T.reason||T.note||'',T.calc||'',T.prev_cases,T.prev_rev,T.pot_rev,T.rate],x,2);return}
+  const o=agg(members(x));const[a,b]=ztLabels({...x,t:x.kind});
+  put([a,b,'',o.lm_cases,o.lm_rev,Math.round(o.l3_cases*10)/10,o.l3_rev,o.bau_cases,o.bau_rev,o.tgt_cases,o.tgt_rev,o.vs_last,o.br_active,o.br_inactive,o.br_active+o.br_inactive,situ(o),
+   o.n?`${o.n} location × client rows with a target`:'',x.kind==='summary'&&low(x.loc)==='pan india'?'Pan India = sum of every row above (each location × client once).':'',o.prev_cases,o.prev_rev,o.pot_rev,null],x,x.kind==='location_total'&&!x.zoneLevel?1:0)});
+ // control: Pan India of the sheet = target sheet total
+ const pan=agg(L);const tt=SH.totals||{};
+ ws.getRow(rn+1).getCell(1).value=`Check: sheet total ${fmt(pan.tgt_cases)} cases / ₹${Math.round(pan.tgt_rev).toLocaleString('en-IN')} vs target sheet ${fmt(tt.tgt_cases)} cases / ₹${Math.round(tt.tgt_rev||0).toLocaleString('en-IN')} (${used.size} of ${R.length} target rows placed)`;ws.getRow(rn+1).getCell(1).font={italic:true,color:{argb:'FF555555'}};
+ ws.autoFilter={from:{row:3,column:1},to:{row:3,column:COLS.length}};
+ // ---- flat list (one row per location × client, for filtering and pivots)
+ const fl=wb.addWorksheet('All rows (flat)',{views:[{state:'frozen',ySplit:1}]});const FH=['Zone','Location','Client','Client code','Situation','Modifier',...COLS.slice(3,15).map(c=>c[0]),'Reason','Calculation (maths)','Previous target cases','Previous target revenue','Potential revenue','₹ per case','Rate from'];
+ fl.addRow(FH).font={bold:true};R.forEach(T=>fl.addRow([zoneLabel(T.zone_group),T.location,T.client,T.client_code,SITL[T.situation]||T.situation,T.modifier||'',T.lm_cases,T.lm_rev,T.l3_cases,T.l3_rev,T.bau_cases,T.bau_rev,T.tgt_cases,T.tgt_rev,T.vs_last,T.br_active,T.br_inactive,(+T.br_active||0)+(+T.br_inactive||0),T.reason||'',T.calc||'',T.prev_cases,T.prev_rev,T.pot_rev,T.rate,T.rate_source]));
+ fl.columns.forEach((c,i)=>{c.width=i===18?60:i===19?90:i<4?20:12});fl.autoFilter={from:{row:1,column:1},to:{row:1,column:FH.length}};
+ // ---- build-up, situations, opportunities, method
+ const su=wb.addWorksheet('Build-up & situations');su.columns=[{width:46},{width:18},{width:16},{width:70}];
+ const q=SH.quarter||{};const add=(a)=>su.addRow(a);
+ add(['Crux — target build-up',mL]).font={bold:true,size:13};add(['Scope',scope]);add(['Data up to',ddmm(SH.data_as_of||'')]);add([`Last month (${pm}) taken as`,SH.previous_basis]);add(['Last 3 complete months',(SH.last3||[]).map(mlabel).join(', ')]);
+ add(['Plan',SH.plan_version?'saved plan version '+SH.plan_version:'suggested target (no plan saved)']);add(['Quarter',SH.quarter_label]);add(['Quarter shortfall before this month (₹)',q.shortfall_before]);add([]);
+ add(['Build-up','₹']).font={bold:true};(SH.bridge||[]).forEach(b=>add([b.label,b.value]));add([]);
+ add(['Situation','Rows','Target ₹','Rule']).font={bold:true};const P=SH.params||{};
+ const RULE={new:`last month + ${Math.round((P.new_growth||.15)*100)}% × season, + activation`,growing:`last month × (1 + min(${Math.round((P.momentum_share||.5)*100)}% of the momentum, ${Math.round((P.momentum_max||.1)*100)}%)) × season, + activation`,stable:'last month × season, + activation; plan share if higher',declining:'back to its 3-month average',collapsed:`last month + ${Math.round((P.recover||.5)*100)}% of the gap to the 3-month average; no catch-up`,dormant:'previous target kept unchanged','bau only':'BAU model value'};
+ Object.entries((SH.totals||{}).situations||{}).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>add([SITL[k]||k,v,((SH.totals||{}).situation_rev||{})[k]||0,RULE[k]||'']));
+ add([]);add(['Under-penetrated rows',(SH.totals||{}).under_penetrated_rows]);add(['Near-potential rows',(SH.totals||{}).near_potential_rows]);add(['Quarter catch-up wanted (teams) ₹',(SH.totals||{}).cu_team_wanted]);add(['Quarter catch-up placed ₹',(SH.totals||{}).catchup_rev]);
+ add(['Settings',`floor +${((P.gmin||.02)*100).toFixed(1)}%, ceiling ×${(1+(P.cap_over_last||.5)).toFixed(2)}, catch-up ${Math.round((P.catchup??1)*100)}%, collapse < ${Math.round((P.collapse||.5)*100)}%, decline < ${Math.round((P.decline||.9)*100)}%, growth > ${Math.round((P.grow||1.1)*100)}%, activation ${((P.activation||.025)*100).toFixed(1)}%/month`]);
+ add(['Clients left out (no business in India for 3 months)',(SH.excluded_clients||[]).join(', ')]);
+ su.eachRow(r=>r.eachCell((c,i)=>{if(i===2||i===3){if(typeof c.value==='number')c.numFmt=INR}}));
+ if(OPP.length){const os=wb.addWorksheet('New business (no target)');os.columns=[{width:22},{width:30},{width:22},{width:14},{width:16}];os.addRow(['Zone','Location','Client','Potential cases / month','Potential ₹ / month']).font={bold:true};OPP.forEach(o=>os.addRow([zoneLabel(o.zone_group),o.location,o.client,o.pot_cases,o.pot_rev]))}
+ const me=wb.addWorksheet('Method');me.getColumn(1).width=160;me.addRow(['How the target is set']).font={bold:true,size:13};me.addRow([SH.method]).getCell(1).alignment={wrapText:true,vertical:'top'};
+ const buf=await wb.xlsx.writeBuffer();const name=`Crux_Target_${SH.month.slice(0,7)}_ZonalTracker_${scope.replace(/[^A-Za-z0-9]+/g,'_').slice(0,40)}_asof_${SH.data_as_of||''}.xlsx`;
+ saveBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);st('');return{name,rows:R.length,placed:used.size,total:pan}}
+
 /* wave 102p: target sheet as zone → team → client drill-down for everyone. Viewers get zone and team totals from the server and one team's
    clients at a time (loaded when the team is opened); admins have every row (and the Excel download). */
-function sheetRoll(rows,by){const g=new Map();(rows||[]).forEach(r=>{const k=by==='zone'?String(r.zone_group):String(r.location_id);let o=g.get(k);
-  if(!o){o={zone_group:r.zone_group,location_id:by==='zone'?null:r.location_id,location:by==='zone'?null:r.location,rows:0,falling_rows:0,dormant_rows:0};['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev'].forEach(x=>o[x]=0);g.set(k,o)}
-  o.rows++;['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev'].forEach(x=>o[x]+=(+r[x]||0));if(/last month fell/.test(r.note||''))o.falling_rows++;if(!(+r.cap_rev>0))o.dormant_rows++});
+function sheetRoll(rows,by){const g=new Map(),fam=new Set();(rows||[]).forEach(r=>{const k=by==='zone'?String(r.zone_group):String(r.location_id);let o=g.get(k);
+  if(!o){o={zone_group:r.zone_group,location_id:by==='zone'?null:r.location_id,location:by==='zone'?null:r.location,rows:0,falling_rows:0,dormant_rows:0,br_active:0,br_inactive:0,situations:{}};['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev'].forEach(x=>o[x]=0);g.set(k,o)}
+  o.rows++;['lm_cases','lm_rev','l3_cases','l3_rev','bau_cases','bau_rev','tgt_cases','tgt_rev'].forEach(x=>o[x]+=(+r[x]||0));if(/last month fell/.test(r.note||''))o.falling_rows++;if(!(+r.cap_rev>0))o.dormant_rows++;
+  if(r.situation)o.situations[r.situation]=(o.situations[r.situation]||0)+1;const fk=k+'|'+r.location_id+'|'+r.client_family;if(!fam.has(fk)){fam.add(fk);o.br_active+=(+r.br_active||0);o.br_inactive+=(+r.br_inactive||0)}});
  return[...g.values()].map(o=>({...o,vs_last:o.lm_rev?o.tgt_rev/o.lm_rev-1:null})).sort((a,b)=>b.tgt_rev-a.tgt_rev)}
+function sitMix(o){const S2=o.situations||{};const ks=['growing','stable','new','declining','collapsed','dormant'].filter(k=>S2[k]);if(!ks.length)return null;
+ return el('span',{class:'sitmix'},...ks.map(k=>el('span',{class:'chip sit '+(SITC[k]||''),title:SITL[k]+' location × client rows'},`${SITL[k]} ${S2[k]}`)))}
 function sheetTree(SH,loadTeam){const local=!SH.rows_hidden,rows=SH.rows||[];
  const Z=local?sheetRoll(rows,'zone'):(SH.by_zone||[]),L=local?sheetRoll(rows,'location'):(SH.by_location||[]);
- const OPL=(SH.opportunities&&SH.opportunities.list)||[];
+ const OPL=(SH.opportunities&&SH.opportunities.list)||[];const NC=9;
  const tb=el('tbody');const cell=(v,F)=>el('td',{class:'num'},v==null||v===''?'–':F(v));
+ const br=o=>el('td',{class:'num',title:'client branches in the team: active (Force1 case in the last 3 months) / inactive (dormant + never active)'},o.br_active==null&&o.br_inactive==null?'–':`${fmt(+o.br_active||0)} / ${fmt(+o.br_inactive||0)}`);
  const mk=(lvl,name,o,path,parent,kids,extra)=>{const tg=kids?el('button',{type:'button',class:'vtg','aria-expanded':'false','aria-label':'Show what is inside '+name},'▸'):el('span',{class:'vtsp'});
-  const flags=lvl<3?[o.falling_rows?el('span',{class:'chip warn',title:'rows where last month fell below half of the 3-month average: check before sending'},`${o.falling_rows} falling`):null,o.dormant_rows?el('span',{class:'chip',title:'no business in 3 months: old target kept'},`${o.dormant_rows} dormant`):null]:[];
-  const tr=el('tr',{class:'vt'+lvl,'data-path':path,'data-parent':parent||'',hidden:lvl>1?'':null},el('th',{scope:'row',style:`padding-left:${6+lvl*16}px`},tg,' ',name,...flags.filter(Boolean).map(x=>[' ',x]).flat()),
+  const head=lvl<3?[sitMix(o)]:[sitChip(o)];
+  const tr=el('tr',{class:'vt'+lvl,'data-path':path,'data-parent':parent||'',hidden:lvl>1?'':null},el('th',{scope:'row',class:'vtname',style:`padding-left:${6+lvl*16}px`},tg,' ',name,...head.filter(Boolean).map(x=>[' ',x]).flat(),extra?el('div',{class:'vtreason'},extra):null),
    cell(o.lm_cases,fmt),cell(o.lm_rev,fmtL),cell(o.l3_cases,v=>fmt(Math.round(v*10)/10)),cell(o.bau_cases,fmt),el('td',{class:'num'},el('strong',{},o.tgt_cases==null?'–':fmt(o.tgt_cases))),cell(o.tgt_rev,fmtL),
-   el('td',{class:'num'},o.vs_last==null?'–':el('span',{class:o.vs_last<0?'bad':''},pctS(o.vs_last))),el('td',{class:'note',style:'min-width:240px'},extra||''));
+   el('td',{class:'num'},o.vs_last==null?'–':el('span',{class:o.vs_last<0?'bad':''},pctS(o.vs_last))),br(o));
   if(kids)tg.onclick=()=>vtToggle(tb,tg,path);return tr};
- const kidsOf=(lp,lid,R,OP)=>[...R.filter(r=>String(r.location_id)===String(lid)).sort((a,b)=>(+b.tgt_rev||0)-(+a.tgt_rev||0)).map(r=>mk(3,r.client||r.client_code,r,lp+'/c:'+r.client_code,lp,false,r.note)),
+ const clientRows=(lp,r)=>{const p2=lp+'/c:'+r.client_code;const why=el('span',{},r.reason||r.note||'');let calcTr=null;
+  if(r.calc){calcTr=el('tr',{class:'vtcalc','data-path':p2+'/calc','data-parent':'',hidden:''},el('td',{colspan:NC,class:'note'},el('div',{class:'vtcalcbox'},el('strong',{},'Maths: '),r.calc)));
+   why.append(' ',el('button',{type:'button',class:'linkbtn vtm','aria-expanded':'false',onclick:e=>{const open=calcTr.hidden;calcTr.hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));e.currentTarget.textContent=open?'hide maths':'show maths'}},'show maths'))}
+  const tr=mk(3,r.client||r.client_code,r,p2,lp,false,why);return calcTr?[tr,calcTr]:[tr]};
+ const kidsOf=(lp,lid,R,OP)=>[...R.filter(r=>String(r.location_id)===String(lid)).sort((a,b)=>(+b.tgt_rev||0)-(+a.tgt_rev||0)).flatMap(r=>clientRows(lp,r)),
    ...OP.map(o=>mk(3,o.client,{lm_cases:0,lm_rev:0,l3_cases:0,bau_cases:null,tgt_cases:null,tgt_rev:null,vs_last:null},lp+'/o:'+o.client,lp,false,`New business — no target set (no business, no old target); potential ${fmtL(o.pot_rev)} a month (${fmt(o.pot_cases)} cases)`))];
- const T=SH.totals||{};tb.append(mk(0,'All (this selection)',{...T,vs_last:T.lm_rev?T.tgt_rev/T.lm_rev-1:null,falling_rows:T.falling_rows,dormant_rows:T.dormant_rows},'all','',false));
+ const T=SH.totals||{};const TS=local?{situations:T.situations}:{situations:T.situations};
+ const panB=local?sheetRoll(rows.map(r=>({...r,zone_group:'all'})),'zone')[0]||{}:{br_active:(SH.by_zone||[]).reduce((a,z)=>a+(+z.br_active||0),0),br_inactive:(SH.by_zone||[]).reduce((a,z)=>a+(+z.br_inactive||0),0)};
+ tb.append(mk(0,'All (this selection)',{...T,...TS,br_active:panB.br_active,br_inactive:panB.br_inactive,vs_last:T.lm_rev?T.tgt_rev/T.lm_rev-1:null},'all','',false));
  Z.forEach(z=>{const zp='z:'+z.zone_group;const LL=L.filter(l=>l.zone_group===z.zone_group);tb.append(mk(1,zoneLabel(z.zone_group)||'(no zone)',z,zp,'all',LL.length>0));
   LL.forEach(l=>{const lp=zp+'/l:'+l.location_id;const tr=mk(2,l.location||'No team yet',l,lp,zp,!!l.location_id);tb.append(tr);if(!l.location_id)return;
    if(local){const K=kidsOf(lp,l.location_id,rows,OPL.filter(o=>o.location===l.location));K.forEach(k=>tb.append(k));if(!K.length)tr.querySelector('.vtg').replaceWith(el('span',{class:'vtsp'}))}
    else vtLazy(tb,tr,tr.querySelector('.vtg'),lp,async()=>{const R=await loadTeam(l.location_id);return kidsOf(lp,l.location_id,(R&&R.rows)||[],((R&&R.opportunities&&R.opportunities.list)||[]).filter(o=>o.location===l.location))})})});
  tb.querySelectorAll('tr.vt1').forEach(r=>r.hidden=false);
- return el('div',{class:'tablewrap'},el('table',{class:'vtree',id:'tgtTree'},el('thead',{},el('tr',{},el('th',{scope:'col'},'Zone / team / client'),el('th',{scope:'col',class:'num'},`${mlabel(SH.previous_month)} cases`),el('th',{scope:'col',class:'num'},`${mlabel(SH.previous_month)} revenue`),
-  el('th',{scope:'col',class:'num'},'Last 3 m avg cases'),el('th',{scope:'col',class:'num'},'Organic (BAU) cases'),el('th',{scope:'col',class:'num'},'Target cases'),el('th',{scope:'col',class:'num'},'Target revenue'),el('th',{scope:'col',class:'num'},'vs last month'),el('th',{scope:'col'},'How it was set'))),tb))}
-
+ return el('div',{class:'tablewrap'},el('table',{class:'vtree',id:'tgtTree'},el('thead',{},el('tr',{},el('th',{scope:'col',class:'vtname'},'Zone / team / client — situation, reason and maths'),el('th',{scope:'col',class:'num'},`${mlabel(SH.previous_month)} cases`),el('th',{scope:'col',class:'num'},`${mlabel(SH.previous_month)} revenue`),
+  el('th',{scope:'col',class:'num'},'Last 3 m avg cases'),el('th',{scope:'col',class:'num'},'Organic (BAU) cases'),el('th',{scope:'col',class:'num'},'Target cases'),el('th',{scope:'col',class:'num'},'Target revenue'),el('th',{scope:'col',class:'num'},'vs last month'),
+  el('th',{scope:'col',class:'num'},'Branches active / inactive'))),tb))}
 /* ---- Targets by month: target sheet for any coming month, bridge, path of the next 12 months, admin Excel download ---- */
 async function planTabTargets(box,m,f){const msg=el('p',{class:'note'},'Loading…');box.append(msg);let T;
  try{T=await api('targets',{month:m,filters:f,p:{}})}catch(e){msg.textContent='Targets unavailable: '+e.message;return}msg.remove();if(!box.isConnected)return;
  const MS=T.months||[];if(!MS.length){box.append(el('p',{class:'note'},'No targets for this selection.'));return}
  const sig=(T.signals||[]).filter(x=>x.month<=MS[MS.length-1].month);
- const rule=`Each team × client: never below what it actually did last month + 2% (the latest month at its expected closure, or a forecast if its tracker has not arrived) — old tracker targets are not a floor; never above 1.5× what the team actually does (best of last month, 3-month average and BAU). In the path of coming months each month is at least the month before + 2%. A pair with no business in 3 months keeps its old target unchanged; a pair with no business and no old target gets no target (shown as a new-business opportunity). `+
+ const rule=`Every team × client gets its own rule from its situation: new (business started in the last two months) = last month + 15%; growing = keeps half its momentum (at most +10%); stable = last month carried to the month's working days and season; declining = back to its own 3-month average; collapsed (last month under half its average) = recovers half the gap — find the cause first; dormant (no business in 3 months) = old target kept. New, growing and stable clients also take 2.5% of their untapped branch potential, their quarter-plan share when higher, and the team's quarter shortfall in proportion to their room to grow. Limits for every row: never below last month's actual + 2%, never above 1.5× what the team does; no business and no old target = no target (new-business opportunity). `+
   (sig.length?`Exception: ${sig.map(x=>`${mlabel(x.month)} (fell ${x.falls.map(y=>pct(-y.change)).join(' and ')} in the last ${x.falls.length} years; may fall at most ${pct(x.allowed_drop)})`).join('; ')} — a month that fell 5% or more in every year on record.`:'No month has a strong seasonal signal, so no team × client goes below last month + 2%.');
- let sel=MS[0].month,prm={catchup:100,cap:50,gmin:2};
+ let sel=MS[0].month,prm={catchup:100,cap:50,gmin:2,collapse:50,decline:90,grow:110,recover:50,mmax:10,act:2.5};
+ const SIT0={collapse:50,decline:90,grow:110,recover:50,mmax:10,act:2.5},SITK={collapse:'collapse',decline:'decline',grow:'grow',recover:'recover',mmax:'momentum_max',act:'activation'};
+ const sitp=()=>{const o={};Object.keys(SIT0).forEach(k=>{if(+prm[k]!==SIT0[k])o[SITK[k]]=+prm[k]/100});return o};
  const ms=el('select',{'aria-label':'Target month',id:'tgtMonth',onchange:e=>{sel=e.target.value;load()}},MS.map(x=>el('option',{value:x.month},mlabel(x.month))));
  const host=el('div');const isAdm=S.role==='admin';
  const set=el('details',{class:'note'},el('summary',{},'Download settings'),el('div',{class:'pgrid'},
-   ...[['catchup','Quarter catch-up added (%)','share of the quarter shortfall so far'],['cap','Ceiling over capacity (%)','no target above the best of last month, 3-month average and BAU + this'],['gmin','Minimum growth (%)','over last month\'s actual business and BAU']].map(([k,l,h])=>
-    el('label',{class:'pfield'},el('span',{},l),el('input',{type:'number',min:0,max:k==='cap'?300:100,step:k==='gmin'?0.5:5,value:prm[k],'aria-label':l,oninput:e=>{prm[k]=+e.target.value}}),el('small',{class:'note'},h))),
+   ...[['catchup','Quarter catch-up added (%)','share of the quarter shortfall so far'],['cap','Ceiling over capacity (%)','no target above the best of last month, 3-month average and BAU + this'],['gmin','Minimum growth (%)','over last month\'s actual business and BAU'],
+     ['collapse','Collapsed below (% of average)','last month under this share of its 3-month average'],['decline','Declining below (% of average)','last month under this share'],['grow','Growing above (% of average)','last month over this share'],
+     ['recover','Collapsed: recover (% of the gap)','share of the gap back to the average'],['mmax','Growing: most extra growth (%)','cap on the momentum carried forward'],['act','Activation (% of untapped potential a month)','new, growing and stable clients']].map(([k,l,h])=>
+    el('label',{class:'pfield'},el('span',{},l),el('input',{type:'number',min:0,max:k==='cap'?300:k==='grow'?400:100,step:k==='gmin'||k==='act'?0.5:5,value:prm[k],'aria-label':l,oninput:e=>{prm[k]=+e.target.value}}),el('small',{class:'note'},h))),
    el('div',{},el('button',{type:'button',class:'btn sm',onclick:()=>load()},'Recalculate'))));
- const dl=el('button',{type:'button',class:'btn primary',id:'tgtDownload',onclick:()=>downloadTargets()},'Download target (Excel)');
+ const dl=el('button',{type:'button',class:'btn primary',id:'tgtDownload',onclick:async()=>{dl.disabled=true;const t0=dl.textContent;dl.textContent='Preparing…';try{await targetSheetXlsx(sel,f,{catchup:prm.catchup/100,cap_over_last:prm.cap/100,gmin:prm.gmin/100,...sitp()})}catch(e){toast('Target sheet: '+e.message)}dl.disabled=false;dl.textContent=t0}},'⬇ Download target sheet (Zonal Tracker format)');
  box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Target build-up for a month')),el('p',{class:'note'},rule),
   el('div',{class:'tools'},el('strong',{},'Target month'),ms,isAdm?dl:el('span',{class:'note'},'Admins can download the target sheet (Excel).')),isAdm?set:'',host);
  // 12-month path
@@ -1710,17 +1960,19 @@ async function planTabTargets(box,m,f){const msg=el('p',{class:'note'},'Loading�
   el('details',{class:'note'},el('summary',{},'How the suggested targets are calculated'),el('p',{},T.method)));
  let SH=null;
  async function load(){host.innerHTML='';chartsGc();host.append(el('p',{class:'note'},'Calculating the target sheet…'));SH=null;
-  const pp={catchup:prm.catchup/100,cap_over_last:prm.cap/100,gmin:prm.gmin/100};
+  const pp={catchup:prm.catchup/100,cap_over_last:prm.cap/100,gmin:prm.gmin/100,...sitp()};
   try{SH=await api('target_sheet',{month:sel,filters:f,p:pp})}catch(e){host.innerHTML='';host.append(el('p',{class:'bad'},'Target sheet unavailable: '+e.message));return}
   if(!host.isConnected)return;host.innerHTML='';if(SH.error){host.append(el('p',{class:'bad'},SH.error));return}
   const t=SH.totals||{},q=SH.quarter||{},pm=mlabel(SH.previous_month);
-  LIVE.targets=()=>[`${mlabel(SH.month)}: target ${fmtL(t.tgt_rev)} (${fmt(t.tgt_cases)} cases) = last month ${fmtL(t.lm_rev)} (${SH.previous_basis}) ${sL(t.bau_rev-t.lm_rev)} BAU change ${sL(t.plan_rev-t.bau_rev)} plan above BAU ${sL(t.base_rev-t.plan_rev)} floors ${sL(t.catchup_rev)} quarter catch-up.`];
+  LIVE.targets=()=>[`${mlabel(SH.month)}: target ${fmtL(t.tgt_rev)} (${fmt(t.tgt_cases)} cases) = last month ${fmtL(t.lm_rev)} (${SH.previous_basis}) ${sL(t.bau_rev-t.lm_rev)} BAU change ${sL((SH.bridge||[])[2]?SH.bridge[2].value:0)} situation rules ${sL((SH.bridge||[])[3]?SH.bridge[3].value:0)} floors ${sL(t.catchup_rev)} quarter catch-up. Situations: ${Object.entries(t.situations||{}).map(([k,v])=>(SITL[k]||k)+' '+v).join(', ')}.`];
   host.append(el('p',{class:'note'},`${pm} is taken as ${SH.previous_basis==='actual'?'the actual (complete month)':SH.previous_basis==='expected closure'?`its expected closure (actual to ${ddmm(SH.data_as_of)} ÷ ${pct(SH.share_to_date)} of a month)`:`a forecast at the current pace — no ${pm} tracker has arrived yet (latest data ${ddmm(SH.data_as_of)})`}. Last 3 complete months: ${(SH.last3||[]).map(mlabel).join(', ')}.`),
    el('div',{class:'tiles kpi4'},tile(`Last month (${pm})`,fmtL(t.lm_rev),`${fmt(t.lm_cases)} cases · ${SH.previous_basis}`),tile('Last 3 months average',fmtL(t.l3_rev),`${fmt(t.l3_cases)} cases a month`),
     tile('Organic (BAU)',fmtL(t.bau_rev),`${fmt(t.bau_cases)} cases · business as usual for ${mlabel(SH.month)}`),tile('Potential',fmtL(t.pot_rev),`${fmt(t.pot_cases)} cases · all branches of active clients`),
     tile(`Previous month's target`,fmtL(t.prev_rev),`${pm} tracker target — for reference, not a floor`),tile('Plan',fmtL(t.plan_rev),SH.plan_version?'saved plan version '+SH.plan_version:'suggested target (no plan saved)'),
     tile(`Target ${mlabel(SH.month)}`,fmtL(t.tgt_rev),`${fmt(t.tgt_cases)} cases · ${pctS(t.lm_rev?t.tgt_rev/t.lm_rev-1:null)} vs last month`,'good'),
-    tile('Quarter catch-up added',fmtL(t.catchup_rev),`${SH.quarter_label}: short ${fmtL(Math.max(0,q.shortfall_before||0))} before ${mlabel(SH.month)} · ${fmtL(t.cu_wanted)} wanted, rest capped`,t.cu_wanted>t.catchup_rev+1?'warn':'')));
+    tile('Quarter catch-up added',fmtL(t.catchup_rev),`${SH.quarter_label}: short ${fmtL(Math.max(0,q.shortfall_before||0))} before ${mlabel(SH.month)} · ${fmtL(t.cu_team_wanted??t.cu_wanted)} wanted · placed only on growing, stable and new clients with room`,(t.cu_team_wanted??t.cu_wanted)>t.catchup_rev+1?'warn':'')),
+   el('div',{class:'sitbar',id:'sitBar'},el('strong',{},'Situations'),...['growing','stable','new','declining','collapsed','dormant','bau only'].filter(k=>(t.situations||{})[k]).map(k=>el('span',{class:'chip sit '+(SITC[k]||''),title:'target '+fmtL(((t.situation_rev||{})[k])||0)},`${SITL[k]} ${t.situations[k]} · ${fmtL(((t.situation_rev||{})[k])||0)}`)),
+    t.under_penetrated_rows?el('span',{class:'note'},`· ${t.under_penetrated_rows} under-penetrated (many inactive branches, potential ≥ 1.5× business) · ${t.near_potential_rows||0} near potential`):null));
   const cv2=el('canvas',{'aria-label':`How the ${mlabel(SH.month)} target is built`});host.append(el('div',{class:'chartbox',style:'height:300px'},cv2));waterfall(cv2,SH.bridge||[]);
   host.append(el('details',{class:'note'},el('summary',{},'Build-up as a table'),bridgeTable(SH.bridge||[])),
    el('h4',{},`Target by zone → team → client — ${mlabel(SH.month)}`),
@@ -1732,29 +1984,15 @@ async function planTabTargets(box,m,f){const msg=el('p',{class:'note'},'Loading�
     {key:'bau_cases',label:'Organic (BAU) cases',num:1,fmt:fmt},{key:'bau_rev',label:'Organic (BAU) revenue',num:1,fmt:fmtL},{key:'tgt_cases',label:'Target cases',num:1,fmt:fmt},{key:'tgt_rev',label:'Target revenue',num:1,fmt:fmtL},
     {key:'vs_last',label:'vs last month',num:1,fmt:pctS},{key:'vs_l3',label:'vs 3-month average',num:1,fmt:pctS},{key:'prev_cases',label:'Previous target cases',num:1,fmt:fmt},{key:'cap_rev',label:'Ceiling (1.5× capacity)',num:1,fmt:fmtL},
     {key:'pot_rev',label:'Potential revenue',num:1,fmt:fmtL},{key:'prev_rev',label:'Previous target',num:1,fmt:fmtL},{key:'plan_rev',label:'Plan',num:1,fmt:fmtL},
-    {key:'catchup_rev',label:'Catch-up',num:1,fmt:fmtL},{key:'rate',label:'₹ / case',num:1,fmt:fmt},{key:'rate_source',label:'Rate from'},{key:'note',label:'How it was set'}],
-    {name:`targets_${SH.month}.csv`,exportable:isAdm,defaultHidden:['vs_l3','cap_rev','pot_rev','prev_rev','plan_rev','catchup_rev','rate','rate_source'],rowAction:r=>r.location_id?bizCtx(SH.data_month,{...f,location_id:r.location_id,client_family:r.client_family}):null})):'',
+    {key:'catchup_rev',label:'Catch-up',num:1,fmt:fmtL},{key:'rate',label:'₹ / case',num:1,fmt:fmt},{key:'rate_source',label:'Rate from'},
+    {key:'situation',label:'Situation',fmt:(v,r)=>sitChip(r)||'–',raw:r=>SITL[r.situation]||''},{key:'br_active',label:'Active branches',num:1,fmt:fmt},{key:'br_inactive',label:'Inactive branches',num:1,fmt:fmt},{key:'reason',label:'Reason'},{key:'calc',label:'Calculation (maths)'}],
+    {name:`targets_${SH.month}.csv`,exportable:isAdm,defaultHidden:['vs_l3','cap_rev','pot_rev','prev_rev','plan_rev','catchup_rev','rate','rate_source','calc','prev_cases'],rowAction:r=>r.location_id?bizCtx(SH.data_month,{...f,location_id:r.location_id,client_family:r.client_family}):null})):'',
    (SH.opportunities&&SH.opportunities.rows)?el('details',{class:'card',style:'margin-top:10px'},el('summary',{},`New-business opportunities — ${fmt(SH.opportunities.rows)} team × client pairs with no business and no old target (no target set) · potential ${fmtL(SH.opportunities.pot_rev)} a month`),
     (SH.opportunities.list||[]).length?table(SH.opportunities.list,[{key:'zone_group',label:'Zone',fmt:v=>zoneLabel(v)},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'pot_cases',label:'Potential cases / month',num:1,fmt:fmt},{key:'pot_rev',label:'Potential ₹ / month',num:1,fmt:fmtL}],{name:`new_business_${SH.month}.csv`,exportable:isAdm})
     :table(SH.opportunities.by_location||[],[{key:'zone_group',label:'Zone',fmt:v=>zoneLabel(v)},{key:'location',label:'Team'},{key:'rows',label:'Clients with no target',num:1,fmt:fmt},{key:'pot_cases',label:'Potential cases / month',num:1,fmt:fmt},{key:'pot_rev',label:'Potential ₹ / month',num:1,fmt:fmtL}],{search:false,exportable:false}),
     SH.rows_hidden?el('p',{class:'note'},'Open a team in the table above to see which clients these are.'):null):'',
    el('details',{class:'note'},el('summary',{},'How the target sheet is calculated'),el('p',{},SH.method)))}
- function downloadTargets(){if(!SH||SH.error){toast('Load a target month first.');return}const pm=mlabel(SH.previous_month),bs=SH.previous_basis==='actual'?'actual':SH.previous_basis==='expected closure'?'expected closure':'forecast';
-  const H=['Zone','Location','Client','Client code',`Last month actual cases (${pm}, ${bs})`,`Last month actual revenue (${pm}, ${bs})`,'Last 3 months average cases','Last 3 months average revenue','Organic (BAU) cases','Organic (BAU) revenue','Target cases','Target revenue',
-   'Growth vs last month','Growth vs last 3 months average','Potential cases','Potential revenue','Previous month target cases','Previous month target revenue','Ceiling revenue (1.5× capacity)','Plan revenue','Quarter catch-up revenue','Rate (₹ per case)','Rate from','How it was set'];
-  const A=[H,...(SH.rows||[]).map(r=>[zoneLabel(r.zone_group),r.location,r.client,r.client_code,r.lm_cases,r.lm_rev,r.l3_cases,r.l3_rev,r.bau_cases,r.bau_rev,r.tgt_cases,r.tgt_rev,r.vs_last,r.vs_l3,r.pot_cases,r.pot_rev,r.prev_cases,r.prev_rev,r.cap_rev,r.plan_rev,r.catchup_rev,r.rate,r.rate_source,r.note])];
-  const t=SH.totals||{};A.push(['Total','','','',t.lm_cases,t.lm_rev,t.l3_cases,t.l3_rev,t.bau_cases,t.bau_rev,t.tgt_cases,t.tgt_rev,t.lm_rev?t.tgt_rev/t.lm_rev-1:'',t.l3_rev?t.tgt_rev/t.l3_rev-1:'',t.pot_cases,t.pot_rev,'',t.prev_rev,t.cap_rev,t.plan_rev,t.catchup_rev,'','','']);
-  const ws=XLSX.utils.aoa_to_sheet(A);ws['!cols']=H.map((h,i)=>({wch:i<2?26:i===2?22:i===H.length-1?60:14}));ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:A.length-2,c:H.length-1}})};
-  const q=SH.quarter||{};const sm=XLSX.utils.aoa_to_sheet([['Crux — target sheet'],[],['Target month',mlabel(SH.month)],['Scope',ctxTitle(f)],['Data up to',ddmm(SH.data_as_of)],[`Last month (${pm}) taken as`,SH.previous_basis],
-   ['Last 3 complete months',(SH.last3||[]).map(mlabel).join(', ')],['Plan',SH.plan_version?'saved plan version '+SH.plan_version:'suggested target (no plan saved)'],['Quarter',SH.quarter_label],
-   ['Quarter plan before this month',q.plan_before],['Actual / outlook before this month',q.outlook_before],['Quarter shortfall before this month',q.shortfall_before],[],['Build-up','₹'],...(SH.bridge||[]).map(b=>[b.label,b.value]),[],
-   ['Target cases',t.tgt_cases],['Target revenue',t.tgt_rev],['Catch-up wanted',t.cu_wanted],['Catch-up added (after caps)',t.catchup_rev],[],['Settings','catch-up '+Math.round((SH.params||{}).catchup*100)+'%, cap last month + '+Math.round((SH.params||{}).cap_over_last*100)+'%, minimum growth '+((SH.params||{}).gmin*100).toFixed(1)+'%'],
-   ['Clients left out (no business in India for 3 months)',(SH.excluded_clients||[]).join(', ')]]);sm['!cols']=[{wch:44},{wch:40}];
-  const me=XLSX.utils.aoa_to_sheet([['How the target is set'],[SH.method]]);me['!cols']=[{wch:160}];
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Targets '+mlabel(SH.month).replace(/\s/g,'-'));XLSX.utils.book_append_sheet(wb,sm,'Summary');
-  const OP=(SH.opportunities&&SH.opportunities.list)||[];if(OP.length){const os=XLSX.utils.aoa_to_sheet([['Zone','Location','Client','Potential cases per month','Potential revenue per month','Note'],...OP.map(o=>[zoneLabel(o.zone_group),o.location,o.client,o.pot_cases,o.pot_rev,'no business and no previous target: no target set'])]);os['!cols']=[{wch:22},{wch:30},{wch:22},{wch:14},{wch:14},{wch:44}];XLSX.utils.book_append_sheet(wb,os,'New business (no target)')}
-  XLSX.utils.book_append_sheet(wb,me,'Method');
-  XLSX.writeFile(wb,`Crux_Targets_${SH.month.slice(0,7)}_${(ctxTitle(f)||'PAN_India').replace(/[^A-Za-z0-9]+/g,'_').slice(0,40)}_asof_${SH.data_as_of||''}.xlsx`)}
+ /* wave 103: the flat download is replaced by targetSheetXlsx (Zonal Tracker layout, with a flat sheet inside) */
  await load()}
 
 /* ---- Potential & branches: potential (moved from Growth) + every branch by status, with names ---- */
@@ -1824,6 +2062,7 @@ const vAdmPlan=guard(async s=>{if(!admHead(s,'adm_plan'))return;const m=$('#fMon
  let par={...PLAN0};try{Object.assign(par,JSON.parse(localStorage.getItem('crux_plan_par')||'{}'))}catch{}
  const fld=(k,lab,attrs,help)=>el('label',{class:'pfield'},el('span',{},lab),el('input',{...attrs,'data-k':k,'aria-label':lab,value:par[k],oninput:e=>{par[k]=e.target.value}}),help?el('small',{class:'note'},help):null);
 /* wave 102: no basis setting. wave 102o (owner 8-Nov): floor = last month's actual business + minimum growth, not the old target */
+ {const tb=tgtDownloadBar(f);if(tb)s.append(tb)}
  const out=el('div',{class:'card',style:'margin-top:12px'}),pmsg=el('span',{class:'note'});let mode='preview';
  const msel=el('div',{class:'seg',role:'group','aria-label':'Show'},[['preview','Preview with these settings'],['plan','Saved plan']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-pm':k,onclick:()=>{mode=k;msel.querySelectorAll('button').forEach(b=>{const on=b.dataset.pm===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});load()}},l)));
  async function load(){out.innerHTML='';out.append(el('p',{class:'note'},'Calculating…'));pmsg.textContent='';
@@ -2219,7 +2458,7 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
  const seg=el('div',{class:'seg',role:'group','aria-label':'Colour zones by'},[['organic','vs business as usual'],['target','likely vs target']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-zm':k,
   onclick:e=>{mode=k;seg.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
  box.append(el('div',{class:'tools'},el('span',{class:'note'},'Colour by'),seg),scale,grid);draw()}
-async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance'));const host=el('div',{class:'grid3'});
+async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance — cases'),el('p',{class:'note',style:'margin-top:-4px'},'The big number in each tile is cases so far this month (not ₹); colour = against business as usual or likely vs target.'));const host=el('div',{class:'grid3'});
  let O,P,SP=null,MP=null;try{[O,P,SP,MP]=await Promise.all([api('organic',{month,filters:f,group:'zone',measure:'cases'}),api('potential',{month,filters:f,group:'zone',measure:'cases'}),
    api('split',{month,filters:f,p:{level:'zone',measure:S.measure==='cases'?'cases':'revenue'}}).catch(()=>null),api('market_potential',{month,filters:f}).catch(()=>null)])}catch(e){box.append(el('p',{class:'note'},'Zone view unavailable: '+e.message));return}
  zoneGrid(box,O,P,month,f,SP,MP);box.append(host);
@@ -3102,7 +3341,8 @@ const GLOSS={
  plan:['Quarter plan vs actual','This and next quarter, month by month. Plan = the saved plan, else the tracker target, else the suggested target. Completed months show the actual, the current month its likely month end, later months the current pace. Delta = outlook − plan; shortfall = the part of the plan the outlook does not reach.'],
  variance:['Variance','Outlook − plan for the same months and the same team × client: negative = the outlook is short of the plan. Outlook = actual for completed months, actual so far ÷ the usual share of a month for the running month, current pace for later months.'],
  branch_list:['Branches by status','Every verified branch of our active clients: active = a Force1 case in the last three months; dormant = cases earlier, none in the last three months; never active = no Force1 case since Jan-2026. Estimated value: the branch\'s own average, or the median of active branches of the same client in the same team.'],
- target_sheet:['Target for a month','Starts from last month (actual, expected closure or forecast), adds the BAU change, the plan above BAU, the floors (never below last month\'s actual business or BAU + 2%) and the quarter catch-up (only up to the ceiling — 1.5× the best of last month, 3-month average and BAU — and potential). Viewers see zone and team totals and one team\'s clients at a time; the full sheet is downloaded by admins.'],
+ target_sheet:['Target for a month','Each location × client gets a situation and its own rule: new = last month + 15%; growing = keeps half its momentum (at most +10%); stable = last month carried to the month\'s working days and season; declining = back to its 3-month average; collapsed = recovers half the gap (find the cause first); dormant = old target kept. New, growing and stable add 2.5% of their untapped branch potential, their plan share when higher and the team\'s quarter shortfall by room to grow. Never below last month + 2%, never above 1.5× capacity. Every row shows its branches (active / inactive), reason and maths. Viewers see zone and team totals and one team at a time; admins download the full sheet in the Zonal Tracker layout.'],
+ rca:['Root cause','Gap = target − likely month end (expected revenue so far ÷ the usual share of a month reached by this working day). Business slowdown = expected revenue so far more than 5% below business as usual; target stretch = business at or above its usual level but likely under 95% of target; on track = likely ≥ 95%. Signals: same point last month, branches losing traction or dormant (Force1), cases past due and SLA, branch coverage.'],
  split:['Inside each group','Each group (zone, branch manager, team) broken into its members. On track = 90% or more of its own target to date; behind = 60–90%; far behind = under 60%. "Half from" = the smallest number of members that make half of the group\'s business; people are compared with the median of the same role in the same team.'],
  mtd:['MTD (month-to-date)','The total from the 1st of this month up to the report date. Example: MTD on 9-Oct = all cases from 1-Oct to 9-Oct.'],
  target:['Target','The month\'s goal set by management — in cases, or in ₹ for revenue target. It does not change with performance.'],
