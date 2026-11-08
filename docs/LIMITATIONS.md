@@ -164,8 +164,10 @@ L48 and L49 above are superseded: finance is no longer shared out by expected re
 | L107 | Situation thresholds (collapse 50%, decline 90%, growth 110%, recovery 50%, momentum ≤ +10%, new +15%, activation 2.5%) are analyst judgement, not owner-approved | Targets move if the owner prefers other thresholds | Adjust in Targets → settings (admin); tell Claude the preferred defaults |
 | L108 | Branch counts are per client family in the team (all its products), from the latest potential run (Oct); a product code row shows its family's branches | BOM, BOM MSME PRE and POST rows show the same counts | Totals count each family once |
 | L109 | The Root-cause rule is two-way (business slowdown vs target stretch) on expected revenue; it does not yet weigh manpower, rate changes or client-side events | A cause can be mixed | Signals and actions list branches, backlog and coverage beside it |
-| L110 | The drill-down drawer still shows the day-curve "likely" (₹2.39 cr for Oct) while Overview, Planning, Root cause, the summary and Ask use so far ÷ usual share (₹2.54 cr) | Two projections remain in one place | Align the drawer in the next wave |
-| L111 | The Overview is still about 6,000 px (reordered, not cut); on a phone it is long | Executives scroll on phones | Management summary is the one-page view |
-| L112 | Zone tiles on the Overview stay in cases (now labelled) while the hero is revenue | Mixed units on one page | Switch the tiles to revenue with the organic API's revenue measure |
-| L113 | A temporary test copy of the target function (bi.api_target_sheet_t103) is still in the database; removing it needs the owner's confirmation of a delete | No effect on figures | Confirm and it is dropped |
+| L110 | ~~Two month-end projections~~ — **closed 8-Nov (D265):** one share-of-month rule (working days left); hero, drill-down, Planning, Root cause, summary, Ask and the target sheet agree | — | — |
+| L111 | The Overview is still long when every section is opened; five detail sections now start folded (D268) | Phones still scroll for the open sections | Management summary is the one-page view |
+| L112 | ~~Zone tiles in cases on a revenue page~~ — **closed 8-Nov (D267)** | — | — |
+| L113 | ~~Test copy of the target function~~ — **dropped 8-Nov (D269, bi_103f)** | — | — |
+| L114 | After a full reset of the response cache (as on 8-Nov after D265) the first opening of heavy views can time out until the figures are recomputed (minutes); the night revalidation and the 10-minute daytime job refill the main views | A page may need a reload right after a reset | Reset only when a rule changes |
+| L115 | Situation counts and targets moved with the projection fix (D266); the November sheet is still built on October's expected closure because the 31-Oct and November trackers have not been uploaded | Targets move again when October closes | Upload the trackers |
 

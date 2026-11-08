@@ -1078,14 +1078,7 @@ async function finReviewUI(box){box.innerHTML='';box.append(el('h3',{},'Finance 
  mp.append(el('p',{class:'note'},'Order used: invoice series first, then the location name on the row, then the sheet. Saving re-runs the finance figures.'),el('div',{class:'tools'},kt,key,loc,el('button',{class:'btn primary',onclick:async()=>{msg.textContent='Saving…';try{const r=await finIngest('admin',{op:'map_set',key_type:kt.value,key:key.value,location_id:loc.value||null});msg.textContent='Saved · figures rebuilt in '+((r.derive&&r.derive.ms)||'?')+' ms';load()}catch(e){msg.textContent=e.message}}},'Save mapping'),msg))}
 
 /* ---------- Executive overview: cash and data-health strip ---------- */
-async function ovStrip(box,m,f){try{const d=await api('collections',{month:m,filters:f});box.innerHTML='';
-  const fr=S.meta.freshness||{};const h=el('div',{class:'card'},el('h3',{},'Data readiness'),el('div',{class:'note'},`Business figures to ${ddmm(String(fr.zonal_latest_snapshot||'').slice(0,10))} · Force1 cases to ${ddmm(String(fr.case_latest_received_ist||'').slice(0,10))} · visits to ${ddmm(String(fr.point_latest_created_ist||'').slice(0,10))}`+(d&&d.available?` · outstanding as at ${ddmm(d.snapshot.as_of)} · receipts to ${ddmm(d.receipts.data_through)}`:'')),
-   el('button',{class:'btn sm',style:'margin-top:8px',onclick:()=>go('health')},'Open data readiness →'));
-  if(!d||!d.available){box.append(h);return}const k=d.kpi||{};
-  const c=el('div',{class:'card'},el('h3',{},'Cash and receivables'),el('div',{class:'tiles',style:'margin:0'},tile('Outstanding',fmtL(k.outstanding),'as at '+ddmm(d.snapshot.as_of)),tile('Over 180 days',pct(k.over_180_share),fmtL(k.over_180),k.over_180_share>0.3?'bad':''),tile('Collected '+mlabel(d.receipts.last_complete_month),fmtL(k.collected_last_month),'Realisation '+pct(k.realisation))),
-   el('button',{class:'btn sm',onclick:()=>go('collections')},'Open revenue & collections →'));box.append(c,h)}catch(e){box.innerHTML=''}}
-
-
+/* wave 103: ovStrip removed — the Overview keeps one Operations & Collections card and the stale-data banner */
 /* ---------- wave 097: finance freshness, outstanding reconciliation, collection workbook check ---------- */
 function finFresh(s){const b=el('div',{class:'banner',id:'finFresh',role:'note'},'Checking finance dates…');s.append(b);
  Promise.all([api('coll_recon',{}).catch(()=>null),api('os_recon',{month:$('#fMonth').value,filters:{}}).catch(()=>null)]).then(([C,R])=>{if(!b.isConnected)return;b.textContent='';
@@ -2428,6 +2421,7 @@ function potentialSection(box,month,f){const gs=el('select',{'aria-label':'Poten
 
 /* Overview: zones doing well / needing attention */
 /* wave 096: zone tile map — every zone as a tile, coloured by distance from business as usual (or likely vs target), grey within ±5 %, value and text always shown */
+const ZGM={F:v=>fmt(v),min:100,unit:' cases'};
 function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r=>pz[r.group]=r);
  /* wave 101b: the split inside each zone and its potential sit in the tile; a zone whose total looks fine while most teams are behind, or half of whose business comes from a few teams, is amber, never green */
  const sz={},sm={},mz={};((SP&&SP.groups)||[]).forEach(g=>{sz[zoneLabel(g.group)]=g});((SP&&SP.members)||[]).forEach(x=>{const k=zoneLabel(x.group);(sm[k]=sm[k]||[]).push(x)});((MP&&MP.by_zone)||[]).forEach(z=>{mz[zoneLabel(z.zone_group)]=z});
@@ -2435,15 +2429,15 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
  let mode='organic';const grid=el('div',{class:'zgrid',id:'zoneGrid'}),scale=el('div',{class:'zscale'});
  const tint=x=>{if(x==null)return'var(--panel)';const a=Math.abs(x);if(a<=0.05)return'color-mix(in srgb,var(--muted) 14%,var(--panel))';
   return`color-mix(in srgb,var(${x>0?'--good':'--bad'}) ${Math.round(16+Math.min(1,(a-0.05)/0.25)*36)}%,var(--panel))`};
- const val=r=>{const p=pz[r.group]||{};return mode==='organic'?(r.organic_to_date>=100?r.effort_pct:null):(p.achievement_likely!=null?p.achievement_likely-1:null)};
+ const val=r=>{const p=pz[r.group]||{};return mode==='organic'?(r.organic_to_date>=ZGM.min?r.effort_pct:null):(p.achievement_likely!=null?p.achievement_likely-1:null)};
  const spl=r=>{const g=sz[r.group];if(!g||g.members<2)return null;const wt=g.members-(g.no_target||0),beh=(g.behind||0)+(g.far_behind||0);return{g,wt,beh,most:wt>=3&&beh*2>wt,carried:!!g.carried}};
  const draw=()=>{grid.innerHTML='';rows.forEach(r=>{const lk=(pz[r.group]||{}).achievement_likely,v=val(r),s=spl(r),mp=mz[r.group],mem=sm[r.group]||[];
    const mixed=s&&(s.most||s.carried)&&(v==null||v>-0.05);const bg=mixed?'color-mix(in srgb,var(--ochre) 30%,var(--panel))':tint(v);
    const why=s?(s.carried?`half its business comes from ${s.g.n50} of ${s.g.members} teams`:'')+(s.most?`${s.carried?'; ':''}${s.beh} of ${s.wt} teams behind their target to date`:''):'';
    const t=el('div',{class:'zt2'+(mixed?' zwarn':''),tabindex:'0',role:'button','data-zone':r.group,'data-mixed':mixed?'1':'0',style:'background:'+bg,
-     title:`${r.group}: ${fmt(r.actual)} cases so far · BAU so far ${fmt(r.organic_to_date)} (${pctS(r.effort_pct)}) · likely ${lk!=null?pct(lk):'–'} of target`+(s?` · ${s.g.on_track} of ${s.wt} teams on track, half from ${s.g.n50} of ${s.g.members}`:'')+(mp?` · potential ${fmtL(mp.potential)} (${pct(mp.penetration)} captured)`:'')+'. Click for the drill-down.'},
-    el('b',{},r.group),el('span',{class:'zv'},fmt(r.actual)),
-    el('span',{class:'zn'},mode==='organic'?(r.organic_to_date>=100?pctS(r.effort_pct)+' vs business as usual':'too small to compare'):(lk!=null?'likely '+pct(lk)+' of target':'no target')),
+     title:`${r.group}: ${ZGM.F(r.actual)}${ZGM.unit} so far · BAU so far ${ZGM.F(r.organic_to_date)} (${pctS(r.effort_pct)}) · likely ${lk!=null?pct(lk):'–'} of target`+(s?` · ${s.g.on_track} of ${s.wt} teams on track, half from ${s.g.n50} of ${s.g.members}`:'')+(mp?` · potential ${fmtL(mp.potential)} (${pct(mp.penetration)} captured)`:'')+'. Click for the drill-down.'},
+    el('b',{},r.group),el('span',{class:'zv'},ZGM.F(r.actual)),
+    el('span',{class:'zn'},mode==='organic'?(r.organic_to_date>=ZGM.min?pctS(r.effort_pct)+' vs business as usual':'too small to compare'):(lk!=null?'likely '+pct(lk)+' of target':'no target')),
     mixed?el('span',{class:'zflag'},'⚠ '+(s.carried?`carried by ${s.g.n50} of ${s.g.members}`:`${s.beh} of ${s.wt} teams behind`)):null,
     mem.length>1?el('div',{class:'zsplit','aria-label':`Teams in ${r.group}: ${s?s.g.on_track+' on track, '+s.beh+' behind':''}`},mem.map(x=>el('i',{class:'s-'+String(x.status||'no target').replace(/ /g,'-'),style:`flex:${Math.max(0.004,x.share||0).toFixed(4)} 1 0`,title:`${x.member}: ${pct(x.share)} of the zone · ${x.achievement!=null?pct(x.achievement)+' of its target to date':'no target'} (${x.status})`}))):null,
     s?el('span',{class:'zn'},`${s.g.on_track} of ${s.wt} on track · half from ${s.g.n50} of ${s.g.members}`):(mem.length===1?el('span',{class:'zn'},'1 team'):null),
@@ -2458,15 +2452,16 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
  const seg=el('div',{class:'seg',role:'group','aria-label':'Colour zones by'},[['organic','vs business as usual'],['target','likely vs target']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-zm':k,
   onclick:e=>{mode=k;seg.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
  box.append(el('div',{class:'tools'},el('span',{class:'note'},'Colour by'),seg),scale,grid);draw()}
-async function zoneHighlights(box,month,f){box.append(el('h3',{},'Zones at a glance — cases'),el('p',{class:'note',style:'margin-top:-4px'},'The big number in each tile is cases so far this month (not ₹); colour = against business as usual or likely vs target.'));const host=el('div',{class:'grid3'});
- let O,P,SP=null,MP=null;try{[O,P,SP,MP]=await Promise.all([api('organic',{month,filters:f,group:'zone',measure:'cases'}),api('potential',{month,filters:f,group:'zone',measure:'cases'}),
+async function zoneHighlights(box,month,f){const rv=S.measure!=='cases';ZGM.F=rv?fmtL:fmt;ZGM.min=rv?50000:100;ZGM.unit=rv?'':' cases';
+ box.append(el('h3',{},'Zones at a glance — '+(rv?'expected revenue':'cases')),el('p',{class:'note',style:'margin-top:-4px'},(rv?'The big number in each tile is expected revenue so far this month (cases × rate), the same measure as the top of the page; ':'The big number in each tile is cases so far this month; ')+'colour = against business as usual or likely vs target. Switch Revenue / Cases at the top.'));const host=el('div',{class:'grid3'});
+ let O,P,SP=null,MP=null;try{[O,P,SP,MP]=await Promise.all([api('organic',{month,filters:f,group:'zone',measure:rv?'revenue':'cases'}),api('potential',{month,filters:f,group:'zone',measure:rv?'revenue':'cases'}),
    api('split',{month,filters:f,p:{level:'zone',measure:S.measure==='cases'?'cases':'revenue'}}).catch(()=>null),api('market_potential',{month,filters:f}).catch(()=>null)])}catch(e){box.append(el('p',{class:'note'},'Zone view unavailable: '+e.message));return}
  zoneGrid(box,O,P,month,f,SP,MP);box.append(host);
  const pz={},sz={};((P&&P.rows)||[]).forEach(r=>pz[r.group]=r);((SP&&SP.groups)||[]).forEach(g=>{sz[zoneLabel(g.group)]=g});
- const rows=(O.rows||[]).filter(r=>r.organic_to_date>=100).map(r=>{const g=sz[r.group];const wt=g?g.members-(g.no_target||0):0,beh=g?(g.behind||0)+(g.far_behind||0):0;
+ const rows=(O.rows||[]).filter(r=>r.organic_to_date>=ZGM.min).map(r=>{const g=sz[r.group];const wt=g?g.members-(g.no_target||0):0,beh=g?(g.behind||0)+(g.far_behind||0):0;
    return{...r,p:pz[r.group]||{},g,wt,beh,mixed:!!g&&((wt>=3&&beh*2>wt)||g.carried)}});
  const splitTxt=r=>r.g&&r.g.members>1?` · teams: ${r.g.on_track} of ${r.wt} on track, half from ${r.g.n50} of ${r.g.members}`:'';
- const line=r=>ddEl(el('li',{},el('strong',{},r.group),` — ${fmt(r.actual)} so far vs business as usual ${fmt(r.organic_to_date)} → ${r.effort>=0?'+':'−'}${fmt(Math.abs(r.effort))}${sgnp(r.effort_pct)}`,
+ const line=r=>ddEl(el('li',{},el('strong',{},r.group),` — ${ZGM.F(r.actual)} so far vs business as usual ${ZGM.F(r.organic_to_date)} → ${r.effort>=0?'+':'−'}${ZGM.F(Math.abs(r.effort))}${sgnp(r.effort_pct)}`,
   r.p.achievement_likely!=null?`; likely ${pct(r.p.achievement_likely)} of target`:'',splitTxt(r),' ',orgExplainRow(O,r)),()=>entityCtx('zone',r.group,month,f),r.group);
  const above=rows.filter(r=>r.status==='above').sort((a,b)=>b.effort_pct-a.effort_pct);
  const good=above.filter(r=>!r.mixed).slice(0,4),mixed=rows.filter(r=>r.mixed&&r.status!=='below').sort((a,b)=>b.beh/b.wt-a.beh/a.wt).slice(0,4),bad=rows.filter(r=>r.status==='below').sort((a,b)=>a.effort_pct-b.effort_pct).slice(0,4);
@@ -3408,12 +3403,14 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===
 
 /* ---------- Collapsible sections: every sub-heading in a page folds its content ---------- */
 const FOLD={};try{Object.assign(FOLD,JSON.parse(localStorage.getItem('crux_fold')||'{}'))}catch{}
+/* wave 103: on the Overview the detail sections start folded (headline, at a glance, zones, plan, operations & collections and branch managers open) */
+const FOLD0=[/^overview\|(Period comparison|Operations pulse|Daily additions|What needs attention|Top branch opportunities)/];
 function foldKey(h){return (S.section||'')+'|'+h.textContent.replace(/[▾▸?]/g,'').trim().slice(0,60)}
 function foldApply(h,closed){h.setAttribute('aria-expanded',String(!closed));h.classList.toggle('folded',closed);let n=h.nextElementSibling;while(n&&!/^H[23]$/.test(n.tagName)){n.classList.toggle('fold-hide',closed);n=n.nextElementSibling}}
 function makeFoldable(h){if(h.dataset.fold||h.closest('#askPanel,.zt-panel table'))return;h.dataset.fold='1';h.classList.add('foldable');h.tabIndex=0;h.setAttribute('role','button');h.title='Click to collapse or expand';
  const k=foldKey(h);const toggle=()=>{const c=!h.classList.contains('folded');FOLD[k]=c;try{localStorage.setItem('crux_fold',JSON.stringify(FOLD))}catch{}foldApply(h,c)};
  h.addEventListener('click',toggle);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
- if(FOLD[k])setTimeout(()=>foldApply(h,true),0)}
+ if(FOLD[k]===undefined?FOLD0.some(re=>re.test(k)):FOLD[k])setTimeout(()=>foldApply(h,true),0)}
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1)return;if(n.tagName==='H3')makeFoldable(n);n.querySelectorAll&&n.querySelectorAll('h3').forEach(makeFoldable);
  if(n.tagName==='H3'||n.tagName==='H2')return;let p=n.previousElementSibling;while(p&&!/^H[23]$/.test(p.tagName))p=p.previousElementSibling;if(p&&p.tagName==='H3'&&p.classList.contains('folded'))n.classList.add('fold-hide')}))).observe(document.getElementById('view'),{childList:true,subtree:true});
 
