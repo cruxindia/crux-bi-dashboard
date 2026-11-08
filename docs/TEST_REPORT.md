@@ -619,3 +619,13 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Viewer gate (SQL, bi_call without admin key) | target_sheet rows 0, rows_hidden, 14 zones, 35 teams; team roll-ups sum ₹30,127,303 vs total ₹30,127,308 (row rounding); cases 78,670 = 78,670; opportunity list withheld, 34 team totals; `team` = 8 returns its 11 rows and 3 opportunities; plan by_cell withheld, `team` = 8 returns 15 cells |
 | Browser, local | test_102_ui 14/14 (new V1 viewer, A1 admin, F1 floor; T2 rule text; T4 example 13) |
 | Browser, live (ccbc88f, md5 95c82ebb… = local build) | test_102_ui 14/14 · test_101_ui 12/12 · test_100_ui 8/8 |
+
+## 8-Nov-2026 11:15 IST — wave 103 (situational targets, Zonal Tracker download, root cause, management summary, UX)
+| Check | Result |
+|---|---|
+| Situational engine (SQL, Nov-26) | 195 rows: growing 67, stable 30, declining 16, collapsed 31, new 7, dormant 44; 0 below last month × 1.02, 0 above 1.5 × capacity, 0 catch-up on declining / collapsed, 0 dormant changed; total ₹3,04,55,162 / 80,032 cases; Bengaluru BOM MSME PRE 6 (collapsed, maths checked by hand), Bilaspur BOM MSME PRE 20 (dormant) |
+| Download (openpyxl) | 5 sheets; header row 3 with all 15 required columns; zone header fill #BDD7EE; outline levels 0/1/2; freeze C4; Pan India 80,032 = API; control line "195 of 195 target rows placed"; ₹1 rounding difference on revenue |
+| Ask Crux | "why is Pune behind target" → slowdown ₹1.44 L / stretch ₹4.13 L, link to Root cause; "why is Rest of Maharashtra zone behind" (was misrouted) → 9 teams, all target stretch; "which teams are furthest from target" → team list; likely ₹2.54 cr = Overview |
+| Browser, local | test_103 9/9 · test_102 14/14 (T2 rule text, T4 example 6, F1 method updated) · test_101 12/12 · test_100 8/8 · test_097 14/14 · test_098b 8/8 (tabs clicked) |
+| Browser, live (dad0270, md5 2b7ea66c… = local build) | test_103 9/9 · test_102 14/14 · test_101 12/12 · test_100 8/8 · test_097 14/14 · test_098b 8/8 |
+| Page height (desktop) | Business tracker 10,012 → 1,692 px; People 8,518 px → one view at a time; Root cause 1,704 px; Management summary 1,159 px; Overview 6,252 → 6,053 px |
