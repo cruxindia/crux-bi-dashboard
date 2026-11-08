@@ -629,3 +629,14 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Browser, local | test_103 9/9 · test_102 14/14 (T2 rule text, T4 example 6, F1 method updated) · test_101 12/12 · test_100 8/8 · test_097 14/14 · test_098b 8/8 (tabs clicked) |
 | Browser, live (dad0270, md5 2b7ea66c… = local build) | test_103 9/9 · test_102 14/14 · test_101 12/12 · test_100 8/8 · test_097 14/14 · test_098b 8/8 |
 | Page height (desktop) | Business tracker 10,012 → 1,692 px; People 8,518 px → one view at a time; Root cause 1,704 px; Management summary 1,159 px; Overview 6,252 → 6,053 px |
+
+## 8-Nov-2026 12:15 IST — wave 103 close-out (open items finished, test copy dropped)
+| Check | Result |
+|---|---|
+| Share of the month (SQL backtest, Jun–Sep, earlier months only) | working days left vs same working day: mean absolute error 1.5% vs 2.7% (last 6 working days), 3.2% vs 3.9% (mid-month), 6.4% vs 7.0% (days 5–10); 30-Oct share 0.903 → 0.958 |
+| One projection | Overview hero ₹2,39,43,895 · drill-down ₹2,39,35,599 (0.03%) · potential run 7 current 65,185 cases = day-curve projection 65,185 |
+| Targets after the fix (SQL) | Nov-26 ₹2,90,49,914 / 76,118 cases; 0 below floor, 0 above ceiling; examples 6 (collapsed) and 20 (dormant) |
+| Dropped | bi.api_target_sheet_t103 gone; 0 references in functions or jobs |
+| Browser, live (929d1c0) | test_102 14/14 · test_100 8/8 · test_097 14/14 · test_098b 8/8 (test_103 9/10: Overview 4,718 px > 4,500 bar → branch-manager panel paginated to 8 rows) |
+| Browser, live (e4b9832, md5 f7d7d675… = local build) | test_103 10/10 (new P1 one projection; O1 folds, ₹ tiles, page 4,468 px locally) · test_101 12/12 · test_096 11/11 |
+| Note | right after the full cache reset two local runs hit gateway time-outs on cold views (tat_summary, drill_ops); both passed on re-run once warm (L114) |
