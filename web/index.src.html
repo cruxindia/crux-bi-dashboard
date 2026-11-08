@@ -1827,7 +1827,7 @@ async function targetSheetXlsx(month,f,p,{onStatus}={}){const st=t=>onStatus&&on
  // ---- workbook
  const wb=new EJ.Workbook();wb.creator='Crux BI';wb.created=new Date();
  const ws=wb.addWorksheet('Target '+mm.replace(' ','-'),{views:[{state:'frozen',xSplit:2,ySplit:3}],properties:{outlineLevelRow:2,defaultRowHeight:15},pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
- ws.properties.outlineProperties={summaryBelow:true,summaryRight:false};
+ /* wave 104: no outlineProperties — with fitToPage ExcelJS writes <pageSetUpPr> before <outlinePr>, which breaks the schema order and Excel refuses the file; Excel's default (summary rows below) is what we want */
  const COLS=[['Location',32],['Client',18],['Branch manager',16],[`Last month actual cases (${pm})`,12],[`Last month actual revenue (${pm})`,14],['Last 3 months average cases',11],['Last 3 months average revenue',14],
   ['Organic (BAU) cases',11],['Organic (BAU) revenue',14],[`Target cases (Target ${mm})`,11],[`Target revenue (Revenue Tgt ${mm})`,15],['Growth vs last month',10],['Active branches',9],['Inactive branches',9],['Total branches',9],
   ['Situation',20],['Reason',60],['Calculation (maths)',90],['Previous target cases',10],['Previous target revenue',13],['Potential revenue',13],['₹ per case',9]];

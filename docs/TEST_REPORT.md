@@ -640,3 +640,10 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Browser, live (929d1c0) | test_102 14/14 · test_100 8/8 · test_097 14/14 · test_098b 8/8 (test_103 9/10: Overview 4,718 px > 4,500 bar → branch-manager panel paginated to 8 rows) |
 | Browser, live (e4b9832, md5 f7d7d675… = local build) | test_103 10/10 (new P1 one projection; O1 folds, ₹ tiles, page 4,468 px locally) · test_101 12/12 · test_096 11/11 |
 | Note | right after the full cache reset two local runs hit gateway time-outs on cold views (tat_summary, drill_ops); both passed on re-run once warm (L114) |
+
+## 8-Nov-2026 17:05 IST — wave 104 (target sheet opens in Excel)
+| Check | Result |
+|---|---|
+| Owner's file | zip valid; no control characters, NaN or empty values; `<sheetPr><pageSetUpPr/><outlinePr/></sheetPr>` = wrong schema order (cause) |
+| Repaired file | `<sheetPr><outlinePr/><pageSetUpPr/></sheetPr>`, folder entries removed; LibreOffice converts it; figures unchanged (76,118 cases) |
+| New download | sheetPr = `<pageSetUpPr/>` only; test_103 10/10 locally with the new XML-order check (D1) |
