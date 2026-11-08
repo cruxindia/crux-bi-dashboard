@@ -609,3 +609,13 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Browser, local | test_102_ui 11/11 (new T4), test_101_ui 12/12 |
 | Browser, live (bfa34b1, md5 87123253… = local build) | test_102_ui 11/11 · test_101_ui 12/12 · test_100_ui 8/8 |
 
+
+## 8-Nov-2026 00:50 IST — wave 102o–p (floor = last month's actual; full download admin-only)
+| Check | Result |
+|---|---|
+| Floor (SQL, Nov sheet) | 151 active rows: 0 below last month × 1.02 (minimum ratio 1.0199); 0 above the ceiling; 125 below their old tracker target (allowed by D254); Apr-27 sheet: 0 below last month × 0.738 (allowed fall 26.2%) |
+| Suggested path (SQL) | every active team × client ≥ previous month × 1.02 except Mar→Apr (signal); the 28 flat cells are all dormant (old target kept) |
+| Totals | Nov sheet ₹30,127,308 / 78,670 cases (was ₹34,285,354 / 88,059); Q3 FY27 plan ₹89,381,873 (was ₹99.9 m); owner examples Bengaluru BOM MSME PRE 13 (was 14), Bilaspur 20 |
+| Viewer gate (SQL, bi_call without admin key) | target_sheet rows 0, rows_hidden, 14 zones, 35 teams; team roll-ups sum ₹30,127,303 vs total ₹30,127,308 (row rounding); cases 78,670 = 78,670; opportunity list withheld, 34 team totals; `team` = 8 returns its 11 rows and 3 opportunities; plan by_cell withheld, `team` = 8 returns 15 cells |
+| Browser, local | test_102_ui 14/14 (new V1 viewer, A1 admin, F1 floor; T2 rule text; T4 example 13) |
+| Browser, live (ccbc88f, md5 95c82ebb… = local build) | test_102_ui 14/14 · test_101_ui 12/12 · test_100_ui 8/8 |
