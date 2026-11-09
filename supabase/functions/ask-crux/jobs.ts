@@ -63,7 +63,8 @@ async function dailyBrief(env: JobEnv) {
     out = { text: p.text + `\n\n*${p.dropped} statement${p.dropped === 1 ? ' was' : 's were'} left out because their figures could not be checked against the dashboard.*`,
       model: d.model, rounds: d.rounds, usage: d.usage, steps: (e as AgentError).steps ?? [], check: { figures: d.check.figures - d.check.untraced.length, traced: d.check.traced, untraced: [] } };
   }
-  const body = clean(env.pseudo.show(out.text));
+  // field names the model sometimes copies from the look-ups, e.g. "(change_vs_last_month: -0.0679)", are removed (the figure check has already passed)
+  const body = clean(env.pseudo.show(out.text)).replace(/\s*\(`?[a-z]+(?:_[a-z0-9]+)+`?\s*:\s*`?[-\d.,%]+`?\)/g, '');
   const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: env.pseudo.show(String(s.label ?? s.tool)), ok: s.ok, rows: s.rows ?? null }));
   return { kind: 'daily_brief', for_date: day, audience: 'viewer', title: `Morning briefing · ${day}`, body_md: body, model: out.model,
     data: { as_of: env.dataAsOf, month: env.dataMonth, check: { ...out.check, untraced: out.check.untraced.map((x: string) => env.pseudo.show(x)) }, pruned, steps }, usage: out.usage };
@@ -87,7 +88,8 @@ function prune(text: string, bad: string[]) {
 // ---------------------------------------------------------------- market and client news (free RSS; links come from the feeds, never from the AI)
 const BANK_NAMES: Record<string, string> = { SBI: 'State Bank of India', BOM: 'Bank of Maharashtra', BOB: 'Bank of Baroda', BOI: 'Bank of India', CANB: 'Canara Bank',
   IDBI: 'IDBI Bank', LICHFL: 'LIC Housing Finance', PNB: 'Punjab National Bank', UBI: 'Union Bank of India', HDFC: 'HDFC Bank', ICICI: 'ICICI Bank', AXIS: 'Axis Bank',
-  CANFH: 'Can Fin Homes', COSMOS: 'Cosmos Bank', KBL: 'Karnataka Bank', IOB: 'Indian Overseas Bank', CBI: 'Central Bank of India', UCO: 'UCO Bank', AXISF: 'Axis Finance' };
+  CANFH: 'Can Fin Homes', COSMOS: 'Cosmos Bank', KBL: 'Karnataka Bank', IOB: 'Indian Overseas Bank', CBI: 'Central Bank of India', UCO: 'UCO Bank', AXISF: 'Axis Finance',
+  UNION: 'Union Bank of India', SVC: 'SVC Co-operative Bank', DNSB: 'Dombivli Nagari Sahakari Bank', BCCB: 'Bassein Catholic Co-operative Bank' };
 type Item = { title: string; link: string; date: string; source: string; feed: string };
 const RELEVANT = /\b(bank|banks|banking|loan|loans|lend\w*|rbi|kyc|nbfc|housing finance|home finance|msme|fraud|credit|deposit|npa|verification)\b/i;
 const unx = (s: string) => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -128,8 +130,9 @@ async function marketNews(env: JobEnv) {
   const names = top.map((f) => BANK_NAMES[f] ?? f);
   // several free sources, because a feed can be unreachable from the server on a given day (Google News, Bing News, Economic Times, Business Standard)
   const sources: [string, string, number, RegExp?][] = [['https://www.rbi.org.in/pressreleases_rss.xml', 'RBI press releases', 4], ['https://www.rbi.org.in/notifications_rss.xml', 'RBI notifications', 7],
-    ...names.map((n) => [gn(`"${n}"`), `Google News: ${n}`, 3] as [string, string, number]), ...names.map((n) => [bn(`"${n}"`), `Bing News: ${n}`, 3] as [string, string, number]),
-    ...extra.slice(0, 6).map((q) => [gn(q), `Google News: ${q}`, 3] as [string, string, number]),
+    // (Google News RSS returned nothing from the server on 9-Nov, so Bing News is used for searches; Google is kept for one query as a check)
+    ...names.map((n) => [bn(`"${n}"`), `Bing News: ${n}`, 3] as [string, string, number]), [gn(`"${names[0] ?? 'State Bank of India'}"`), `Google News: ${names[0] ?? 'SBI'}`, 3] as [string, string, number],
+    ...extra.slice(0, 6).map((q) => [bn(q), `Bing News: ${q}`, 3] as [string, string, number]),
     ['https://economictimes.indiatimes.com/industry/banking/finance/banking/rssfeeds/13358319.cms', 'Economic Times banking', 3, RELEVANT],
     ['https://bfsi.economictimes.indiatimes.com/rss/topstories', 'ET BFSI', 3, RELEVANT],
     ['https://www.business-standard.com/rss/finance/news-10301.rss', 'Business Standard finance', 3, RELEVANT]];
