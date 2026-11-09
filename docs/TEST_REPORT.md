@@ -727,8 +727,9 @@ Conclusion: similarity cannot separate them → word guard (D281).
 **Browser (test_105c_ui.py)**
 | Check | Local | Live |
 |---|---|---|
-| M1 same question twice: "From memory" chip, ♻ note, "Ask fresh instead", 0 AI calls | ✓ | pending |
-| M2 "Ask fresh instead" sends fresh:true, new answer, no ♻ note | ✓ | pending |
-| M3 Admin → Ask Crux learning: explanation, 5 tiles, lessons and recent answers with switches, all three modes | ✓ (after fix bi_105e) | pending |
-| M4 viewer requests carry no admin key; only bi_ask_learning carries it; no console errors | ✓ | pending |
+| M1 same question twice: "From memory" chip, ♻ note, "Ask fresh instead", 0 AI calls | ✓ | ✓ |
+| M2 "Ask fresh instead" sends fresh:true, new answer, no ♻ note | ✓ | ✓ |
+| M3 Admin → Ask Crux learning: explanation, 5 tiles, lessons and recent answers with switches, all three modes | ✓ (after fix bi_105e) | ✓ |
+| M4 viewer requests carry no admin key; only bi_ask_learning carries it; no console errors | ✓ | ✓ |
 
+Regression: test_105_ui.py (K1–K6, wave 105 Ask panel) 6/6 on the live site after this change. Published commit 4255211; live index.html = local build (md5 8bb81e73…).
