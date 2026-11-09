@@ -251,8 +251,11 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const lim = Math.min(Math.max(Number(a?.limit) || 15, 1), 40);
     const M = await t.api('market_potential', { month, filters });
     const grp = level === 'zone' ? M?.by_zone : level === 'location' ? M?.by_location : M?.by_client;
-    const rows = (grp ?? []).slice().sort((x: any, y: any) => (+y.headroom || 0) - (+x.headroom || 0));
-    return { label: `Potential by ${level}`, rows: rows.length, data: fit({ month, filters, as_of: M?.as_of, total: M?.total, rows: rows.slice(0, lim), rows_total: rows.length,
+    // clear names: total potential = current business + untapped headroom
+    const ren = (o: any) => { if (!o || typeof o !== 'object') return o; const { potential, headroom, current, penetration, ...rest } = o;
+      return { ...rest, total_potential: potential, current_business: current, untapped_headroom: headroom, penetration_current_vs_potential: penetration }; };
+    const rows = (grp ?? []).slice().sort((x: any, y: any) => (+y.headroom || 0) - (+x.headroom || 0)).map(ren);
+    return { label: `Potential by ${level}`, rows: rows.length, data: fit({ month, filters, as_of: M?.as_of, total: ren(M?.total), rows: rows.slice(0, lim), rows_total: rows.length,
       top_branch_opportunities: (M?.top ?? []).slice(0, 10) }, 15000) };
   },
 
@@ -315,7 +318,7 @@ function figures(s: string): Fig[] {
     if (!rupee && !unit && Math.abs(v) <= 12 && !dec) continue;           // small counts (3 months, top 5)
     if (!rupee && !unit && !dec && v >= 1990 && v <= 2100) continue;      // years
     void pre;
-    out.push({ text: m[0].trim(), v: pct ? v / 100 : v * mult, tol: (pct ? 0.5 * 10 ** -d / 100 : 0.5 * 10 ** -d * mult) * 1.05 + 1e-9, pct, money: rupee || mult > 1 });
+    out.push({ text: m[0].trim(), v: pct ? v / 100 : v * mult, tol: (pct ? 10 ** -d / 100 : 10 ** -d * mult) * 1.02 + 1e-9, pct, money: rupee || mult > 1 });
   }
   return out;
 }
@@ -398,6 +401,9 @@ DASHBOARD RULES (always apply)
 - BAU (business as usual) = what the team × client usually does in such a month from its own history. Potential = what all client branches could bring.
 - Suggested targets: each team × client gets a situation (new, growing, stable, declining, collapsed, dormant) and its own rule; never below last month + 2%; never above 1.5× capacity; rows show branches active/inactive, reason and maths.
 - Client rows of the full target sheet are admin-only for all India; viewers get zone and team totals and one team at a time (team_id).
+- Prefer the figures the dedicated tools return; do not recompute with run_sql what a tool already gives. Receivable ageing (over 90 / over 180 days) comes from get_collections (by_location, by_client, ageing); the outstanding view has invoice months only, not exact age.
+- Potential: total_potential = current_business + untapped_headroom; penetration = current business ÷ total potential.
+- A question about a person (branch manager) is about everything that person manages: call get_branch_managers with filters {} (all India) and find the person's code there; a team named after a person is only one of their teams.
 
 TEAMS (team_id=label [zone group]): ${teams}
 CLIENT FAMILIES: ${fams}
@@ -446,21 +452,27 @@ export async function runAgent(o: {
   let lastErr: { msg: string; status: number } = { msg: 'no model available', status: 0 };
   for (const model of o.models) {
     const contents: Content[] = [...hist, first];
-    let toolCalls = 0, finalText = '', rounds = 0, failed = false, repaired = false, firstText = '';
+    let toolCalls = 0, finalText = '', rounds = 0, failed = false, repaired = false, firstText = '', extra = 0;
     let firstCheck: ReturnType<typeof checkFigures> | null = null, finalCheck: ReturnType<typeof checkFigures> | null = null;
     const mSteps: any[] = [];
     const mEvidence: any[] = [];
-    while (rounds < o.maxRounds) {
+    while (rounds < o.maxRounds + extra) {
       if (Date.now() > o.deadline) { lastErr = { msg: 'time limit reached', status: 0 }; failed = true; break; }
       if (!(await o.budget())) throw new AgentError('AI daily limit reached', 429, steps);
       rounds++;
-      const last = rounds === o.maxRounds || toolCalls >= 8;
+      const last = rounds >= o.maxRounds || toolCalls >= 8;
       const r = await o.ai.chat(model, { system: o.system, contents, tools: DECLS, noTools: last, maxTokens: 4096, temperature: 0.2 });
       usage.calls++; usage.prompt += r.promptTokens ?? 0; usage.output += r.outputTokens ?? 0;
       await o.rec({ model, purpose: 'agent', ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
         prompt_tokens: r.promptTokens, output_tokens: r.outputTokens, note: r.ok ? (r.calls.length ? 'tools: ' + r.calls.map((c) => c.name).join(',') : 'answer') : r.error });
       if (!r.ok) { lastErr = { msg: r.error ?? 'model error', status: r.status }; failed = true; break; }
       contents.push(r.content!);
+      // some models still ask for tools on the last turn: answer once that no more look-ups are allowed, then take the final answer
+      if (r.calls.length && last && extra < 1) {
+        extra++;
+        contents.push({ role: 'user', parts: r.calls.map((c) => ({ functionResponse: { name: c.name, ...(c.id ? { id: c.id } : {}), response: { error: 'No more look-ups allowed. Write the final answer now from the results you already have.' } } })) });
+        continue;
+      }
       if (r.calls.length && !last) {
         const calls = r.calls.slice(0, 4);
         const results = await Promise.all(calls.map(async (c) => {
@@ -471,7 +483,7 @@ export async function runAgent(o: {
             const out = await fn(t, realArgs);
             const hidden = pseudo.hideAny(out.data);
             mEvidence.push(hidden);
-            mSteps.push({ tool: c.name, label: out.label, args: c.args, ok: true, rows: out.rows, ms: Date.now() - t0 });
+            mSteps.push({ tool: c.name, label: pseudo.hide(out.label), args: c.args, ok: true, rows: out.rows, ms: Date.now() - t0 });
             return { c, response: { result: hidden } };
           } catch (e) {
             const msg = pseudo.hide(String((e as Error)?.message ?? e).slice(0, 400));

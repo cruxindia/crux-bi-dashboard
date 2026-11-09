@@ -274,3 +274,20 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.organic_pairs(month)` | BAU basis; the running tracker month is now projected to month end when it is part of the history window (coming months only) |
 | Ask Crux handlers | `bi.ask_h_target_month`, `bi.ask_h_inactive`, `bi.ask_h_branch_names` |
 
+## AI agent data access (9-Nov-2026, wave 105)
+| Object | What it is |
+|---|---|
+| schema ai | Curated read-only views for the Ask Crux agent; no personal-data columns; not exposed through the public API |
+| ai.teams / ai.clients | team id, label, zone group, region, tier, roll-up flag / client code, name, family, product |
+| ai.monthly_business | bi.v_month_business by month × team × client: cases, revenue, tracker targets, as_of |
+| ai.tracker_daily | Zonal Tracker leaf rows per report date (cumulative month to date) |
+| ai.cases | Force1 case records (dates in IST, raw TAT hours) |
+| ai.branches | Branch universe and active / dormant / never-active rule of bi.api_branch_list (same counts: 2,883 / 1,316 / 61,769) |
+| ai.potential | bi.potential_cell for the latest potential run, by layer |
+| ai.outstanding / ai.collections | latest committed outstanding / collection workbook by team × family × invoice / receipt month |
+| ai.run_select(q, max_rows) | the agent's SQL tool; owner ai_reader; validator + read-only transaction + EXPLAIN cost cap; ≤ 500 rows |
+| bi.ai_pii_tokens() | person-name tokens hidden from the AI (scrub rule + names in team-label brackets, bi_105b) |
+| bi.ai_agent_log(p) | stores question, answer, trace in bi.ai_message (+ conversation) |
+| bi.ai_message.trace | look-ups, rounds, tokens, figure check, models tried (codes only, no names) |
+| bi_ai_gateway ops | pii_tokens, sql, agent_log, history (service role only) |
+| bi.ai_config AGENT_* | AGENT_ENABLED, AGENT_MODEL (gemini-3.5-flash-lite), AGENT_FALLBACK_MODEL (gemini-2.5-flash), AGENT_TIMEOUT_MS 25000, AGENT_MAX_ROUNDS 5 |

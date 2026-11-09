@@ -249,3 +249,8 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 - **Variance** = outlook − plan; variance % = variance ÷ plan; levels add up (zone = Σ teams = Σ team × client).
 - **Branch status** (verified branches of active clients): active = Force1 case in the last 3 months; dormant = earlier cases only; never active = none since Jan-2026.
 
+## Ask Crux v4 — the AI analyst (9-Nov-2026, wave 105)
+- **How an answer is made:** question (+ the page month and filters, + last 3 turns) → Gemini decides which look-ups it needs → tools run the dashboard calculations (bi_call) or one read-only SQL query (ai.run_select) → Gemini writes the answer → figure check → stored in bi.ai_message with its trace.
+- **Figure check:** every figure in the answer (₹ / L / cr / % / counts; dates, years and counts ≤ 12 ignored) must match a looked-up figure, or a difference, sum, ratio or % change of two figures from the same row or a total, within one unit of the last digit shown. 3+ untraced figures, or more than 25%, → calculated answer shown instead.
+- **Same rules as the dashboard:** likely month end = so far ÷ share of month done; vs BAU = so far ÷ BAU − 1; root cause: ahead (≥ 100%), on track (≥ 95%), business slowdown (vs BAU < −5%), else target stretch; potential = current + untapped headroom; penetration = current ÷ potential.
+- **Names:** replaced by codes before anything is sent to the AI; shown back in the answer.

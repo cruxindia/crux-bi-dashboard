@@ -178,10 +178,10 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 3 }).catch(() => []) : [];
   const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
   const system = pseudo.hide(systemPrompt({ teams: meta?.locations ?? [], clients: meta?.clients ?? [], docs, dataAsOf, dataMonth, today }));
-  const primary = cfg.AGENT_MODEL, fb = cfg.AGENT_FALLBACK_MODEL;
-  const models = [...new Set((Date.now() < agentCoolUntil && fb ? [fb, primary] : [primary, fb]).filter(Boolean))];
+  const primary = cfg.AGENT_MODEL, fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  const models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
   const out = await runAgent({ ai: provider(Number(cfg.AGENT_TIMEOUT_MS || 25000), 0), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
-    docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 115000,
+    docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
     budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
   // names back for display; the "Next:" line becomes a suggested question
@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
     catch (e) {
       const st = (e as AgentError)?.status ?? 0, msg = String((e as Error)?.message ?? e);
       agentNote = st === 429 || /quota|RESOURCE_EXHAUSTED|daily limit/i.test(msg)
-        ? 'The AI analyst has reached its free daily limit (Google Gemini free tier), so this is the standard calculated answer. Try again later or tomorrow.'
+        ? 'The AI analyst is busy or has used up its free Google Gemini quota for now, so this is the standard calculated answer. Try again in a few minutes.'
         : st === 422 ? `The AI analyst's answer did not pass the figure check (${msg.slice(0, 120)}), so this is the standard calculated answer.`
         : `The AI analyst could not finish (${msg.slice(0, 120)}), so this is the standard calculated answer.`;
     }

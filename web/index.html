@@ -3227,6 +3227,10 @@ function askRenderAgent(a,askNext){const box=el('div',{class:'msg bot askans'});
  box.append(el('p',{class:'askcheck'+(unt.length?' warn':'')},unt.length?`⚠ ${unt.length} of ${ck.figures} figures could not be traced to the data: ${unt.join(', ')}. Check them on the dashboard before using them.`:ck.figures?`✓ All ${ck.figures} figures in this answer were checked against the data the AI looked up.`:'No figures in this answer.'));
  if((a.next||[]).length&&askNext){const d=el('div',{class:'askchips'},el('span',{class:'note'},'Ask next: '));a.next.forEach(x=>d.append(el('button',{type:'button',class:'btn sm ghost',onclick:()=>askNext(x)},x)));box.append(d)}
  const st=(a.steps||[]);
+ // the dashboard pages behind the look-ups the AI made, to check or go deeper
+ const SECT={get_breakdown:['rca','Root cause'],get_targets:['planning','Planning & forecasting'],get_plan:['planning','Planning & forecasting'],get_potential:['planning','Planning & forecasting'],get_collections:['collections','Revenue & collections'],get_operations:['tat','TAT & operations'],get_branch_managers:['people','People']};
+ const pages=[...new Map(st.filter(x=>x.ok&&SECT[x.tool]).map(x=>[SECT[x.tool][0],SECT[x.tool]])).values()];
+ if(pages.length){const d=el('div',{class:'askchips'},el('span',{class:'note'},'Open on the dashboard: '));pages.forEach(([k,l])=>d.append(el('button',{type:'button',class:'btn sm',onclick:()=>go(k)},'↗ '+l)));box.append(d)}
  box.append(el('details',{},el('summary',{},`How I found this (${st.filter(x=>!x.auto).length} look-ups${a.ms?', '+(a.ms/1000).toFixed(1)+' s':''})`),
   el('ol',{class:'asksteps'},st.map(x=>el('li',{},`${x.label}${x.auto?' — started with the page month and filters':''}${x.rows!=null?' · '+fmt(x.rows)+' rows':''}${x.ok?'':' · failed: '+(x.error||'')}`,x.detail?el('code',{},x.detail):null))),
   (a.sources||[]).length?el('p',{},'Based on: '+a.sources.join('; ')):null,
