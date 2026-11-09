@@ -45,6 +45,7 @@ async function dailyBrief(env: JobEnv) {
     `**Watch list** — 3 to 5 risks or anomalies (falling clients, big gaps, receivables over 180 days, open backlog), each with one figure copied from a look-up ` +
     `(for example a client's change_vs_last_month, a zone's gap, over-180-day receivables of a team from get_collections, the open backlog).\n` +
     `**Today's actions** — three actions, each naming the zone, team or client and why (a figure only if it is copied from a look-up).\n` +
+    `Write for managers: no field names, code formatting or raw decimals (write 6.8%, not -0.0679). ` +
     `Never name or score a person or branch manager. Every figure must come from the look-ups: quote them as the look-ups give them (rounding is fine) and do not add up, ` +
     `average or subtract several rows yourself. About 25 figures in total is enough.`;
   let out: any, pruned: any = null;
@@ -88,9 +89,10 @@ const BANK_NAMES: Record<string, string> = { SBI: 'State Bank of India', BOM: 'B
   IDBI: 'IDBI Bank', LICHFL: 'LIC Housing Finance', PNB: 'Punjab National Bank', UBI: 'Union Bank of India', HDFC: 'HDFC Bank', ICICI: 'ICICI Bank', AXIS: 'Axis Bank',
   CANFH: 'Can Fin Homes', COSMOS: 'Cosmos Bank', KBL: 'Karnataka Bank', IOB: 'Indian Overseas Bank', CBI: 'Central Bank of India', UCO: 'UCO Bank', AXISF: 'Axis Finance' };
 type Item = { title: string; link: string; date: string; source: string; feed: string };
+const RELEVANT = /\b(bank|banks|banking|loan|loans|lend\w*|rbi|kyc|nbfc|housing finance|home finance|msme|fraud|credit|deposit|npa|verification)\b/i;
 const unx = (s: string) => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/\s+/g, ' ').trim();
-async function feed(url: string, label: string, maxAgeDays: number): Promise<Item[]> {
+async function feed(url: string, label: string, maxAgeDays: number, keep?: RegExp): Promise<Item[]> {
   try {
     const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CruxBI/1.0)' }, signal: AbortSignal.timeout(12000) });
     if (!r.ok) return [];
@@ -100,7 +102,7 @@ async function feed(url: string, label: string, maxAgeDays: number): Promise<Ite
       const g = (t: string) => unx((m[0].match(new RegExp(`<${t}\\b[^>]*>([\\s\\S]*?)<\\/${t}>`)) ?? [])[1] ?? '');
       const title = g('title'), link = g('link'), date = g('pubDate'), source = g('source');
       const age = (Date.now() - Date.parse(date)) / 86400000;
-      if (!title || !/^https?:\/\//.test(link) || !(age <= maxAgeDays)) continue;
+      if (!title || !/^https?:\/\//.test(link) || !(age <= maxAgeDays) || (keep && !keep.test(title))) continue;
       out.push({ title: title.slice(0, 300), link, date: new Date(Date.parse(date)).toISOString().slice(0, 10), source: source || label, feed: label });
       if (out.length >= 12) break;
     }
@@ -122,12 +124,20 @@ async function marketNews(env: JobEnv) {
   const top = Object.entries(byFam).sort((a, b) => b[1].mtd - a[1].mtd).slice(0, 6).map(([f]) => f);
   let extra: string[] = []; try { extra = JSON.parse(env.cfg.AGENT_NEWS_QUERIES || '[]'); } catch { extra = []; }
   const gn = (q: string) => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}+when:3d&hl=en-IN&gl=IN&ceid=IN:en`;
-  const sources: [string, string, number][] = [['https://www.rbi.org.in/pressreleases_rss.xml', 'RBI press releases', 4], ['https://www.rbi.org.in/notifications_rss.xml', 'RBI notifications', 7],
-    ...top.map((f) => [gn(`"${BANK_NAMES[f] ?? f}"`), `News: ${BANK_NAMES[f] ?? f}`, 3] as [string, string, number]), ...extra.slice(0, 6).map((q) => [gn(q), `News: ${q}`, 3] as [string, string, number])];
-  const lists = await Promise.all(sources.map(([u, l, d]) => feed(u, l, d)));
+  const bn = (q: string) => `https://www.bing.com/news/search?q=${encodeURIComponent(q)}&format=rss&mkt=en-IN`;
+  const names = top.map((f) => BANK_NAMES[f] ?? f);
+  // several free sources, because a feed can be unreachable from the server on a given day (Google News, Bing News, Economic Times, Business Standard)
+  const sources: [string, string, number, RegExp?][] = [['https://www.rbi.org.in/pressreleases_rss.xml', 'RBI press releases', 4], ['https://www.rbi.org.in/notifications_rss.xml', 'RBI notifications', 7],
+    ...names.map((n) => [gn(`"${n}"`), `Google News: ${n}`, 3] as [string, string, number]), ...names.map((n) => [bn(`"${n}"`), `Bing News: ${n}`, 3] as [string, string, number]),
+    ...extra.slice(0, 6).map((q) => [gn(q), `Google News: ${q}`, 3] as [string, string, number]),
+    ['https://economictimes.indiatimes.com/industry/banking/finance/banking/rssfeeds/13358319.cms', 'Economic Times banking', 3, RELEVANT],
+    ['https://bfsi.economictimes.indiatimes.com/rss/topstories', 'ET BFSI', 3, RELEVANT],
+    ['https://www.business-standard.com/rss/finance/news-10301.rss', 'Business Standard finance', 3, RELEVANT]];
+  const lists = await Promise.all(sources.map(([u, l, d, k]) => feed(u, l, d, k)));
+  const feedCounts: Record<string, number> = {}; sources.forEach(([, l], i) => { feedCounts[l] = lists[i].length; });
   const seen = new Set<string>(); const items: Item[] = [];
   for (const it of lists.flat()) { const k = it.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').slice(0, 80); if (seen.has(k)) continue; seen.add(k); items.push(it); if (items.length >= 70) break; }
-  if (!items.length) return { kind: 'market_news', for_date: day, audience: 'viewer', status: 'failed', title: `Market and client news · ${day}`, body_md: 'No news could be read from the feeds today.', data: { feeds: sources.length } };
+  if (!items.length) return { kind: 'market_news', for_date: day, audience: 'viewer', status: 'failed', title: `Market and client news · ${day}`, body_md: 'No news could be read from the feeds today.', data: { feeds: sources.length, feed_counts: feedCounts } };
   const famList = top.map((f) => `${f} = ${BANK_NAMES[f] ?? f}`).join('; ');
   const system = 'You are the market analyst of Crux India, which does field and document verification, KYC checks and investigations for banks and housing-finance companies ' +
     '(home loans, MSME loans, retail loans). You pick the news that matters for Crux\'s business: client banks\' lending growth or slowdown, RBI rules on KYC, ' +
@@ -150,9 +160,9 @@ async function marketNews(env: JobEnv) {
     used.push({ ...it, topic: p.topic ?? null, client, why });
   }
   const summary = env.pseudo.show(String(json?.summary ?? '')).slice(0, 800);
-  const body = `${summary}\n\n${lines.join('\n') || '- Nothing in today\'s feeds looked relevant.'}\n\nSources: RBI RSS feeds and Google News RSS (last 3–7 days). Our figures are dashboard calculations (month to date), not from the news.`;
+  const body = `${summary}\n\n${lines.join('\n') || '- Nothing in today\'s feeds looked relevant.'}\n\nSources: RBI, Google News, Bing News, Economic Times and Business Standard RSS feeds (last 3–7 days). Our figures are dashboard calculations (month to date), not from the news.`;
   return { kind: 'market_news', for_date: day, audience: 'viewer', title: `Market and client news · ${day}`, body_md: body, model,
-    data: { items: used, headlines_read: items.length, feeds: sources.length, clients: top }, usage: { calls } };
+    data: { items: used, headlines_read: items.length, feeds: sources.length, feed_counts: feedCounts, clients: top }, usage: { calls } };
 }
 
 // ---------------------------------------------------------------- chat reviewer (admin-only report; lessons wait for approval)

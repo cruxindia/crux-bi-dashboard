@@ -314,7 +314,9 @@ function stripDates(s: string) {
   return s.replace(new RegExp(`\\b\\d{1,2}[-\\s/]${MON}(?:[-\\s/']\\d{2,4})?\\b`, 'gi'), ' ')
     .replace(new RegExp(`\\b${MON}[-\\s/']?\\d{2,4}\\b`, 'gi'), ' ')
     .replace(/\b\d{4}-\d{2}(?:-\d{2})?\b/g, ' ').replace(/\b(?:FY|Q|H)\d{1,4}\b/gi, ' ').replace(/\bPX\d+\b/g, ' ')
-    .replace(/^\s*(?:\d+[.)]|[-*•])\s+/gm, ' ');
+    .replace(/^\s*(?:\d+[.)]|[-*•])\s+/gm, ' ')
+    // ageing buckets are labels, not figures ("over 180 days", "90+ days", "over-180-day")
+    .replace(/\b(?:30|45|60|90|120|180|360|365)\s*\+?\s*-?\s*(?:days?|d)\b/gi, ' ');
 }
 const NUM = /(₹\s?)?([-−]?)(\d{1,3}(?:,\d{2,3})+|\d+)(\.\d+)?\s?(crores?|cr|lakhs?|lacs?|L|K|%|x|×)?(?![A-Za-z0-9])/g;
 type Fig = { text: string; v: number; tol: number; pct: boolean; money: boolean };
@@ -364,10 +366,13 @@ export function checkFigures(answer: string, evidence: any[]): { figures: number
   const T = [...new Set(tot)].slice(0, 40);
   const G0 = groups.slice(0, 400);   // bounded work: Edge Functions have a small CPU budget per request
   const figs = figures(answer); const untraced: string[] = [];
+  // every figure is looked up directly; only the slower derived-pair search is bounded (Edge Functions have a small CPU budget per request)
+  let pairBudget = 30;
   for (const [fi, f] of figs.entries()) {
-    if (fi >= 40) { untraced.push(f.text); continue; }
+    if (fi >= 120) { untraced.push(f.text); continue; }
     const near = (x: number) => Number.isFinite(x) && (Math.abs(x - f.v) <= f.tol || (f.pct && Math.abs(x - f.v * 100) <= f.tol * 100) || Math.abs(Math.abs(x) - Math.abs(f.v)) <= f.tol);
     if (arr.some(near)) continue;
+    if (pairBudget-- <= 0) { untraced.push(f.text); continue; }
     const pair = (a: number, b: number) => near(a - b) || near(a + b) || (b !== 0 && (near(a / b) || near(a / b - 1) || near(1 - a / b)));
     let ok = false;
     outer: for (const g of G0) {
