@@ -42,11 +42,12 @@ async function dailyBrief(env: JobEnv) {
     `**Headline** — two sentences: where the month stands (likely month end vs target, root cause).\n` +
     `**What moved** — the latest report's additions and the zones or clients that moved most against the same working day last month.\n` +
     `**Zones** — a table: zone, likely vs target %, gap, root cause (at most 10 rows).\n` +
-    `**Watch list** — 3 to 5 risks or anomalies (falling clients, big gaps, receivables over 180 days, open backlog), each with its figure.\n` +
-    `**Today's actions** — three actions, each naming the zone, team or client and why.\n` +
+    `**Watch list** — 3 to 5 risks or anomalies (falling clients, big gaps, receivables over 180 days, open backlog), each with one figure copied from a look-up ` +
+    `(for example a client's change_vs_last_month, a zone's gap, over-180-day receivables of a team from get_collections, the open backlog).\n` +
+    `**Today's actions** — three actions, each naming the zone, team or client and why (a figure only if it is copied from a look-up).\n` +
     `Never name or score a person or branch manager. Every figure must come from the look-ups: quote them as the look-ups give them (rounding is fine) and do not add up, ` +
     `average or subtract several rows yourself. About 25 figures in total is enough.`;
-  let out: any, pruned: { dropped: number; total: number } | null = null;
+  let out: any, pruned: any = null;
   try { out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question,
     ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: 6, timeoutMs: 25000,
     deadline: env.t0 + 115000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok,
@@ -57,7 +58,7 @@ async function dailyBrief(env: JobEnv) {
     if ((e as AgentError)?.status !== 422 || !d?.text) throw e;
     const p = prune(d.text, d.check.untraced);
     if (!p.total || p.dropped / p.total > 0.4) throw e;
-    pruned = { dropped: p.dropped, total: p.total };
+    pruned = { dropped: p.dropped, total: p.total, untraced: d.check.untraced.map((x: string) => env.pseudo.show(x)) } as any;
     out = { text: p.text + `\n\n*${p.dropped} statement${p.dropped === 1 ? ' was' : 's were'} left out because their figures could not be checked against the dashboard.*`,
       model: d.model, rounds: d.rounds, usage: d.usage, steps: (e as AgentError).steps ?? [], check: { figures: d.check.figures - d.check.untraced.length, traced: d.check.traced, untraced: [] } };
   }
@@ -77,7 +78,9 @@ function prune(text: string, bad: string[]) {
     const sents = ln.split(/(?<=[.!?])\s+/); const keep = sents.filter((x) => !has(x)); dropped += sents.length - keep.length;
     if (keep.length) out.push(keep.join(' '));
   }
-  return { text: out.join('\n'), dropped, total: lines.filter((l) => l.trim()).length };
+  // a section label left with nothing under it is removed
+  const fin = out.filter((l, i) => { if (!/^\s*\*\*[^*]+\*\*\s*[—:-]?\s*$/.test(l)) return true; const nx = out.slice(i + 1).find((x) => x.trim()); return !!nx && !/^\s*\*\*[^*]+\*\*/.test(nx); });
+  return { text: fin.join('\n').replace(/\n{3,}/g, '\n\n'), dropped, total: lines.filter((l) => l.trim()).length };
 }
 
 // ---------------------------------------------------------------- market and client news (free RSS; links come from the feeds, never from the AI)
@@ -132,7 +135,7 @@ async function marketNews(env: JobEnv) {
   const prompt = `Our largest clients: ${famList}.\nHEADLINES (index · feed · date · title):\n` + items.map((x, i) => `[${i}] ${x.feed} · ${x.date} · ${x.title}`).join('\n') +
     `\n\nReturn JSON: {"summary": "2-3 sentences on what today's news means for Crux", "items": [{"i": <index>, "client": "<client code from the list, or null>", ` +
     `"topic": "RBI rule | client bank | sector | fraud | other", "why": "one sentence: what it means for Crux (demand, risk, compliance, opportunity)"}]}. ` +
-    `Pick at most 8 items, most important first. Use only the headlines; do not state any Crux figure.`;
+    `Pick 4 to 8 items when that many are relevant (include news about our client banks), most important first. Use only the headlines; do not state any Crux figure.`;
   const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_news');
   const pick = (Array.isArray(json?.items) ? json.items : []).filter((x: any) => Number.isInteger(x?.i) && x.i >= 0 && x.i < items.length).slice(0, 8);
   const ours = (f: string) => { const z = byFam[f]; if (!z) return ''; const pctv = z.target ? Math.round((z.likely / z.target) * 1000) / 10 : null;
