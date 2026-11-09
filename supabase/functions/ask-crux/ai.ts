@@ -165,6 +165,90 @@ export function provider(timeoutMs = 20000, maxRetries = 2): AIProvider {
   return new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, maxRetries);
 }
 
+// wave 105f: OpenRouter as the backup AI (owner 9-Nov: keep Gemini, OpenRouter as backup, no paid use).
+// OpenAI-compatible chat completions with tool calling; the agent's Gemini-style turns are translated both ways.
+// Only free models are allowed unless OPENROUTER_PAID_ALLOWED = on, and every request asks for providers that do not train on the data.
+const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
+export const orFree = (m: string) => m === 'openrouter/free' || /:free$/.test(m);
+function toOpenAI(q: ChatReq): any[] {
+  const msgs: any[] = [];
+  if (q.system) msgs.push({ role: 'system', content: q.system });
+  let pending: string[] = [];
+  q.contents.forEach((c, ci) => {
+    if (c.role === 'model') {
+      const text = c.parts.filter((p) => typeof p?.text === 'string' && !p.thought).map((p) => p.text).join('');
+      const calls = c.parts.filter((p) => p?.functionCall?.name).map((p, i) => ({ id: String(p.functionCall.id ?? `call_${ci}_${i}`), type: 'function',
+        function: { name: String(p.functionCall.name), arguments: JSON.stringify(p.functionCall.args ?? {}) } }));
+      pending = calls.map((x) => x.id);
+      msgs.push(calls.length ? { role: 'assistant', content: text || null, tool_calls: calls } : { role: 'assistant', content: text });
+    } else {
+      const frs = c.parts.filter((p) => p?.functionResponse);
+      frs.forEach((p, i) => msgs.push({ role: 'tool', tool_call_id: String(p.functionResponse.id ?? pending[i] ?? `call_${ci}_${i}`), content: JSON.stringify(p.functionResponse.response ?? {}) }));
+      const text = c.parts.filter((p) => typeof p?.text === 'string').map((p) => p.text).join('\n');
+      if (text) msgs.push({ role: 'user', content: text });
+    }
+  });
+  return msgs;
+}
+export class OpenRouterProvider implements AIProvider {
+  readonly name = 'openrouter';
+  constructor(private key: string, private timeoutMs = 25000, private paidAllowed = false) {}
+  configured() { return this.key.length > 0; }
+  async listModels(): Promise<ModelInfo[]> { return []; }
+  async embed(model: string): Promise<EmbRes> { return { ok: false, vectors: [], model, status: 0, retries: 0, ms: 0, error: 'embeddings not used on OpenRouter' }; }
+  async generate(model: string, q: GenReq): Promise<GenRes> {
+    const r = await this.chat(model, { system: q.system, contents: [{ role: 'user', parts: [{ text: q.prompt }] }], maxTokens: q.maxTokens, temperature: q.temperature });
+    return { ok: r.ok, text: r.text, model, status: r.status, retries: r.retries, ms: r.ms, promptTokens: r.promptTokens, outputTokens: r.outputTokens, finish: r.finish, error: r.error };
+  }
+  async chat(model: string, q: ChatReq): Promise<ChatRes> {
+    const t0 = Date.now();
+    const base = { model, status: 0, retries: 0, ms: 0, calls: [] as ChatRes['calls'] };
+    if (!this.configured()) return { ...base, ok: false, text: '', error: 'OPENROUTER_API_KEY is not set' };
+    if (!this.paidAllowed && !orFree(model)) return { ...base, status: 403, ok: false, text: '', error: `paid model ${model} refused (no paid use)` };
+    const body: any = { model, messages: toOpenAI(q), max_tokens: q.maxTokens ?? 4096, temperature: q.temperature ?? 0.2, provider: { data_collection: 'deny' } };
+    if (q.tools?.length) { body.tools = q.tools.map((t) => ({ type: 'function', function: t })); if (q.noTools) body.tool_choice = 'none'; }
+    let status = 0, j: any = null;
+    try {
+      const r = await fetch(OR_URL, { method: 'POST', signal: AbortSignal.timeout(this.timeoutMs),
+        headers: { Authorization: `Bearer ${this.key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://cruxindia.github.io/crux-bi-dashboard/', 'X-OpenRouter-Title': 'Crux BI' },
+        body: JSON.stringify(body) });
+      status = r.status;
+      const txt = await r.text();
+      try { j = JSON.parse(txt); } catch { j = null; }
+      if (!r.ok || !j || j.error) {
+        const st = j?.error?.code && Number.isFinite(+j.error.code) ? +j.error.code : status;
+        return { ...base, status: st || status, ms: Date.now() - t0, ok: false, text: '', error: String(j?.error?.message ?? `HTTP ${status}`).slice(0, 200) };
+      }
+    } catch (e) {
+      return { ...base, ms: Date.now() - t0, ok: false, text: '', error: (e as Error)?.name === 'TimeoutError' ? `timeout after ${this.timeoutMs} ms` : 'network error' };
+    }
+    const c = j.choices?.[0], m = c?.message ?? {};
+    const tc: any[] = Array.isArray(m.tool_calls) ? m.tool_calls : [];
+    const calls = tc.map((x, i) => { let args: Record<string, unknown> = {}; try { args = JSON.parse(x.function?.arguments || '{}'); } catch { args = {}; }
+      return { name: String(x.function?.name ?? ''), args, id: String(x.id ?? `or_${Date.now()}_${i}`) }; }).filter((x) => x.name);
+    const text = typeof m.content === 'string' ? m.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim() : '';
+    const usage = { promptTokens: j.usage?.prompt_tokens, outputTokens: j.usage?.completion_tokens };
+    const done = { ...base, ...usage, status, ms: Date.now() - t0, model: `${model}${j.model && j.model !== model ? ' → ' + j.model : ''}` };
+    if (!calls.length && !text) return { ...done, ok: false, text: '', finish: c?.finish_reason, error: `empty content (finish reason ${c?.finish_reason ?? 'unknown'})` };
+    const parts: Part[] = [...(text ? [{ text }] : []), ...calls.map((x) => ({ functionCall: { name: x.name, args: x.args, id: x.id } }))];
+    return { ...done, ok: true, text, calls, content: { role: 'model', parts }, finish: c?.finish_reason };
+  }
+}
+// routes "or:<model>" to OpenRouter and everything else to Gemini
+export class MultiProvider implements AIProvider {
+  readonly name = 'multi';
+  constructor(private g: AIProvider, private o: AIProvider) {}
+  configured() { return this.g.configured(); }
+  listModels() { return this.g.listModels(); }
+  private pick(m: string): [AIProvider, string] { return m.startsWith('or:') ? [this.o, m.slice(3)] : [this.g, m]; }
+  async generate(m: string, q: GenReq) { const [p, x] = this.pick(m); const r = await p.generate(x, q); return { ...r, model: p === this.o ? 'or:' + r.model : r.model }; }
+  embed(m: string, t: string[], k: string, d: number) { return this.g.embed(m, t, k, d); }
+  async chat(m: string, q: ChatReq) { const [p, x] = this.pick(m); const r = await p.chat(x, q); return { ...r, model: p === this.o ? 'or:' + r.model : r.model }; }
+}
+export function multiProvider(timeoutMs = 25000, paidAllowed = false): AIProvider {
+  return new MultiProvider(new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, 0), new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') ?? '', timeoutMs, paidAllowed));
+}
+
 // Model choice: a stable "gemini-X.Y-flash" model (highest version) is preferred over moving aliases such as
 // gemini-flash-latest; the configured candidate is tried after the stable ones.
 const ver = (m: string) => { const x = m.match(/-(\d+(?:\.\d+)?)-/); return x ? parseFloat(x[1]) : 0; };

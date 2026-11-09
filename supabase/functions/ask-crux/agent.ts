@@ -494,7 +494,9 @@ export async function runAgent(o: {
   docs: Record<string, any>; dataMonth: string; maxRounds: number; timeoutMs: number; deadline: number; budget: () => Promise<boolean>;
   seed?: { question: string; answer: string; asked: string; replay: { tool: string; args: Record<string, unknown> }[] } | null;
   hints?: string[]; lessons?: { question: string; correction: string }[];
+  allow?: string[]; purpose?: string; maxTokens?: number;   // wave 105f: agent jobs restrict the tools (no people scores in the daily brief)
 }): Promise<AgentOut> {
+  const decls = o.allow ? DECLS.filter((d) => o.allow!.includes(d.name)) : DECLS;
   const { pseudo } = o;
   const t: ToolCtx = { api: o.api, gw: o.gw, ctx: o.ctx, pseudo, docs: o.docs, dataMonth: o.dataMonth };
   // starting snapshot for the page context: many questions need no further tool call
@@ -548,9 +550,9 @@ export async function runAgent(o: {
       if (!(await o.budget())) throw new AgentError('AI daily limit reached', 429, steps);
       rounds++;
       const last = rounds >= o.maxRounds || toolCalls >= 8;
-      const r = await o.ai.chat(model, { system: o.system, contents, tools: DECLS, noTools: last, maxTokens: 4096, temperature: 0.2 });
+      const r = await o.ai.chat(model, { system: o.system, contents, tools: decls, noTools: last, maxTokens: o.maxTokens ?? 4096, temperature: 0.2 });
       usage.calls++; usage.prompt += r.promptTokens ?? 0; usage.output += r.outputTokens ?? 0;
-      await o.rec({ model, purpose: 'agent', ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
+      await o.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose: o.purpose ?? 'agent', ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
         prompt_tokens: r.promptTokens, output_tokens: r.outputTokens, note: r.ok ? (r.calls.length ? 'tools: ' + r.calls.map((c) => c.name).join(',') : 'answer') : r.error });
       if (!r.ok) { lastErr = { msg: r.error ?? 'model error', status: r.status }; failed = true; break; }
       contents.push(r.content!);
@@ -566,7 +568,7 @@ export async function runAgent(o: {
           const t0 = Date.now(); const fn = TOOLS[c.name];
           const realArgs = pseudo.showAny(c.args ?? {});
           try {
-            if (!fn) throw new Error('unknown tool ' + c.name);
+            if (!fn || (o.allow && !o.allow.includes(c.name))) throw new Error('unknown tool ' + c.name);
             const out = await fn(t, realArgs);
             const hidden = pseudo.hideAny(out.data);
             mEvidence.push(hidden);
@@ -598,10 +600,15 @@ export async function runAgent(o: {
       break;
     }
     if (failed || !finalText) {
+      // wave 105f: the repair turn failed (provider error or time) but the first answer was close enough: keep it
+      if (repaired && firstText && firstCheck && firstCheck.untraced.length < 3 && !(firstCheck.figures && firstCheck.untraced.length / firstCheck.figures > 0.25)) {
+        return { text: firstText, model, rounds, steps: [...steps, ...mSteps], check: firstCheck, usage };
+      }
       steps.push(...mSteps.map((s) => ({ ...s, discarded: true })));
       if (!failed) lastErr = { msg: 'no final answer', status: 0 };
       // a busy or exhausted model: try the next one; anything else: stop
-      if (failed && !(lastErr.status === 429 || lastErr.status >= 500 || lastErr.status === 0)) break;
+      // (status 200 with an error = empty or cut-off reply: also worth the next model)
+      if (failed && !(lastErr.status === 429 || lastErr.status >= 500 || lastErr.status === 0 || lastErr.status === 200)) break;
       continue;
     }
     const check = finalCheck!;

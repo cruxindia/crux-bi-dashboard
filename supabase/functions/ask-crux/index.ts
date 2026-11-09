@@ -5,7 +5,8 @@
 // explain terms from the approved knowledge base (RAG). Deterministic answer whenever the AI step is unavailable.
 // Secrets (Edge Function secrets only): GEMINI_API_KEY. Non-secret settings live in bi.ai_config
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
-import { embeddingCandidates, fallbackCandidates, generationCandidates, provider, type AIProvider, type ModelInfo } from './ai.ts';
+import { embeddingCandidates, fallbackCandidates, generationCandidates, multiProvider, provider, type AIProvider, type ModelInfo } from './ai.ts';
+import { JOBS, runJob, type JobEnv } from './jobs.ts';
 import { AgentError, DECLS, Pseudo, planOf, questionKeys, runAgent, systemPrompt, vocabOf, type Ctx } from './agent.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
@@ -236,7 +237,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const lessons = (Array.isArray(mem?.lessons) ? mem.lessons : []).map((x: any) => ({ question: String(x.question ?? ''), correction: String(x.correction ?? '') }));
   const primary = cfg.AGENT_MODEL, fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
   const models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
-  const out = await runAgent({ ai: provider(Number(cfg.AGENT_TIMEOUT_MS || 25000), 0), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
+  const out = await runAgent({ ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on'), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
     docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
     budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok, seed, hints, lessons });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
@@ -272,6 +273,36 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   return { mode: 'agent', provider: 'gemini-agent', model: out.model, answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory,
     period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt, as_of: dataAsOf, month: ctx.month,
     message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
+}
+
+// wave 105f: environment for the scheduled agent jobs (viewer-level data: the anon key only, never an admin key)
+async function jobEnv(cfg: Record<string, string>): Promise<JobEnv> {
+  const t0 = Date.now();
+  const api = async (fn: string, args: Record<string, unknown>) => {
+    const r = await rpc('bi_call', { p_fn: fn, p_args: args }, ANON);
+    if (r && typeof r === 'object' && !Array.isArray(r) && r.error) throw new Error(String(r.error));
+    return r;
+  };
+  let meta: any, docs: any, tokens: string[];
+  [meta, metaC] = await cached(metaC, 600000, () => api('meta', {}));
+  [docs, docsC] = await cached(docsC, 600000, async () => (await api('metric_doc', {}))?.docs ?? {});
+  [tokens, tokC] = await cached(tokC, 600000, async () => { const t = await gw({ op: 'pii_tokens' }); if (!Array.isArray(t) || !t.length) throw new Error('name list unavailable'); return t; });
+  const pseudo = new Pseudo(tokens, SALT);
+  const dataAsOf = String(meta?.freshness?.zonal_latest_snapshot ?? '').slice(0, 10);
+  const dataMonth = (meta?.months ?? [])[0] ?? (dataAsOf ? dataAsOf.slice(0, 8) + '01' : new Date().toISOString().slice(0, 8) + '01');
+  const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
+  const system = pseudo.hide(systemPrompt({ teams: meta?.locations ?? [], clients: meta?.clients ?? [], docs, dataAsOf, dataMonth, today }));
+  const fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  const models = [...new Set([cfg.AGENT_MODEL, ...fbs].filter(Boolean))];
+  const pe = provider(20000, 1), dim = Number(cfg.EMBED_DIM || 768);
+  const embed = async (texts: string[]) => {
+    if (!cfg.GEMINI_EMBEDDING_MODEL || !texts.length) return null;
+    const r = await pe.embed(cfg.GEMINI_EMBEDDING_MODEL, texts, 'SEMANTIC_SIMILARITY', dim);
+    await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_documents', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? `agent lessons ${texts.length}` : r.error });
+    return r.ok ? r.vectors : null;
+  };
+  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on'), models, api, gw, rec: record, pseudo, system, docs, meta,
+    dataMonth, dataAsOf, cfg, embed, t0 };
 }
 
 Deno.serve(async (req) => {
@@ -327,12 +358,21 @@ Deno.serve(async (req) => {
     return json({ stored, calls });
   }
 
+  if (action === 'agent_run') {
+    if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
+    const job = String(body?.job ?? '');
+    if (!JOBS.includes(job)) return json({ error: 'unknown job' }, 400);
+    if (cfg.AGENTS_ENABLED === 'off' && body?.force !== true) return json({ skipped: 'AGENTS_ENABLED is off' });
+    if (!ai.configured()) return json({ error: 'GEMINI_API_KEY is not set as an Edge Function secret' }, 412);
+    try { return json(await runJob(job, await jobEnv(cfg))); } catch (e) { return json({ error: (e as Error).message.slice(0, 300) }, 502); }
+  }
+
   if (action === 'probe') {
     if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
     if (!ai.configured()) return json({ error: 'GEMINI_API_KEY is not set as an Edge Function secret' }, 412);
     const list: string[] = Array.isArray(body?.models) && body.models.length ? body.models.map(String).slice(0, 6) : [cfg.AGENT_MODEL, cfg.AGENT_FALLBACK_MODEL].filter(Boolean);
     const out: Record<string, unknown>[] = [];
-    const pa = provider(30000, 0);
+    const pa = multiProvider(30000, cfg.OPENROUTER_PAID_ALLOWED === 'on');
     for (const m of list) {
       const c0 = [{ role: 'user' as const, parts: [{ text: 'QUESTION: How is business this month? Use the tool get_business_summary first.' }] }];
       const r1 = await pa.chat(m, { system: 'You are a test agent. Always call the tool before answering.', contents: c0, tools: DECLS, maxTokens: 2048 });
