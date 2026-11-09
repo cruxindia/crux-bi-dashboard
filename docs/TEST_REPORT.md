@@ -733,3 +733,44 @@ Conclusion: similarity cannot separate them → word guard (D281).
 | M4 viewer requests carry no admin key; only bi_ask_learning carries it; no console errors | ✓ | ✓ |
 
 Regression: test_105_ui.py (K1–K6, wave 105 Ask panel) 6/6 on the live site after this change. Published commit 4255211; live index.html = local build (md5 8bb81e73…).
+
+## 9-Nov-2026 — wave 105f (OpenRouter check, OpenRouter backup, agent team, weekly improver)
+**OpenRouter key (from the workspace, key never printed or stored in the repo)**
+| Check | Result |
+|---|---|
+| Key info | valid; free tier; limit none; credits $0; 50 free-model requests a day |
+| Paid model from the owner's snippet (~openai/gpt-sol-latest) | tool call + answer in 1.9 s + 3.1 s; cost $0.0016 (account $0.0016 in debit); no further paid call |
+| Free models with "no training" (data_collection deny) | Nemotron: refused (needs training allowed); Gemma: provider rate-limited; openrouter/free: works (Recursive Flint, Cohere North Mini) |
+| Real Ask Crux loop on openrouter/free (local harness, names hidden) | "Which zones are furthest behind target …": 2 calls, 9 of 9 figures checked, 8.5 s |
+| Morning briefing on openrouter/free | failed twice (reply cut off; empty reply) → OpenRouter kept as backup only |
+
+**Agents (live, ask-crux on the loader; Gemini 3.5 Flash-Lite)**
+| Run | Result |
+|---|---|
+| daily_brief, first run | blocked: AI daily cap already used by the day's testing → found that the chat review at 23:40 UTC would hit the same cap → moved to 00:05 UTC (bi_105g) |
+| daily_brief | figure check failed (12 of 52) → found the 40-figure limit and ageing labels → fixed; brief now leaves out unverifiable statements |
+| daily_brief, final | ok · 2 AI calls · 44 of 44 figures checked · headline, what moved, zone table, watch list, actions |
+| market_news | first: only RBI items (Google News returns nothing to the server) → Bing News, ET, Business Standard added; final: 6 items from 17 feeds, links from the feeds, our SBI / Union Bank figures beside them |
+| chat_review | ok · 1 call · 59 questions reviewed · 2 failures with fixes · 1 missing need (cost / profit data) · 1 lesson proposed (stored as proposed, embedding stored) |
+| weekly_review | ok · 1 call · 3 priorities |
+| Failed run does not replace a good report of the same day | by design in runJob (reports_recent check) |
+| Data version unchanged | 575918607 throughout |
+
+**Publishing**
+| Check | Result |
+|---|---|
+| sync.yml guard (commit 6a55c3e) | run 77 (push) succeeded; the following syncs (ba2fd05, 1bfd73c, 5ba65e8) wrote the new files |
+| Loader deploy | ask-crux v22–v26 from pinned commits; status + Ask answer + agent runs work after each |
+| tools/build.py | same output as the session build (md5 d00c82b0…) |
+| Live page = build | md5 d00c82b0… |
+
+**Browser (test_105f_ui.py)**
+| Check | Local | Live |
+|---|---|---|
+| A1 Overview AI briefing: two tabs, figure-check note, zone table, Show all, news links (new tab, noopener) | ✓ | ✓ |
+| A2 viewer API: only briefing and news, no lessons | ✓ | ✓ |
+| A3 Admin → AI agents: 4 cards with Run now and reports, lessons with Approve / Edit & approve / Reject, GitHub link | ✓ | ✓ |
+| A4 Run now (weekly review) shows the result; lesson API works with the key and refuses a wrong key; no console errors | ✓ (after the Run-now message fix) | ✓ |
+
+Regression on the live site after the change: test_105_ui.py 6/6. test_105c_ui.py 3/4: M3 (admin learning page) rendered correctly, but the strict check expects all three modes among the 40 most recent answers and the day's tests had pushed the "Updated" answers out of that window (data, not a defect).
+

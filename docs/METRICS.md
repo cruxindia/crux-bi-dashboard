@@ -265,3 +265,9 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 - **Answers in memory** = AI answers with an embedding that an admin has not excluded from reuse.
 - **Lesson** = a 👎 note on an answer whose question is at least 0.72 similar to the new question (up to 3, admin-switchable).
 
+## AI agents (9-Nov-2026, wave 105f)
+- **Morning briefing figures checked** = figures in the published briefing that match a look-up or simple arithmetic between related figures (same rule as Ask Crux). Statements whose figures cannot be checked are left out; "left out" = number of table rows, bullets or sentences removed. The report fails when more than 40% of its lines would be removed.
+- **Our figures beside a news item** = the client family's revenue month to date, and likely month end ÷ target, summed over that family's client rows of the dashboard client breakdown (sorted by revenue, top 40 rows) — calculated in code, never by the AI.
+- **Chat review numbers** (since the previous review): questions, answered by the AI, updated from memory, reused from memory, calculated fallback (the AI could not answer), 👍, 👎, answers with untraced figures.
+- **AI calls** per agent run are counted in bi.ai_provider_usage under purposes agent_brief, agent_news, agent_review, agent_weekly.
+

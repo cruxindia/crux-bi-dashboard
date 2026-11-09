@@ -210,3 +210,25 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 - **After a correction floor** (setting change, mapping correction) the figures computed in the last 7 days are queued automatically; the light job refreshes them by day (20 s every 10 min), the night job the rest. To warm faster: `call bi.api_revalidate_light(50);` (repeatable).
 - **Territory rules for shared districts**: `bi.territory_family_rule`; to change one, end the row (`effective_to`) and insert the new rule; coverage and potential read it on the next call / refresh.
 - **Tokens for external tools**: scope `ingest` only (docs/INTEGRATION.md). Issue with a label and expiry; revoke with `revoked = true`.
+
+## AI agents and the weekly improver (9-Nov-2026, wave 105f)
+**Schedules (pg_cron, through bi.call_edge with the job token; IST in brackets)**
+| Job | When | What it writes |
+|---|---|---|
+| bi-agent-chat-review | 00:05 UTC (05:35) | chat_review report (admin) + proposed lessons |
+| bi-agent-daily-brief | 00:50 UTC (06:20) | daily_brief report (everyone; Overview → AI briefing) |
+| bi-agent-market-news | 01:10 UTC (06:40) | market_news report (everyone) |
+| bi-agent-weekly-review | Mon 01:30 UTC (Mon 07:00) | weekly_review report (admin) |
+| Weekly dashboard improver (Claude scheduled task) | Mon 10:55 IST | GitHub pull requests labelled `improver` (never merged or deployed by itself) |
+Run any job now: Admin → AI agents → Run now, or POST ask-crux `{"action":"agent_run","job":"daily_brief","token":<admin or job token>}`. Switch all agents off: bi.ai_config AGENTS_ENABLED = off.
+
+**AI used.** Gemini first (AGENT_MODEL, then AGENT_FALLBACK_MODEL `gemini-2.5-flash,or:openrouter/free`). `or:` models go to OpenRouter, free models only (OPENROUTER_PAID_ALLOWED = off refuses any other model in code) and only providers that do not train on the data. The OpenRouter key is an Edge Function secret **OPENROUTER_API_KEY** (Supabase dashboard → Edge Functions → Secrets); without it the backup is simply skipped. AI_DAILY_CAP (default 200 calls per UTC day) covers Ask Crux and the agents together.
+
+**Deploying ask-crux (since wave 105f).** The source is supabase/functions/ask-crux/*.ts in this repository. The deployed function is a one-line loader that imports index.ts from one published commit:
+`import 'https://raw.githubusercontent.com/cruxindia/crux-bi-dashboard/<commit>/supabase/functions/ask-crux/index.ts';`
+To deploy: publish the code (stash + sync, or a merged pull request), then deploy ask-crux (verify_jwt on) with that single index.ts pointing at the new commit, and check `{"action":"status"}`. Never point it at a branch name (always a full commit id).
+
+**Publishing and pull requests.** The sync workflow writes the Supabase copy of each file into the repo, except when the file's last commit on main is newer than its Supabase copy and differs (a merged pull request): that GitHub version is kept. A push to main touching web/ or docs/ also runs the workflow and publishes the site. Build the page with `python3 tools/build.py`.
+
+**Weekly improver rules.** It reads the weekly review, the week's chat reviews and 👎 notes (read-only), opens at most two pull requests (label `improver`) with evidence, tests and an undo note, and never pushes to main, merges, applies migrations or changes settings. When an improver pull request that changed supabase/functions/ask-crux has been merged, its next run moves the ask-crux loader to the current main commit (merge = approval) and checks it; SQL in supabase/proposals/ is never applied by it.
+

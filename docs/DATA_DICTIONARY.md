@@ -308,3 +308,18 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | bi.ai_config MEMORY_* | MEMORY_ENABLED (on), MEMORY_REUSE_SIM (0.92), MEMORY_ADAPT_SIM (0.85) |
 | ask-crux actions | memory_backfill (embed answers saved before wave 105c), similarity (calibration matrix); both need an admin or job token |
 
+## AI agents (9-Nov-2026, wave 105f)
+| Object | What it is |
+|---|---|
+| bi.agent_report | one report per kind (daily_brief, market_news, chat_review, weekly_review) per IST day: status ok/failed, title, body_md (markdown), data (checks, items, stats, feed counts), usage, model, audience (viewer = shown to everyone) |
+| bi.ai_lesson | lessons proposed by the chat reviewer: question, lesson, status proposed / active / rejected, question embedding, decided_at / decided_by; only active lessons are used |
+| bi.agent_report_save / agent_reports_recent / agent_review_input / agent_lesson_propose | service-role helpers behind the gateway ops report_save, reports_recent, review_input, lesson_propose |
+| bi.ai_memory_search | (changed) lessons now also include active bi.ai_lesson rows |
+| public.bi_agent_reports(p) | latest report per kind and the last 40 runs; viewers get the viewer reports only; with the admin key also admin reports and lessons; p.id returns one report |
+| public.bi_agent_admin('lesson_decide', p) | admin only: approve, edit and approve, or reject a lesson (audit ai_agent_lesson) |
+| public.bi_repo_export_times(token) | stored time of each published file (sync workflow keeps newer GitHub versions) |
+| bi.ai_config | AGENTS_ENABLED (on), OPENROUTER_PAID_ALLOWED (off), AGENT_NEWS_QUERIES (extra news searches), AGENT_FALLBACK_MODEL (gemini-2.5-flash,or:openrouter/free) |
+| Edge Function secret OPENROUTER_API_KEY | OpenRouter key for the backup (not yet stored on 9-Nov) |
+| cron jobs | bi-agent-chat-review 00:05 UTC, bi-agent-daily-brief 00:50, bi-agent-market-news 01:10, bi-agent-weekly-review Mon 01:30 (all via bi.call_edge → ask-crux agent_run); bi-restore-ai-cap (one-off, 00:01 UTC 10-Nov) |
+| ask-crux action agent_run | {job, token}: runs one agent now (admin or job token) |
+
