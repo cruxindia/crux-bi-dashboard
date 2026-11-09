@@ -1,8 +1,12 @@
+// Ask Crux v4 (wave 105) — the AI agent in agent.ts answers by itself: it reads the question, calls tools over the dashboard calculations and
+// read-only SQL, and writes the answer (names hidden, every figure checked). The v3 path below (calculated answer + optional AI wording) is the
+// fallback when the agent is switched off (AGENT_ENABLED) or the AI is unavailable; then the calculated answer is shown with a note.
 // Ask Crux v3 — every number comes from SQL (public.bi_ask3: structured answer, findings, actions, chart); Gemini only rewords the validated answer and may
 // explain terms from the approved knowledge base (RAG). Deterministic answer whenever the AI step is unavailable.
 // Secrets (Edge Function secrets only): GEMINI_API_KEY. Non-secret settings live in bi.ai_config
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
 import { embeddingCandidates, fallbackCandidates, generationCandidates, provider, type AIProvider, type ModelInfo } from './ai.ts';
+import { AgentError, DECLS, Pseudo, runAgent, systemPrompt, type Ctx } from './agent.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
 const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -141,6 +145,73 @@ async function embedSync(ai: AIProvider, cfg: Record<string, string>, max = 100)
   return { stored, calls, model };
 }
 
+// ---------------------------------------------------------------- Ask Crux v4 agent glue (wave 105)
+// Dashboard data through bi_call with the anon key (and the user's admin key when signed in as admin), so the AI sees exactly what the page may show.
+type Cached<T> = { at: number; v: T } | null;
+let metaC: Cached<any> = null, docsC: Cached<any> = null, tokC: Cached<string[]> = null;
+let agentCoolUntil = 0;
+async function cached<T>(c: Cached<T>, ms: number, f: () => Promise<T>): Promise<[T, Cached<T>]> {
+  if (c && Date.now() - c.at < ms) return [c.v, c];
+  const v = await f(); return [v, { at: Date.now(), v }];
+}
+const MONTH_RE = /^\d{4}-\d{2}-01$/;
+async function askAgent(body: any, cfg: Record<string, string>) {
+  const t0 = Date.now();
+  const adminKey = typeof body?.admin_key === 'string' && body.admin_key.length > 10 ? body.admin_key : null;
+  const api = async (fn: string, args: Record<string, unknown>) => {
+    const r = await rpc('bi_call', { p_fn: fn, p_args: adminKey ? { ...args, admin_key: adminKey } : args }, ANON);
+    if (r && typeof r === 'object' && !Array.isArray(r) && r.error) throw new Error(String(r.error));
+    return r;
+  };
+  let meta: any, docs: any, tokens: string[];
+  [meta, metaC] = await cached(metaC, 600000, () => api('meta', {}));
+  [docs, docsC] = await cached(docsC, 600000, async () => (await api('metric_doc', {}))?.docs ?? {});
+  [tokens, tokC] = await cached(tokC, 600000, async () => { const t = await gw({ op: 'pii_tokens' }); if (!Array.isArray(t) || !t.length) throw new Error('name list unavailable'); return t; });
+  const pseudo = new Pseudo(tokens);
+  const dataAsOf = String(meta?.freshness?.zonal_latest_snapshot ?? '').slice(0, 10);
+  const dataMonth = (meta?.months ?? [])[0] ?? (dataAsOf ? dataAsOf.slice(0, 8) + '01' : new Date().toISOString().slice(0, 8) + '01');
+  const c = body?.context ?? {};
+  const filters: Record<string, unknown> = {};
+  for (const k of ['zone_group', 'location_id', 'client_family', 'region', 'stakeholder']) if (c?.filters?.[k] != null && c.filters[k] !== '') filters[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
+  const ctx: Ctx = { month: typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : dataMonth, filters, section: typeof c.section === 'string' ? c.section : undefined };
+  const question = redactQ(String(body?.question ?? '').slice(0, 500));
+  const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 3 }).catch(() => []) : [];
+  const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
+  const system = pseudo.hide(systemPrompt({ teams: meta?.locations ?? [], clients: meta?.clients ?? [], docs, dataAsOf, dataMonth, today }));
+  const primary = cfg.AGENT_MODEL, fb = cfg.AGENT_FALLBACK_MODEL;
+  const models = [...new Set((Date.now() < agentCoolUntil && fb ? [fb, primary] : [primary, fb]).filter(Boolean))];
+  const out = await runAgent({ ai: provider(Number(cfg.AGENT_TIMEOUT_MS || 25000), 0), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
+    docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 115000,
+    budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok });
+  if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
+  // names back for display; the "Next:" line becomes a suggested question
+  let text = pseudo.show(out.text).trim();
+  const next: string[] = [];
+  text = text.replace(/^\s*\**next\**\s*:\s*(.+)$/gim, (_m, q) => { next.push(String(q).replace(/\*+/g, '').trim()); return ''; }).trim();
+  const showArgs = (s: any) => {
+    const a = s.args ?? {};
+    if (s.tool === 'run_sql') return pseudo.show(String(a.query ?? ''));
+    const bits: string[] = [];
+    for (const k of ['level', 'part', 'month', 'team_id', 'sort', 'key']) if (a[k] != null) bits.push(`${k} ${a[k]}`);
+    if (a.filters) bits.push('filters ' + pseudo.show(JSON.stringify(a.filters)));
+    return bits.join(' · ');
+  };
+  const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: pseudo.show(String(s.label ?? s.tool)), detail: showArgs(s), ok: s.ok, rows: s.rows ?? null, ms: s.ms, auto: !!s.auto,
+    error: s.error ? pseudo.show(String(s.error)) : undefined }));
+  const check = { ...out.check, untraced: out.check.untraced.map((x) => pseudo.show(x)) };
+  const sources = [...new Set(steps.filter((s) => s.ok).map((s) => s.tool === 'run_sql' ? 'Database views (read-only query)' : 'Dashboard calculation: ' + s.tool.replace(/^get_/, '').replace(/_/g, ' ')))];
+  const scopeTxt = Object.keys(filters).length ? Object.entries(filters).map(([k, v]) => `${k.replace('_id', '').replace('_', ' ')} ${v}`).join(', ') : 'All India';
+  const answer = { answer: text, next, steps, check, model: out.model, rounds: out.rounds, sources };
+  let log: any = {};
+  try {
+    log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...ctx, admin: !!adminKey }, filters, provider: 'gemini', model: out.model, intent: 'agent', answer,
+      trace: { steps: out.steps, rounds: out.rounds, usage: out.usage, check: out.check, models_tried: models, names_hidden: pseudo.count, ms: Date.now() - t0 } });
+  } catch { log = {}; }
+  return { mode: 'agent', provider: 'gemini-agent', model: out.model, answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage,
+    period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt, as_of: dataAsOf, month: ctx.month,
+    message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -166,6 +237,40 @@ Deno.serve(async (req) => {
     } catch (e) { return json({ error: (e as Error).message.slice(0, 300) }, 502); }
   }
 
+  if (action === 'probe') {
+    if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
+    if (!ai.configured()) return json({ error: 'GEMINI_API_KEY is not set as an Edge Function secret' }, 412);
+    const list: string[] = Array.isArray(body?.models) && body.models.length ? body.models.map(String).slice(0, 6) : [cfg.AGENT_MODEL, cfg.AGENT_FALLBACK_MODEL].filter(Boolean);
+    const out: Record<string, unknown>[] = [];
+    const pa = provider(30000, 0);
+    for (const m of list) {
+      const c0 = [{ role: 'user' as const, parts: [{ text: 'QUESTION: How is business this month? Use the tool get_business_summary first.' }] }];
+      const r1 = await pa.chat(m, { system: 'You are a test agent. Always call the tool before answering.', contents: c0, tools: DECLS, maxTokens: 2048 });
+      await record({ model: m, purpose: 'agent_probe', ok: r1.ok && r1.calls.length > 0, ms: r1.ms, in: 0, out: r1.text.length, http_status: r1.status, retries: r1.retries, prompt_tokens: r1.promptTokens, output_tokens: r1.outputTokens, note: r1.ok ? 'calls: ' + r1.calls.map((c) => c.name).join(',') : r1.error });
+      let r2: any = null;
+      if (r1.ok && r1.calls.length) {
+        const fr = r1.calls.map((c) => ({ functionResponse: { name: c.name, ...(c.id ? { id: c.id } : {}), response: { result: { revenue: { month_to_date: 2293043, target: 3366200 } } } } }));
+        r2 = await pa.chat(m, { system: 'You are a test agent. Answer in one sentence using the tool result.', contents: [...c0, r1.content!, { role: 'user', parts: fr }], tools: DECLS, maxTokens: 2048 });
+        await record({ model: m, purpose: 'agent_probe', ok: r2.ok, ms: r2.ms, in: 0, out: r2.text.length, http_status: r2.status, retries: r2.retries, prompt_tokens: r2.promptTokens, output_tokens: r2.outputTokens, note: r2.ok ? 'answer after tool' : r2.error });
+      }
+      out.push({ model: m, tool_call: r1.ok ? r1.calls.map((c) => c.name) : null, first_ms: r1.ms, first_error: r1.ok ? null : `${r1.status} ${r1.error}`,
+        answer: r2?.ok ? r2.text.slice(0, 200) : null, second_ms: r2?.ms ?? null, second_error: r2 && !r2.ok ? `${r2.status} ${r2.error}` : null });
+    }
+    return json({ probe: out });
+  }
+
+  // ---- ask (v4 agent) ----
+  let agentNote: string | null = null;
+  if (action === 'ask' && cfg.AGENT_ENABLED === 'on' && ai.configured() && cfg.AGENT_MODEL) {
+    try { return json(await askAgent(body, cfg)); }
+    catch (e) {
+      const st = (e as AgentError)?.status ?? 0, msg = String((e as Error)?.message ?? e);
+      agentNote = st === 429 || /quota|RESOURCE_EXHAUSTED|daily limit/i.test(msg)
+        ? 'The AI analyst has reached its free daily limit (Google Gemini free tier), so this is the standard calculated answer. Try again later or tomorrow.'
+        : st === 422 ? `The AI analyst's answer did not pass the figure check (${msg.slice(0, 120)}), so this is the standard calculated answer.`
+        : `The AI analyst could not finish (${msg.slice(0, 120)}), so this is the standard calculated answer.`;
+    }
+  }
   // ---- ask ----
   // 'drop' is read as 'decline' (same meaning for the analysis)
   const question = String(body?.question ?? '').slice(0, 500).replace(/\bdrop\b/gi, 'decline');
@@ -174,6 +279,7 @@ Deno.serve(async (req) => {
   catch (e) { return json({ error: 'Database unavailable: ' + (e as Error).message }, 502); }
   const det = (note?: string) => json({ ...base, provider: 'deterministic', ...(note ? { provider_note: note } : {}) });
   if (base?.error || !base?.answer) return det();
+  if (agentNote) return det(agentNote);
   if (cfg.AI_ENABLED !== 'on') return det();
   if (!ai.configured() || !cfg.GEMINI_MODEL) return det();
   if (base.intent === 'people') return det('AI wording is not used for people-related answers; showing the calculated answer.');

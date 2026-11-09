@@ -16,7 +16,17 @@ export interface AIProvider {
   listModels(): Promise<ModelInfo[]>;
   generate(model: string, req: GenReq): Promise<GenRes>;
   embed(model: string, texts: string[], task: string, dim: number): Promise<EmbRes>;
+  chat(model: string, req: ChatReq): Promise<ChatRes>;
 }
+// wave 105: multi-turn chat with function calling (Ask Crux agent). Model turns are kept exactly as returned (thought signatures included).
+export type Part = Record<string, any>;
+export type Content = { role: 'user' | 'model'; parts: Part[] };
+export type ToolDecl = { name: string; description: string; parameters: Record<string, unknown> };
+export type ChatReq = { system?: string; contents: Content[]; tools?: ToolDecl[]; noTools?: boolean; maxTokens?: number; temperature?: number; thinkingBudget?: number };
+export type ChatRes = {
+  ok: boolean; text: string; calls: { name: string; args: Record<string, unknown>; id?: string }[]; content?: Content;
+  model: string; status: number; retries: number; ms: number; promptTokens?: number; outputTokens?: number; finish?: string; error?: string;
+};
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -111,6 +121,31 @@ export class GeminiProvider implements AIProvider {
     if (!text) return { ...base, ...usage, ok: false, text: '', finish: c.finishReason, error: `empty content (finish reason ${c.finishReason ?? 'unknown'})` };
     if (c.finishReason && c.finishReason !== 'STOP') return { ...base, ...usage, ok: false, text, finish: c.finishReason, error: `incomplete answer (finish reason ${c.finishReason})` };
     return { ...base, ...usage, ok: true, text, finish: c.finishReason };
+  }
+
+  async chat(model: string, q: ChatReq): Promise<ChatRes> {
+    const gc: any = { temperature: q.temperature ?? 0.2, maxOutputTokens: q.maxTokens ?? 4096 };
+    if (/^gemini-2\.5-flash/.test(model)) gc.thinkingConfig = { thinkingBudget: q.thinkingBudget ?? 1024 };
+    const body: any = { contents: q.contents, generationConfig: gc };
+    if (q.system) body.systemInstruction = { parts: [{ text: q.system }] };
+    if (q.tools?.length) {
+      body.tools = [{ functionDeclarations: q.tools }];
+      body.toolConfig = { functionCallingConfig: { mode: q.noTools ? 'NONE' : 'AUTO' } };
+    }
+    const r = await this.call('POST', `models/${encodeURIComponent(model)}:generateContent`, body);
+    const base = { model, status: r.status, retries: r.retries, ms: r.ms, calls: [] as ChatRes['calls'] };
+    if (!r.ok) return { ...base, ok: false, text: '', error: r.error };
+    if (r.j?.promptFeedback?.blockReason) return { ...base, ok: false, text: '', error: 'blocked: ' + r.j.promptFeedback.blockReason };
+    const c = r.j?.candidates?.[0];
+    if (!c) return { ...base, ok: false, text: '', error: 'no candidates in response' };
+    const parts: Part[] = c.content?.parts ?? [];
+    const calls = parts.filter((p) => p?.functionCall?.name).map((p) => ({ name: String(p.functionCall.name), args: (p.functionCall.args ?? {}) as Record<string, unknown>, id: p.functionCall.id }));
+    const text = parts.map((p) => (typeof p?.text === 'string' && !p.thought ? p.text : '')).join('').trim();
+    const u = r.j?.usageMetadata ?? {};
+    const usage = { promptTokens: u.promptTokenCount, outputTokens: (u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0) };
+    if (!calls.length && !text) return { ...base, ...usage, ok: false, text: '', finish: c.finishReason, error: `empty content (finish reason ${c.finishReason ?? 'unknown'})` };
+    if (!calls.length && c.finishReason && c.finishReason !== 'STOP') return { ...base, ...usage, ok: false, text, finish: c.finishReason, error: `incomplete answer (finish reason ${c.finishReason})` };
+    return { ...base, ...usage, ok: true, text, calls, content: { role: 'model', parts }, finish: c.finishReason };
   }
 
   async embed(model: string, texts: string[], task: string, dim: number): Promise<EmbRes> {

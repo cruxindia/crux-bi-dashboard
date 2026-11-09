@@ -154,7 +154,7 @@ tr:hover td{background:var(--blue-soft)}
 #askPanel .askin{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line)}
 #askPanel textarea{flex:1;resize:vertical;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 #askPanel>.note{padding:0 12px 8px;font-size:11px;margin:0}
-#askPanel.wide{width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 90px)}#askPanel .askans h4{margin:10px 0 4px;font-size:13px}#askPanel .askdirect{font-weight:600}#askPanel .asktbl{font-size:12px;width:100%;border-collapse:collapse}#askPanel .asktbl th,#askPanel .asktbl td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askchart{height:220px;position:relative}#askPanel .askchips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}#askPanel .asksug{padding:6px 12px 0}#askPanel ul{margin:2px 0 4px 18px;padding:0;font-size:13px}#askPanel ul.risk li{color:var(--bad)}.btn.ghost{background:transparent;border:1px dashed var(--line)}
+#askPanel.wide{width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 90px)}#askPanel .askans h4{margin:10px 0 4px;font-size:13px}#askPanel .askdirect{font-weight:600}#askPanel .asktbl{font-size:12px;width:100%;border-collapse:collapse}#askPanel .asktbl th,#askPanel .asktbl td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askchart{height:220px;position:relative}#askPanel .askchips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}#askPanel .asksug{padding:6px 12px 0}#askPanel ul{margin:2px 0 4px 18px;padding:0;font-size:13px}#askPanel ul.risk li{color:var(--bad)}#askPanel .askai{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted);margin-bottom:4px}#askPanel .askmd p{margin:0 0 6px}#askPanel .askmd p:first-child{font-weight:600}#askPanel .askmd table{font-size:12px;border-collapse:collapse;width:100%;margin:4px 0 8px}#askPanel .askmd th,#askPanel .askmd td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askmd th{font-weight:600}#askPanel .askmd code{font-size:12px}#askPanel .askcheck{font-size:12px;margin:4px 0;padding:4px 8px;border-radius:6px;background:var(--good-soft,rgba(46,125,50,.08))}#askPanel .askcheck.warn{background:var(--warn-soft,rgba(196,128,0,.1))}#askPanel .asksteps{margin:4px 0 4px 18px;padding:0;font-size:12px}#askPanel .asksteps code{display:block;white-space:pre-wrap;word-break:break-word;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:3px 5px;margin-top:2px}#askPanel .askfall{font-size:12.5px;padding:6px 8px;border-radius:6px;background:var(--warn-soft,rgba(196,128,0,.1));margin-bottom:6px}.btn.ghost{background:transparent;border:1px dashed var(--line)}
 .btn.sm{padding:2px 8px;font-size:13px}
 table.matrix input.cell{width:76px;text-align:right;padding:3px 5px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);font:inherit}
 table.matrix input.cell.bad{border-color:var(--bad);background:var(--bad-soft)}
@@ -3207,8 +3207,37 @@ function mapFixBtn(mk,row){const b=el('button',{type:'button',class:'btn sm'},'C
 /* ---------- Ask Crux (floating, every section) ---------- */
 const ASK={url:'https://czdjbbhxboweawqbjywr.supabase.co/functions/v1/ask-crux',
  jwt:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGpiYmh4Ym93ZWF3cWJqeXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjkyNDgsImV4cCI6MjEwMDU0NTI0OH0.NSiSksxZiMVrVG6h4Wt2ZPhS4P4mbgv3XaAlGSqYIzM',conv:null};
+// Ask Crux v4 (wave 105): the AI analyst's own answer (light markdown rendered safely as DOM), how it found the data, and the figure check
+function mdInline(t){const out=[];String(t).split(/(\*\*[^*]+\*\*|`[^`]+`)/g).forEach(x=>{if(!x)return;if(/^\*\*[^*]+\*\*$/.test(x))out.push(el('strong',{},x.slice(2,-2)));else if(/^`[^`]+`$/.test(x))out.push(el('code',{},x.slice(1,-1)));else out.push(x.replace(/(^|\s)\*(?=\S)|(\S)\*(?=\s|$)/g,'$1$2'))});return out}
+function mdLite(src){const box=el('div',{class:'askmd'});const L=String(src||'').replace(/\r/g,'').split('\n');let i=0,list=null;
+ const flush=()=>{if(list){box.append(list);list=null}};
+ while(i<L.length){const ln=L[i];
+  if(/^\s*\|.*\|\s*$/.test(ln)){flush();const rows=[];while(i<L.length&&/^\s*\|.*\|\s*$/.test(L[i])){rows.push(L[i]);i++}
+   const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());const body=rows.filter(r=>!/^\s*\|[\s:|-]+\|\s*$/.test(r));if(!body.length)continue;
+   const t=el('table',{},el('thead',{},el('tr',{},cells(body[0]).map(c=>el('th',{},...mdInline(c))))),el('tbody',{},body.slice(1).map(r=>el('tr',{},cells(r).map(c=>el('td',{},...mdInline(c)))))));
+   box.append(el('div',{class:'tablewrap'},t));continue}
+  const b=ln.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
+  if(b){if(!list)list=el('ul');list.append(el('li',{},...mdInline(b[1])));i++;continue}
+  flush();if(ln.trim()){const h=ln.replace(/^#{1,4}\s+/,'');box.append(el('p',{},...mdInline(h)))}i++}
+ flush();return box}
+function askRenderAgent(a,askNext){const box=el('div',{class:'msg bot askans'});
+ box.append(el('div',{class:'askai'},el('span',{class:'chip'},'AI analyst'),el('span',{},`${a.model||'Gemini'} · data as of ${ddmm?ddmm(a.as_of):a.as_of}`)));
+ box.append(mdLite(a.answer));
+ const ck=a.check||{};const unt=ck.untraced||[];
+ box.append(el('p',{class:'askcheck'+(unt.length?' warn':'')},unt.length?`⚠ ${unt.length} of ${ck.figures} figures could not be traced to the data: ${unt.join(', ')}. Check them on the dashboard before using them.`:ck.figures?`✓ All ${ck.figures} figures in this answer were checked against the data the AI looked up.`:'No figures in this answer.'));
+ if((a.next||[]).length&&askNext){const d=el('div',{class:'askchips'},el('span',{class:'note'},'Ask next: '));a.next.forEach(x=>d.append(el('button',{type:'button',class:'btn sm ghost',onclick:()=>askNext(x)},x)));box.append(d)}
+ const st=(a.steps||[]);
+ box.append(el('details',{},el('summary',{},`How I found this (${st.filter(x=>!x.auto).length} look-ups${a.ms?', '+(a.ms/1000).toFixed(1)+' s':''})`),
+  el('ol',{class:'asksteps'},st.map(x=>el('li',{},`${x.label}${x.auto?' — started with the page month and filters':''}${x.rows!=null?' · '+fmt(x.rows)+' rows':''}${x.ok?'':' · failed: '+(x.error||'')}`,x.detail?el('code',{},x.detail):null))),
+  (a.sources||[]).length?el('p',{},'Based on: '+a.sources.join('; ')):null,
+  el('p',{},`Written by ${a.model||'Google Gemini'} (AI). The AI chose what to look up; the look-ups use the dashboard's own calculations or read-only queries on the database. People's names were replaced by codes before anything was sent to the AI.`)));
+ const fb=el('span',{class:'note'});const vote=async h=>{const c=h?null:prompt('What was wrong or missing? (optional)');fb.textContent='Thanks for the feedback.';
+  try{if(S.sb)await S.sb.rpc('bi_feedback',{p_message:a.message_id,p_helpful:h,p_correction:c||null})}catch{}};
+ if(a.message_id)fb.append(el('button',{class:'btn sm','aria-label':'Helpful',onclick:()=>vote(true)},'👍'),' ',el('button',{class:'btn sm','aria-label':'Not helpful',onclick:()=>vote(false)},'👎'));box.append(fb);
+ return box}
 // Ask Crux v3 answer: direct answer, findings table, drivers, risks, opportunities, actions, chart, drill links, next questions, method
-function askRender(a,askNext){const box=el('div',{class:'msg bot askans'});
+function askRender(a,askNext){if(a.mode==='agent')return askRenderAgent(a,askNext);const box=el('div',{class:'msg bot askans'});
+ if(a.provider==='deterministic'&&a.provider_note)box.append(el('p',{class:'askfall'},a.provider_note));
  if(a.narrative)box.append(el('p',{},el('span',{class:'note'},'AI summary (wording only): '),a.narrative));
  box.append(el('p',{class:'askdirect'},a.answer||''));
  if(a.notes)box.append(el('p',{class:'note'},a.notes));
@@ -3245,12 +3274,12 @@ function askSuggest(){const k=S.section;
  return by[k]||['How is revenue doing this month?','Which branch managers are furthest from target?','What are the five most important issues?','Which locations contribute most to the shortfall?']}
 function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sessionStorage.getItem('crux_ask_conv')}catch{}
  const btn=el('button',{id:'askBtn',class:'btn primary','aria-haspopup':'dialog','aria-controls':'askPanel','aria-expanded':'false'},'Ask Crux');
- const log=el('div',{class:'asklog',role:'log','aria-live':'polite'},el('div',{class:'msg bot note'},'Ask about business vs target, the gap by location, change vs last month, Force1, TAT, branches or data health. Your current month, filters and page are used.'));
+ const log=el('div',{class:'asklog',role:'log','aria-live':'polite'},el('div',{class:'msg bot note'},'Ask anything about the business: targets, gaps and why, teams, clients, branches, managers, operations, receivables or trends. The AI analyst looks up the data itself, starting from your current month and filters.'));
  const q=el('textarea',{rows:2,placeholder:'Type a question…','aria-label':'Your question',maxlength:500});const send=el('button',{class:'btn primary'},'Ask');
  const close=el('button',{class:'btn sm','aria-label':'Close Ask Crux'},'×');const fresh=el('button',{class:'btn sm',title:'Start a new conversation'},'New');
  const wide=el('button',{class:'btn sm',title:'Wider panel','aria-label':'Toggle wide panel'},'⤢');const sug=el('div',{class:'askchips asksug'});
- const panel=el('div',{id:'askPanel',role:'dialog','aria-label':'Ask Crux',class:'hidden'},el('div',{class:'askhead'},el('strong',{},'Ask Crux'),el('p',{class:'note'},'Answers use the same calculations as the dashboard.'),wide,fresh,close),sug,log,
-  el('div',{class:'askin'},q,send),el('p',{class:'note'},'No personal data is sent to the AI. Every number comes from the database; the AI summary never contains figures (any that do are blocked) and the calculated answer is always shown.'));
+ const panel=el('div',{id:'askPanel',role:'dialog','aria-label':'Ask Crux',class:'hidden'},el('div',{class:'askhead'},el('strong',{},'Ask Crux'),el('p',{class:'note'},'AI analyst (Google Gemini): it reads your question, looks up the data and writes the answer. Every figure is checked against the database.'),wide,fresh,close),sug,log,
+  el('div',{class:'askin'},q,send),el('p',{class:'note'},'People\'s names are replaced by codes before anything is sent to the AI; business figures are sent to Google Gemini. If the AI is busy or out of its free daily limit, the standard calculated answer is shown.'));
  document.body.append(btn,panel);
  const open=o=>{panel.classList.toggle('hidden',!o);btn.setAttribute('aria-expanded',String(o));if(o){sug.innerHTML='';sug.append(el('span',{class:'note'},'Try: '),...askSuggest().map(x=>el('button',{type:'button',class:'btn sm ghost',onclick:()=>{q.value=x;ask()}},x)));q.focus()}};
  wide.onclick=()=>panel.classList.toggle('wide');
@@ -3258,13 +3287,13 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
  fresh.onclick=()=>{ASK.conv=null;try{sessionStorage.removeItem('crux_ask_conv')}catch{}log.innerHTML='';log.append(el('div',{class:'msg bot note'},'New conversation started.'))};
  panel.addEventListener('keydown',e=>{if(e.key==='Escape'){open(false);btn.focus()}});
  q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask()}});send.onclick=ask;
- async function ask(){const text=q.value.trim();if(text.length<3)return;q.value='';log.append(el('div',{class:'msg me'},text));const wait=el('div',{class:'msg bot note'},'Working it out…');log.append(wait);log.scrollTop=log.scrollHeight;send.disabled=true;
+ async function ask(){const text=q.value.trim();if(text.length<3)return;q.value='';log.append(el('div',{class:'msg me'},text));const wait=el('div',{class:'msg bot note'},'Thinking — looking up the data…');log.append(wait);log.scrollTop=log.scrollHeight;send.disabled=true;const t0=Date.now();const tick=setInterval(()=>{wait.textContent=`Thinking — looking up the data… ${Math.round((Date.now()-t0)/1000)} s`},1000);
   try{const r=await fetch(ASK.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ASK.jwt,apikey:ASK.jwt},
-    body:JSON.stringify({question:text,conversation_id:ASK.conv,context:{...(ASK.ctx||{month:$('#fMonth').value,filters:filters()}),section:S.section}})});
+    body:JSON.stringify({question:text,conversation_id:ASK.conv,...(S.adminKey?{admin_key:S.adminKey}:{}),context:{...(ASK.ctx||{month:$('#fMonth').value,filters:filters()}),section:S.section}})});clearInterval(tick);
    ASK.ctx=null;const a=await r.json().catch(()=>({error:'unreadable response'}));wait.remove();if(!r.ok||a.error)throw new Error(a.error||('HTTP '+r.status));
    ASK.conv=a.conversation_id;try{sessionStorage.setItem('crux_ask_conv',a.conversation_id)}catch{}
    const bx=askRender(a,qq=>{q.value=qq;ask()});log.append(bx);send.disabled=false;setTimeout(()=>{log.scrollTop=Math.max(0,bx.offsetTop-log.offsetTop-60)},30);return}
-  catch(e){wait.remove();log.append(el('div',{class:'msg bot'},el('p',{class:'bad'},'Sorry — '+e.message+'. The dashboard itself still works.')))}
+  catch(e){clearInterval(tick);wait.remove();log.append(el('div',{class:'msg bot'},el('p',{class:'bad'},'Sorry — '+e.message+'. The dashboard itself still works.')))}
   send.disabled=false;log.scrollTop=log.scrollHeight}}
 
 /* ---------- Upload centre ---------- */
