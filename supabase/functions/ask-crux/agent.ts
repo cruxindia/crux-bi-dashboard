@@ -486,7 +486,7 @@ export function questionKeys(q: string, pseudo: Pseudo, vocab: Set<string>): { c
 }
 
 // ---------------------------------------------------------------- the agent loop
-export class AgentError extends Error { constructor(msg: string, public status = 0, public steps: any[] = []) { super(msg); } }
+export class AgentError extends Error { constructor(msg: string, public status = 0, public steps: any[] = [], public detail: any = null) { super(msg); } }
 export type AgentOut = { text: string; model: string; rounds: number; steps: any[]; check: ReturnType<typeof checkFigures>; usage: { calls: number; prompt: number; output: number } };
 
 export async function runAgent(o: {
@@ -614,7 +614,8 @@ export async function runAgent(o: {
     const check = finalCheck!;
     // an answer whose figures mostly cannot be traced is not shown (the calculated answer is shown instead)
     if (check.untraced.length >= 3 || (check.figures && check.untraced.length / check.figures > 0.25)) {
-      throw new AgentError(`figure check failed (${check.untraced.length} of ${check.figures} figures not found in the data)`, 422, [...steps, ...mSteps]);
+      throw new AgentError(`figure check failed (${check.untraced.length} of ${check.figures} figures not found in the data)`, 422, [...steps, ...mSteps],
+        { text: finalText, check, model, rounds, usage });
     }
     return { text: finalText, model, rounds, steps: [...steps, ...mSteps], check, usage };
   }

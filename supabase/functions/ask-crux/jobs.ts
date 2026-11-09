@@ -44,15 +44,40 @@ async function dailyBrief(env: JobEnv) {
     `**Zones** — a table: zone, likely vs target %, gap, root cause (at most 10 rows).\n` +
     `**Watch list** — 3 to 5 risks or anomalies (falling clients, big gaps, receivables over 180 days, open backlog), each with its figure.\n` +
     `**Today's actions** — three actions, each naming the zone, team or client and why.\n` +
-    `Never name or score a person or branch manager. Every figure must come from the look-ups.`;
-  const out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question,
+    `Never name or score a person or branch manager. Every figure must come from the look-ups: quote them as the look-ups give them (rounding is fine) and do not add up, ` +
+    `average or subtract several rows yourself. About 25 figures in total is enough.`;
+  let out: any, pruned: { dropped: number; total: number } | null = null;
+  try { out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question,
     ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: 6, timeoutMs: 25000,
     deadline: env.t0 + 115000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok,
-    allow: ['get_business_summary', 'get_breakdown', 'get_operations', 'get_collections', 'get_potential', 'get_plan', 'get_targets', 'run_sql'], purpose: 'agent_brief', maxTokens: 8192 });
+    allow: ['get_business_summary', 'get_breakdown', 'get_operations', 'get_collections', 'get_potential', 'get_plan', 'get_targets', 'run_sql'], purpose: 'agent_brief', maxTokens: 8192 }); }
+  catch (e) {
+    // a long briefing with a few unverifiable figures: leave out the statements that carry them (never show an unchecked figure)
+    const d = (e as AgentError)?.detail;
+    if ((e as AgentError)?.status !== 422 || !d?.text) throw e;
+    const p = prune(d.text, d.check.untraced);
+    if (!p.total || p.dropped / p.total > 0.4) throw e;
+    pruned = { dropped: p.dropped, total: p.total };
+    out = { text: p.text + `\n\n*${p.dropped} statement${p.dropped === 1 ? ' was' : 's were'} left out because their figures could not be checked against the dashboard.*`,
+      model: d.model, rounds: d.rounds, usage: d.usage, steps: (e as AgentError).steps ?? [], check: { figures: d.check.figures - d.check.untraced.length, traced: d.check.traced, untraced: [] } };
+  }
   const body = clean(env.pseudo.show(out.text));
   const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: env.pseudo.show(String(s.label ?? s.tool)), ok: s.ok, rows: s.rows ?? null }));
   return { kind: 'daily_brief', for_date: day, audience: 'viewer', title: `Morning briefing · ${day}`, body_md: body, model: out.model,
-    data: { as_of: env.dataAsOf, month: env.dataMonth, check: { ...out.check, untraced: out.check.untraced.map((x) => env.pseudo.show(x)) }, steps }, usage: out.usage };
+    data: { as_of: env.dataAsOf, month: env.dataMonth, check: { ...out.check, untraced: out.check.untraced.map((x: string) => env.pseudo.show(x)) }, pruned, steps }, usage: out.usage };
+}
+
+function prune(text: string, bad: string[]) {
+  const has = (x: string) => bad.some((b) => b && x.includes(b));
+  const out: string[] = []; let dropped = 0;
+  const lines = text.split('\n');
+  for (const ln of lines) {
+    if (!has(ln)) { out.push(ln); continue; }
+    if (/^\s*\|/.test(ln) || /^\s*(?:[-*•]|\d+[.)])\s/.test(ln)) { dropped++; continue; }   // a table row or a bullet: drop it whole
+    const sents = ln.split(/(?<=[.!?])\s+/); const keep = sents.filter((x) => !has(x)); dropped += sents.length - keep.length;
+    if (keep.length) out.push(keep.join(' '));
+  }
+  return { text: out.join('\n'), dropped, total: lines.filter((l) => l.trim()).length };
 }
 
 // ---------------------------------------------------------------- market and client news (free RSS; links come from the feeds, never from the AI)
@@ -194,7 +219,7 @@ export async function runJob(job: string, env: JobEnv) {
   catch (e) {
     const msg = String((e as Error)?.message ?? e).slice(0, 300);
     rep = { kind: job, for_date: todayIST(), status: 'failed', audience: 'admin', title: `${job.replace('_', ' ')} · ${todayIST()} (failed)`, body_md: `The agent could not finish: ${msg}`,
-      data: { error: msg, steps: (e as AgentError)?.steps?.length ?? 0 } };
+      data: { error: msg, steps: (e as AgentError)?.steps?.length ?? 0, untraced: ((e as AgentError)?.detail?.check?.untraced ?? []).map((x: string) => env.pseudo.show(x)) } };
   }
   const lessons = rep._lessons; delete rep._lessons;
   // a failed run never replaces a good report of the same day
