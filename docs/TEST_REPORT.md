@@ -674,7 +674,7 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | Check | Local | Live |
 |---|---|---|
 | K1 panel copy (AI analyst; names replaced by codes) | ✓ | ✓ |
-| K2 AI answer: chip, table, figure check ✓, look-ups, Next chip, dashboard page link | ✓ | ✓ (before page links) |
+| K2 AI answer: chip, table, figure check ✓, look-ups, Next chip, dashboard page link | ✓ | ✓ (31 figures checked, 13 s) |
 | K3 follow-up uses the conversation | ✓ | ✓ |
 | K4 fallback note at the top | ✓ | ✓ |
 | K5 no HTML injection from the answer text | ✓ | ✓ |
