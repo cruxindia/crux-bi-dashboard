@@ -16,11 +16,23 @@ export class Pseudo {
   private re: RegExp | null = null;
   private fwd = new Map<string, string>();
   private back = new Map<string, string>();
-  constructor(tokens: string[]) {
+  private toks: string[] = [];
+  private tokSet = new Set<string>();
+  private stableBack: Map<string, string> | null = null;
+  constructor(tokens: string[], private salt = '') {
     const t = [...new Set(tokens.map((x) => String(x).toUpperCase()))].filter((x) => x.length >= 3 && /^[A-Z]+$/.test(x) && !NOT_NAMES.has(x))
       .sort((a, b) => b.length - a.length);
+    this.toks = t; this.tokSet = new Set(t);
     if (t.length) this.re = new RegExp(`(?<![A-Za-z0-9])(${t.join('|')})(?![A-Za-z0-9])`, 'gi');
   }
+  // wave 105c: stable codes (same name -> same code in every request) for the memory: embeddings and stored plans never carry names
+  private code(k: string) { let h = 0x811c9dc5; for (const ch of this.salt + k) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return 'N' + h.toString(36).padStart(7, '0'); }
+  stable(s: string): string { if (!this.re || !s) return s; return s.replace(this.re, (m) => this.code(m.toUpperCase())); }
+  unstable(s: string): string {
+    if (!this.stableBack) { this.stableBack = new Map(); for (const k of this.toks) this.stableBack.set(this.code(k), k); }
+    return String(s ?? '').replace(/\bN[0-9a-z]{7}\b/g, (m) => this.stableBack!.get(m) ?? m);
+  }
+  isName(w: string) { return this.tokSet.has(String(w).toUpperCase()); }
   get count() { return this.fwd.size; }
   hide(s: string): string {
     if (!this.re || !s) return s;
@@ -425,6 +437,54 @@ GLOSSARY (dashboard definitions):
 ${gloss}`;
 }
 
+// wave 105c: the look-ups behind an answer, names as stable codes, so a similar later question can re-run them
+export function planOf(steps: any[], pseudo: Pseudo) {
+  return steps.filter((s) => s && s.ok && !s.auto && !s.discarded && s.tool !== 'explain_metric').slice(0, 6)
+    .map((s) => ({ tool: s.tool, args: JSON.parse(pseudo.stable(pseudo.show(JSON.stringify(s.args ?? {})))) }));
+}
+
+// wave 105c memory guard. Measured 9-Nov on gemini-embedding-2: "Pune" vs "Nagpur" 0.884, "ahead" vs "behind" target 0.900, "top 5" vs "top 10" 0.951,
+// while true paraphrases score 0.86-0.97. So similarity alone cannot tell the same question from a different one: a match also needs the same key words.
+// reuse = the same content words (only filler words may differ); adapt = the same entities, numbers, period, level, direction and topic words.
+const STOP = new Set(('A AN THE IS ARE WAS WERE BE BEEN BEING AM DO DOES DID DOING DONE HOW WHAT WHICH WHO WHOM WHY WHEN WHERE OF FOR IN ON AT TO BY WITH FROM AND OR ' +
+  'ME MY OUR US WE YOU YOUR I IT ITS THIS THAT THESE THOSE CAN COULD WOULD SHOULD WILL SHALL PLEASE SHOW TELL GIVE LIST S ABOUT HAVE HAS HAD GET GOT SO AS ANY SOME ' +
+  'THERE HERE THEN THAN KNOW LET SEE CURRENT CURRENTLY NOW RIGHT').split(' '));
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const GROUPS: [RegExp, string][] = [
+  [/^(TEAMS?|LOCATIONS?)$/, 'L:TEAM'], [/^(ZONES?|REGIONS?)$/, 'L:ZONE'], [/^(CLIENTS?|BANKS?)$/, 'L:CLIENT'], [/^(BRANCH|BRANCHES)$/, 'L:BRANCH'], [/^(MANAGERS?|BMS?)$/, 'L:MGR'],
+  [/^(AHEAD|ABOVE|EXCEED\w*|BEAT\w*|OVERACHIEV\w*)$/, 'P:UP'], [/^(BEHIND|BELOW|SHORT\w*|LAG\w*|MISS\w*|UNDERPERFORM\w*)$/, 'P:DOWN'],
+  [/^(TOP|BEST|HIGHEST|MOST|LARGEST|BIGGEST|MAX\w*)$/, 'P:MAX'], [/^(BOTTOM|WORST|LOWEST|LEAST|SMALLEST|MIN|MINIMUM)$/, 'P:MIN'],
+  [/^(GREW|GROW\w*|INCREAS\w*|RISE|RISEN|ROSE|RISING|UP|GAIN\w*|IMPROV\w*)$/, 'P:GROW'], [/^(FELL|FALL\w*|DECLIN\w*|DECREAS\w*|DROP\w*|DOWN|LOST|LOSS|LOSING|DIP\w*)$/, 'P:FALL'],
+  [/^(NOT|NO|NEVER|WITHOUT|EXCEPT|EXCLUDING|NON)$/, 'P:NOT'],
+  [/^(TAT|TURNAROUND|SLA)$/, 'M:TAT'], [/^(OUTSTANDING|RECEIVABLES?|COLLECTIONS?|COLLECTED|AGEING|AGING|DUES?|DEBTORS?|REALISATION|REALIZATION|OVERDUE)$/, 'M:AR'],
+  [/^(POTENTIAL|HEADROOM|PENETRATION|OPPORTUNIT\w*)$/, 'M:POT'], [/^(PLAN|PLANS|OUTLOOK|QUARTERS?|QUARTERLY)$/, 'M:PLAN'], [/^(FORCE1|FORCE)$/, 'M:F1'],
+  [/^(PENALTY|PENALTIES)$/, 'M:PEN'], [/^(BACKLOG|PENDING|OPEN)$/, 'M:BKL'], [/^COVERAGE$/, 'M:COV'], [/^(DORMANT|INACTIVE|NEVER)$/, 'M:DORM'],
+  [/^(LAST|PREVIOUS|PREV|PRIOR)$/, 'T:LAST'], [/^(NEXT|UPCOMING|COMING)$/, 'T:NEXT'], [/^(TODAY)$/, 'T:TODAY'], [/^(YESTERDAY)$/, 'T:YESTERDAY'],
+  [/^(WEEKS?|WEEKLY)$/, 'T:WEEK'], [/^(YEARS?|YEARLY|ANNUAL|YTD|FY)$/, 'T:YEAR'], [/^(DAYS?|DAILY)$/, 'T:DAY'],
+];
+const stem = (w: string) => w.length > 4 && /(CHES|SHES|SSES|XES)$/.test(w) ? w.slice(0, -2) : w.length > 3 && /S$/.test(w) && !/SS$/.test(w) ? w.slice(0, -1) : w;
+export function vocabOf(meta: any): Set<string> {
+  const v = new Set<string>();
+  const GENERIC = new Set(['TEAM', 'ZONE', 'REST', 'BANK', 'OTHER', 'OTHERS', 'TOTAL', 'ALL', 'INDIA', 'LTD', 'LIMITED', 'NEW']);
+  const add = (s: any, min = 3) => { for (const w of String(s ?? '').toUpperCase().match(/[A-Z0-9]+/g) ?? []) if (w.length >= min && !GENERIC.has(w) && !STOP.has(w)) v.add(w); };
+  for (const l of meta?.locations ?? []) { add(l.label); add(l.zone_group); add(l.region); add(l.code); }
+  for (const c of meta?.clients ?? []) { add(c.code, 2); add(c.family, 2); }
+  return v;
+}
+export function questionKeys(q: string, pseudo: Pseudo, vocab: Set<string>): { content: string; entity: string } {
+  const words = String(q ?? '').toUpperCase().replace(/[’']/g, ' ').match(/[A-Z0-9]+/g) ?? [];
+  const content = new Set<string>(), entity = new Set<string>();
+  for (const w of words) {
+    if (/^\d+$/.test(w)) { content.add(String(+w)); entity.add('N:' + +w); continue; }
+    if (pseudo.isName(w) || vocab.has(w) || /\d/.test(w)) entity.add('E:' + w);
+    const mi = MONTHS.findIndex((m) => w === m || (w.length > 3 && w.startsWith(m) && /^(JANUARY|FEBRUARY|MARCH|APRIL|JUNE|JULY|AUGUST|SEPT|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)$/.test(w)));
+    if (mi >= 0) entity.add('T:M' + (mi + 1));
+    for (const [re, k] of GROUPS) if (re.test(w)) entity.add(k);
+    if (!STOP.has(w)) content.add(stem(w));
+  }
+  return { content: [...content].sort().join(' '), entity: [...entity].sort().join(' ') };
+}
+
 // ---------------------------------------------------------------- the agent loop
 export class AgentError extends Error { constructor(msg: string, public status = 0, public steps: any[] = []) { super(msg); } }
 export type AgentOut = { text: string; model: string; rounds: number; steps: any[]; check: ReturnType<typeof checkFigures>; usage: { calls: number; prompt: number; output: number } };
@@ -432,6 +492,8 @@ export type AgentOut = { text: string; model: string; rounds: number; steps: any
 export async function runAgent(o: {
   ai: AIProvider; models: string[]; api: Api; gw: Gw; rec: Rec; pseudo: Pseudo; system: string; question: string; ctx: Ctx; history: { question: string; answer: string }[];
   docs: Record<string, any>; dataMonth: string; maxRounds: number; timeoutMs: number; deadline: number; budget: () => Promise<boolean>;
+  seed?: { question: string; answer: string; asked: string; replay: { tool: string; args: Record<string, unknown> }[] } | null;
+  hints?: string[]; lessons?: { question: string; correction: string }[];
 }): Promise<AgentOut> {
   const { pseudo } = o;
   const t: ToolCtx = { api: o.api, gw: o.gw, ctx: o.ctx, pseudo, docs: o.docs, dataMonth: o.dataMonth };
@@ -440,9 +502,34 @@ export async function runAgent(o: {
   try { snap = (await TOOLS.get_business_summary(t, {})).data; } catch { snap = null; }
   const evidence: any[] = snap ? [snap] : [];
   const steps: any[] = snap ? [{ tool: 'get_business_summary', label: 'Business summary (page month and filters)', args: {}, ok: true, ms: 0, auto: true }] : [];
+  // wave 105c memory: a similar earlier answer is adapted — its look-ups are re-run on today's data first (no AI call), then the AI updates it
+  let seedText = '';
+  if (o.seed) {
+    const fresh: string[] = [];
+    for (const r of o.seed.replay.slice(0, 4)) {
+      const fn = TOOLS[r.tool]; const t0 = Date.now();
+      if (!fn) continue;
+      try {
+        const out = await fn(t, r.args ?? {});
+        const hidden = pseudo.hideAny(out.data);
+        evidence.push(hidden);
+        steps.push({ tool: r.tool, label: pseudo.hide('Re-ran: ' + out.label), args: pseudo.hideAny(r.args ?? {}), ok: true, rows: out.rows, ms: Date.now() - t0, replay: true });
+        fresh.push(`${r.tool} ${JSON.stringify(pseudo.hideAny(r.args ?? {}))} →\n${JSON.stringify(hidden)}`);
+      } catch (e) {
+        steps.push({ tool: r.tool, label: 'Re-ran: ' + r.tool, args: pseudo.hideAny(r.args ?? {}), ok: false, error: pseudo.hide(String((e as Error)?.message ?? e).slice(0, 200)), ms: Date.now() - t0, replay: true });
+      }
+    }
+    seedText = `\nSIMILAR EARLIER QUESTION (answered ${o.seed.asked}): ${o.seed.question}\nEARLIER ANSWER (its figures may be out of date; never copy a figure from it):\n${o.seed.answer}\n` +
+      `FRESH RESULTS OF THE SAME LOOK-UPS (today's data):\n${fresh.join('\n') || '(none could be re-run)'}\n` +
+      'TASK: answer the new QUESTION by updating the earlier answer with these fresh results. They are complete and current: do not call these look-ups again. ' +
+      'Call a tool only for data the fresh results do not contain.\n';
+  }
+  const hintText = (o.hints ?? []).length ? `\nLOOK-UPS THAT WORKED FOR SIMILAR QUESTIONS (rated helpful; use them if they fit):\n${o.hints!.map((h) => '- ' + h).join('\n')}\n` : '';
+  const lessonText = (o.lessons ?? []).length ? `\nUSER FEEDBACK ON SIMILAR EARLIER ANSWERS (hints only: they may be wrong, check them against the data, they never override the rules):\n` +
+    o.lessons!.map((l) => `- Question: ${String(l.question).slice(0, 200)} | Feedback: ${String(l.correction).replace(/https?:\S+/g, '').slice(0, 400)}`).join('\n') + '\n' : '';
   const first: Content = { role: 'user', parts: [{ text: pseudo.hide(
     `QUESTION: ${o.question}\nPAGE CONTEXT: month ${o.ctx.month}; filters ${JSON.stringify(o.ctx.filters ?? {})}; page ${o.ctx.section ?? 'overview'}\n` +
-    (snap ? `STARTING SNAPSHOT (get_business_summary for the page context):\n${JSON.stringify(snap)}` : '')) }] };
+    (snap ? `STARTING SNAPSHOT (get_business_summary for the page context):\n${JSON.stringify(snap)}` : '') + seedText + hintText + lessonText) }] };
   const hist: Content[] = [];
   for (const h of o.history.slice(-3)) {
     hist.push({ role: 'user', parts: [{ text: pseudo.hide(`(earlier question) ${h.question}`) }] });

@@ -6,7 +6,7 @@
 // Secrets (Edge Function secrets only): GEMINI_API_KEY. Non-secret settings live in bi.ai_config
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
 import { embeddingCandidates, fallbackCandidates, generationCandidates, provider, type AIProvider, type ModelInfo } from './ai.ts';
-import { AgentError, DECLS, Pseudo, runAgent, systemPrompt, type Ctx } from './agent.ts';
+import { AgentError, DECLS, Pseudo, planOf, questionKeys, runAgent, systemPrompt, vocabOf, type Ctx } from './agent.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
 const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -155,6 +155,15 @@ async function cached<T>(c: Cached<T>, ms: number, f: () => Promise<T>): Promise
   const v = await f(); return [v, { at: Date.now(), v }];
 }
 const MONTH_RE = /^\d{4}-\d{2}-01$/;
+// wave 105c memory: stable name codes are salted with a server-side secret, so codes in embeddings and stored plans cannot be reversed outside
+const SALT = SR.slice(-24);
+// a follow-up that leans on the conversation ("and its clients?") is never answered from memory
+const FOLLOW = /^\s*(and|also|what about|how about|same)\b|\b(it|its|they|them|their|those|these|that one|the same|above|previous|earlier|this team|that team)\b/i;
+// a stored question that leans on its own conversation (narrower than FOLLOW: "above target" or "previous month" are standalone)
+const FOLLOW_C = /^\s*(and|also|what about|how about|same|then|so|but)\b|\b(them|those|these|that one|the same|this team|that team|this zone|that zone|this client|that client)\b/i;
+const vecTxt = (v: number[] | null) => (v ? '[' + v.join(',') + ']' : null);
+const ctxKeyOf = (month: string, filters: Record<string, unknown>, admin: boolean) =>
+  `${month}|${JSON.stringify(Object.fromEntries(Object.entries(filters ?? {}).sort(([a], [b]) => a.localeCompare(b))))}|${admin ? 'admin' : 'viewer'}`;
 async function askAgent(body: any, cfg: Record<string, string>) {
   const t0 = Date.now();
   const adminKey = typeof body?.admin_key === 'string' && body.admin_key.length > 10 ? body.admin_key : null;
@@ -167,7 +176,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   [meta, metaC] = await cached(metaC, 600000, () => api('meta', {}));
   [docs, docsC] = await cached(docsC, 600000, async () => (await api('metric_doc', {}))?.docs ?? {});
   [tokens, tokC] = await cached(tokC, 600000, async () => { const t = await gw({ op: 'pii_tokens' }); if (!Array.isArray(t) || !t.length) throw new Error('name list unavailable'); return t; });
-  const pseudo = new Pseudo(tokens);
+  const pseudo = new Pseudo(tokens, SALT);
   const dataAsOf = String(meta?.freshness?.zonal_latest_snapshot ?? '').slice(0, 10);
   const dataMonth = (meta?.months ?? [])[0] ?? (dataAsOf ? dataAsOf.slice(0, 8) + '01' : new Date().toISOString().slice(0, 8) + '01');
   const c = body?.context ?? {};
@@ -178,11 +187,58 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 3 }).catch(() => []) : [];
   const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
   const system = pseudo.hide(systemPrompt({ teams: meta?.locations ?? [], clients: meta?.clients ?? [], docs, dataAsOf, dataMonth, today }));
+  // ---- wave 105c memory: look for the same or a similar earlier question before spending AI calls
+  const ctxKey = ctxKeyOf(ctx.month, filters, !!adminKey);
+  const followUp = Array.isArray(history) && history.length > 0 && FOLLOW.test(question);
+  let emb: number[] | null = null, mem: any = null;
+  if (cfg.MEMORY_ENABLED !== 'off' && cfg.GEMINI_EMBEDDING_MODEL) {
+    try {
+      const eb = await gw({ op: 'budget', purpose: 'embed' });
+      if (eb?.ok) {
+        const r = await provider(8000, 0).embed(cfg.GEMINI_EMBEDDING_MODEL, [pseudo.stable(question)], 'SEMANTIC_SIMILARITY', Number(cfg.EMBED_DIM || 768));
+        await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_query', ok: r.ok, ms: r.ms, in: question.length, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? 'ask memory' : r.error });
+        if (r.ok) emb = r.vectors[0];
+      }
+      if (emb && body?.fresh !== true) mem = await gw({ op: 'memory_search', embedding: vecTxt(emb), ctx_key: ctxKey, min_sim: 0.7, k: 10, lesson_sim: 0.72 });
+    } catch { mem = null; }
+  }
+  const reuseSim = Number(cfg.MEMORY_REUSE_SIM || 0.92), adaptSim = Number(cfg.MEMORY_ADAPT_SIM || 0.85);
+  // an earlier follow-up ("and which of its clients ...") only made sense inside its own conversation: never reused, adapted or given as a hint
+  const cands: any[] = (Array.isArray(mem?.answers) ? mem.answers : []).filter((x: any) => !FOLLOW_C.test(String(x.question ?? '')));
+  // similarity alone cannot separate "Pune" from "Nagpur" or "ahead" from "behind": the key words must match too (see questionKeys)
+  const vocab = vocabOf(meta), qk = questionKeys(question, pseudo, vocab);
+  const keyed = (followUp ? [] : cands.filter((x) => x.same_ctx && x.answer?.answer)).map((x) => ({ x, k: questionKeys(String(x.question ?? ''), pseudo, vocab) }));
+  const best = keyed.find(({ x, k }) => +x.sim >= reuseSim && String(x.data_version) === String(mem?.current_version) && k.content === qk.content)?.x ?? null;
+  const near = keyed.find(({ x, k }) => +x.sim >= adaptSim && Array.isArray(x.plan) && x.plan.length && k.entity === qk.entity)?.x ?? null;
+  const scopeTxt0 = Object.keys(filters).length ? Object.entries(filters).map(([k, v]) => `${k.replace('_id', '').replace('_', ' ')} ${v}`).join(', ') : 'All India';
+  // (1) same question, same page, data unchanged: the checked earlier answer is reused — no AI call
+  if (best) {
+    const A = best.answer;
+    let log: any = {};
+    try {
+      log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...ctx, admin: !!adminKey }, filters, provider: 'memory', model: A.model ?? null, intent: 'agent',
+        answer: { ...A, reused_from: best.id }, mode: 'reused', reuse_of: best.id, embedding: vecTxt(emb), ctx_key: ctxKey, plan: best.plan ?? null,
+        trace: { mode: 'reused', reuse_of: best.id, sim: best.sim, usage: { calls: 0, prompt: 0, output: 0 }, ms: Date.now() - t0 } });
+    } catch { log = {}; }
+    return { mode: 'agent', provider: 'memory', model: A.model ?? null, answer: A.answer, next: A.next ?? [], steps: A.steps ?? [], check: A.check ?? { figures: 0, traced: 0, untraced: [] },
+      sources: A.sources ?? [], rounds: 0, usage: { calls: 0, prompt: 0, output: 0 }, memory: { mode: 'reused', of: best.id, sim: best.sim, asked: best.created_at, question: best.question },
+      period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt0, as_of: dataAsOf, month: ctx.month,
+      message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: 0 };
+  }
+  // (2) similar question on the same page: re-run its look-ups on today's data and let the AI update the earlier answer
+  const seed = near
+    ? { id: near.id, sim: near.sim, asked: String(near.created_at ?? '').slice(0, 10), question: String(near.question ?? ''), answer: String(near.answer.answer).slice(0, 2500),
+        replay: near.plan.slice(0, 4).map((x: any) => ({ tool: String(x.tool), args: JSON.parse(pseudo.unstable(JSON.stringify(x.args ?? {}))) })) }
+    : null;
+  // (3) learning: look-ups of similar answers rated helpful, and user corrections on similar questions
+  const hints = cands.filter((x) => x.helpful === true && (!seed || x.id !== seed.id) && Array.isArray(x.plan) && x.plan.length).slice(0, 2)
+    .map((x) => `"${x.question}": ` + x.plan.map((s: any) => `${s.tool} ${pseudo.unstable(JSON.stringify(s.args ?? {}))}`).join('; '));
+  const lessons = (Array.isArray(mem?.lessons) ? mem.lessons : []).map((x: any) => ({ question: String(x.question ?? ''), correction: String(x.correction ?? '') }));
   const primary = cfg.AGENT_MODEL, fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
   const models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
   const out = await runAgent({ ai: provider(Number(cfg.AGENT_TIMEOUT_MS || 25000), 0), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
     docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
-    budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok });
+    budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok, seed, hints, lessons });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
   // names back for display; the "Next:" line becomes a suggested question
   let text = pseudo.show(out.text).trim();
@@ -196,18 +252,24 @@ async function askAgent(body: any, cfg: Record<string, string>) {
     if (a.filters) bits.push('filters ' + pseudo.show(JSON.stringify(a.filters)));
     return bits.join(' · ');
   };
-  const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: pseudo.show(String(s.label ?? s.tool)), detail: showArgs(s), ok: s.ok, rows: s.rows ?? null, ms: s.ms, auto: !!s.auto,
+  const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: pseudo.show(String(s.label ?? s.tool)), detail: showArgs(s), ok: s.ok, rows: s.rows ?? null, ms: s.ms, auto: !!s.auto, replay: !!s.replay,
     error: s.error ? pseudo.show(String(s.error)) : undefined }));
   const check = { ...out.check, untraced: out.check.untraced.map((x) => pseudo.show(x)) };
   const sources = [...new Set(steps.filter((s) => s.ok).map((s) => s.tool === 'run_sql' ? 'Database views (read-only query)' : 'Dashboard calculation: ' + s.tool.replace(/^get_/, '').replace(/_/g, ' ')))];
   const scopeTxt = Object.keys(filters).length ? Object.entries(filters).map(([k, v]) => `${k.replace('_id', '').replace('_', ' ')} ${v}`).join(', ') : 'All India';
-  const answer = { answer: text, next, steps, check, model: out.model, rounds: out.rounds, sources };
+  const mode = seed ? 'adapted' : 'fresh';
+  const memory = seed ? { mode, of: seed.id, sim: seed.sim, asked: seed.asked, question: seed.question, lessons: lessons.length, hints: hints.length }
+    : { mode, lessons: lessons.length, hints: hints.length };
+  const answer = { answer: text, next, steps, check, model: out.model, rounds: out.rounds, sources, memory };
   let log: any = {};
   try {
     log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...ctx, admin: !!adminKey }, filters, provider: 'gemini', model: out.model, intent: 'agent', answer,
-      trace: { steps: out.steps, rounds: out.rounds, usage: out.usage, check: out.check, models_tried: models, names_hidden: pseudo.count, ms: Date.now() - t0 } });
+      mode, reuse_of: seed?.id ?? null, embedding: vecTxt(emb), ctx_key: ctxKey, plan: planOf(out.steps, pseudo),
+      trace: { steps: out.steps, rounds: out.rounds, usage: out.usage, check: out.check, models_tried: models, names_hidden: pseudo.count, ms: Date.now() - t0,
+        memory: { mode, of: seed?.id ?? null, sim: seed?.sim ?? null, lessons: lessons.length, hints: hints.length, candidates: cands.length,
+          top: cands[0] ? { id: cands[0].id, sim: cands[0].sim, same_ctx: cands[0].same_ctx } : null, follow_up: followUp } } });
   } catch { log = {}; }
-  return { mode: 'agent', provider: 'gemini-agent', model: out.model, answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage,
+  return { mode: 'agent', provider: 'gemini-agent', model: out.model, answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory,
     period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt, as_of: dataAsOf, month: ctx.month,
     message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
 }
@@ -235,6 +297,34 @@ Deno.serve(async (req) => {
       await record({ model: cfg.GEMINI_MODEL, purpose: 'synthetic', ok: r.ok, ms: r.ms, in: SYNTH.length, out: r.text.length, http_status: r.status, retries: r.retries, prompt_tokens: r.promptTokens, output_tokens: r.outputTokens, note: r.ok ? 'synthetic test' : r.error });
       return json({ ok: r.ok, model: cfg.GEMINI_MODEL, text: r.text, ms: r.ms, status: r.status, error: r.error, tokens: { prompt: r.promptTokens, output: r.outputTokens } });
     } catch (e) { return json({ error: (e as Error).message.slice(0, 300) }, 502); }
+  }
+
+  if (action === 'memory_backfill' || action === 'similarity') {
+    if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
+    if (!ai.configured() || !cfg.GEMINI_EMBEDDING_MODEL) return json({ error: 'embedding model not configured' }, 412);
+    const [tokens, c2] = await cached(tokC, 600000, async () => { const t = await gw({ op: 'pii_tokens' }); if (!Array.isArray(t) || !t.length) throw new Error('name list unavailable'); return t; });
+    tokC = c2;
+    const ps = new Pseudo(tokens, SALT), dim = Number(cfg.EMBED_DIM || 768), pe = provider(20000, 1);
+    if (action === 'similarity') {
+      const texts: string[] = (Array.isArray(body?.texts) ? body.texts : []).map(String).slice(0, 30);
+      const r = await pe.embed(cfg.GEMINI_EMBEDDING_MODEL, texts.map((x) => ps.stable(x)), 'SEMANTIC_SIMILARITY', dim);
+      await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_validate', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? 'similarity calibration' : r.error });
+      if (!r.ok) return json({ error: r.error }, 502);
+      const cos = (a: number[], b: number[]) => a.reduce((z, x, i) => z + x * b[i], 0);
+      return json({ texts, matrix: r.vectors.map((a) => r.vectors.map((b) => Math.round(cos(a, b) * 1000) / 1000)) });
+    }
+    let stored = 0, calls = 0;
+    for (let i = 0; i < 4; i++) {
+      const pend: any[] = await gw({ op: 'memory_pending', limit: 50 });
+      if (!pend.length) break;
+      const r = await pe.embed(cfg.GEMINI_EMBEDDING_MODEL, pend.map((x) => ps.stable(String(x.question ?? ''))), 'SEMANTIC_SIMILARITY', dim); calls++;
+      await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_documents', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? `ask memory backfill ${pend.length}` : r.error });
+      if (!r.ok) return json({ stored, calls, error: r.error }, 502);
+      const items = pend.map((x, k) => { const cx = x.context ?? {}; const m = typeof cx.month === 'string' && MONTH_RE.test(cx.month) ? cx.month : null;
+        return { id: x.id, embedding: vecTxt(r.vectors[k]), ctx_key: m ? ctxKeyOf(m, cx.filters ?? {}, !!cx.admin) : null }; });
+      stored += (await gw({ op: 'memory_set', items })).stored ?? 0;
+    }
+    return json({ stored, calls });
   }
 
   if (action === 'probe') {

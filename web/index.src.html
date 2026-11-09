@@ -154,7 +154,7 @@ tr:hover td{background:var(--blue-soft)}
 #askPanel .askin{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line)}
 #askPanel textarea{flex:1;resize:vertical;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 #askPanel>.note{padding:0 12px 8px;font-size:11px;margin:0}
-#askPanel.wide{width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 90px)}#askPanel .askans h4{margin:10px 0 4px;font-size:13px}#askPanel .askdirect{font-weight:600}#askPanel .asktbl{font-size:12px;width:100%;border-collapse:collapse}#askPanel .asktbl th,#askPanel .asktbl td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askchart{height:220px;position:relative}#askPanel .askchips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}#askPanel .asksug{padding:6px 12px 0}#askPanel ul{margin:2px 0 4px 18px;padding:0;font-size:13px}#askPanel ul.risk li{color:var(--bad)}#askPanel .askai{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted);margin-bottom:4px}#askPanel .askmd p{margin:0 0 6px}#askPanel .askmd p:first-child{font-weight:600}#askPanel .askmd table{font-size:12px;border-collapse:collapse;width:100%;margin:4px 0 8px}#askPanel .askmd th,#askPanel .askmd td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askmd th{font-weight:600}#askPanel .askmd code{font-size:12px}#askPanel .askcheck{font-size:12px;margin:4px 0;padding:4px 8px;border-radius:6px;background:var(--good-soft,rgba(46,125,50,.08))}#askPanel .askcheck.warn{background:var(--warn-soft,rgba(196,128,0,.1))}#askPanel .asksteps{margin:4px 0 4px 18px;padding:0;font-size:12px}#askPanel .asksteps code{display:block;white-space:pre-wrap;word-break:break-word;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:3px 5px;margin-top:2px}#askPanel .askfall{font-size:12.5px;padding:6px 8px;border-radius:6px;background:var(--warn-soft,rgba(196,128,0,.1));margin-bottom:6px}.btn.ghost{background:transparent;border:1px dashed var(--line)}
+#askPanel.wide{width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 90px)}#askPanel .askans h4{margin:10px 0 4px;font-size:13px}#askPanel .askdirect{font-weight:600}#askPanel .asktbl{font-size:12px;width:100%;border-collapse:collapse}#askPanel .asktbl th,#askPanel .asktbl td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askchart{height:220px;position:relative}#askPanel .askchips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}#askPanel .asksug{padding:6px 12px 0}#askPanel ul{margin:2px 0 4px 18px;padding:0;font-size:13px}#askPanel ul.risk li{color:var(--bad)}#askPanel .askai{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted);margin-bottom:4px}#askPanel .askmd p{margin:0 0 6px}#askPanel .askmd p:first-child{font-weight:600}#askPanel .askmd table{font-size:12px;border-collapse:collapse;width:100%;margin:4px 0 8px}#askPanel .askmd th,#askPanel .askmd td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}#askPanel .askmd th{font-weight:600}#askPanel .askmd code{font-size:12px}#askPanel .askcheck{font-size:12px;margin:4px 0;padding:4px 8px;border-radius:6px;background:var(--good-soft,rgba(46,125,50,.08))}#askPanel .askcheck.warn{background:var(--warn-soft,rgba(196,128,0,.1))}#askPanel .asksteps{margin:4px 0 4px 18px;padding:0;font-size:12px}#askPanel .asksteps code{display:block;white-space:pre-wrap;word-break:break-word;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:3px 5px;margin-top:2px}#askPanel .askmem{font-size:12px;margin:2px 0 6px;color:var(--muted)}#askPanel .askfall{font-size:12.5px;padding:6px 8px;border-radius:6px;background:var(--warn-soft,rgba(196,128,0,.1));margin-bottom:6px}.btn.ghost{background:transparent;border:1px dashed var(--line)}
 .btn.sm{padding:2px 8px;font-size:13px}
 table.matrix input.cell{width:76px;text-align:right;padding:3px 5px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);font:inherit}
 table.matrix input.cell.bad{border-color:var(--bad);background:var(--bad-soft)}
@@ -283,7 +283,7 @@ function showLoginMsg(t){$('#loginMsg').textContent=t}
 const AREAS=[['Executive overview',[['overview','Executive overview'],['present','Management summary']]],['Business performance',[['tracker','Business tracker'],['rca','Root cause (why)'],['growth','Growth & trends'],['planning','Planning & forecasting'],['people','People']]],
  ['Operations & TAT',[['tat','TAT & operations'],['force1','Force1 utilisation']]],['Revenue & collections',[['collections','Revenue & collections']]],
  ['Data readiness',[['health','Data readiness']]],['Ask Crux',[['ask','Ask Crux']]]];
-const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_finance','Admin · Finance review'],['adm_plan','Admin · Plan & targets'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health']];
+const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_finance','Admin · Finance review'],['adm_plan','Admin · Plan & targets'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health'],['adm_ask','Admin · Ask Crux learning']];
 /* wave 096: simple line icons for the menu areas (decorative, aria-hidden) */
 const ICO={'Executive overview':'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
  'Business performance':'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>','Operations & TAT':'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
@@ -350,7 +350,7 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
  const pager=el('div',{class:'tools'});wrap.append(tools,tw,pager);draw();
  if(ex.length)tatOnToggle(wrap,v=>{ex.forEach(k=>v?hidden.delete(k):hidden.add(k));if(drawn)draw()});return wrap}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';const sb=staleBanner();if(sb)v.insertBefore(sb,s);await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
-function render(){for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb}[S.section]||vOverview)()}
+function render(){for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk}[S.section]||vOverview)()}
 
 /* ---------- Overview ---------- */
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
@@ -1268,7 +1268,8 @@ const ADM_GROUPS=[
  ['adm_finance','Finance review & records','Finance review queue; invoice and receipt detail by location'],
  ['adm_plan','Plan & targets','Suggested monthly targets from current pace, potential and opportunity: preview, save as the plan, version history'],
  ['adm_penalty','Penalties','Add or cancel penalties; complete audit history'],
- ['adm_db','Database health & maintenance','Database size against the plan limit, largest tables, scheduled jobs, AI status']];
+ ['adm_db','Database health & maintenance','Database size against the plan limit, largest tables, scheduled jobs, AI status'],
+ ['adm_ask','Ask Crux learning','What the AI reused, updated or answered fresh, AI calls saved, and the lessons it learned from user feedback (switch any off)']];
 const LEGACY={upload:'adm_upload',quality:'adm_mapping',force:'adm_dq'};
 function toast(t){const n=el('div',{class:'toast',role:'status'},t);document.body.append(n);setTimeout(()=>n.remove(),6000)}
 const ADM={exp:null,t1:null,t2:null,
@@ -1332,6 +1333,23 @@ const vAdmBranch=guard(async s=>{if(!admHead(s,'adm_branch'))return;const a=el('
 const vAdmHr=guard(async s=>{if(!admHead(s,'adm_hr'))return;const a=el('div');s.append(a);masterUI(a,{kind:'workforce',fixed:true});const b=el('div',{class:'card',style:'margin-top:14px'});s.append(b);await hrClassUI(b,$('#fMonth').value,filters())});
 const vAdmFinance=guard(async s=>{if(!admHead(s,'adm_finance'))return;const a=el('div',{class:'card'});s.append(a);finReviewUI(a);const b=el('div',{class:'card',style:'margin-top:14px'});s.append(b);finRecordsUI(b)});
 const vAdmPenalty=guard(async s=>{if(!admHead(s,'adm_penalty'))return;const m=$('#fMonth').value;const a=el('div',{class:'card'});s.append(a);penaltySection(a,m,{},true);const b=el('div',{class:'card',style:'margin-top:14px'});s.append(b);await penaltyAudit(b,m)});
+// wave 105c: Ask Crux learning — memory reuse, AI calls saved, lessons from feedback (admin switches)
+const vAdmAsk=guard(async s=>{if(!admHead(s,'adm_ask'))return;const box=el('div');s.append(box);
+ const call=async(action,p={})=>{const {data,error}=await S.sb.rpc('bi_ask_learning',{p_action:action,p:{...p,admin_key:S.adminKey}});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);return data};
+ const load=async()=>{box.innerHTML='';box.append(el('p',{class:'note'},'Loading…'));let D;try{D=await call('summary')}catch(e){box.innerHTML='';box.append(el('p',{class:'bad'},e.message));return}box.innerHTML='';
+  const bm=Object.fromEntries((D.by_mode||[]).map(x=>[x.mode,x])),sum=k=>(D.by_mode||[]).reduce((z,x)=>z+(+x[k]||0),0);
+  box.append(el('p',{class:'lede'},'How it learns: every AI answer is saved with its question and the look-ups it used. The same question on the same page with unchanged data gets the saved answer back (no AI call); a similar question gets the saved look-ups re-run on today’s data and the AI updates the earlier answer. A match needs the same team, zone, client, person, month, numbers and direction words (ahead / behind, top / bottom), not just similar wording, and follow-up questions are never reused. 👍 answers are preferred, 👎 answers are never reused, and 👎 notes become hints for similar questions. The model itself is not retrained.'),
+   el('div',{class:'tiles'},tile('AI answers, last 30 days',fmt(sum('answers')),`${fmt(bm.reused?.answers||0)} reused · ${fmt(bm.adapted?.answers||0)} updated · ${fmt(bm.fresh?.answers||0)} fresh`),
+    tile('AI calls used',fmt(sum('ai_calls')),`${D.avg_calls_fresh??'–'} per fresh answer on average`),tile('AI calls saved (estimate)',fmt(D.calls_saved_est||0),'by reusing or updating earlier answers'),
+    tile('Answers in memory',fmt(D.memory_size||0),'ready to reuse or update'),tile('Feedback',`👍 ${fmt(sum('helpful'))} · 👎 ${fmt(sum('not_helpful'))}`,'answers rated by users')));
+  const tg=(on,f)=>el('button',{type:'button',class:'btn sm'+(on?'':' ghost'),onclick:async e=>{e.target.disabled=true;try{await f();await load()}catch(x){e.target.disabled=false;alert(x.message)}}},on?'On — switch off':'Off — switch on');
+  box.append(el('h3',{},'Lessons from user feedback'),el('p',{class:'note'},'A 👎 with a note becomes a hint the AI sees for similar questions. Switch off any note that is wrong.'),
+   (D.lessons||[]).length?table(D.lessons,[{key:'at',label:'When',fmt:v=>String(v||'').slice(0,16).replace('T',' ')},{key:'question',label:'Question'},{key:'correction',label:'User note'},
+    {key:'active',label:'Used as a hint',fmt:(v,r)=>tg(v,()=>call('lesson_toggle',{id:r.id,active:!v}))}],{name:'ask_lessons.csv',search:false}):el('p',{class:'note'},'No notes yet.'));
+  box.append(el('h3',{},'Recent AI answers'),table(D.recent||[],[{key:'at',label:'When',fmt:v=>String(v||'').slice(0,16).replace('T',' ')},{key:'question',label:'Question'},
+    {key:'mode',label:'How',fmt:v=>({reused:'Reused',adapted:'Updated',fresh:'Fresh'})[v]||v},{key:'calls',label:'AI calls',num:1,fmt:fmt},{key:'helpful',label:'Rating',fmt:v=>v===true?'👍':v===false?'👎':''},
+    {key:'reuse_ok',label:'Reuse allowed',fmt:(v,r)=>r.mode==='reused'?'':tg(v,()=>call('reuse_toggle',{id:r.id,ok:!v}))}],{name:'ask_recent.csv',pageSize:20}))};
+ await load()});
 const vAdmDb=guard(async s=>{if(!admHead(s,'adm_db'))return;await dbHealthUI(s);const ai=el('div');s.append(ai);await aiStatusSection(ai)});
 const mapAct=(kind,idk,opts)=>(v,row)=>{const sel=el('select',{'aria-label':'Review status'},opts.map(o=>el('option',{value:o},o)));sel.value=v;sel.onchange=async()=>{try{await adminCall('mapping_update',{kind,[idk]:row[idk],status:sel.value})}catch(e){alert(e.message);sel.value=v}};return sel};
 async function mappingUI(s){const mq=await api('mapping_queue');const act=mapAct;
@@ -3221,7 +3239,13 @@ function mdLite(src){const box=el('div',{class:'askmd'});const L=String(src||'')
   flush();if(ln.trim()){const h=ln.replace(/^#{1,4}\s+/,'');box.append(el('p',{},...mdInline(h)))}i++}
  flush();return box}
 function askRenderAgent(a,askNext){const box=el('div',{class:'msg bot askans'});
- box.append(el('div',{class:'askai'},el('span',{class:'chip'},'AI analyst'),el('span',{},`${a.model||'Gemini'} · data as of ${ddmm?ddmm(a.as_of):a.as_of}`)));
+ box.append(el('div',{class:'askai'},el('span',{class:'chip'},a.provider==='memory'?'From memory':'AI analyst'),el('span',{},`${a.model||'Gemini'} · data as of ${ddmm?ddmm(a.as_of):a.as_of}`)));
+ // wave 105c memory: say when an earlier answer was reused or updated, and let the user ask for a fresh one
+ const M=a.memory||{};const dd=x=>x?ddmm(String(x).slice(0,10)):'';
+ if(M.mode==='reused'||M.mode==='adapted'){const t=M.mode==='reused'?`♻ Same question answered on ${dd(M.asked)} with the same data — that checked answer is shown again (no AI call used).`
+   :`↻ Updated an earlier answer to a similar question (“${String(M.question||'').slice(0,90)}”, ${dd(M.asked)}) with today’s data — fewer AI calls.`;
+  box.append(el('p',{class:'askmem'},t,' ',askNext&&a._q?el('button',{type:'button',class:'btn sm ghost',onclick:()=>askNext(a._q,true)},'Ask fresh instead'):null))}
+ else if(M.lessons)box.append(el('p',{class:'askmem'},`Used ${M.lessons} piece${M.lessons>1?'s':''} of user feedback on similar questions.`));
  box.append(mdLite(a.answer));
  const ck=a.check||{};const unt=ck.untraced||[];
  box.append(el('p',{class:'askcheck'+(unt.length?' warn':'')},unt.length?`⚠ ${unt.length} of ${ck.figures} figures could not be traced to the data: ${unt.join(', ')}. Check them on the dashboard before using them.`:ck.figures?`✓ All ${ck.figures} figures in this answer were checked against the data the AI looked up.`:'No figures in this answer.'));
@@ -3235,7 +3259,8 @@ function askRenderAgent(a,askNext){const box=el('div',{class:'msg bot askans'});
   el('ol',{class:'asksteps'},st.map(x=>el('li',{},`${x.label}${x.auto?' — started with the page month and filters':''}${x.rows!=null?' · '+fmt(x.rows)+' rows':''}${x.ok?'':' · failed: '+(x.error||'')}`,x.detail?el('code',{},x.detail):null))),
   (a.sources||[]).length?el('p',{},'Based on: '+a.sources.join('; ')):null,
   el('p',{},`Written by ${a.model||'Google Gemini'} (AI). The AI chose what to look up; the look-ups use the dashboard's own calculations or read-only queries on the database. People's names were replaced by codes before anything was sent to the AI.`)));
- const fb=el('span',{class:'note'});const vote=async h=>{const c=h?null:prompt('What was wrong or missing? (optional)');fb.textContent='Thanks for the feedback.';
+ const fb=el('span',{class:'note'});const vote=async h=>{const c=h?null:prompt('What was wrong or missing? Your note is used as a hint for similar questions (an admin can switch it off).');
+  fb.textContent=h?'Thanks — this answer will be preferred for similar questions.':'Thanks — this answer will not be reused'+(c?'; your note will guide similar questions.':'.');
   try{if(S.sb)await S.sb.rpc('bi_feedback',{p_message:a.message_id,p_helpful:h,p_correction:c||null})}catch{}};
  if(a.message_id)fb.append(el('button',{class:'btn sm','aria-label':'Helpful',onclick:()=>vote(true)},'👍'),' ',el('button',{class:'btn sm','aria-label':'Not helpful',onclick:()=>vote(false)},'👎'));box.append(fb);
  return box}
@@ -3291,12 +3316,12 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
  fresh.onclick=()=>{ASK.conv=null;try{sessionStorage.removeItem('crux_ask_conv')}catch{}log.innerHTML='';log.append(el('div',{class:'msg bot note'},'New conversation started.'))};
  panel.addEventListener('keydown',e=>{if(e.key==='Escape'){open(false);btn.focus()}});
  q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask()}});send.onclick=ask;
- async function ask(){const text=q.value.trim();if(text.length<3)return;q.value='';log.append(el('div',{class:'msg me'},text));const wait=el('div',{class:'msg bot note'},'Thinking — looking up the data…');log.append(wait);log.scrollTop=log.scrollHeight;send.disabled=true;const t0=Date.now();const tick=setInterval(()=>{wait.textContent=`Thinking — looking up the data… ${Math.round((Date.now()-t0)/1000)} s`},1000);
+ async function ask(o={}){const text=q.value.trim();if(text.length<3)return;q.value='';log.append(el('div',{class:'msg me'},text));const wait=el('div',{class:'msg bot note'},'Thinking — looking up the data…');log.append(wait);log.scrollTop=log.scrollHeight;send.disabled=true;const t0=Date.now();const tick=setInterval(()=>{wait.textContent=`Thinking — looking up the data… ${Math.round((Date.now()-t0)/1000)} s`},1000);
   try{const r=await fetch(ASK.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ASK.jwt,apikey:ASK.jwt},
-    body:JSON.stringify({question:text,conversation_id:ASK.conv,...(S.adminKey?{admin_key:S.adminKey}:{}),context:{...(ASK.ctx||{month:$('#fMonth').value,filters:filters()}),section:S.section}})});clearInterval(tick);
+    body:JSON.stringify({question:text,conversation_id:ASK.conv,...(o.fresh?{fresh:true}:{}),...(S.adminKey?{admin_key:S.adminKey}:{}),context:{...(ASK.ctx||{month:$('#fMonth').value,filters:filters()}),section:S.section}})});clearInterval(tick);
    ASK.ctx=null;const a=await r.json().catch(()=>({error:'unreadable response'}));wait.remove();if(!r.ok||a.error)throw new Error(a.error||('HTTP '+r.status));
    ASK.conv=a.conversation_id;try{sessionStorage.setItem('crux_ask_conv',a.conversation_id)}catch{}
-   const bx=askRender(a,qq=>{q.value=qq;ask()});log.append(bx);send.disabled=false;setTimeout(()=>{log.scrollTop=Math.max(0,bx.offsetTop-log.offsetTop-60)},30);return}
+   const bx=askRender({...a,_q:text},(qq,fr)=>{q.value=qq;ask({fresh:!!fr})});log.append(bx);send.disabled=false;setTimeout(()=>{log.scrollTop=Math.max(0,bx.offsetTop-log.offsetTop-60)},30);return}
   catch(e){clearInterval(tick);wait.remove();log.append(el('div',{class:'msg bot'},el('p',{class:'bad'},'Sorry — '+e.message+'. The dashboard itself still works.')))}
   send.disabled=false;log.scrollTop=log.scrollHeight}}
 

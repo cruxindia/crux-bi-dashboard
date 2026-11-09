@@ -680,3 +680,55 @@ Measured during the incident (disk-IO bound: the instance was at its post-burst 
 | K5 no HTML injection from the answer text | ✓ | ✓ |
 | K6 no admin key in viewer requests; no console errors | ✓ | ✓ |
 
+## 9-Nov-2026 — wave 105c (Ask Crux memory: reuse, update, learn from feedback)
+**Calibration (ask-crux action `similarity`, gemini-embedding-2, 768, SEMANTIC_SIMILARITY)**
+| Pair | Similarity | Same question? |
+|---|---|---|
+| "How is Pune doing this month?" vs "How is Pune performing this month?" | 0.963 | yes |
+| … vs "how's pune doing this month" | 0.924 | yes |
+| "Which teams are behind target?" vs "… lagging their target?" | 0.970 | yes |
+| "What is the TAT for SBI?" vs "… turnaround time for SBI cases?" | 0.880 | yes |
+| "How is Pune doing this month?" vs "How is Nagpur doing this month?" | 0.884 | **no** |
+| "Which teams are behind target?" vs "… ahead of target?" | 0.900 | **no** |
+| "Which clients grew the most …" vs "… fell the most …" | 0.876 | **no** |
+| "Top 5 clients by revenue" vs "Top 10 clients by revenue" | 0.951 | **no** |
+| two different branch managers, same wording | 0.829 | **no** |
+Conclusion: similarity cannot separate them → word guard (D281).
+
+**Word guard (questionKeys, node unit test w105/keys_test.mjs)** — 18/18 pairs classified as intended (reuse only for identical content words; update only for identical key words; Pune ≠ Nagpur, ahead ≠ behind, top 5 ≠ top 10, Oct ≠ Nov, SBI ≠ HDFC ≠ AU, "behind" ≠ "not behind", person A ≠ person B).
+
+**Agent mock (w105/mock4.mjs)** — stable name codes identical across instances and salt-dependent; codes map back; update path uses 1 AI call with the re-run look-ups in the evidence; no names in the prompt; plan stored with codes.
+
+**Live (edge function ask-crux v21, page month 2026-10, all India, viewer)**
+| Question | Expected | Result |
+|---|---|---|
+| "Which zones are furthest behind target this month and why?" (asked before) | reused | ✓ saved answer of message 963, 0 AI calls |
+| "which zone is furthest behind target this month and why" | reused | ✓ message 990 (similarity 0.926), 0 calls |
+| "Which zones are furthest below target this month, and why?" | updated | ✓ from 963 (0.984); v20: 3 calls (AI re-asked a look-up) → fixed (D285c) |
+| "Which zones are lagging furthest behind their target …" | updated | ✓ v21: 1 AI call, 0 untraced figures |
+| "Which zones are furthest ahead of target …" | not from the "behind" answers | ✓ fresh |
+| same question with "Ask fresh instead" | fresh | ✓ fresh, 2 calls |
+| "Why is Pune behind target this month, and which clients cause it?" | reused | ✓ message 998, 0 calls |
+| "Why is Nagpur behind target …" | not from Pune | ✓ not reused or updated. The fresh AI answer then failed the figure check (9 of 49 figures untraced) and the calculated answer was shown — an agent-quality case, not a memory one |
+| "And which of its clients is in business slowdown …" (no conversation) | stored follow-ups not used | ✓ fresh |
+| "What about Pune?" in a conversation | memory skipped | ✓ fresh, follow_up = true in the trace |
+| 👎 note on message 1007, then "Which zones are ahead of their target this month?" | lesson used | ✓ lessons = 1; answer opens "No zone is ahead of target this month" |
+
+**Database checks**
+| Check | Result |
+|---|---|
+| Back-fill | 40 answers embedded in 1 call; plans rebuilt for 35 |
+| New answers | 16 since the change: 8 reused (0 AI calls), 2 updated (4 calls), 6 fresh (23 calls); all with embedding, plan and mode |
+| Names in saved plans | 0 of 45 contain a name token; 0 contain a PX code |
+| bi_ask_learning with a wrong key | "admin key required" |
+| Data version unchanged by the config change and the admin switches | 575918607 before bi_105d, after it, and after switching lesson 1007 off and on through bi_ask_learning (audit: two ai_ask_lesson_toggle rows) |
+| Admin summary through the API | by mode: 8 reused (0 calls) · 2 updated (4 calls) · 46 fresh (152 calls, 3.3 per answer, last 30 days); calls saved ≈ 29; 56 answers in memory; 3 notes listed (2 older notes on pre-agent answers have no embedding, so they are listed but not used as lessons) |
+
+**Browser (test_105c_ui.py)**
+| Check | Local | Live |
+|---|---|---|
+| M1 same question twice: "From memory" chip, ♻ note, "Ask fresh instead", 0 AI calls | ✓ | pending |
+| M2 "Ask fresh instead" sends fresh:true, new answer, no ♻ note | ✓ | pending |
+| M3 Admin → Ask Crux learning: explanation, 5 tiles, lessons and recent answers with switches, all three modes | ✓ (after fix bi_105e) | pending |
+| M4 viewer requests carry no admin key; only bi_ask_learning carries it; no console errors | ✓ | pending |
+

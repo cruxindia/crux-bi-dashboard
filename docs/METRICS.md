@@ -254,3 +254,14 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 - **Figure check:** every figure in the answer (₹ / L / cr / % / counts; dates, years and counts ≤ 12 ignored) must match a looked-up figure, or a difference, sum, ratio or % change of two figures from the same row or a total, within one unit of the last digit shown. 3+ untraced figures, or more than 25%, → calculated answer shown instead.
 - **Same rules as the dashboard:** likely month end = so far ÷ share of month done; vs BAU = so far ÷ BAU − 1; root cause: ahead (≥ 100%), on track (≥ 95%), business slowdown (vs BAU < −5%), else target stretch; potential = current + untapped headroom; penetration = current ÷ potential.
 - **Names:** replaced by codes before anything is sent to the AI; shown back in the answer.
+
+## Ask Crux memory (9-Nov-2026, wave 105c)
+- **Similarity** = cosine similarity of the two questions' embeddings (gemini-embedding-2, 768 dimensions, task SEMANTIC_SIMILARITY; names replaced by codes first).
+- **Content words** = the question's words without filler words (how, is, the, which, show …), plurals reduced to singular. **Key words** = numbers; team, zone, client and person names; month and period words (last, next, week, year …); level (team / zone / client / branch / manager); direction (ahead / behind, top / bottom, grew / fell, not); topic (TAT, receivables, potential, plan, Force1, penalty, backlog, coverage, dormant).
+- **Reused** = same page context + unchanged data version + similarity ≥ MEMORY_REUSE_SIM (0.92) + same content words → saved answer, 0 AI calls.
+- **Updated (adapted)** = same page context + similarity ≥ MEMORY_ADAPT_SIM (0.85) + same key words + a saved look-up plan → plan re-run on today's data, then one AI turn updates the earlier answer.
+- **Fresh** = everything else.
+- **AI calls saved (estimate, last 30 days)** = Σ over reused and updated answers of max(average AI calls per fresh answer − AI calls used, 0).
+- **Answers in memory** = AI answers with an embedding that an admin has not excluded from reuse.
+- **Lesson** = a 👎 note on an answer whose question is at least 0.72 similar to the new question (up to 3, admin-switchable).
+

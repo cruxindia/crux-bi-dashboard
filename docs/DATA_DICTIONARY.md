@@ -291,3 +291,20 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | bi.ai_message.trace | look-ups, rounds, tokens, figure check, models tried (codes only, no names) |
 | bi_ai_gateway ops | pii_tokens, sql, agent_log, history (service role only) |
 | bi.ai_config AGENT_* | AGENT_ENABLED, AGENT_MODEL (gemini-3.5-flash-lite), AGENT_FALLBACK_MODEL (gemini-2.5-flash), AGENT_TIMEOUT_MS 25000, AGENT_MAX_ROUNDS 5 |
+
+## Ask Crux memory and learning (9-Nov-2026, wave 105c)
+| Object | What it is |
+|---|---|
+| bi.ai_message.q_embedding | vector(768): embedding of the question, names replaced by salted stable codes |
+| bi.ai_message.ctx_key | page month \| filters (sorted JSON) \| viewer or admin |
+| bi.ai_message.mode | fresh · adapted (earlier answer updated with re-run look-ups) · reused (saved answer returned, no AI call) |
+| bi.ai_message.reuse_of | the earlier message an adapted or reused answer came from |
+| bi.ai_message.plan | the look-ups behind the answer: [{tool, args}], names as codes, at most 6 |
+| bi.ai_message.lesson_active | a 👎 note on this message is used as a lesson (admin switch; default on) |
+| bi.ai_message.reuse_ok | false = never reuse or update this answer (admin switch; default on) |
+| bi.ai_memory_search(p) | top answers (same-context flag, similarity, data version, plan, rating) and lessons near a question embedding; excludes reused, 👎, disputed, not-allowed and untraced-figure answers |
+| bi_ai_gateway ops | memory_search, memory_pending (answers without an embedding), memory_set (store embeddings; service role only) |
+| public.bi_ask_learning(action, p) | admin only (admin key): summary · lesson_toggle · reuse_toggle; switches logged in bi.audit_log as ai_ask_lesson_toggle / ai_ask_reuse_toggle |
+| bi.ai_config MEMORY_* | MEMORY_ENABLED (on), MEMORY_REUSE_SIM (0.92), MEMORY_ADAPT_SIM (0.85) |
+| ask-crux actions | memory_backfill (embed answers saved before wave 105c), similarity (calibration matrix); both need an admin or job token |
+
