@@ -774,3 +774,33 @@ Regression: test_105_ui.py (K1–K6, wave 105 Ask panel) 6/6 on the live site af
 
 Regression on the live site after the change: test_105_ui.py 6/6. test_105c_ui.py 3/4: M3 (admin learning page) rendered correctly, but the strict check expects all three modes among the 40 most recent answers and the day's tests had pushed the "Updated" answers out of that window (data, not a defect).
 
+## 11-Nov-2026 — wave 105h (only "Ask Crux" named; Ask Crux on every tile, table and chart; where people ask)
+**Server and database**
+| Check | Result |
+|---|---|
+| Migration bi_105h applied; bi_105i (element counts only for tiles, tables, charts, cards, details panel) | ✓ |
+| bi.no_vendor and brand.ts noVendor give the same output on 11 sample strings (model ids, "Google Gemini", "or:openrouter/free", "~openai/gpt-…", Claude, Llama, Qwen); ordinary text and "Google News" unchanged | ✓ |
+| ai_status (public): no model / embedding / vendor keys; last-failure note sanitised; engine main/backup | ✓ (after clearing the cached result once) |
+| bi_agent_reports viewer and admin: no model field; 0 vendor words in titles, bodies, data, lessons (1 old chat review had one: sanitised on read) | ✓ |
+| ask-crux status action: {assistant, key_present, enabled, agent, backup, memory} | ✓ live |
+| Live question with an origin: provider ask-crux, no model field, bi.ask_origin row (tile "Target", path ai, message id) | ✓ |
+| Identity questions ("Are you Gemini, GPT or Claude?", "Name the large language model"): "I am Ask Crux, Crux's business analyst …" | ✓ live (test rows deleted afterwards) |
+| Calculated-answer path: provider deterministic, note "Ask Crux wording was not used …", no model | ✓ live |
+| Chat review re-run: "Most asked about" + "Improve <page>" sections, engine label, 0 vendor words | ✓ live |
+| Type check (tsc) of the edge function; page script parses | ✓ |
+| Loader redeployed (version 27, pinned to commit ddf59c4; then to the docs commit, see SOW) | ✓ |
+
+**Browser (test_105h_ui.py)**
+| Check | Local | Live |
+|---|---|---|
+| H1 Overview: every tile (30), chart and table has an Ask Crux button; "Ask Crux Briefing Notes" with its own button, none inside the notes | ✓ | ✓ |
+| H2 tile button: editable question naming the tile, "Asking about the tile …" line, tile's drill-down not opened | ✓ | ✓ |
+| H3 zone tile button names the zone, no drill-down; the zone tile still opens it; 21 buttons inside the details panel, which closes before asking | ✓ | ✓ |
+| H4 10 more pages (RCA, TAT, Collections, People, Planning, Tracker, Growth, Force1, Health, Management summary): 100% of tiles, charts and tables have a button; chart/table questions name their heading; table origin carries its columns | ✓ | ✓ (real answers) |
+| H5 origin {kind, title, page} and context sent; reply chip "Ask Crux"; the "Asking about" line clears | ✓ (canned reply) | ✓ (real answer) |
+| H6 no vendor/model word on 11 viewer pages (details opened), the Ask panel, ai_status and report APIs | ✓ | ✓ |
+| H7 admin: no vendor word on 11 admin pages; "What people ask about" with 4 tiles; "Ask Crux agents"; no buttons on the 7 skipped admin pages, buttons on the 4 business admin pages | ✓ (after showing the connector actor as "operations") | ✓ (after deleting 2 test questions that named vendors) |
+| H8 phone 390 px: buttons at full strength, no horizontal scroll; no console errors | ✓ | ✓ |
+
+Regression on the live site: test_105_ui 6/6 (K1 now expects the Ask Crux copy), test_105f_ui 4/4 (Run now shows "1 Ask Crux calls"; no model), test_105c_ui 3/4 as run — M3 failed on its old expectations only (5 tiles, "Recent AI answers"); re-checked on the captured page with the new ones (9 tiles, "Recent Ask Crux answers", the new section) ✓. Live page = build: md5 c24111a6….
+

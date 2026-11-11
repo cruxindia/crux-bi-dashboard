@@ -207,7 +207,7 @@ async function chatReview(env: JobEnv) {
     .filter((l: any) => l.question && l.lesson && !/₹|%|\d{3,}/.test(l.lesson)).slice(0, 5);
   const fails = (Array.isArray(json?.failures) ? json.failures : []).slice(0, 12);
   const body = [`${S(json?.summary, 1200)}`, '',
-    `**Numbers** — ${stats.questions} questions · ${stats.ai} answered by the AI (${stats.updated} updated from memory) · ${stats.reused} reused from memory · ${stats.calculated} calculated fallback · 👍 ${stats.thumbs_up} · 👎 ${stats.thumbs_down} · ${stats.untraced} with untraced figures`,
+    `**Numbers** — ${stats.questions} questions · ${stats.ai} answered by Ask Crux (${stats.updated} updated from memory) · ${stats.reused} reused from memory · ${stats.calculated} calculated fallback · 👍 ${stats.thumbs_up} · 👎 ${stats.thumbs_down} · ${stats.untraced} with untraced figures`,
     '', '**Themes**', ...(Array.isArray(json?.themes) ? json.themes : []).slice(0, 8).map((t: any) => `- ${S(t.theme, 200)} (${+t.count || 0})`),
     '', '**What went wrong and the fix**', ...(fails.length ? fails.map((f: any) => `- #${+f.id || '?'}: ${S(f.cause, 300)} → ${S(f.fix, 300)}`) : ['- Nothing failed.']),
     '', '**Asked for but not available**', ...((Array.isArray(json?.missing) && json.missing.length) ? json.missing.slice(0, 8).map((m: any) => `- ${S(m.need, 200)} — ${S(m.why, 200)}`) : ['- Nothing.']),
@@ -248,7 +248,7 @@ function originSummary(o: any) {
   const pages: any[] = Array.isArray(o?.pages) ? o.pages : [], els: any[] = Array.isArray(o?.elements) ? o.elements : [];
   const kindTxt = (k: string) => ({ panel: 'typed in the Ask Crux panel', tile: 'tile', table: 'table', chart: 'chart', card: 'card', suggestion: 'suggested question', next: 'follow-up', drill: 'drill-down', menu: 'menu' } as Record<string, string>)[k] ?? k;
   const lines = [...pages.slice(0, 6).map((p) => `- ${p.page ?? p.section ?? 'unknown page'}: ${p.n} question${p.n === 1 ? '' : 's'}${p.not_helpful ? ` (👎 ${p.not_helpful})` : ''}`),
-    ...els.filter((e) => e.kind !== 'panel').slice(0, 6).map((e) => `- ${kindTxt(e.kind)} “${e.title ?? '?'}” on ${e.page ?? e.section ?? '?'}: ${e.n}`)];
+    ...els.filter((e) => e.title && !['panel', 'menu', 'suggestion', 'next'].includes(e.kind)).slice(0, 6).map((e) => `- ${kindTxt(e.kind)} “${e.title}” on ${e.page ?? e.section ?? '?'}: ${e.n}`)];
   const text = [...pages.slice(0, 10).map((p) => `${p.page ?? p.section ?? '?'} · all · ${p.n}`), ...els.slice(0, 15).map((e) => `${e.page ?? e.section ?? '?'} · ${e.kind} · ${e.title ?? '-'} · ${e.n}`)].join('\n') || '(none recorded)';
   return { lines, text, data: { pages: pages.slice(0, 10), elements: els.slice(0, 15) } };
 }

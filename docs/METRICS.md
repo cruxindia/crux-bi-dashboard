@@ -271,3 +271,10 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 - **Chat review numbers** (since the previous review): questions, answered by the AI, updated from memory, reused from memory, calculated fallback (the AI could not answer), 👍, 👎, answers with untraced figures.
 - **AI calls** per agent run are counted in bi.ai_provider_usage under purposes agent_brief, agent_news, agent_review, agent_weekly.
 
+## What people ask about (11-Nov-2026, wave 105h)
+- **Questions recorded** = rows in bi.ask_origin in the window (one per question sent to Ask Crux, any path); last 30 days on the admin page, since the previous review for the chat review, last 7 days for the weekly review.
+- **From a tile, table or chart** = questions whose element kind is tile, table, chart, briefing card or details panel (asked with an Ask Crux button); suggested questions, follow-ups, the menu and typing in the panel count only in the page totals.
+- **By page** = questions grouped by the page key (S.section) at the time of asking; columns: answered by Ask Crux (path ai), from memory (path memory), calculated answer (path calculated), errors, 👍 / 👎 (the rating given to that answer later), last asked.
+- **By element** = questions grouped by page, element kind and element title (tile label, or the heading above the table or chart); the value shown on a tile is part of the question, not of the title, so the same tile counts together across days.
+- **Engine (main / backup)** in admin status and agent run results = whether the first configured model or a backup answered; no model name is shown.
+

@@ -323,3 +323,17 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | cron jobs | bi-agent-chat-review 00:05 UTC, bi-agent-daily-brief 00:50, bi-agent-market-news 01:10, bi-agent-weekly-review Mon 01:30 (all via bi.call_edge → ask-crux agent_run); bi-restore-ai-cap (one-off, 00:01 UTC 10-Nov) |
 | ask-crux action agent_run | {job, token}: runs one agent now (admin or job token) |
 
+## Ask Crux name and where people ask (11-Nov-2026, wave 105h)
+| Object | Meaning |
+|---|---|
+| bi.ask_origin | one row per Ask Crux question: at, section (page key), page (label), kind (panel, tile, table, chart, card, suggestion, next, menu, drill), title (element), path (ai, memory, calculated, error), message_id (bi.ai_message), conversation_id, admin, ms. RLS on; written only through the gateway |
+| bi.ask_origin_log(p) | insert used by the gateway op origin_log (service role only) |
+| bi.ask_origin_counts(since, until, limit) | {total, pages[], elements[], kinds{}} for a window; used by bi_ask_learning summary ('asked') and bi.agent_review_input ('origins') |
+| bi.no_vendor(text) | replaces AI model / vendor names with "Ask Crux" (same patterns as supabase/functions/ask-crux/brand.ts) |
+| bi.api_ai_status() (bi_call 'ai_status') | now: assistant, enabled, agent_enabled, key_present, engine_ready, engine_checked_at, backup_ready, memory_ready, memory_checked_at, daily_cap, today, last_30d, last_failure {at, purpose, note (vendor names removed), engine main/backup/memory}, knowledge, last_engine_check. The model / embedding_model fields were removed |
+| public.bi_agent_reports(p) | no model field; titles, bodies, data and lessons through bi.no_vendor (market news left as published) |
+| public.bi_ask_learning('summary') | adds 'asked' (30-day counts) and, per recent answer, page and asked_from; model removed |
+| bi.agent_review_input(p) | messages carry engine (main/backup), page and asked_from instead of model; errors by engine; 'origins' counts; p.origins_only=true skips the messages |
+| ask-crux request field origin | {kind, title, page, columns[]} sent by the page with every question; columns go to Ask Crux as context only (not stored) |
+| ask-crux response | provider 'ask-crux' / 'memory' / 'deterministic'; no model field. action status → {assistant, key_present, enabled, agent, backup, memory}. agent_run result → engine instead of model |
+

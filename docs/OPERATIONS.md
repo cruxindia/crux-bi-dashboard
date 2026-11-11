@@ -232,3 +232,11 @@ To deploy: publish the code (stash + sync, or a merged pull request), then deplo
 
 **Weekly improver rules.** It reads the weekly review, the week's chat reviews and 👎 notes (read-only), opens at most two pull requests (label `improver`) with evidence, tests and an undo note, and never pushes to main, merges, applies migrations or changes settings. When an improver pull request that changed supabase/functions/ask-crux has been merged, its next run moves the ask-crux loader to the current main commit (merge = approval) and checks it; SQL in supabase/proposals/ is never applied by it.
 
+## Ask Crux naming and the Ask Crux buttons (11-Nov-2026, wave 105h)
+- **Rule (owner 9-Nov):** the dashboard names no AI vendor or model; the only name is Ask Crux. Keep it that way in new work: no model in API responses, no vendor in page text. Text written by the AI goes through noVendor (brand.ts) on the server and bi.no_vendor in SQL; if a new provider is added, add its name to both lists.
+- **Quick check:** run test_105h_ui.py (H6/H7 read every page's text, the Ask panel, ai_status and the report APIs), or `curl` the live index.html and search for the vendor name — it should be absent.
+- **Model settings** are unchanged and still in bi.ai_config (AGENT_MODEL, AGENT_FALLBACK_MODEL, GEMINI_MODEL, GEMINI_EMBEDDING_MODEL) and the Edge Function secrets; only admins with database access see them.
+- **Ask Crux buttons** are added by askDecorate() in the page (observer on #view and #ddBody). To keep an element without a button, give it (or a parent) the attribute data-noask. Admin pages without buttons are listed in ASKX.skip.
+- **Where people ask:** Admin → Ask Crux learning → What people ask about. Raw rows: `select * from bi.ask_origin order by id desc`. The chat review (daily) and weekly review include the counts.
+- **Cached status:** bi_call caches ai_status; after changing bi.api_ai_status, clear it with `delete from bi.api_cache where fn = 'ai_status'` (done once on 11-Nov).
+
