@@ -337,3 +337,10 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | ask-crux request field origin | {kind, title, page, columns[]} sent by the page with every question; columns go to Ask Crux as context only (not stored) |
 | ask-crux response | provider 'ask-crux' / 'memory' / 'deterministic'; no model field. action status → {assistant, key_present, enabled, agent, backup, memory}. agent_run result → engine instead of model |
 
+## Backup engine key (11-Nov-2026, wave 106)
+| Object | Meaning |
+|---|---|
+| vault secret `ai_backup_key` | the backup engine key saved by an admin (encrypted; never returned to a page) |
+| public.bi_ai_key_put(admin_key, value, by) | admin-only: checks the key format, saves or replaces the Vault secret, sets BACKUP_KEY_PRESENT, writes bi.audit_log (length only) |
+| bi.ai_secret(p) / gateway op `secret` | returns the Vault key to the ask-crux function only (service role) |
+| bi.ai_config BACKUP_KEY_PRESENT | yes / no — shown as backup_key_present in ai_status and backup_key in the ask-crux status action |

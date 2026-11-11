@@ -804,3 +804,28 @@ Regression on the live site after the change: test_105_ui.py 6/6. test_105c_ui.p
 
 Regression on the live site: test_105_ui 6/6 (K1 now expects the Ask Crux copy), test_105f_ui 4/4 (Run now shows "1 Ask Crux calls"; no model), test_105c_ui 3/4 as run — M3 failed on its old expectations only (5 tiles, "Recent AI answers"); re-checked on the captured page with the new ones (9 tiles, "Recent Ask Crux answers", the new section) ✓. Live page = build: md5 c24111a6….
 
+## 11-Nov-2026 — wave 106 (decisions, test clean-up, backup key, premium and calmer page)
+**Database and function**
+| Check | Result |
+|---|---|
+| Migration bi_106a applied (bi_ai_key_put, bi.ai_secret, gateway op secret, ai_status backup_key_present) | ✓ |
+| bi_ai_key_put refuses a malformed key and a wrong admin key; nothing stored | ✓ (U6) |
+| Vault path: probe of the backup before a key = "not set"; after saving a throwaway key = provider "401 User not found" (key reached it); throwaway key deleted, flag reset | ✓ live |
+| ask-crux version 29 = commit 1cf7ffc; status {assistant Ask Crux, enabled, agent, backup, backup_key, memory} | ✓ |
+| Morning briefing re-run 13:48 IST: ok, 2 calls | ✓ |
+| Test clean-up: 957 + 8 test questions deleted, 71 + 3 real kept; 4 + 1 test reports deleted; audit rows written | ✓ |
+
+**Clutter measurement (ux_measure.py, 1440 × 900, 11 viewer pages)** — Overview 5,064 → 3,190 px (−37 %), words 2,631 → 1,552 (−41 %), notes 36 → 14, bordered boxes 121 → 81, buttons 70 → 47, font sizes 17 → 13; all pages height 30,277 → 26,887 px, words outside the tracker replica 12,517 → 10,196, bordered boxes 570 → 416. Details: docs/UX_AUDIT.md.
+
+**Browser (test_106_ui.py)**
+| Check | Local | Live |
+|---|---|---|
+| U1 IBM Plex Sans; sentence-case tile labels; KPI tiles as one strip | ✓ | ✓ |
+| U2 Overview under 4,200 px; 8 secondary sections folded; a header-row section opens on click and shows its tiles | ✓ | ✓ |
+| U3 long notes: two lines + "More"; More opens and becomes "Less" | ✓ (after only clamping notes that really exceed two lines) | ✓ |
+| U4 zone tiles neutral with a 4 px coloured top bar | ✓ | ✓ |
+| U5 analysis pages: first three sections open, later ones folded | ✓ (after deciding by page order while loading) | ✓ |
+| U6 backup-key form: malformed key refused with a clear message; wrong admin key refused | ✓ | ✓ |
+| U7 dark surfaces in dark mode; phone two tiles per row, no horizontal scroll; no console errors | ✓ | ✓ |
+
+Regression: test_105h_ui 8/8 local and live (H2 now also checks the button is hidden until the pointer is over the tile, then shown); test_103_ui 10/10 local and live; test_102 14/14, test_101 12/12, test_100 8/8 local; test_096, test_097, test_098b local with no failing check (two zone-colour checks, in test_096 and test_101, now read the top bar). test_105f_ui live 3/4 — A3 counted 3 reports because the clean-up had removed the test weekly review; A4 then ran one (deleted again afterwards). test_105_ui live 3/6 — K3 (follow-up) failed at 30 s in the sandbox browser while the function returned 200 after 31.4 s (L139; the same follow-up from Python: 15.4 s, ok); K2 read only the first 500 characters (fixed in the test); K6 counted the browser's error. Live page = build: md5 4eece7d5….
