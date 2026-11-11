@@ -6,7 +6,8 @@ Project `czdjbbhxboweawqbjywr` (free plan). Measured on 14-Oct-2026 from the liv
 
 | Metric | Value |
 |---|---|
-| Free-plan database limit | 500 MB — **corrected 29-Oct-2026 (§11):** a billing quota per organisation (average daily size over the billing period; a breach can bring a Fair Use restriction with HTTP 402 responses). Read-only mode is triggered by disk use (95 % of the fixed 2 GB Free disk), not by the 500 MB quota ([Supabase docs](https://supabase.com/docs/guides/platform/database-size)) |
+| **Current (12-Nov-2026 00:50 IST, §12)** | **493,326,513 bytes, all databases — 6.67 million under 500,000,000** after night compaction (−84.7 million, no business data removed); file storage 11.1 MB counts against a separate 1 GB quota. Lasting fix designed in §12 (≈ 70 MB) |
+| Free-plan database limit | 500 MB — **corrected again 12-Nov-2026 (§12): Supabase docs now say Free projects enter read-only mode when database size exceeds 500 MB**; earlier (29-Oct, §11): a billing quota per organisation (average daily size over the billing period; a breach can bring a Fair Use restriction with HTTP 402 responses). Read-only mode is triggered by disk use (95 % of the fixed 2 GB Free disk), not by the 500 MB quota ([Supabase docs](https://supabase.com/docs/guides/platform/database-size)) |
 | Database `postgres` before this audit | 428 MB (448,457,875 bytes) |
 | Database `postgres` after safe cleanup | 413 MB (432,958,611 bytes) — **15.5 MB reclaimed** |
 | All databases (Supabase's own measure sums `template0/1`, about 7 MB each) | about 427 MB right after cleanup; 450,187,441 bytes (429 MiB) at the end of the session |
@@ -268,3 +269,39 @@ Row counts were checked after the rewrite (92,239 / 13,272 / 63,465 / 686 / 4,29
 **Disk IO (29-Oct-2026, observed).** While several test suites ran and every data change triggered the background refreshes, simple reads slowed sharply (a maximum over the case table took 12 s instead of 0.4 s; sessions waited on `DataFileRead`; two cron jobs failed with "job startup timeout"). Supabase documents that compute sizes up to 2XL can burst above their baseline disk IO "for a short period of time every day" and are throttled once the daily Disk IO budget is used ("High Disk I/O" troubleshooting page). The IO chart is not visible from here, so throttling is the likely, not a confirmed, cause. A larger compute (paid plan) or less background work removes it; this wave made the operations figures, the coverage status and two Ask answers much lighter (D182, D183, D190).
 
 **Measured 29-Oct-2026 18:45 IST (wave 098).** Database 539,077,779 bytes + file storage 11,075,631 bytes (7 objects) ≈ 550.2 million bytes — still above the 500,000,000-byte organisation quota (the earlier 553.7–554.3 million included space since reclaimed by routine vacuum). Largest: point_store 187.3 MB, point_derived 98.5 MB, case_store 60.2 MB, client_branch_master 51.5 MB. Nothing was deleted; the decision in Q19 / OD-001 (and the compute size, OD-022) is still needed.
+
+## 12. Night maintenance and corrected limit facts — 12-Nov-2026 00:40–00:55 IST (wave 106, D313, D315)
+**Limit facts (Supabase docs, read 12-Nov-2026).** Billing page: Free plan "Database Size 500 MB per project" and, separately, "Storage Size 1 GB" — file storage does not count towards the database quota. "Understanding Database and Disk Size": database size is `sum(pg_database_size(...)) from pg_database` (all databases), and "Free Plan projects enter read-only mode when your database size exceeds 500 MB … not the disk size". This replaces the 29-Oct reading in §11 (which said read-only depends on disk use only); exceeding 500 MB on Free is therefore both a read-only risk and a Fair Use risk.
+
+| Measure | Before (11-Nov, start of window) | After (12-Nov 00:50 IST) | Change |
+|---|---:|---:|---:|
+| **All databases (Supabase's measure)** | **578,007,217** | **493,326,513** | **−84,680,704 (−14.7 %)** |
+| Database `postgres` | 562,891,923 | 478,211,219 | −84,680,704 |
+| File storage (separate 1 GB quota; 7 objects) | 11,075,631 | 11,075,631 | 0 |
+| Headroom to 500,000,000 bytes | −78.0 million (over) | **+6.67 million (under)** | |
+
+**What was done (no business data removed; every step measured):**
+| Step | Bytes freed (approx.) | Reversible |
+|---|---:|---|
+| Response-cache rows of old data versions deleted (2,005 rows) + `VACUUM FULL bi.api_cache` (17.3 MB → 16 KB; refills on use) | 17.3 M | rows are recomputed on demand |
+| `point_derived_pkey` dropped (0 scans; the table is rebuilt with truncate + insert) — migration bi_106b | 24.5 M | `alter table bi.point_derived add constraint point_derived_pkey primary key (point_id);` |
+| Old scheduled-job history (13,047 rows older than 14 days) + `VACUUM FULL cron.job_run_details` | ≈ 2.7 M | history only |
+| `VACUUM (FULL, ANALYZE)` of `bi.point_store` (78,514 dead rows; 193.1 → 179.0 MB) | 14.1 M | n/a (same rows) |
+| `VACUUM (FULL, ANALYZE)` of `case_store` (60.3 → 45.4 MB), `ai_message` (3.5 → 0.3), `zt_row` (15.7 → 13.9), `organic_store` (3.8 → 2.2), `zt_month_history` (2.4 → 1.1), `repo_file` (2.3 → 1.2), `fin_attr` (2.1 → 1.2), `case_loc_change`, `force_case_daily`, `audit_log`, `fin_part` | ≈ 26.3 M | n/a (same rows) |
+| 6 empty test conversations deleted | < 0.1 M | test data |
+
+`branch_seen` keeps 50 % free space on purpose (`fillfactor=50`, for in-place updates); compacting it frees nothing. Each `VACUUM FULL` locked its table for 1–11 s inside the night window; no client queries were running.
+
+**Kept small from now on (migration bi_106c):** `bi-api-cache-purge` daily 01:05 IST removes cache rows of old data versions older than 2 days; `bi-cron-history-purge` Mondays 01:10 IST (Sunday 19:40 UTC) removes job history older than 14 days. The two one-off compaction jobs (`bi-w106-vacuum-*`) ran once and were unscheduled.
+
+**Checks after the work:** row counts unchanged (point_store 833,032; case_store 240,478; point_derived 833,032); the page's own calls answer for Oct-2026 — meta, overview, TAT (total and by unit), point TAT, Force1, daily, operations, collections, Ask Crux status (`night_smoke.py` 11/11).
+
+**How long the headroom lasts.** New uploads add about 42 MB a month (≈ 115,000 visit rows × 305 bytes in `point_store` + `point_derived`, ≈ 32,000 cases × 189 bytes). The latest data is 31-Oct-2026 (November trackers not yet uploaded), so the database is flat until the next upload; about five days of November data uses the 6.7 MB headroom.
+
+**Lasting fix — design (next night window; no data removed, no paid plan).** `point_derived` (75.4 MB, 833,032 rows) is a row-per-visit cache of `v_point`. Its readers need only counts, the verifier's most frequent location, and exact TAT percentiles:
+- `api_force1`, `api_drill_ops`: counts by month / unit / location / client / category / route / verifier class and `percentile_cont` of `field_tat_hours`;
+- `person_activity_refresh`: `mode()` of location per verifier and month;
+- `api_attrition`: visits per verifier in the three months before exit;
+- `bi_ask`, `api_db_health`, `test_identity`, `test_master_data`: latest month, sizes, totals.
+
+Replace it with `bi.point_month_stat` at grain (month, recon_unit, location_id, client_code, category, route, verifier_id, verifier_class) — **17,765 rows today** — holding `n`, and `tat real[]` (the group's TAT values, 412,863 in total, ≈ 1.7 MB before compression). Percentiles stay exact (`percentile_cont` over `unnest(tat)` of the filtered groups), `mode()` becomes "location with the largest `n`", counts become `sum(n)`. Estimated size 3–5 MB instead of 75 MB (≈ 70 MB freed, ≈ 1.7 months of growth). Acceptance: for every month and a set of zone / client filters, `api_force1`, `api_drill_ops`, `api_attrition` and `person_month` give identical results before and after (compared in SQL), I11 changed to `sum(n) = count(point_store)`; rollback = run the current `refresh_point_derived()` again. Beyond that, staying on Free needs an archive rule for visit history (owner decision, Q19); otherwise Pro (owner decision; no paid use authorised).

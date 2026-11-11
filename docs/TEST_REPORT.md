@@ -829,3 +829,15 @@ Regression on the live site: test_105_ui 6/6 (K1 now expects the Ask Crux copy),
 | U7 dark surfaces in dark mode; phone two tiles per row, no horizontal scroll; no console errors | ✓ | ✓ |
 
 Regression: test_105h_ui 8/8 local and live (H2 now also checks the button is hidden until the pointer is over the tile, then shown); test_103_ui 10/10 local and live; test_102 14/14, test_101 12/12, test_100 8/8 local; test_096, test_097, test_098b local with no failing check (two zone-colour checks, in test_096 and test_101, now read the top bar). test_105f_ui live 3/4 — A3 counted 3 reports because the clean-up had removed the test weekly review; A4 then ran one (deleted again afterwards). test_105_ui live 3/6 — K3 (follow-up) failed at 30 s in the sandbox browser while the function returned 200 after 31.4 s (L139; the same follow-up from Python: 15.4 s, ok); K2 read only the first 500 characters (fixed in the test); K6 counted the browser's error. Live page = build: md5 4eece7d5….
+
+### 12-Nov-2026 00:40–00:55 IST — wave 106 night storage maintenance (D313, D315)
+| Check | Result |
+|---|---|
+| All databases (sum of `pg_database_size`) before → after | 578,007,217 → **493,326,513** bytes (−84,680,704); under 500,000,000 by 6,673,487 |
+| Row counts unchanged by compaction (point_store / case_store / point_derived) | 833,032 / 240,478 / 833,032 ✓ |
+| One-off jobs `bi-w106-vacuum-point-store` (19:14 UTC, 11 s) and `bi-w106-vacuum-cron-hist` (19:18 UTC) | succeeded; both unscheduled ✓ |
+| Direct `VACUUM (FULL, ANALYZE)` of 12 further tables | all analysed 19:16–19:20 UTC, 0 dead rows after ✓ |
+| Nightly purge jobs `bi-api-cache-purge` (35 19 * * *) and `bi-cron-history-purge` (40 19 * * 0) | active ✓ |
+| Migrations bi_106b (drop unused point_derived_pkey) and bi_106c (purge jobs) recorded in schema_migrations | ✓ |
+| Page read path after the work (`night_smoke.py 2026-10-01`, public viewer key): meta, overview, TAT total and by unit, point TAT, Force1, daily, operations, collections, ai_status, Ask Crux status | 11/11 ✓ (cold TAT 11 s, others 1–7 s) |
+| No client queries running during the table locks | ✓ (pg_stat_activity empty) |
