@@ -3,11 +3,14 @@
 // fallback when the agent is switched off (AGENT_ENABLED) or the AI is unavailable; then the calculated answer is shown with a note.
 // Ask Crux v3 — every number comes from SQL (public.bi_ask3: structured answer, findings, actions, chart); Gemini only rewords the validated answer and may
 // explain terms from the approved knowledge base (RAG). Deterministic answer whenever the AI step is unavailable.
+// wave 105h (owner 9-Nov-2026 19:25): responses never name the AI model or vendor — the only name shown is "Ask Crux" (brand.ts);
+// each question records where on the dashboard it was asked from (bi.ask_origin: page, tile / table / chart, its title) to see what people ask about most.
 // Secrets (Edge Function secrets only): GEMINI_API_KEY. Non-secret settings live in bi.ai_config
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
 import { embeddingCandidates, fallbackCandidates, generationCandidates, multiProvider, provider, type AIProvider, type ModelInfo } from './ai.ts';
 import { JOBS, runJob, type JobEnv } from './jobs.ts';
 import { AgentError, DECLS, Pseudo, planOf, questionKeys, runAgent, systemPrompt, vocabOf, type Ctx } from './agent.ts';
+import { noVendor } from './brand.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
 const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -165,6 +168,18 @@ const FOLLOW_C = /^\s*(and|also|what about|how about|same|then|so|but)\b|\b(them
 const vecTxt = (v: number[] | null) => (v ? '[' + v.join(',') + ']' : null);
 const ctxKeyOf = (month: string, filters: Record<string, unknown>, admin: boolean) =>
   `${month}|${JSON.stringify(Object.fromEntries(Object.entries(filters ?? {}).sort(([a], [b]) => a.localeCompare(b))))}|${admin ? 'admin' : 'viewer'}`;
+// wave 105h: where the question was asked from (the Ask Crux button on a tile, table or chart, a suggestion, or the panel itself)
+const ORIGIN_KINDS = ['panel', 'tile', 'table', 'chart', 'card', 'suggestion', 'next', 'menu', 'drill'];
+function originOf(body: any) {
+  const o = body?.origin && typeof body.origin === 'object' ? body.origin : {};
+  const kind = ORIGIN_KINDS.includes(String(o.kind)) ? String(o.kind) : 'panel';
+  const txt = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n) || null;
+  const section = txt(body?.context?.section, 40);
+  return { kind, title: txt(o.title, 160), page: txt(o.page, 80), section, columns: Array.isArray(o.columns) ? o.columns.map((c: unknown) => txt(c, 40)).filter(Boolean).slice(0, 14) as string[] : [] };
+}
+const elementOf = (o: ReturnType<typeof originOf>) => o.kind === 'panel' || o.kind === 'menu' || !o.title ? undefined
+  : `the ${o.kind} "${o.title}"${o.columns.length ? ` (columns: ${o.columns.join(', ')})` : ''}${o.page ? ` on the ${o.page} page` : ''}`;
+
 async function askAgent(body: any, cfg: Record<string, string>) {
   const t0 = Date.now();
   const adminKey = typeof body?.admin_key === 'string' && body.admin_key.length > 10 ? body.admin_key : null;
@@ -183,7 +198,8 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const c = body?.context ?? {};
   const filters: Record<string, unknown> = {};
   for (const k of ['zone_group', 'location_id', 'client_family', 'region', 'stakeholder']) if (c?.filters?.[k] != null && c.filters[k] !== '') filters[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
-  const ctx: Ctx = { month: typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : dataMonth, filters, section: typeof c.section === 'string' ? c.section : undefined };
+  const ctx: Ctx = { month: typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : dataMonth, filters, section: typeof c.section === 'string' ? c.section : undefined,
+    element: elementOf(originOf(body)) };
   const question = redactQ(String(body?.question ?? '').slice(0, 500));
   const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 3 }).catch(() => []) : [];
   const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
@@ -221,7 +237,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
         answer: { ...A, reused_from: best.id }, mode: 'reused', reuse_of: best.id, embedding: vecTxt(emb), ctx_key: ctxKey, plan: best.plan ?? null,
         trace: { mode: 'reused', reuse_of: best.id, sim: best.sim, usage: { calls: 0, prompt: 0, output: 0 }, ms: Date.now() - t0 } });
     } catch { log = {}; }
-    return { mode: 'agent', provider: 'memory', model: A.model ?? null, answer: A.answer, next: A.next ?? [], steps: A.steps ?? [], check: A.check ?? { figures: 0, traced: 0, untraced: [] },
+    return { mode: 'agent', provider: 'memory', answer: noVendor(A.answer), next: (A.next ?? []).map(noVendor), steps: A.steps ?? [], check: A.check ?? { figures: 0, traced: 0, untraced: [] },
       sources: A.sources ?? [], rounds: 0, usage: { calls: 0, prompt: 0, output: 0 }, memory: { mode: 'reused', of: best.id, sim: best.sim, asked: best.created_at, question: best.question },
       period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt0, as_of: dataAsOf, month: ctx.month,
       message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: 0 };
@@ -242,7 +258,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
     budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok, seed, hints, lessons });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
   // names back for display; the "Next:" line becomes a suggested question
-  let text = pseudo.show(out.text).trim();
+  let text = pseudo.show(noVendor(out.text)).trim();
   const next: string[] = [];
   text = text.replace(/^\s*\**next\**\s*:\s*(.+)$/gim, (_m, q) => { next.push(String(q).replace(/\*+/g, '').trim()); return ''; }).trim();
   const showArgs = (s: any) => {
@@ -270,7 +286,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
         memory: { mode, of: seed?.id ?? null, sim: seed?.sim ?? null, lessons: lessons.length, hints: hints.length, candidates: cands.length,
           top: cands[0] ? { id: cands[0].id, sim: cands[0].sim, same_ctx: cands[0].same_ctx } : null, follow_up: followUp } } });
   } catch { log = {}; }
-  return { mode: 'agent', provider: 'gemini-agent', model: out.model, answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory,
+  return { mode: 'agent', provider: 'ask-crux', answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory,
     period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt, as_of: dataAsOf, month: ctx.month,
     message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
 }
@@ -316,11 +332,13 @@ Deno.serve(async (req) => {
   const action = String(body?.action ?? 'ask');
 
   if (action === 'status') {
-    return json({ key_present: ai.configured(), enabled: cfg.AI_ENABLED === 'on', model: cfg.GEMINI_MODEL, fallback_model: cfg.GEMINI_FALLBACK_MODEL || null, embedding_model: cfg.GEMINI_EMBEDDING_MODEL || null });
+    // wave 105h: no model or vendor names (anyone can call this)
+    return json({ assistant: 'Ask Crux', key_present: ai.configured(), enabled: cfg.AI_ENABLED === 'on', agent: cfg.AGENT_ENABLED === 'on' && !!cfg.AGENT_MODEL,
+      backup: !!(cfg.AGENT_FALLBACK_MODEL || cfg.GEMINI_FALLBACK_MODEL), memory: !!cfg.GEMINI_EMBEDDING_MODEL && cfg.MEMORY_ENABLED !== 'off' });
   }
   if (action === 'validate' || action === 'synthetic' || action === 'embed_sync') {
     if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
-    if (!ai.configured()) return json({ error: 'GEMINI_API_KEY is not set as an Edge Function secret' }, 412);
+    if (!ai.configured()) return json({ error: 'the main AI key is not set (Edge Function secret, see OPERATIONS.md)' }, 412);
     try {
       if (action === 'validate') { cfgCache = null; return json(await validate(provider(15000, 1), cfg)); }
       if (action === 'embed_sync') return json(await embedSync(ai, cfg, Math.min(Number(body?.max ?? 100), 200)));
@@ -363,13 +381,13 @@ Deno.serve(async (req) => {
     const job = String(body?.job ?? '');
     if (!JOBS.includes(job)) return json({ error: 'unknown job' }, 400);
     if (cfg.AGENTS_ENABLED === 'off' && body?.force !== true) return json({ skipped: 'AGENTS_ENABLED is off' });
-    if (!ai.configured()) return json({ error: 'GEMINI_API_KEY is not set as an Edge Function secret' }, 412);
-    try { return json(await runJob(job, await jobEnv(cfg))); } catch (e) { return json({ error: (e as Error).message.slice(0, 300) }, 502); }
+    if (!ai.configured()) return json({ error: 'the main AI key is not set (Edge Function secret, see OPERATIONS.md)' }, 412);
+    try { return json(await runJob(job, await jobEnv(cfg))); } catch (e) { return json({ error: noVendor((e as Error).message).slice(0, 300) }, 502); }
   }
 
   if (action === 'probe') {
     if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
-    if (!ai.configured()) return json({ error: 'GEMINI_API_KEY is not set as an Edge Function secret' }, 412);
+    if (!ai.configured()) return json({ error: 'the main AI key is not set (Edge Function secret, see OPERATIONS.md)' }, 412);
     const list: string[] = Array.isArray(body?.models) && body.models.length ? body.models.map(String).slice(0, 6) : [cfg.AGENT_MODEL, cfg.AGENT_FALLBACK_MODEL].filter(Boolean);
     const out: Record<string, unknown>[] = [];
     const pa = multiProvider(30000, cfg.OPENROUTER_PAID_ALLOWED === 'on');
@@ -389,16 +407,35 @@ Deno.serve(async (req) => {
     return json({ probe: out });
   }
 
+  const t0 = Date.now();
+  const res = await answer(body, cfg, ai, action);
+  await logOrigin(body, res, Date.now() - t0);
+  return res;
+});
+
+// wave 105h: one row per question in bi.ask_origin (page, element, answer path); never blocks or fails the answer
+async function logOrigin(body: any, res: Response, ms: number) {
+  try {
+    if (String(body?.question ?? '').trim().length < 3) return;
+    const o = originOf(body);
+    const j: any = await res.clone().json().catch(() => ({}));
+    const path = res.status !== 200 || j?.error ? 'error' : j?.mode === 'agent' ? (j?.provider === 'memory' ? 'memory' : 'ai') : 'calculated';
+    await gw({ op: 'origin_log', section: o.section, page: o.page, kind: o.kind, title: o.title, path, message_id: j?.message_id ?? null,
+      conversation_id: j?.conversation_id ?? body?.conversation_id ?? null, admin: typeof body?.admin_key === 'string' && body.admin_key.length > 10, ms });
+  } catch { /* recording is best effort */ }
+}
+
+async function answer(body: any, cfg: Record<string, string>, ai: AIProvider, action: string): Promise<Response> {
   // ---- ask (v4 agent) ----
   let agentNote: string | null = null;
   if (action === 'ask' && cfg.AGENT_ENABLED === 'on' && ai.configured() && cfg.AGENT_MODEL) {
     try { return json(await askAgent(body, cfg)); }
     catch (e) {
-      const st = (e as AgentError)?.status ?? 0, msg = String((e as Error)?.message ?? e);
+      const st = (e as AgentError)?.status ?? 0, msg = noVendor(String((e as Error)?.message ?? e));
       agentNote = st === 429 || /quota|RESOURCE_EXHAUSTED|daily limit/i.test(msg)
-        ? 'The AI analyst is busy or has used up its free Google Gemini quota for now, so this is the standard calculated answer. Try again in a few minutes.'
-        : st === 422 ? `The AI analyst's answer did not pass the figure check (${msg.slice(0, 120)}), so this is the standard calculated answer.`
-        : `The AI analyst could not finish (${msg.slice(0, 120)}), so this is the standard calculated answer.`;
+        ? 'Ask Crux is busy or has used up its free daily allowance for now, so this is the standard calculated answer. Try again in a few minutes.'
+        : st === 422 ? `Ask Crux's answer did not pass the figure check (${msg.slice(0, 120)}), so this is the standard calculated answer.`
+        : `Ask Crux could not finish (${msg.slice(0, 120)}), so this is the standard calculated answer.`;
     }
   }
   // ---- ask ----
@@ -412,28 +449,28 @@ Deno.serve(async (req) => {
   if (agentNote) return det(agentNote);
   if (cfg.AI_ENABLED !== 'on') return det();
   if (!ai.configured() || !cfg.GEMINI_MODEL) return det();
-  if (base.intent === 'people') return det('AI wording is not used for people-related answers; showing the calculated answer.');
+  if (base.intent === 'people') return det('Ask Crux wording is not used for people-related answers; showing the calculated answer.');
   const evidence = { answer: base.answer, period: base.period, filters: base.filters, numbers: base.numbers, method: base.method, limitations: base.limitations, confidence: base.confidence };
   const evText = JSON.stringify(evidence);
   const names: string[] = (() => { try { return JSON.parse(cfg.REDACT_NAMES || '[]'); } catch { return []; } })();
-  if (names.some((n) => n && evText.toUpperCase().includes(n.toUpperCase()))) return det('AI wording is not used when the answer names a person; showing the calculated answer.');
+  if (names.some((n) => n && evText.toUpperCase().includes(n.toUpperCase()))) return det('Ask Crux wording is not used when the answer names a person; showing the calculated answer.');
   const flat = (x: unknown): string => typeof x === 'string' ? x : Array.isArray(x) ? x.map(flat).join('; ') : x ? JSON.stringify(x) : '';
   const evPlain = [`ANSWER: ${base.answer}`, base.method ? `METHOD: ${flat(base.method)}` : '', base.limitations ? `LIMITATIONS: ${flat(base.limitations)}` : '']
     .filter(Boolean).join('\n').slice(0, 2500);
   // personal names are replaced by [name] in everything sent to the provider; if that check is unavailable, no AI call is made
   let qSafe: string, evSafe: string;
   try { const sc = await gw({ op: 'scrub', texts: [redactQ(question), redact(evPlain)] }); [qSafe, evSafe] = sc.texts; if (typeof qSafe !== 'string' || typeof evSafe !== 'string') throw new Error('scrub'); }
-  catch { return det('AI step skipped (personal-data check unavailable); showing the calculated answer.'); }
+  catch { return det('Ask Crux wording skipped (personal-data check unavailable); showing the calculated answer.'); }
   try {
     const budget = await gw({ op: 'budget', purpose: 'ask' });
-    if (!budget.ok) return det('AI daily limit reached; showing the calculated answer.');
+    if (!budget.ok) return det('Ask Crux daily limit reached; showing the calculated answer.');
     // directions are calculated here (figures are hidden from the model, so it cannot judge them itself)
     const facts = directions(String(base.answer));
     // the same question on the same data already has a checked summary: reuse it without calling the provider
     const hit = await gw({ op: 'narrative_cache', question, answer: base.answer, data_version: base.data_version ?? null }).catch(() => null);
     if (hit?.narrative && !FIGURE.test(hit.narrative) && !facts.check(hit.narrative) && !/[#{}<>]|\[name\]|https?:|www\.|@/.test(hit.narrative)) {
       await record({ model: hit.model, purpose: 'ask_cached', message_id: base.message_id, ok: true, ms: 0, in: 0, out: hit.narrative.length, narrative: hit.narrative, knowledge: [], note: 'reused checked summary of message ' + hit.message_id });
-      return json({ ...base, narrative: hit.narrative, provider: 'gemini', model: hit.model, cached: true, knowledge: [] });
+      return json({ ...base, narrative: noVendor(hit.narrative), provider: 'ask-crux', cached: true, knowledge: [] });
     }
     // retrieval: approved definitions / methods only (never operational records)
     let knowledge: { title: string; source: string; content: string; similarity: number }[] = [];
@@ -446,7 +483,7 @@ Deno.serve(async (req) => {
       }
     }
     const kText = knowledge.map((k, i) => `[K${i + 1}] ${k.content.slice(0, 700)}`).join('\n');
-    const system = 'You are Crux BI\'s analyst. The calculated answer (EVIDENCE) is always shown to the manager word for word, right below your text. ' +
+    const system = 'You are Ask Crux, the analyst in the Crux BI dashboard. Never name the AI model or company behind you. The calculated answer (EVIDENCE) is always shown to the manager word for word, right below your text. ' +
       'Write at most 2 short sentences in plain English that say what the result means for the manager (for example ahead of or behind last month, or what a term means). ' +
       'In EVIDENCE every figure is masked as #. Never write numbers, percentages, dates or the # symbol, and never add causes that EVIDENCE does not state. ' +
       'Describe only what EVIDENCE says, within the scope it states; use FACTS for any direction (ahead/behind, above/below target) and never contradict them. If FACTS are not given, do not state any direction or comparison at all. Use KNOWLEDGE only to explain what a term means. Never name people. ' +
@@ -468,7 +505,7 @@ Deno.serve(async (req) => {
     const sentences = (text.match(/[^.!?]+[.!?]+/g) ?? []).length;
     // the summary may not carry any figure: digits, number words or ratio words are all rejected
     const fig = r.ok ? (text.match(FIGURE)?.[0] ?? '') : '';
-    const leak = /[#{}<>]|\[name\]|https?:|www\.|@|\(a (date|decrease)\)|\(an increase\)|\(no change\)/i.test(text) || text.length > 450 || sentences > 3 || text.length < 15;
+    const leak = /[#{}<>]|\[name\]|https?:|www\.|@|\(a (date|decrease)\)|\(an increase\)|\(no change\)/i.test(text) || text.length > 450 || sentences > 3 || text.length < 15 || noVendor(text) !== text;
     const contradicts = facts.check(text);
     const ok = r.ok && !fig && !leak && !contradicts;
     const kn = knowledge.map((k) => ({ title: k.title, source: k.source, similarity: k.similarity }));
@@ -476,10 +513,10 @@ Deno.serve(async (req) => {
       http_status: r.status, retries: r.retries, prompt_tokens: r.promptTokens, output_tokens: r.outputTokens,
       narrative: ok ? text : undefined, knowledge: kn,
       note: ok ? null : (r.ok ? (fig ? 'rejected: figure in summary (' + fig + ')' : (contradicts ? 'rejected: summary contradicts calculated direction' : 'rejected: summary format (placeholder, echo or length)')) : r.error) });
-    if (!ok) return det(r.ok ? 'AI summary was not used (it failed the figure, format or direction check); showing the calculated answer.' : (r.status === 429 ? 'AI service is busy; showing the calculated answer.' : 'AI service unavailable; showing the calculated answer.'));
-    return json({ ...base, narrative: text, provider: 'gemini', model: r.model, knowledge: kn,
+    if (!ok) return det(r.ok ? 'Ask Crux wording was not used (it failed the figure, format or direction check); showing the calculated answer.' : (r.status === 429 ? 'Ask Crux is busy; showing the calculated answer.' : 'Ask Crux wording is unavailable; showing the calculated answer.'));
+    return json({ ...base, narrative: text, provider: 'ask-crux', knowledge: kn,
       sources: [...(base.sources ?? []), ...kn.map((k) => `Definition: ${k.title}`)] });
   } catch (_e) {
-    return det('AI step failed; showing the calculated answer.');
+    return det('Ask Crux wording failed; showing the calculated answer.');
   }
-});
+}

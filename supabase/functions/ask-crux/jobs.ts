@@ -1,9 +1,11 @@
 // wave 105f — the agent team (owner 9-Nov-2026 18:05: "a team of agents working on this dashboard constantly improving it by learning the chat,
 // numbers, market, movements"). Scheduled by pg_cron (bi.call_edge → ask-crux {action:"agent_run", job}); an admin can also run them from the page.
 // Owner choices: Gemini first, OpenRouter free models as backup, no paid use. Nothing here changes dashboard numbers, code or rules:
+// wave 105h: reports name no AI model or vendor (brand.ts noVendor; the only name is "Ask Crux"), and the reviews use where people ask from (bi.ask_origin).
 // reports are written to bi.agent_report, and lessons the chat reviewer proposes stay "proposed" until an admin approves them.
 import type { AIProvider } from './ai.ts';
 import { AgentError, checkFigures, Pseudo, runAgent, TOOLS, type Api, type Gw, type Rec } from './agent.ts';
+import { engineOf, noVendor } from './brand.ts';
 
 export type JobEnv = {
   ai: AIProvider; models: string[]; api: Api; gw: Gw; rec: Rec; pseudo: Pseudo; system: string; docs: Record<string, any>; meta: any;
@@ -64,7 +66,7 @@ async function dailyBrief(env: JobEnv) {
       model: d.model, rounds: d.rounds, usage: d.usage, steps: (e as AgentError).steps ?? [], check: { figures: d.check.figures - d.check.untraced.length, traced: d.check.traced, untraced: [] } };
   }
   // field names the model sometimes copies from the look-ups, e.g. "(change_vs_last_month: -0.0679)", are removed (the figure check has already passed)
-  const body = clean(env.pseudo.show(out.text)).replace(/\s*\(`?[a-z]+(?:_[a-z0-9]+)+`?\s*:\s*`?[-\d.,%]+`?\)/g, '');
+  const body = clean(env.pseudo.show(noVendor(out.text))).replace(/\s*\(`?[a-z]+(?:_[a-z0-9]+)+`?\s*:\s*`?[-\d.,%]+`?\)/g, '');
   const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: env.pseudo.show(String(s.label ?? s.tool)), ok: s.ok, rows: s.rows ?? null }));
   return { kind: 'daily_brief', for_date: day, audience: 'viewer', title: `Morning briefing · ${day}`, body_md: body, model: out.model,
     data: { as_of: env.dataAsOf, month: env.dataMonth, check: { ...out.check, untraced: out.check.untraced.map((x: string) => env.pseudo.show(x)) }, pruned, steps }, usage: out.usage };
@@ -156,13 +158,13 @@ async function marketNews(env: JobEnv) {
   const lines: string[] = [];
   const used: any[] = [];
   for (const p of pick) {
-    const it = items[p.i]; let why = env.pseudo.show(String(p.why ?? '')).slice(0, 300);
+    const it = items[p.i]; let why = env.pseudo.show(noVendor(String(p.why ?? ''))).slice(0, 300);
     if (checkFigures(why, [it.title]).untraced.length) why = why.replace(/[₹$]?\s?\d[\d,.]*\s?(%|cr|crore|lakh|L|bn|billion|million)?/gi, '').replace(/\s{2,}/g, ' ').trim();
     const client = typeof p.client === 'string' && byFam[p.client] ? p.client : null;
     lines.push(`- [${it.title.replace(/[[\]()]/g, '')}](${it.link}) — ${it.source}, ${it.date}${p.topic ? ` · *${String(p.topic).slice(0, 30)}*` : ''}${why ? ' — ' + why : ''}${client ? ours(client) : ''}`);
     used.push({ ...it, topic: p.topic ?? null, client, why });
   }
-  const summary = env.pseudo.show(String(json?.summary ?? '')).slice(0, 800);
+  const summary = env.pseudo.show(noVendor(String(json?.summary ?? ''))).slice(0, 800);
   const body = `${summary}\n\n${lines.join('\n') || '- Nothing in today\'s feeds looked relevant.'}\n\nSources: RBI, Google News, Bing News, Economic Times and Business Standard RSS feeds (last 3–7 days). Our figures are dashboard calculations (month to date), not from the news.`;
   return { kind: 'market_news', for_date: day, audience: 'viewer', title: `Market and client news · ${day}`, body_md: body, model,
     data: { items: used, headlines_read: items.length, feeds: sources.length, feed_counts: feedCounts, clients: top }, usage: { calls } };
@@ -176,25 +178,31 @@ async function chatReview(env: JobEnv) {
   const inp = await env.gw({ op: 'review_input', since });
   const msgs: any[] = Array.isArray(inp?.messages) ? inp.messages : [];
   const errors: any[] = Array.isArray(inp?.errors) ? inp.errors : [];
+  const origins = originSummary(inp?.origins);
   const stats = { questions: msgs.length, ai: msgs.filter((m) => m.source === 'ai').length, calculated: msgs.filter((m) => m.source === 'calculated').length,
     reused: +inp?.reused || 0, updated: msgs.filter((m) => m.mode === 'adapted').length, thumbs_up: msgs.filter((m) => m.helpful === true).length,
     thumbs_down: msgs.filter((m) => m.helpful === false).length, untraced: msgs.filter((m) => +m.untraced > 0).length };
   if (!msgs.length) {
     return { kind: 'chat_review', for_date: day, audience: 'admin', title: `Chat review · ${day}`, body_md: `No new questions since ${String(since).slice(0, 16).replace('T', ' ')} UTC` +
-      (stats.reused ? ` (${stats.reused} answered from memory).` : '.'), data: { stats, errors }, usage: { calls: 0 } };
+      (stats.reused ? ` (${stats.reused} answered from memory).` : '.'), data: { stats, errors, origins: origins.data }, usage: { calls: 0 } };
   }
-  const rows = msgs.map((m) => `#${m.id} · ${m.source}${m.mode ? '/' + m.mode : ''}${m.model ? ' · ' + m.model : ''}${m.calls ? ' · ' + m.calls + ' calls' : ''}` +
+  const rows = msgs.map((m) => `#${m.id} · ${m.source}${m.mode ? '/' + m.mode : ''}${m.engine ? ' · ' + m.engine + ' engine' : ''}${m.page ? ' · page ' + m.page : ''}${m.asked_from ? ' · asked from ' + m.asked_from : ''}${m.calls ? ' · ' + m.calls + ' calls' : ''}` +
     `${m.untraced ? ' · ' + m.untraced + ' untraced figures' : ''}${m.helpful === true ? ' · 👍' : m.helpful === false ? ' · 👎' : ''}${m.correction ? ' · note: ' + String(m.correction).slice(0, 200) : ''}` +
     `${m.tools ? ' · tools: ' + (m.tools as string[]).join(',') : ''}\n  Q: ${m.question}\n  A: ${String(m.answer_start ?? '').replace(/\s+/g, ' ').slice(0, 220)}`).join('\n');
-  const system = 'You review the Ask Crux assistant (an AI analyst inside a bank-verification business dashboard) to make it better. "calculated" means the AI could not ' +
-    'answer and the fixed calculated answer was shown. You never invent data. Codes like PX3 are hidden names: keep them as they are.';
-  const prompt = `QUESTIONS SINCE THE LAST REVIEW (${msgs.length}):\n${rows}\n\nAI PROVIDER ERRORS: ${JSON.stringify(errors).slice(0, 1500)}\n\n` +
+  const system = 'You review the Ask Crux assistant (the analyst inside a bank-verification business dashboard) to make it better. "calculated" means Ask Crux could not ' +
+    'answer and the fixed calculated answer was shown. You never invent data. Codes like PX3 are hidden names: keep them as they are. ' +
+    'Call the assistant only "Ask Crux"; never name an AI model, company or provider (engines are "main" and "backup").';
+  const prompt = `QUESTIONS SINCE THE LAST REVIEW (${msgs.length}):\n${rows}\n\nASK CRUX ENGINE ERRORS (main or backup engine): ${JSON.stringify(errors).slice(0, 1500)}\n\n` +
+    `WHERE PEOPLE ASKED FROM (page · element kind · element · questions):\n${origins.text}\n\n` +
     `Return JSON: {"summary": "3-5 sentences: what people asked, how well it went", "themes": [{"theme": "...", "count": n, "ids": [..]}], ` +
+    `"focus": [{"page": "a page or element people ask about most", "improve": "what to improve on that page or in Ask Crux's answers about it"}], ` +
     `"failures": [{"id": n, "cause": "why it failed or fell back", "fix": "the concrete improvement"}], "missing": [{"need": "data, tool or page people asked for that does not exist", "why": "..."}], ` +
     `"lessons": [{"question": "a typical question", "lesson": "a general rule for answering such questions next time"}]}. ` +
-    `Lessons must be general and lasting: no figures, dates or amounts (they go out of date), at most 5, only where the evidence shows a real problem.`;
+    `Lessons must be general and lasting: no figures, dates or amounts (they go out of date), at most 5, only where the evidence shows a real problem. ` +
+    `Focus: at most 3 items, only pages or elements that appear in WHERE PEOPLE ASKED FROM.`;
   const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_review');
-  const S = (v: any, n = 400) => env.pseudo.show(String(v ?? '')).slice(0, n);
+  const S = (v: any, n = 400) => env.pseudo.show(noVendor(String(v ?? ''))).slice(0, n);
+  const focus = (Array.isArray(json?.focus) ? json.focus : []).slice(0, 3).map((f: any) => ({ page: S(f.page, 120), improve: S(f.improve, 300) })).filter((f: any) => f.page && f.improve);
   const lessons = (Array.isArray(json?.lessons) ? json.lessons : []).map((l: any) => ({ question: S(l.question, 300), lesson: S(l.lesson, 500) }))
     .filter((l: any) => l.question && l.lesson && !/₹|%|\d{3,}/.test(l.lesson)).slice(0, 5);
   const fails = (Array.isArray(json?.failures) ? json.failures : []).slice(0, 12);
@@ -203,9 +211,11 @@ async function chatReview(env: JobEnv) {
     '', '**Themes**', ...(Array.isArray(json?.themes) ? json.themes : []).slice(0, 8).map((t: any) => `- ${S(t.theme, 200)} (${+t.count || 0})`),
     '', '**What went wrong and the fix**', ...(fails.length ? fails.map((f: any) => `- #${+f.id || '?'}: ${S(f.cause, 300)} → ${S(f.fix, 300)}`) : ['- Nothing failed.']),
     '', '**Asked for but not available**', ...((Array.isArray(json?.missing) && json.missing.length) ? json.missing.slice(0, 8).map((m: any) => `- ${S(m.need, 200)} — ${S(m.why, 200)}`) : ['- Nothing.']),
-    '', `**Proposed lessons** — ${lessons.length} waiting for approval in Admin → AI agents.`].join('\n');
+    '', '**Most asked about** (where people opened Ask Crux)', ...(origins.lines.length ? origins.lines : ['- No page or element recorded yet.']),
+    ...focus.map((f: any) => `- Improve **${f.page}**: ${f.improve}`),
+    '', `**Proposed lessons** — ${lessons.length} waiting for approval in Admin → Ask Crux agents.`].join('\n');
   return { kind: 'chat_review', for_date: day, audience: 'admin', title: `Chat review · ${day}`, body_md: body, model,
-    data: { stats, errors, summary: S(json?.summary, 1200), failures: fails.map((f: any) => ({ id: f.id, cause: S(f.cause, 300), fix: S(f.fix, 300) })),
+    data: { stats, errors, origins: origins.data, focus, summary: S(json?.summary, 1200), failures: fails.map((f: any) => ({ id: f.id, cause: S(f.cause, 300), fix: S(f.fix, 300) })),
       missing: (json?.missing ?? []).slice?.(0, 8)?.map((m: any) => ({ need: S(m.need, 200), why: S(m.why, 200) })) ?? [], lessons }, usage: { calls }, _lessons: lessons };
 }
 
@@ -214,17 +224,33 @@ async function weeklyReview(env: JobEnv) {
   const day = todayIST();
   const recent = await env.gw({ op: 'reports_recent', kind: 'chat_review', days: 7 }).catch(() => []);
   const news = await env.gw({ op: 'reports_recent', kind: 'daily_brief', days: 7 }).catch(() => []);
-  const days = (Array.isArray(recent) ? recent : []).map((r: any) => `${r.for_date}: ${JSON.stringify({ stats: r.data?.stats, summary: r.data?.summary, failures: r.data?.failures, missing: r.data?.missing }).slice(0, 2500)}`);
+  const days = (Array.isArray(recent) ? recent : []).map((r: any) => `${r.for_date}: ${JSON.stringify({ stats: r.data?.stats, summary: r.data?.summary, failures: r.data?.failures, missing: r.data?.missing, focus: r.data?.focus }).slice(0, 2500)}`);
+  // wave 105h: the week's most-asked pages and elements, counted in the database (not by the AI)
+  const wk = await env.gw({ op: 'review_input', since: new Date(Date.now() - 7 * 86400000).toISOString(), origins_only: true }).catch(() => null);
+  const origins = originSummary(wk?.origins);
   if (!days.length) return { kind: 'weekly_review', for_date: day, audience: 'admin', title: `Weekly review · ${day}`, body_md: 'No daily chat reviews this week.', data: {}, usage: { calls: 0 } };
-  const system = 'You are the product lead for the Crux BI dashboard and its AI analyst. You turn a week of daily reviews into a short plan. You never invent data.';
+  const system = 'You are the product lead for the Crux BI dashboard and its analyst, Ask Crux. You turn a week of daily reviews into a short plan. You never invent data. ' +
+    'Call the assistant only "Ask Crux"; never name an AI model, company or provider.';
   const prompt = `DAILY CHAT REVIEWS (last 7 days):\n${days.join('\n')}\n\nDAILY BRIEFINGS WRITTEN: ${Array.isArray(news) ? news.length : 0}\n\n` +
-    `Return JSON: {"summary": "4-6 sentences on the week", "priorities": [{"title": "...", "why": "evidence from the reviews", "change": "what to build or fix in the dashboard or the AI", ` +
-    `"size": "small | medium | large"}]}. At most 5 priorities, most valuable first.`;
+    `MOST-ASKED PAGES AND ELEMENTS THIS WEEK (page · element kind · element · questions):\n${origins.text}\n\n` +
+    `Return JSON: {"summary": "4-6 sentences on the week", "priorities": [{"title": "...", "why": "evidence from the reviews or the most-asked list", "change": "what to build or fix in the dashboard or in Ask Crux", ` +
+    `"size": "small | medium | large"}]}. At most 5 priorities, most valuable first; prefer the pages and elements people ask about most.`;
   const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_weekly');
-  const S = (v: any, n = 400) => env.pseudo.show(String(v ?? '')).slice(0, n);
+  const S = (v: any, n = 400) => env.pseudo.show(noVendor(String(v ?? ''))).slice(0, n);
   const pr = (Array.isArray(json?.priorities) ? json.priorities : []).slice(0, 5).map((p: any) => ({ title: S(p.title, 150), why: S(p.why, 400), change: S(p.change, 500), size: S(p.size, 20) }));
-  const body = [S(json?.summary, 1500), '', '**Top improvements**', ...pr.map((p: any, i: number) => `${i + 1}. **${p.title}** (${p.size}) — ${p.change}\n   Why: ${p.why}`)].join('\n');
-  return { kind: 'weekly_review', for_date: day, audience: 'admin', title: `Weekly review · ${day}`, body_md: body, model, data: { priorities: pr, days: days.length }, usage: { calls } };
+  const body = [S(json?.summary, 1500), '', '**Top improvements**', ...pr.map((p: any, i: number) => `${i + 1}. **${p.title}** (${p.size}) — ${p.change}\n   Why: ${p.why}`),
+    '', '**Most asked about this week** (where people opened Ask Crux)', ...(origins.lines.length ? origins.lines : ['- No page or element recorded yet.'])].join('\n');
+  return { kind: 'weekly_review', for_date: day, audience: 'admin', title: `Weekly review · ${day}`, body_md: body, model, data: { priorities: pr, days: days.length, origins: origins.data }, usage: { calls } };
+}
+
+// wave 105h: counts of where questions were asked from (bi.ask_origin via review_input) as prompt text, report lines and stored data
+function originSummary(o: any) {
+  const pages: any[] = Array.isArray(o?.pages) ? o.pages : [], els: any[] = Array.isArray(o?.elements) ? o.elements : [];
+  const kindTxt = (k: string) => ({ panel: 'typed in the Ask Crux panel', tile: 'tile', table: 'table', chart: 'chart', card: 'card', suggestion: 'suggested question', next: 'follow-up', drill: 'drill-down', menu: 'menu' } as Record<string, string>)[k] ?? k;
+  const lines = [...pages.slice(0, 6).map((p) => `- ${p.page ?? p.section ?? 'unknown page'}: ${p.n} question${p.n === 1 ? '' : 's'}${p.not_helpful ? ` (👎 ${p.not_helpful})` : ''}`),
+    ...els.filter((e) => e.kind !== 'panel').slice(0, 6).map((e) => `- ${kindTxt(e.kind)} “${e.title ?? '?'}” on ${e.page ?? e.section ?? '?'}: ${e.n}`)];
+  const text = [...pages.slice(0, 10).map((p) => `${p.page ?? p.section ?? '?'} · all · ${p.n}`), ...els.slice(0, 15).map((e) => `${e.page ?? e.section ?? '?'} · ${e.kind} · ${e.title ?? '-'} · ${e.n}`)].join('\n') || '(none recorded)';
+  return { lines, text, data: { pages: pages.slice(0, 10), elements: els.slice(0, 15) } };
 }
 
 export async function runJob(job: string, env: JobEnv) {
@@ -233,7 +259,7 @@ export async function runJob(job: string, env: JobEnv) {
   let rep: any;
   try { rep = await fn(env); }
   catch (e) {
-    const msg = String((e as Error)?.message ?? e).slice(0, 300);
+    const msg = noVendor(String((e as Error)?.message ?? e)).slice(0, 300);
     rep = { kind: job, for_date: todayIST(), status: 'failed', audience: 'admin', title: `${job.replace('_', ' ')} · ${todayIST()} (failed)`, body_md: `The agent could not finish: ${msg}`,
       data: { error: msg, steps: (e as AgentError)?.steps?.length ?? 0, untraced: ((e as AgentError)?.detail?.check?.untraced ?? []).map((x: string) => env.pseudo.show(x)) } };
   }
@@ -250,6 +276,6 @@ export async function runJob(job: string, env: JobEnv) {
     const r = await env.gw({ op: 'lesson_propose', report_id: saved.id, items: lessons.map((l: any, i: number) => ({ ...l, embedding: vs?.[i] ? '[' + vs[i].join(',') + ']' : '' })) });
     proposed = r?.stored ?? 0;
   }
-  return { job, id: saved?.id ?? null, status: rep.status ?? 'ok', title: rep.title, model: rep.model ?? null, usage: rep.usage ?? null, proposed_lessons: proposed, ms: Date.now() - env.t0 };
+  return { job, id: saved?.id ?? null, status: rep.status ?? 'ok', title: rep.title, engine: engineOf(rep.model, env.models[0]), usage: rep.usage ?? null, proposed_lessons: proposed, ms: Date.now() - env.t0 };
 }
 export { istDay };
