@@ -245,8 +245,10 @@ export class MultiProvider implements AIProvider {
   embed(m: string, t: string[], k: string, d: number) { return this.g.embed(m, t, k, d); }
   async chat(m: string, q: ChatReq) { const [p, x] = this.pick(m); const r = await p.chat(x, q); return { ...r, model: p === this.o ? 'or:' + r.model : r.model }; }
 }
-export function multiProvider(timeoutMs = 25000, paidAllowed = false): AIProvider {
-  return new MultiProvider(new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, 0), new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') ?? '', timeoutMs, paidAllowed));
+// wave 106a: the backup key comes from the Edge Function secret OPENROUTER_API_KEY or, when that is not set, from Vault (passed in by index.ts)
+export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string): AIProvider {
+  return new MultiProvider(new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, 0),
+    new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') || backupKey || '', timeoutMs, paidAllowed));
 }
 
 // Model choice: a stable "gemini-X.Y-flash" model (highest version) is preferred over moving aliases such as

@@ -6,7 +6,7 @@
 <title>Crux Business Intelligence</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -212,6 +212,97 @@ th .qi{width:14px;height:14px;font-size:9px}
 .qpop{max-height:72vh;overflow:auto}.qpop h5{margin:10px 0 2px;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.qpop .qmath{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:6px 8px;white-space:pre-wrap}.qpop .qsrc{margin:4px 0 0;padding-left:18px;font-size:12px}.qpop code{font-size:11.5px}
 .qpop .qx{position:absolute;top:4px;right:6px;border:0;background:none;font-size:18px;line-height:1;cursor:pointer;color:var(--muted);padding:4px}
 .qa{margin:6px 0 0;padding:0;list-style:none}.qa-i{padding:7px 9px;border-radius:8px;margin:2px 0;line-height:1.45;border:1px solid transparent}.qa-i.dd{cursor:pointer}.qa-i.dd:hover,.qa-i.dd:focus{border-color:var(--blue);outline:none}.qa-i.dd b::after{content:''}.qa-i.bad{background:color-mix(in srgb,var(--bad) 7%,var(--panel))}.finpre table{font-size:12.5px}
+
+/* ===== wave 106: calm, premium layer (owner 11-Nov-2026: "premium and luxury feel ... the way dashboards of Fortune companies give ... now it feels very cluttered and overwhelming") =====
+   Palette "assurance navy & brass": ink #142338 · sapphire #1F4C8F · brass #B08130 · canvas #F5F6F8 · panel #FFFFFF · hairline #E3E7ED · muted #5F6B7A.
+   Type: IBM Plex Sans for text, IBM Plex Sans Condensed for figures. One bold element per page (the headline figure); colour only where it carries meaning;
+   explanations on demand (long notes clamp to two lines with "More"); secondary sections start folded; Ask Crux appears where the pointer is. */
+:root{--bg:#F5F6F8;--panel:#FFFFFF;--ink:#142338;--muted:#5F6B7A;--line:#E3E7ED;--blue:#1F4C8F;--blue-soft:#EBF1F9;--ochre:#B08130;--bad:#A8433A;--good:#2E7356;--warn-soft:#FAF4E8;--bad-soft:#F8ECEA;--good-soft:#E9F4EF;
+ --f:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--fn:'IBM Plex Sans Condensed','IBM Plex Sans','Arial Narrow',sans-serif;--r:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1621;--panel:#16202D;--ink:#E7ECF3;--muted:#9AA7B8;--line:#253244;--blue:#86ABE2;--blue-soft:#1B2A3E;--ochre:#D2A657;--bad:#E08A80;--good:#76C49E}}
+:root[data-theme="dark"]{--bg:#0F1621;--panel:#16202D;--ink:#E7ECF3;--muted:#9AA7B8;--line:#253244;--blue:#86ABE2;--blue-soft:#1B2A3E;--ochre:#D2A657;--bad:#E08A80;--good:#76C49E}
+body{font:14px/1.5 var(--f);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.topbar{background:color-mix(in srgb,var(--panel) 90%,transparent);backdrop-filter:saturate(1.3) blur(10px);-webkit-backdrop-filter:saturate(1.3) blur(10px);padding:10px 24px;border-bottom:1px solid var(--line)}
+.topbar .brand{font:600 15px/1.2 var(--f);letter-spacing:.01em}.topbar .brand small{font-size:12px;margin-top:1px}
+#view{max-width:1440px;margin:0 auto}
+section{padding:28px 32px 64px;max-width:none}
+@media (max-width:820px){section{padding:18px 16px 56px}.topbar{padding:8px 16px}}
+h2{font:600 24px/1.25 var(--f);letter-spacing:-.01em;margin:0 0 6px}
+h3{font:600 16px/1.35 var(--f);margin:30px 0 12px;letter-spacing:0}
+.card>h3:first-child,.card>.tools:first-child h3,.card h3:first-child{margin-top:0}
+h4{font:600 14px/1.35 var(--f);margin:18px 0 8px}
+.lede{font-size:14px;line-height:1.55;color:var(--muted);max-width:72ch;margin:0 0 20px}
+.note{font-size:12.5px;line-height:1.5;color:var(--muted)}
+.card{border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+.grid2{gap:18px}
+.pace{border-radius:var(--r);padding:26px 30px 18px;margin-bottom:20px}
+.big{font:600 52px/1 var(--fn);letter-spacing:-.02em}
+.track{height:26px;border-radius:6px}
+.banner{border-radius:10px;font-size:13px}
+.banner.stale{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ochre);margin:16px 32px 0;padding:10px 16px}
+@media (max-width:820px){.banner.stale{margin:12px 16px 0}}
+/* KPI tiles: one statement strip with hairline dividers instead of a row of separate boxes */
+.tile{border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.tiles{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:22px}
+.tiles>.tile{border:0;border-radius:0;box-shadow:1px 0 0 var(--line),0 1px 0 var(--line);background:transparent;padding:18px 20px}
+.tiles>.tile.dd:hover,.tiles>.tile.dd:focus{background:color-mix(in srgb,var(--blue-soft) 55%,transparent)}
+.tile .k,.kpi4 .tile .k{font:500 13px/1.35 var(--f);text-transform:none;letter-spacing:0;color:var(--muted)}
+.tile .v{font:600 28px/1.15 var(--fn);letter-spacing:-.01em;margin-top:6px}
+.kpi4 .tile .v{font-size:30px}
+.tile .n{font-size:12.5px;line-height:1.45;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.qplan .tiles{display:grid}
+/* zone tiles: neutral, status as a top bar */
+.zgrid{gap:10px}
+.zt2{background:color-mix(in srgb,var(--tone,var(--line)) 7%,var(--panel));border:1px solid var(--line);border-top:4px solid var(--tone,var(--line));border-radius:10px;padding:10px 12px 12px;gap:3px}
+.zt2.zwarn{border-color:var(--line);border-top-color:var(--ochre);border-width:1px;border-top-width:4px}
+.zt2 b{font-size:13px;font-weight:600}.zt2 .zv{font:600 20px/1.2 var(--fn)}
+.zscale i{border-radius:2px}.zscale>span.note{display:block;flex-basis:100%;margin-left:0!important}
+/* tables: lighter rules, quiet headers */
+.tablewrap{border-radius:var(--r);border-color:var(--line)}
+table{font-size:13px}
+th{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.01em;padding:9px 12px;border-bottom:1px solid var(--line)}
+td{padding:8px 12px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+table:not(.zt) tbody tr:hover td{background:color-mix(in srgb,var(--blue-soft) 45%,transparent)}
+td.num,th.num{font-family:var(--fn);font-size:14px}
+/* controls */
+.btn{border-radius:8px;font-weight:500;border-color:var(--line);padding:6px 12px}
+.btn.sm{border-radius:7px}
+.btn.ghost{border-style:solid;background:transparent}
+.seg .btn:first-child{border-radius:8px 0 0 8px}.seg .btn:last-child{border-radius:0 8px 8px 0}
+.chip{border-radius:999px;padding:1px 8px}
+nav .navh{text-transform:none;letter-spacing:0;font-size:12px}
+.sc .lbl,.qpop h5{text-transform:none;letter-spacing:0;font-size:12px}
+/* sections that start folded read as a quiet list of further topics */
+h3.foldable{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--line);margin-top:26px;padding-top:16px}
+.card h3.foldable,#dd h3.foldable{border-top:0;padding-top:0}
+h3.foldable::before{content:'▾';font-size:11px;width:14px;color:var(--muted)}h3.foldable.folded::before{content:'▸'}
+h3.foldable.folded{color:color-mix(in srgb,var(--ink) 82%,var(--muted))}
+/* long explanations: two lines, then "More" */
+.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.morebtn{display:block;border:0;background:none;color:var(--blue);font:500 12px var(--f);padding:0;margin:-12px 0 16px;cursor:pointer}.zscale>.morebtn{flex-basis:100%;margin:0}
+.note+.morebtn{margin-top:2px}
+.morebtn:hover{text-decoration:underline}
+/* Ask Crux: appears where the pointer is (keyboard focus shows it too); always shown, as an icon, on touch screens */
+.askbtn{box-shadow:0 1px 3px rgba(20,35,56,.12)}
+.tile.hasask{padding-bottom:16px}
+.tiles>.tile.hasask{padding-bottom:18px}.zt2.hasask{padding-bottom:12px}.team.hasask{padding-bottom:12px}
+.hasask>.askbtn{top:10px;right:10px;bottom:auto}
+.askrow{position:relative;height:0;margin:0;z-index:3}
+.askrow>.askbtn{position:absolute;right:8px;top:8px}
+.tools>.askbtn{position:static}
+@media (hover:hover) and (pointer:fine){
+ .askbtn{opacity:0;pointer-events:none;transition:opacity .15s}
+ .hasask:hover>.askbtn,.hasask:focus-within>.askbtn,.askrow:hover .askbtn,.askrow:has(+ .chartbox:hover) .askbtn,.askrow:has(+ .tablewrap:hover) .askbtn,.askrow:has(+ table:hover) .askbtn,
+ .tools:hover>.askbtn,.tools:has(+ .tablewrap:hover)>.askbtn,.askbtn:focus-visible,.askbtn:focus{opacity:1;pointer-events:auto}
+}
+@media (hover:none){
+ .askbtn{padding:5px;width:28px;height:28px;justify-content:center;border-radius:50%}.askbtn .lbl{display:none}.askbtn svg{width:14px;height:14px}
+ .hasask>.askbtn{top:8px;right:8px}.tile.hasask .k{padding-right:30px}.zt2.hasask b{padding-right:30px}
+}
+#askBtn{padding:11px 20px;font-weight:600;letter-spacing:.01em;box-shadow:0 6px 18px rgba(20,35,56,.22)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary,:root:not([data-theme="light"]) .seg .btn.on,:root:not([data-theme="light"]) #askBtn{color:#0F1621}}
+:root[data-theme="dark"] .btn.primary,:root[data-theme="dark"] .seg .btn.on,:root[data-theme="dark"] #askBtn{color:#0F1621}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles>.tile{padding:14px 14px 14px}.tiles>.tile.hasask{padding-bottom:14px}.tile .v,.kpi4 .tile .v{font-size:22px}.big{font-size:42px}.pace{padding:20px 18px 14px}h2{font-size:21px}}
 </style>
 </head>
 <body>
@@ -334,7 +425,11 @@ if(window.Chart&&!Chart.registry.plugins.get('linesOnTop'))Chart.register({id:'l
  if(!(D.some(d=>ty(d)==='bar')&&D.some(d=>ty(d)==='line')))return;
  D.forEach(d=>{if(ty(d)==='line'){if(d.order==null)d.order=-1;if(d.pointRadius==null)d.pointRadius=3;if(d.pointHoverRadius==null)d.pointHoverRadius=5;if(d.borderWidth==null)d.borderWidth=2.5;
    if(d.pointBackgroundColor==null&&typeof d.borderColor==='string')d.pointBackgroundColor=d.borderColor}else if(ty(d)==='bar'&&d.order==null)d.order=1})}});
-function chart(canvas,cfg){const css=getComputedStyle(document.documentElement);Chart.defaults.color=css.getPropertyValue('--muted').trim();Chart.defaults.borderColor=css.getPropertyValue('--line').trim();Chart.defaults.font.family="'Archivo',system-ui";if(cfg.drill){const dr=cfg.drill;cfg.options=cfg.options||{};cfg.options.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'};cfg.options.onClick=(e,els)=>{if(!els.length)return;const cx=dr(els[0].datasetIndex,els[0].index);if(cx)setTimeout(()=>DD.go(cx,canvas),0)};delete cfg.drill;canvas.setAttribute('aria-label','Chart — click a bar or point for details')}const c=new Chart(canvas,cfg);S.charts.push(c);return c}
+// wave 106: calmer charts — small legend keys, light grid, rounded bars, thin lines (applied once, also to the drill-down charts)
+function chartCalm(){if(!window.Chart||chartCalm.done)return;chartCalm.done=1;try{const d=Chart.defaults;d.font.family="'IBM Plex Sans',system-ui";d.font.size=12;
+ d.plugins.legend.labels.boxWidth=10;d.plugins.legend.labels.boxHeight=10;d.plugins.legend.labels.padding=14;d.elements.bar.borderRadius=3;d.elements.line.borderWidth=2;d.elements.point.radius=2;d.elements.point.hoverRadius=4;
+ d.plugins.tooltip.padding=10;d.plugins.tooltip.cornerRadius=8;d.plugins.tooltip.titleFont={weight:'600'};d.scale.grid.drawTicks=false;d.scale.border.display=false}catch(e){}}
+function chart(canvas,cfg){const css=getComputedStyle(document.documentElement);Chart.defaults.color=css.getPropertyValue('--muted').trim();Chart.defaults.borderColor=css.getPropertyValue('--line').trim();Chart.defaults.font.family="'IBM Plex Sans',system-ui";chartCalm();if(cfg.drill){const dr=cfg.drill;cfg.options=cfg.options||{};cfg.options.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'};cfg.options.onClick=(e,els)=>{if(!els.length)return;const cx=dr(els[0].datasetIndex,els[0].index);if(cx)setTimeout(()=>DD.go(cx,canvas),0)};delete cfg.drill;canvas.setAttribute('aria-label','Chart — click a bar or point for details')}const c=new Chart(canvas,cfg);S.charts.push(c);return c}
 const C=()=>{const s=getComputedStyle(document.documentElement);return{blue:s.getPropertyValue('--blue').trim(),ochre:s.getPropertyValue('--ochre').trim(),bad:s.getPropertyValue('--bad').trim(),good:s.getPropertyValue('--good').trim(),muted:s.getPropertyValue('--muted').trim()}};
 function tile(k,v,n,cls){return el('div',{class:'tile'},el('div',{class:'k'},k),el('div',{class:'v '+(cls||'')},v),n?el('div',{class:'n'},n):null)}
 /* wave 096 graphics: in-cell bar (share of target), part-to-whole strip with a text legend (colour never alone) */
@@ -364,7 +459,7 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
 // wave 105h: "who made this change" columns show the operations connector by its role, not by the assistant's product name (the stored record is unchanged)
 function whoLabel(v){return String(v).replace(/^admin-key:/,'').replace(/\bclaude[-\w]*/gi,'operations')}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';const sb=staleBanner();if(sb)v.insertBefore(sb,s);await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
-function render(){for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk,adm_agents:vAdmAgents}[S.section]||vOverview)()}
+function render(){S.renderAt=Date.now();for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk,adm_agents:vAdmAgents}[S.section]||vOverview)()}
 
 /* ---------- Overview ---------- */
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
@@ -2347,9 +2442,18 @@ async function branchResearchSection(box){box.append(el('h3',{},'Client branch r
 async function aiStatusSection(box){box.append(el('h3',{},'Ask Crux — status'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let a;try{a=await api('ai_status',{})}catch(e){msg.textContent='Ask Crux status unavailable: '+e.message;return}msg.remove();const t=a.today||{},k=a.knowledge||{};const on=a.enabled&&a.key_present==='yes';
  box.append(el('div',{class:'tiles'},tile('Ask Crux',on?'On':'Off',a.key_present==='yes'?'key stored as a server secret':'no key — calculated answers only',on?'good':'warn'),
-  tile('Engine',a.engine_ready?'Ready':'Not set',(a.backup_ready?'main and backup engines':'main engine only')+(a.engine_checked_at?' · checked '+dts(a.engine_checked_at):'')),
+  tile('Engine',a.engine_ready?'Ready':'Not set',(a.backup_ready&&a.backup_key_present==='yes'?'main and backup engines':a.backup_ready?'main engine; backup key not stored yet':'main engine only')+(a.engine_checked_at?' · checked '+dts(a.engine_checked_at):'')),
   tile('Calls today',`${fmt(t.calls)} / ${fmt(a.daily_cap)}`,`${fmt(t.failed)} failed or rejected · ${fmt(t.tokens)} tokens`,t.failed?'warn':''),
   tile('Knowledge base',`${fmt(k.embedded)} / ${fmt(k.chunks)}`,a.memory_ready?'definitions ready for search':'search not set up')));
+ // wave 106a: an admin can store the backup engine key here (encrypted in Vault; never shown again; ask-crux picks it up within a minute)
+ if(S.adminKey&&S.sb){const inp=el('input',{type:'password',autocomplete:'off',spellcheck:'false',placeholder:'Paste the backup engine key','aria-label':'Backup engine key',style:'min-width:min(320px,100%)'});
+  const msg2=el('span',{class:'note',role:'status',style:'margin:0'});
+  const save=el('button',{type:'button',class:'btn sm primary',onclick:async()=>{if(!inp.value.trim()){msg2.textContent='Paste the key first.';return}save.disabled=true;msg2.textContent='Saving…';
+   try{const {data,error}=await S.sb.rpc('bi_ai_key_put',{p_admin_key:S.adminKey,p_value:inp.value,p_by:(localStorage.getItem('crux_editor')||'admin')});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);
+    inp.value='';msg2.textContent=data.replaced?'Replaced. Ask Crux uses the new key within a minute.':'Saved. The backup engine starts within a minute.'}catch(e){msg2.textContent=e.message}save.disabled=false}},'Save key');
+  box.append(el('div',{class:'card',id:'bkKey',style:'margin:14px 0'},el('h4',{style:'margin-top:0'},'Backup engine key'),
+   el('p',{class:'note'},(a.backup_key_present==='yes'?'A backup key is stored (encrypted). ':'No backup key is stored yet: when the main engine is busy, Ask Crux shows the calculated answer. ')+'Paste a key to add or replace it. It is stored encrypted and is never shown again.'),
+   el('div',{class:'tools'},inp,save,msg2)))}
  if(a.last_failure)box.append(el('p',{class:'note'},`Last Ask Crux failure or rejection: ${dts(a.last_failure.at)} — ${a.last_failure.purpose}${a.last_failure.engine?' ('+a.last_failure.engine+' engine)':''}: ${a.last_failure.note||''}. The calculated answer is shown whenever Ask Crux cannot answer.`))}
 async function branchReviewSection(box){box.append(el('h3',{},'Branch review queue'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let rows;try{rows=await api('branch_reviews',{status:'open',limit:500})}catch(e){msg.textContent='Review queue unavailable: '+e.message;return}msg.remove();
@@ -2516,14 +2620,15 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
  const sz={},sm={},mz={};((SP&&SP.groups)||[]).forEach(g=>{sz[zoneLabel(g.group)]=g});((SP&&SP.members)||[]).forEach(x=>{const k=zoneLabel(x.group);(sm[k]=sm[k]||[]).push(x)});((MP&&MP.by_zone)||[]).forEach(z=>{mz[zoneLabel(z.zone_group)]=z});
  const rows=(O.rows||[]).filter(r=>(r.actual||0)>0||(r.organic_to_date||0)>0).sort((a,b)=>(b.actual||0)-(a.actual||0));if(!rows.length)return;
  let mode='organic';const grid=el('div',{class:'zgrid',id:'zoneGrid'}),scale=el('div',{class:'zscale'});
- const tint=x=>{if(x==null)return'var(--panel)';const a=Math.abs(x);if(a<=0.05)return'color-mix(in srgb,var(--muted) 14%,var(--panel))';
-  return`color-mix(in srgb,var(${x>0?'--good':'--bad'}) ${Math.round(16+Math.min(1,(a-0.05)/0.25)*36)}%,var(--panel))`};
+ // wave 106: the tile stays neutral; its status shows as a coloured bar on top (stronger = further from the yardstick) and a faint wash
+ const tint=x=>{if(x==null)return'var(--line)';const a=Math.abs(x);if(a<=0.05)return'color-mix(in srgb,var(--muted) 45%,var(--panel))';
+  return`color-mix(in srgb,var(${x>0?'--good':'--bad'}) ${Math.round(45+Math.min(1,(a-0.05)/0.25)*55)}%,var(--panel))`};
  const val=r=>{const p=pz[r.group]||{};return mode==='organic'?(r.organic_to_date>=ZGM.min?r.effort_pct:null):(p.achievement_likely!=null?p.achievement_likely-1:null)};
  const spl=r=>{const g=sz[r.group];if(!g||g.members<2)return null;const wt=g.members-(g.no_target||0),beh=(g.behind||0)+(g.far_behind||0);return{g,wt,beh,most:wt>=3&&beh*2>wt,carried:!!g.carried}};
  const draw=()=>{grid.innerHTML='';rows.forEach(r=>{const lk=(pz[r.group]||{}).achievement_likely,v=val(r),s=spl(r),mp=mz[r.group],mem=sm[r.group]||[];
-   const mixed=s&&(s.most||s.carried)&&(v==null||v>-0.05);const bg=mixed?'color-mix(in srgb,var(--ochre) 30%,var(--panel))':tint(v);
+   const mixed=s&&(s.most||s.carried)&&(v==null||v>-0.05);const bg=mixed?'var(--ochre)':tint(v);
    const why=s?(s.carried?`half its business comes from ${s.g.n50} of ${s.g.members} teams`:'')+(s.most?`${s.carried?'; ':''}${s.beh} of ${s.wt} teams behind their target to date`:''):'';
-   const t=el('div',{class:'zt2'+(mixed?' zwarn':''),tabindex:'0',role:'button','data-zone':r.group,'data-mixed':mixed?'1':'0',style:'background:'+bg,
+   const t=el('div',{class:'zt2'+(mixed?' zwarn':''),tabindex:'0',role:'button','data-zone':r.group,'data-mixed':mixed?'1':'0',style:'--tone:'+bg,
      title:`${r.group}: ${ZGM.F(r.actual)}${ZGM.unit} so far · BAU so far ${ZGM.F(r.organic_to_date)} (${pctS(r.effort_pct)}) · likely ${lk!=null?pct(lk):'–'} of target`+(s?` · ${s.g.on_track} of ${s.wt} teams on track, half from ${s.g.n50} of ${s.g.members}`:'')+(mp?` · potential ${fmtL(mp.potential)} (${pct(mp.penetration)} captured)`:'')+'. Click for the drill-down.'},
     el('b',{},r.group),el('span',{class:'zv'},ZGM.F(r.actual)),
     el('span',{class:'zn'},mode==='organic'?(r.organic_to_date>=ZGM.min?pctS(r.effort_pct)+' vs business as usual':'too small to compare'):(lk!=null?'likely '+pct(lk)+' of target':'no target')),
@@ -2536,7 +2641,7 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
    const fn=()=>DD.go(entityCtx('zone',r.group,month,f),t);t.onclick=fn;t.setAttribute('aria-label',r.group+(mixed?' — looks fine in total but '+why:'')+' — open details');t.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}};grid.append(t)});
   const lab=mode==='organic'?['below business as usual','above business as usual']:['below target','above target'];scale.innerHTML='';
   scale.append(el('span',{},lab[0]),...[-0.3,-0.15,0,0.15,0.3].map(x=>el('i',{style:'background:'+tint(x)})),el('span',{},lab[1]),
-   el('i',{style:'background:color-mix(in srgb,var(--ochre) 30%,var(--panel));margin-left:10px'}),el('span',{},'looks fine in total, but carried by a few or most teams behind'),
+   el('i',{style:'background:var(--ochre);margin-left:10px'}),el('span',{},'looks fine in total, but carried by a few or most teams behind'),
    el('span',{class:'note',style:'margin-left:8px'},`Grey = within ±5 %. Bar in each zone = its teams (width = share of the zone's ${SP&&SP.measure==='cases'?'cases':'expected revenue'}; each team against its own target to date: green on track ≥ 90%, amber behind, red far behind < 60%, grey no target) — the same split as "Inside each group". Potential = what all the zone's client branches could bring a month. Line at the bottom = likely % of the case target. Click a zone for its drill-down.`))};
  const seg=el('div',{class:'seg',role:'group','aria-label':'Colour zones by'},[['organic','vs business as usual'],['target','likely vs target']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-zm':k,
   onclick:e=>{mode=k;seg.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
@@ -3430,7 +3535,7 @@ function askInfo(n,kind){const inDD=!!n.closest('#ddBody'),pg=inDD?'Details — 
  return{kind,title,page:pg,columns:cols,q:kind==='chart'?`What does the “${title}” chart on ${pg} show, and what needs attention?`:`What stands out in the “${title}” table on ${pg}, and what needs action?`}}
 // a button that opens Ask Crux with the element's question; info() is read at click time (titles and values as shown then)
 function askBtn(info,kind,host){const b=el('button',{type:'button',class:'askbtn','data-askkind':kind,'aria-label':'Ask Crux about this '+kind,title:'Ask Crux about this '+kind});
- b.innerHTML=ASKX.ico;b.append('Ask Crux');
+ b.innerHTML=ASKX.ico;b.append(el('span',{class:'lbl'},'Ask Crux'));
  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const i=info();b.setAttribute('aria-label','Ask Crux about '+i.title);let ctx=null;
   // in the details panel: the panel's own month and filters, and the panel closes first (as its header Ask Crux button does)
   if(host&&host.closest('#ddBody')){const c=DD.stack[DD.stack.length-1];if(c)ctx={month:c.m||$('#fMonth').value,filters:c.f||filters()};DD.close()}
@@ -3443,7 +3548,15 @@ function askDecorate(root){if(!root||!ASK.openWith||ASKX.skip.has(S.section))ret
  root.querySelectorAll('.chartbox').forEach(c=>{if(c.dataset.askd||no(c))return;c.dataset.askd='1';c.before(el('div',{class:'askrow'},askBtn(()=>askInfo(c,'chart'),'chart',c)))});
  root.querySelectorAll('table').forEach(t=>{if(no(t)||t.closest('.tile,.zt2,.team,.askrow'))return;const tw=t.closest('.tablewrap')||t;if(tw.dataset.askd||t.querySelectorAll('tr').length<2)return;tw.dataset.askd='1';
   const b=askBtn(()=>askInfo(tw,'table'),'table',tw),tools=tw.previousElementSibling;if(tools&&tools.classList.contains('tools')&&!tools.querySelector(':scope>.askbtn'))tools.append(b);else tw.before(el('div',{class:'askrow'},b))})}
-function askDecoSoon(){if(ASKX.pend)return;ASKX.pend=true;requestAnimationFrame(()=>{ASKX.pend=false;try{askDecorate($('#view'));askDecorate($('#ddBody'))}catch(e){console.warn('ask buttons',e)}})}
+function askDecoSoon(){if(ASKX.pend)return;ASKX.pend=true;requestAnimationFrame(()=>{ASKX.pend=false;try{askDecorate($('#view'));askDecorate($('#ddBody'))}catch(e){console.warn('ask buttons',e)}
+  try{calmText($('#view'));calmText($('#ddBody'));autoFold()}catch(e){console.warn('calm text',e)}})}
+// wave 106: a long explanation (over ~200 characters) shows two lines and a "More" button; warnings, notes in tables, tiles and pop-ups are left whole
+function calmText(root){if(!root)return;root.querySelectorAll('p.lede,p.note,div.note,.zscale>span.note').forEach(n=>{if(n.dataset.calm)return;n.dataset.calm='1';
+  if(n.closest('#askPanel,.qpop,.agbody,.tile,.zt2,td,th,.askorig')||n.matches('.warn,.bad,.askfall')||n.querySelector('button,input,select,table'))return;
+  if((n.textContent||'').trim().length<200)return;if(!n.offsetParent){delete n.dataset.calm;return}   // hidden (folded) now: decide when it is shown
+  n.classList.add('clamp');if(n.scrollHeight<=n.clientHeight+2){n.classList.remove('clamp');return}   // fits in two lines anyway
+  const b=el('button',{type:'button',class:'morebtn','aria-expanded':'false'},'More');
+  b.onclick=()=>{const c=n.classList.toggle('clamp');b.textContent=c?'More':'Less';b.setAttribute('aria-expanded',String(!c))};n.after(b)})}
 
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
@@ -3582,15 +3695,25 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===
 /* ---------- Collapsible sections: every sub-heading in a page folds its content ---------- */
 const FOLD={};try{Object.assign(FOLD,JSON.parse(localStorage.getItem('crux_fold')||'{}'))}catch{}
 /* wave 103: on the Overview the detail sections start folded (headline, at a glance, zones, plan, operations & collections and branch managers open) */
-const FOLD0=[/^overview\|(Period comparison|Operations pulse|Daily additions|What needs attention|Top branch opportunities)/];
+const FOLD0=[/^overview\|(Period comparison|Operations pulse|Daily additions|What needs attention|Top branch opportunities|Plan, forecast|Operations and Collections|Branch managers)/];
 function foldKey(h){return (S.section||'')+'|'+h.textContent.replace(/[▾▸?]/g,'').trim().slice(0,60)}
-function foldApply(h,closed){h.setAttribute('aria-expanded',String(!closed));h.classList.toggle('folded',closed);let n=h.nextElementSibling;while(n&&!/^H[23]$/.test(n.tagName)){n.classList.toggle('fold-hide',closed);n=n.nextElementSibling}}
+// a heading that sits in a header row (.tools: title + controls) folds what follows the row (wave 106 fix: those sections did not fold before)
+const foldHead=n=>n&&(/^H[23]$/.test(n.tagName)||(n.matches&&n.matches('.tools')&&!!n.querySelector(':scope>h3')));
+function foldApply(h,closed){h.setAttribute('aria-expanded',String(!closed));h.classList.toggle('folded',closed);const st=h.parentElement&&h.parentElement.matches('.tools')?h.parentElement:h;
+ if(st!==h){let m=h.nextElementSibling;while(m){m.classList.toggle('fold-hide',closed);m=m.nextElementSibling}}
+ let n=st.nextElementSibling;while(n&&!foldHead(n)){n.classList.toggle('fold-hide',closed);n=n.nextElementSibling}}
+// wave 106: on the analysis pages the first three sections (in page order) are open and the rest start folded (a list of further topics) until the user opens them.
+// Decided while the page loads (sections arrive in any order), never after: a section the user opened or closed keeps the user's choice.
+const FOLD_AUTO=k=>!/^(overview|present|tracker)$/.test(k||'')&&!String(k||'').startsWith('adm_');
+function autoFold(){if(!FOLD_AUTO(S.section)||Date.now()-(S.renderAt||0)>12000)return;const sec=document.querySelector('#view section');if(!sec)return;
+ [...sec.querySelectorAll('h3.foldable')].forEach((h,i)=>{if(i<3||h.dataset.auto)return;h.dataset.auto='1';if(FOLD[foldKey(h)]===undefined&&!h.classList.contains('folded'))foldApply(h,true)})}
 function makeFoldable(h){if(h.dataset.fold||h.closest('#askPanel,.zt-panel table'))return;h.dataset.fold='1';h.classList.add('foldable');h.tabIndex=0;h.setAttribute('role','button');h.title='Click to collapse or expand';
  const k=foldKey(h);const toggle=()=>{const c=!h.classList.contains('folded');FOLD[k]=c;try{localStorage.setItem('crux_fold',JSON.stringify(FOLD))}catch{}foldApply(h,c)};
  h.addEventListener('click',toggle);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
  if(FOLD[k]===undefined?FOLD0.some(re=>re.test(k)):FOLD[k])setTimeout(()=>foldApply(h,true),0)}
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1)return;if(n.tagName==='H3')makeFoldable(n);n.querySelectorAll&&n.querySelectorAll('h3').forEach(makeFoldable);
- if(n.tagName==='H3'||n.tagName==='H2')return;let p=n.previousElementSibling;while(p&&!/^H[23]$/.test(p.tagName))p=p.previousElementSibling;if(p&&p.tagName==='H3'&&p.classList.contains('folded'))n.classList.add('fold-hide')}))).observe(document.getElementById('view'),{childList:true,subtree:true});
+ if(n.tagName==='H3'||n.tagName==='H2')return;let p=n.previousElementSibling;while(p&&!foldHead(p))p=p.previousElementSibling;const ph=p&&(p.tagName==='H3'?p:p.querySelector&&p.querySelector(':scope>h3'));
+ if(ph&&ph.classList.contains('folded'))n.classList.add('fold-hide');else if(n.parentElement&&n.parentElement.matches('.tools')){const t=n.parentElement.querySelector(':scope>h3.folded');if(t)n.classList.add('fold-hide')}}))).observe(document.getElementById('view'),{childList:true,subtree:true});
 
 ['view','ddBody'].forEach(id=>{const n=document.getElementById(id);if(n)new MutationObserver(askDecoSoon).observe(n,{childList:true,subtree:true})});   // wave 105h
 window.addEventListener('hashchange',()=>{const k=location.hash.slice(1);if(k&&k!==S.section&&SECTIONS.some(x=>x[0]===k))go(k)});

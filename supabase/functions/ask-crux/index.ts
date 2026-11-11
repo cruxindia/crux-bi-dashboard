@@ -168,6 +168,16 @@ const FOLLOW_C = /^\s*(and|also|what about|how about|same|then|so|but)\b|\b(them
 const vecTxt = (v: number[] | null) => (v ? '[' + v.join(',') + ']' : null);
 const ctxKeyOf = (month: string, filters: Record<string, unknown>, admin: boolean) =>
   `${month}|${JSON.stringify(Object.fromEntries(Object.entries(filters ?? {}).sort(([a], [b]) => a.localeCompare(b))))}|${admin ? 'admin' : 'viewer'}`;
+// wave 106a: backup engine key — the Edge Function secret wins; otherwise the copy an admin saved in Vault (read through the gateway, cached 10 min)
+let bkC: { at: number; v: string } | null = null;
+async function backupKey(): Promise<string> {
+  if (Deno.env.get('OPENROUTER_API_KEY')) return '';
+  if (bkC && Date.now() - bkC.at < (bkC.v ? 600000 : 60000)) return bkC.v;   // a newly saved key is picked up within a minute
+  try { const r = await gw({ op: 'secret', name: 'ai_backup_key' }); bkC = { at: Date.now(), v: typeof r?.value === 'string' ? r.value : '' }; }
+  catch { bkC = { at: Date.now(), v: '' }; }
+  return bkC.v;
+}
+
 // wave 105h: where the question was asked from (the Ask Crux button on a tile, table or chart, a suggestion, or the panel itself)
 const ORIGIN_KINDS = ['panel', 'tile', 'table', 'chart', 'card', 'suggestion', 'next', 'menu', 'drill'];
 function originOf(body: any) {
@@ -253,7 +263,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const lessons = (Array.isArray(mem?.lessons) ? mem.lessons : []).map((x: any) => ({ question: String(x.question ?? ''), correction: String(x.correction ?? '') }));
   const primary = cfg.AGENT_MODEL, fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
   const models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
-  const out = await runAgent({ ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on'), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
+  const out = await runAgent({ ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey()), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
     docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
     budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok, seed, hints, lessons });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
@@ -317,7 +327,7 @@ async function jobEnv(cfg: Record<string, string>): Promise<JobEnv> {
     await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_documents', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? `agent lessons ${texts.length}` : r.error });
     return r.ok ? r.vectors : null;
   };
-  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on'), models, api, gw, rec: record, pseudo, system, docs, meta,
+  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey()), models, api, gw, rec: record, pseudo, system, docs, meta,
     dataMonth, dataAsOf, cfg, embed, t0 };
 }
 
@@ -334,7 +344,8 @@ Deno.serve(async (req) => {
   if (action === 'status') {
     // wave 105h: no model or vendor names (anyone can call this)
     return json({ assistant: 'Ask Crux', key_present: ai.configured(), enabled: cfg.AI_ENABLED === 'on', agent: cfg.AGENT_ENABLED === 'on' && !!cfg.AGENT_MODEL,
-      backup: !!(cfg.AGENT_FALLBACK_MODEL || cfg.GEMINI_FALLBACK_MODEL), memory: !!cfg.GEMINI_EMBEDDING_MODEL && cfg.MEMORY_ENABLED !== 'off' });
+      backup: !!(cfg.AGENT_FALLBACK_MODEL || cfg.GEMINI_FALLBACK_MODEL), backup_key: !!Deno.env.get('OPENROUTER_API_KEY') || cfg.BACKUP_KEY_PRESENT === 'yes',
+      memory: !!cfg.GEMINI_EMBEDDING_MODEL && cfg.MEMORY_ENABLED !== 'off' });
   }
   if (action === 'validate' || action === 'synthetic' || action === 'embed_sync') {
     if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
@@ -390,7 +401,7 @@ Deno.serve(async (req) => {
     if (!ai.configured()) return json({ error: 'the main AI key is not set (Edge Function secret, see OPERATIONS.md)' }, 412);
     const list: string[] = Array.isArray(body?.models) && body.models.length ? body.models.map(String).slice(0, 6) : [cfg.AGENT_MODEL, cfg.AGENT_FALLBACK_MODEL].filter(Boolean);
     const out: Record<string, unknown>[] = [];
-    const pa = multiProvider(30000, cfg.OPENROUTER_PAID_ALLOWED === 'on');
+    const pa = multiProvider(30000, cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey());
     for (const m of list) {
       const c0 = [{ role: 'user' as const, parts: [{ text: 'QUESTION: How is business this month? Use the tool get_business_summary first.' }] }];
       const r1 = await pa.chat(m, { system: 'You are a test agent. Always call the tool before answering.', contents: c0, tools: DECLS, maxTokens: 2048 });
