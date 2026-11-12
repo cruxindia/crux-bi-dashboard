@@ -344,3 +344,14 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | public.bi_ai_key_put(admin_key, value, by) | admin-only: checks the key format, saves or replaces the Vault secret, sets BACKUP_KEY_PRESENT, writes bi.audit_log (length only) |
 | bi.ai_secret(p) / gateway op `secret` | returns the Vault key to the ask-crux function only (service role) |
 | bi.ai_config BACKUP_KEY_PRESENT | yes / no — shown as backup_key_present in ai_status and backup_key in the ask-crux status action |
+
+## Potential and BAU support, quarter labels (12-Nov-2026, wave 107 — bi_107a, bi_107b, bi_107c)
+| Object | Change |
+|---|---|
+| `bi.fy_qname(date)` (new) | "Q3 FY 2026-27" for any month of Oct–Dec 2026; used by `api_plan` (`quarters[].label`) and `api_target_sheet` (`quarter_label`) |
+| `bi.fy_qlabel(date)` | now `fy_qname` + months: "Q3 FY 2026-27 (Oct–Dec 2026)" (`api_growth`, `api_growth_rev`) |
+| `bi.api_market_potential` — `total`, `by_zone`, `by_location`, `by_client`, `by_bm` | added `branches`, `never_served_branches`, `extend_team_branches`, `extend_no_team_branches`, `new_client_branches`, `recover_pairs`, `teams`, `clients`, `clients_current`, `clients_recover`, `clients_dormant`, `clients_never_served`, `clients_extend_team`, `clients_extend_no_team`, `clients_new_client`; `branches` = active + dormant + `never_branches` |
+| `bi.api_market_potential` — `by_pair` (new) | `[location_id, client_family, potential, current, active branches, branches]` per team × client family with potential (356 rows on the Oct-2026 run; sums equal `by_location`) |
+| `bi.api_organic` — `total` and `rows[]` | added `clients` (client families), `teams`, `lines` (team × client lines) with a BAU expectation or business |
+| Text in `api_plan` method, `ask_h_plan`, `ask_h_potential`, `api_targets` method | "outlook" → "likely", "captured" → "now x% of the potential, by value", "headroom"/"opportunity" → "gap to potential" (JSON keys unchanged: `outlook`, `penetration`, `headroom`) |
+| `bi.test_growth` F3 | expects the written-out labels |

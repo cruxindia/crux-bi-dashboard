@@ -841,3 +841,16 @@ Regression: test_105h_ui 8/8 local and live (H2 now also checks the button is hi
 | Migrations bi_106b (drop unused point_derived_pkey) and bi_106c (purge jobs) recorded in schema_migrations | ✓ |
 | Page read path after the work (`night_smoke.py 2026-10-01`, public viewer key): meta, overview, TAT total and by unit, point TAT, Force1, daily, operations, collections, ai_status, Ask Crux status | 11/11 ✓ (cold TAT 11 s, others 1–7 s) |
 | No client queries running during the table locks | ✓ (pg_stat_activity empty) |
+
+## 12-Nov-2026 — wave 107 (quarter labels, potential and BAU with clients and branches, the gap explained, plain words)
+**Database (bi_107a–c, applied live 12-Nov afternoon)**
+| Check | Result |
+|---|---|
+| Every text patch matched exactly the expected number of times (migration stops otherwise) | ✓ (bi_107a: 13 patches, bi_107b: 2, bi_107c: 1) |
+| `fy_qlabel`: Oct-2026 → "Q3 FY 2026-27 (Oct–Dec 2026)", Jan-2027 → "Q4 FY 2026-27 (Jan–Mar 2027)", Apr-2026 → "Q1 FY 2026-27 (Apr–Jun 2026)", Jan-2026 → "Q4 FY 2025-26"; `api_plan` quarters "Q3 FY 2026-27", "Q4 FY 2026-27" | ✓ |
+| `test_growth` 14/14 (F3 with the written-out labels); `test_potential` passed | ✓ |
+| Potential support reconciles for the total and all 14 zones, 41 teams, 17 clients, 22 managers: active + dormant + never-active branches = `branches`; current + gap = potential (±2) | ✓ (Pan India 66,087 branches, 2,942 active, 17 clients) |
+| Filtered Mumbai + Goa = the zone row: ₹54.37 L, 2,915 branches, 471 active, 15 clients (10 with current business) | ✓ |
+| `by_pair` (356 team × client family rows) adds up to `by_location` (₹7,74,85,624 vs ₹7,74,85,615, rounding) | ✓ |
+| BAU support (`api_organic`): Pan India 17 client families, 35 teams, 485 lines; Mumbai + Goa 11 families, 2 teams, 33 lines | ✓ |
+| Ask Crux texts: potential answer says "now 54.7% of the potential, by value. The gap of ₹24.63 L is …"; plan chart series "Likely" | ✓ |

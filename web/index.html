@@ -73,6 +73,7 @@ body.ddopen,body.fopen{overflow:hidden}
 .ptabs{margin:4px 0 12px}.ptabs .btn{font-weight:600}
 /* wave 103 pages */.banner.stale{margin:0 0 12px;background:var(--warn-soft);border-left:4px solid var(--ochre)}.ovact{margin:10px 0 4px;flex-wrap:wrap}.ovsub{margin:18px 0 6px}.crumbs{margin:2px 0 10px;gap:4px}.rca-answer{border-left:4px solid var(--blue)}.present .pres-head{margin:6px 0 12px}.pres-title{font-size:22px;font-weight:700}.pres-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}.pres-sec{margin:12px 0}.pres-sec h3{margin:6px 0}.pres-sec ul{margin:4px 0 0 18px;padding:0;line-height:1.55}table.pres-t{width:100%;border-collapse:collapse;font-size:12.5px}table.pres-t th,table.pres-t td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}table.pres-t .num{text-align:right}table.pres-t td.small{font-size:11.5px;color:var(--muted)}@media (max-width:760px){.pres-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}@media print{.topbar,#drawer,#fpanel,#dd,#admMenu,.noprint,.banner.stale button,.askfab,#askFab,[id^=ask]{display:none!important}body{background:#fff}#view{padding:0!important;margin:0!important}.present .tile{break-inside:avoid}.pres-sec{break-inside:avoid}@page{size:A4 landscape;margin:12mm}}/* wave 103 */.chip.muted{background:var(--line);color:var(--muted)}.chip.sit{font-size:11px;padding:0 6px;margin-left:2px;white-space:nowrap}.sitmix{display:inline-flex;gap:3px;flex-wrap:wrap;margin-left:4px;vertical-align:middle}.sitbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0}.linkbtn{background:none;border:0;padding:0;color:var(--blue);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px}table.vtree tr.vtcalc td{background:var(--blue-soft);line-height:1.45}.vtcalcbox{white-space:normal;max-width:min(1100px,92vw);font-size:12px}table.vtree th.vtname{min-width:340px;white-space:normal}.vtreason{font-weight:400;font-size:12px;color:var(--muted);white-space:normal;max-width:620px;margin-top:2px;line-height:1.4}.tgtdl-bar{margin:0 0 12px;border-left:4px solid var(--blue)}.tgtdl-bar .tools{margin:0}.ai.ai-quick{background:var(--blue-soft);font-weight:600}table.vtree{border-collapse:collapse;width:100%;font-size:13px}table.vtree th,table.vtree td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}table.vtree td.num,table.vtree th.num{text-align:right;font-variant-numeric:tabular-nums}table.vtree tr.vt0 th,table.vtree tr.vt0 td{font-weight:700;background:var(--bg)}table.vtree tr.vt1 th{font-weight:600}table.vtree tr.vt3 th{font-weight:400;color:var(--muted)}.vtg{border:0;background:none;cursor:pointer;font-size:12px;width:18px;color:var(--ink);padding:0}.vtsp{display:inline-block;width:18px}.tablewrap{overflow-x:auto}
 table.bridge{border-collapse:collapse;margin-top:6px;font-size:12.5px}table.bridge th,table.bridge td{padding:3px 10px;border-bottom:1px solid var(--line);text-align:left}table.bridge td.num{text-align:right;font-variant-numeric:tabular-nums}table.bridge tr.total th,table.bridge tr.total td{font-weight:700}
+.potbridge p{margin:6px 0;max-width:80ch}.potbridge table.potb{width:100%;max-width:760px}table.potb th .note{margin:1px 0 0;font-weight:400;font-size:11.5px}table.potb thead th{font-weight:600;color:var(--muted);font-size:11.5px}table.potb tr.total th .note{display:none}
 .qplan .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .zt2.zwarn{border-color:var(--ochre);border-width:2px}.zt2 .zflag{font-size:11px;font-weight:600;color:var(--ochre)}.zt2 .zpot{color:var(--ink);opacity:.85}
 .zsplit{display:flex;height:8px;border-radius:2px;overflow:hidden;gap:1px;margin:3px 0 1px;background:var(--line)}.zsplit i{display:block;height:8px;min-width:2px}.zsplit .s-on-track{background:var(--good)}.zsplit .s-behind{background:var(--ochre)}.zsplit .s-far-behind{background:var(--bad)}.zsplit .s-no-target,.zsplit i:not([class^=s-]){background:var(--muted);opacity:.55}
@@ -488,16 +489,18 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
    s.append(el('div',{class:'tiles kpi4'},tl('Target',fmtL(tg),`goal for ${mlabel(m)} (target cases × rate)`,'',hint('revtarget')),
     tl('Achieved so far',fmtL(so),`${pct(T.revenue_attainment)} of target · ${T.expected_revenue_change_pct!=null?sgnp(T.expected_revenue_change_pct).trim()+' vs the same working day of '+mlabel(mAdd(m,-1))+' · ':''}up to ${ddmm(B.as_of)}`,'',hint('achievement')),
     tl('Projection — month end',pj?fmtL(pj):'–',rg?`range ${fmtL(rg[0])}–${fmtL(rg[1])} · ${pct(ach)} of target`:'needs 2+ months of daily reports','',hint('projection')),
-    T.organic_revenue_to_date!=null?tl('Business-as-usual expectation',fmtL(T.organic_revenue_to_date),`so far → actual ${T.effort_revenue>=0?'+':'−'}${fmtL(Math.abs(T.effort_revenue||0))}${sgnp(T.effort_pct)}`,T.effort_revenue>=0?'good':'bad',hint('organic')):null,
+    T.organic_revenue_to_date!=null?tl('Business-as-usual expectation',fmtL(T.organic_revenue_to_date),`so far → actual ${T.effort_revenue>=0?'+':'−'}${fmtL(Math.abs(T.effort_revenue||0))}${sgnp(T.effort_pct)}${bauSupport(og)?' · from '+bauSupport(og,1):''}`,T.effort_revenue>=0?'good':'bad',hint('organic')):null,
+    B.pot&&B.pot.total&&B.pot.total.potential?tl('Potential per month',fmtL(B.pot.total.potential),`now ${pct(B.pot.total.penetration)} of it · ${nS(B.pot.total.clients,'client')} · ${fmt(B.pot.total.active_branches)} of ${fmt(potBr(B.pot.total))} branches active`,'',hint('bizpotential')):null,
     tl('Billed (finance)',fmtL(T.billed_in_progress),`${mlabel(Fi.billing_in_progress_month)} invoiced so far${ip!=null?' · '+pct(ip)+' of expected':''} · ${mlabel(Fi.last_complete_billing_month)} fully billed${cp!=null?' '+pct(cp)+' of expected':''}`,''),
     tl('Collected (finance)',fmtL(T.collected_current),`${mlabel(Fi.receipt_month)} to ${ddmm(Fi.receipts_through)} · outstanding ${fmtL(T.outstanding)} on ${ddmm(Fi.outstanding_as_of)}${una>0.2?' · ⚠ '+pct(una)+' not credited to one manager':''}`,'')))
    const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))});
-   [[4,'business'],[5,'cash']].forEach(([i,v])=>{if(kt[i])ddTile(kt[i],()=>{FV.view=v;go('collections')})})}
+   kt.forEach(t=>{const k=t.querySelector('.k').textContent;if(/^Billed/.test(k))ddTile(t,()=>{FV.view='business';go('collections')});else if(/^Collected/.test(k))ddTile(t,()=>{FV.view='cash';go('collections')});else if(/^Potential/.test(k))ddTile(t,()=>bizCtx(m,f,{focus:'potential'}))})}
   else{s.append(el('div',{class:'tiles kpi4'},tl('Target',fmt(tgtC)+' cases','goal for '+mlabel(m),'',hint('target')),
    tl('Achieved so far',fmt(ov.mtd_cases),`${pct(ov.achievement)} of target · up to ${ddmm(ov.as_of||'')}`,'',hint('achievement')),
    tl('Projection — month end',fc.available&&fc.curve_projection?fmt(fc.curve_projection):'–',fc.available&&fc.curve_range?`range ${fmt(fc.curve_range[0])}–${fmt(fc.curve_range[1])} · ${pct(fc.curve_achievement)} of target`:'needs 2+ months of daily reports','',hint('projection')),
-   og&&OT.organic_month!=null?tl('Business-as-usual expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Business-as-usual expectation — this selection')):null));
-   const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))})}
+   og&&OT.organic_month!=null?tl('Business-as-usual expectation',fmt(OT.organic_month),`so far ${fmt(OT.organic_to_date)} → actual ${OT.effort_to_date>=0?'+':'−'}${fmt(Math.abs(OT.effort_to_date))}${sgnp(OT.effort_pct)}${bauSupport(og)?' · from '+bauSupport(og,1):''}`,OT.effort_to_date>=0?'good':'bad',orgExplainRow(og,{...OT,group:'Total'},'Business-as-usual expectation — this selection')):null,
+   B&&B.pot&&B.pot.total&&B.pot.total.potential_cases?tl('Potential per month',fmt(B.pot.total.potential_cases)+' cases',`now ${pct(B.pot.total.current_cases/B.pot.total.potential_cases)} of it · ${nS(B.pot.total.clients,'client')} · ${fmt(B.pot.total.active_branches)} of ${fmt(potBr(B.pot.total))} branches active`,'',hint('bizpotential')):null));
+   const kt=s.querySelectorAll('.kpi4 .tile');['target','mtd','likely','organic'].forEach((x,i)=>{if(kt[i])ddTile(kt[i],()=>bizCtx(m,f,{focus:x}))});kt.forEach(t=>{if(/^Potential/.test(t.querySelector('.k').textContent))ddTile(t,()=>bizCtx(m,f,{focus:'potential'}))})}
   s.append(el('div',{class:'tools ovact',id:'ovActions'},el('button',{type:'button',class:'btn primary',onclick:()=>go('rca')},'Why? Root cause by zone, team and client →'),el('button',{type:'button',class:'btn',onclick:()=>go('present')},'Management summary (print / PDF) →'),
    S.role==='admin'?el('button',{type:'button',class:'btn',onclick:()=>go('adm_plan')},'⬇ Target sheet (admin)'):null));
   {const ab=el('div',{class:'card agbrief',id:'agentBrief',style:'margin:12px 0'});s.append(ab);agentBriefCard(ab)}
@@ -559,6 +562,7 @@ const CAUSE={on_track:['On track','good'],slowdown:['Business slowdown','bad'],s
 async function rcaData(m,f){const level=f.location_id?'client':f.zone_group?'location':'zone';
  const [D,RV,TT,LC,CV,BM]=await Promise.all([api('drill',{month:m,filters:f,level,p:{}}),api('drill_ops',{month:m,filters:f,level,part:'revenue'}),
   api('drill_ops',{month:m,filters:f,level,part:'tat'}).catch(()=>null),api('drill_ops',{month:m,filters:f,level,part:'lifecycle'}).catch(()=>null),api('drill_ops',{month:m,filters:f,level,part:'coverage'}).catch(()=>null),api('bm',{month:m,filters:f}).catch(()=>null)]);
+ const MP=await api('market_potential',{month:m,filters:f}).catch(()=>null);const pmap={};((MP&&(level==='zone'?MP.by_zone:level==='location'?MP.by_location:MP.by_client))||[]).forEach(x=>{pmap[String(level==='zone'?x.zone_group:level==='location'?x.location_id:x.client_family)]=x});
  const sh=BM&&!BM.error&&BM.partial&&BM.share_of_month_done>0?+BM.share_of_month_done:null;const proj=(mtd,lk)=>sh?mtd/sh:(BM&&BM.partial===false?mtd:(+lk||mtd));
  const by=(P)=>{const o={};((P&&P.children)||[]).forEach(c=>o[String(c.id)]=c);return o};const rv=by(RV),tt=by(TT),lc=by(LC),cv=by(CV);
  const kids=(D.children||[]).map(c=>{const id=String(c.id),r=rv[id]||{},t=(tt[id]||{}).case||{},l=lc[id]||{},v=cv[id]||{};
@@ -574,12 +578,13 @@ async function rcaData(m,f){const level=f.location_id?'client':f.zone_group?'loc
    if(cause==='stretch')act.push('Business is at or above its usual level: review the target — next month\'s target is set from what the team actually does (Planning → Targets)');
    if((+t.open_past_due||0)>=50)act.push(`Clear the ${fmt(t.open_past_due)} past-due cases (TAT & operations)`);
    if((+v.never_activated||0)>50&&cause!=='ahead')act.push('Activate never-active branches (Planning → Potential & branches)');
-   return{id,name:c.group,level,tgt,lik,mtd,org,gap,ach,vsB,vsL,cause,sig,act,cases:c,rev:r,tat:t,life:l,cov:v}});
+   const pp=pmap[id];if(pp&&pp.potential&&pp.penetration<0.5){const st=POTB.slice(1).map(([k,lb])=>[lb,+pp[k]||0]).sort((a,b)=>b[1]-a[1])[0];if(st&&st[1]>0)act.push(`Close the gap to potential (now ${pct(pp.penetration)}): largest part ${lc1(st[0])} ${fmtL(st[1])}`)}
+   return{id,name:c.group,level,tgt,lik,mtd,org,gap,ach,vsB,vsL,cause,sig,act,cases:c,rev:r,tat:t,life:l,cov:v,pot:pp?pp.potential:null,pnow:pp?pp.penetration:null,pact:pp?pp.active_branches:null,pbr:pp?potBr(pp):null}});
  const sel=RV.total||{},cs=D.selected||{};const T={tgt:+sel.target||0,mtd:+sel.mtd||0,org:+sel.organic||0};T.lik=proj(T.mtd,sel.likely);T.share=sh;T.gap=T.tgt-T.lik;T.vsB=T.org?T.mtd/T.org-1:null;
  const lfl=D.lfl||{};T.vsL=lfl.previous?(lfl.current-lfl.previous)/lfl.previous:null;T.ach=T.tgt?T.lik/T.tgt:null;T.ach0=T.tgt?T.mtd/T.tgt:null;
  const short=kids.filter(k=>k.gap>0),sumBy=c=>short.filter(k=>k.cause===c).reduce((a,k)=>a+k.gap,0);
  T.by={slowdown:sumBy('slowdown'),stretch:sumBy('stretch'),on_track:sumBy('on_track')};T.short=short.reduce((a,k)=>a+k.gap,0);T.over=kids.filter(k=>k.gap<0).reduce((a,k)=>a-k.gap,0);
- return{level,kids,T,D,RV,TT:TT&&TT.total,LC:LC&&LC.total,CV:CV&&CV.total,lfl}}
+ return{level,kids,T,D,RV,TT:TT&&TT.total,LC:LC&&LC.total,CV:CV&&CV.total,lfl,MP}}
 const vRca=guard(async s=>{const m=$('#fMonth').value;if(!RCA.f||RCA.base!==JSON.stringify(filters())){RCA.f=filters();RCA.base=JSON.stringify(RCA.f)}const f=RCA.f;
  s.append(el('h2',{},'Root cause — why'),el('p',{class:'lede'},'Where the gap to target sits and what is behind it: business slowdown (below its usual level), target stretch (business normal, target higher), branches lost, backlog. Open any row to go one level deeper. Money = expected revenue (Zonal Tracker cases × rate).'));
  const crumbs=el('div',{class:'tools crumbs'});const segs=[['Pan India',{}]];if(f.zone_group)segs.push([zoneLabel(f.zone_group),{zone_group:f.zone_group}]);if(f.location_id){const l=(S.meta.locations||[]).find(x=>+x.id===+f.location_id);segs.push([l?l.label:'Team',{...(f.zone_group?{zone_group:f.zone_group}:{}),location_id:f.location_id}])}
@@ -608,6 +613,7 @@ const vRca=guard(async s=>{const m=$('#fMonth').value;if(!RCA.f||RCA.base!==JSON
   {key:'name',label:LV[0].toUpperCase()+LV.slice(1),fmt:(v,r)=>lv==='client'?v:el('button',{type:'button',class:'linkbtn',title:'Why — one level deeper',onclick:e=>{e.stopPropagation();RCA.f=lv==='zone'?{zone_group:r.id}:{...f,location_id:+r.id};render()}},v+' ›')},
   {key:'tgt',label:'Target',num:1,fmt:fmtL},{key:'mtd',label:'So far',num:1,fmt:fmtL},{key:'lik',label:'Likely',num:1,fmt:fmtL},{key:'ach',label:'Likely % of target',num:1,fmt:v=>v==null?'–':el('span',{class:'chip '+(v>=.95?'good':v>=.8?'warn':'bad')},pct(v))},
   {key:'gap',label:'Gap',num:1,fmt:v=>v>0?el('span',{class:'bad'},fmtL(v)):v<0?el('span',{class:'good'},'+'+fmtL(-v)):'–'},{key:'vsL',label:'vs last month',num:1,fmt:pctS},{key:'vsB',label:'vs business as usual',num:1,fmt:pctS},
+  {key:'pot',label:'Potential per month',num:1,fmt:(v,r)=>v==null?'–':el('span',{},fmtL(v),el('span',{class:'note'},` · now ${pct(r.pnow)}`))},{key:'pact',label:'Branches active',num:1,fmt:(v,r)=>r.pbr?`${fmt(v)} of ${fmt(r.pbr)}`:'–',raw:r=>r.pbr?r.pact/r.pbr:null},
   {key:'cause',label:'Cause',fmt:v=>el('span',{class:'chip '+CAUSE[v][1]},CAUSE[v][0]),raw:r=>CAUSE[r.cause][0]},{key:'sig',label:'Signals',fmt:v=>v.join(' · ')||'–',raw:r=>r.sig.join('; ')},{key:'act',label:'What to do',fmt:v=>v.join(' · ')||'–',raw:r=>r.act.join('; ')}],
   {name:`root_cause_${m}.csv`,search:true,rowAction:r=>bizCtx(m,lv==='zone'?{zone_group:r.id}:lv==='location'?{...f,location_id:+r.id}:{...f,client_family:r.id})}));
  // operations and branches of the whole scope
@@ -616,7 +622,8 @@ const vRca=guard(async s=>{const m=$('#fMonth').value;if(!RCA.f||RCA.base!==JSON
   tile('Branches losing traction',fmt(LC.losing_traction),`of ${fmt(LC.branches_seen)} seen · ${fmt(LC.dormant)} dormant · ${fmt(LC.growing)} growing`),
   tile('Branch coverage (6 months)',pct(CV.coverage_6m),`${fmt(CV.active_6m)} active of ${fmt(CV.matchable)} · ${fmt(CV.never_activated)} never activated`),
   tile('Cases past due',fmt(TT.open_past_due),`${fmt(TT.open)} open · SLA met ${pct(TT.sla_met_pct)}`,(TT.open_past_due||0)>100?'warn':''),
-  tile('Median case TAT',TT.median!=null?TT.median+' h':'–',`P90 ${TT.p90!=null?TT.p90+' h':'–'}`)),
+  tile('Median case TAT',TT.median!=null?TT.median+' h':'–',`P90 ${TT.p90!=null?TT.p90+' h':'–'}`),
+  R.MP&&R.MP.total&&R.MP.total.potential?ddTile(tile('Potential per month',fmtL(R.MP.total.potential),`now ${pct(R.MP.total.penetration)} of it · gap ${fmtL(R.MP.total.headroom)} · ${potSupport(R.MP.total)}`),()=>bizCtx(m,f,{focus:'potential'}),'Potential per month'):null),
   el('details',{class:'note'},el('summary',{},'How the causes are decided'),el('p',{},'Gap = target − likely month end; likely month end = expected revenue so far ÷ the usual share of a month reached by this working day (the same projection as the Overview, Planning and the target sheet). Business slowdown = expected revenue so far more than 5% below its business-as-usual level (bi.organic_*). Target stretch = business within 5% of or above its usual level, but the likely month end is under 95% of target — the target asks more than the business normally does. On track = likely ≥ 95% of target. Signals: same point last month (cases), branches losing traction / dormant (Force1 branch lifecycle), cases past due and SLA (Force1), branch coverage (verified client branches). Sources: bi.api_drill, bi.api_drill_ops (revenue, tat, lifecycle, coverage).')));
 });
 
@@ -637,9 +644,9 @@ const vPresent=guard(async s=>{const m=$('#fMonth').value,f=filters();const scop
   el('li',{},T.gap>0?`Likely to finish at ${pct(T.ach)} of target — short by ${fmtL(T.gap)}.`:`On course to beat target (${pct(T.ach)}).`),
   T.short?el('li',{},`Cause of the shortfall: business slowdown ${fmtL(T.by.slowdown)} (${top.filter(k=>k.cause==='slowdown').length} ${LV.toLowerCase()}s below their usual level) · target stretch ${fmtL(T.by.stretch)} (${top.filter(k=>k.cause==='stretch').length} ${LV.toLowerCase()}s at their usual level, target higher).`):'',
   top.length?el('li',{},`Biggest gaps: ${top.slice(0,5).map(k=>`${k.name} ${fmtL(k.gap)}`).join(' · ')}.`):'',
-  PL&&(PL.quarters||[])[0]?el('li',{},`${PL.quarters[0].label}: plan ${fmtL(PL.quarters[0].plan)}, outlook ${fmtL(PL.quarters[0].outlook)} (${sL(PL.quarters[0].outlook-PL.quarters[0].plan)}); needs ${fmtL(PL.quarters[0].needed_per_workday)} a working day vs ${fmtL(PL.quarters[0].pace_per_workday)} now.`):'',
+  PL&&(PL.quarters||[])[0]?el('li',{},`${PL.quarters[0].label}: plan ${fmtL(PL.quarters[0].plan)}, likely ${fmtL(PL.quarters[0].outlook)} (${sL(PL.quarters[0].outlook-PL.quarters[0].plan)}); needs ${fmtL(PL.quarters[0].needed_per_workday)} a working day vs ${fmtL(PL.quarters[0].pace_per_workday)} now.`):'',
   SH&&!SH.error&&SH.totals?el('li',{},`Next month (${mlabel(SH.month)}): target ${fmtL(SH.totals.tgt_rev)} · ${fmt(SH.totals.tgt_cases)} cases (${pctS(SH.totals.lm_rev?SH.totals.tgt_rev/SH.totals.lm_rev-1:null)} on last month) — ${Object.entries(SH.totals.situations||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${SITL[k]||k} ${v}`).join(', ')}.`):'',
-  MP&&MP.total?el('li',{},`Potential: ${fmtL(MP.total.potential)} a month from all branches of active clients; ${pct(MP.total.penetration)} captured today.`):'')));
+  MP&&MP.total?el('li',{},`Potential: ${fmtL(MP.total.potential)} a month from ${fmt(potBr(MP.total))} branches of ${nS(MP.total.clients,'active client')} (${fmt(MP.total.active_branches)} active today); current business ${fmtL(MP.total.current)} is ${pct(MP.total.penetration)} of it by value — gap ${fmtL(MP.total.headroom)}, mostly ${(()=>{const p=POTB.slice(1).map(([k,l])=>[l,+MP.total[k]||0]).sort((a,b)=>b[1]-a[1]);return p.slice(0,2).map(([l,v])=>lc1(l)+' '+fmtL(v)).join(' and ')})()}.`):'')));
  // 2. by zone / team
  s.append(el('div',{class:'pres-sec'},el('h3',{},`2 · ${LV}s — where the gap is and why`),el('table',{class:'pres-t'},el('thead',{},el('tr',{},...[LV,'Target','So far','Likely %','Gap','vs LM','vs BAU','Cause','What to do'].map((h,i)=>el('th',{class:i&&i<7?'num':''},h)))),
   el('tbody',{},Rz.kids.slice().sort((a,b)=>b.gap-a.gap).slice(0,16).map(k=>el('tr',{},el('td',{},k.name),el('td',{class:'num'},fmtL(k.tgt)),el('td',{class:'num'},fmtL(k.mtd)),el('td',{class:'num'},el('span',{class:'chip '+(k.ach>=.95?'good':k.ach>=.8?'warn':'bad')},pct(k.ach))),
@@ -729,6 +736,7 @@ function ztCols(J){const m=J.report_month,c=[];
  if(ZT.show.sf)c.push({k:'sf',h:'Shortfall',n:1,red:1});
  c.push({k:'d',h:ddmm(J.snapshot),n:1,grp:'Daily Counts',daily:1});
  if(ZT.show.dr)c.push({k:'dr',h:'Revenue\nadded',n:1,grp:'Daily Counts'});
+ if(ZT.show.pot)c.push({k:'pot',h:'Potential\nper month',n:1,grp:'Potential'+(J.pot&&J.pot.month?` (${monShort(J.pot.month)} basis)`:'')},{k:'ppr',h:'Now % of\npotential',p:1,blank:1,grp:'Potential'+(J.pot&&J.pot.month?` (${monShort(J.pot.month)} basis)`:'')},{k:'pbr',h:'Branches\nactive / all',txt:1,grp:'Potential'+(J.pot&&J.pot.month?` (${monShort(J.pot.month)} basis)`:'')});
  if(ZT.show.org&&J.organic)c.push({k:'org',h:'BAU\nmonth',n:1,grp:'BAU (cases)'},{k:'otd',h:'BAU\nso far',n:1,grp:'BAU (cases)',orgq:1},{k:'ovs',h:'Actual vs\norganic',n:1,grp:'BAU (cases)',delta:1});
  if(J.compare_snapshot){const g='Compare: '+ddmm(J.compare_snapshot);c.push({k:'cm',h:'MTD',n:1,grp:g},{k:'dd',h:'Δ cases',n:1,grp:g,delta:1},{k:'dp',h:'Δ %',grp:g,dp:1})}
  (J.history_months||[]).forEach(mm=>{const mo=mm+'-01',g=monLong(mo);c.push({k:'h:'+mm+':0',h:'Actual\nMTD',n:1,grp:g},{k:'h:'+mm+':1',h:'Actual\nRevenue',n:1,grp:g},{k:'h:'+mm+':2',h:`Actual Billing\nAmount ${monShort(mo)}`,n:1,grp:g})});
@@ -777,16 +785,31 @@ function ztRender(host,J,model){host.innerHTML='';const cols=ztCols(J);const grp
   cols.slice(2).forEach(c=>{let v=ztVal(x,c.k),txt='',cls=c.n||c.p?'num':'';
    if(c.bar){const a2=x.ach==null?0:Math.max(0,Math.min(x.ach,1.5));txt=a2>0?'█'.repeat(Math.max(1,Math.round(a2*20))):'';cls='bar'}
    else if(c.txt){txt=v||'';cls='bmc'}
-   else if(c.p)txt=v==null?'0%':zp(v);else if(c.dp)txt=v==null?'':(v>=0?'+':'')+(v*100).toFixed(1)+'%';else txt=c.delta&&v>0?'+'+zn(v):zn(v);
+   else if(c.p)txt=v==null?(c.blank?'':'0%'):zp(v);else if(c.dp)txt=v==null?'':(v>=0?'+':'')+(v*100).toFixed(1)+'%';else txt=c.delta&&v>0?'+'+zn(v):zn(v);
    if((c.red&&v<0)||((c.neg||c.delta||c.dp)&&v<0))cls+=' neg';if(c.delta&&v>0||c.dp&&v>0)cls+=' pos';
    const td=el('td',{class:cls},txt);
    if(c.orgq&&x.org!=null){const oc=ztOrgCell(J,x,'otd');if(oc)td.append(' ',oc.ex)}
    if(x.t==='leaf'&&x.rate&&(c.k==='rev'||c.k==='rtgt'))td.title=`Rate ₹${zn(x.rate)} per case`;
+   if(x.ptip&&(c.k==='pot'||c.k==='ppr'||c.k==='pbr'))td.title=x.ptip;
    tr.append(td)});
   {const cx=ztCtx(x,J,filters());if(cx)ddRow(tr,()=>cx)}
   tb.append(tr)});
  t.append(tb);host.append(el('div',{class:'zt-wrap'},t))}
 
+/* wave 107: potential next to every tracker row — team × client family (shown on the first row of a family in its team; the others point to it), team, zone and Pan India totals */
+function ztPotApply(model,P){if(!P||P.error)return;const L=S.meta.locations||[],lz={};L.forEach(l=>lz[l.id]=l.zone_group);
+ const pr={},pz={};(P.by_pair||[]).forEach(([lid,fam,pot,cur,act,br])=>{pr[lid+'|'+fam]={pot,cur,act,br};const k=lz[lid]+'|'+fam;const z=pz[k]=pz[k]||{pot:0,cur:0,act:0,br:0};z.pot+=pot;z.cur+=cur;z.act+=act;z.br+=br});
+ const bl={},bz={};(P.by_location||[]).forEach(r=>{if(r.location_id)bl[r.location_id]={pot:r.potential,cur:r.current,act:r.active_branches,br:r.branches,cl:r.clients}});(P.by_zone||[]).forEach(r=>{bz[r.zone_group]={pot:r.potential,cur:r.current,act:r.active_branches,br:r.branches,cl:r.clients}});
+ const T=P.total||{},seen={},fb={};model.forEach(x=>{if(x.kind==='row'&&x.t==='leaf'){const fam=famOf(x.cc||x.cli);if(fam)(fb[x.blk]=fb[x.blk]||new Set()).add(fam)}});
+ const miss=(lid,blk)=>{const have=fb[blk]||new Set();const m=(P.by_pair||[]).filter(r=>r[0]===lid&&!have.has(r[1])).sort((a,b)=>b[2]-a[2]);return{v:m.reduce((a,r)=>a+r[2],0),n:m.map(r=>r[1])}};
+ const put=(x,v,tip)=>{if(!v||!v.pot){x.pot=null;x.ppr=null;x.pbr='';return}x.pot=Math.round(v.pot);x.ppr=v.pot?v.cur/v.pot:null;x.pbr=`${zn(v.act)} / ${zn(v.br)}`;x.ptip=tip||''};
+ model.forEach(x=>{if(x.kind!=='row')return;const lid=x.lid||((L.find(l=>l.label===x.loc)||{}).id);
+  if(x.t==='leaf'){const fam=famOf(x.cc||x.cli);const v=lid&&fam?pr[lid+'|'+fam]:null;const k=x.blk+'|'+fam;
+   if(v&&seen[k]){x.pot=null;x.ppr=null;x.pbr='″';x.ptip=`Same client family (${fam}) as the row above: its potential is shown once per team`;return}if(v)seen[k]=1;put(x,v,v?`${fam} in this team: potential ₹${zn(Math.round(v.pot))} a month, current ₹${zn(Math.round(v.cur))}; ${v.act} of ${v.br} branches active`:'');return}
+  if(x.t==='location_total'&&!x.zoneLevel){const v=bl[lid],ms=v?miss(lid,x.blk):null;put(x,v,v?`${v.cl} clients · ${v.act} of ${v.br} branches active`+(ms&&ms.v>0?` · includes ₹${zn(Math.round(ms.v))} from clients with no row in this team yet (${ms.n.slice(0,4).join(', ')}${ms.n.length>4?' …':''}) — Crux has them elsewhere`:''):'');return}
+  if(x.t==='zone_client_rollup'){const a=entityFilter('zone',x.z),fam=famOf(x.cc||x.cli);put(x,a&&fam?pz[a.zone_group+'|'+fam]:null);return}
+  const lab=(x.t==='summary'?x.loc:x.z||x.loc)||'';if(x.t==='summary'&&/^pan india$/i.test(lab.trim())){put(x,{pot:T.potential,cur:T.current,act:T.active_branches,br:T.branches},`${T.clients} clients · ${T.active_branches} of ${T.branches} branches active`);return}
+  if(['zone_total','location_total','summary'].includes(x.t)){const a=entityFilter('zone',lab.trim());const v=a&&a.zone_group?bz[a.zone_group]:null;put(x,v,v?`${v.cl} clients · ${v.act} of ${v.br} branches active`:'')}})}
 function ztExport(J,model){if(!window.XLSX){alert('Excel library not loaded.');return}const cols=ztCols(J);const rows=ztSortRows(model).filter(ztVisible);
  const aoa=[cols.map(c=>(c.grp?c.grp+' — ':'')+c.h.replace(/\n/g,' ').replace(' ⓘ',''))];
  rows.forEach(x=>{if(x.kind==='sec'){aoa.push([x.title]);return}if(x.kind==='zh'){aoa.push([x.z]);return}const[a,b]=ztLabels(x);
@@ -822,12 +845,12 @@ const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const dail
  const xBtn=el('button',{class:'btn'},'Export to Excel'),fsBtn=el('button',{class:'btn'},'⤢ Full screen');
  const info=el('div',{class:'note'});const host=el('div');const notes=el('details',{class:'note'},el('summary',{},'How this view is built'));
  const panel=el('div',{class:'zt-panel'},el('div',{class:'tools'},el('label',{},'Report date ',pick),el('label',{},'Compare ',cmpSel,cmpDate),el('label',{},'History ',histSel),lvlBtns,search),
-  el('div',{class:'tools'},chk('bm','Branch manager','Branch manager mapped on the report date (Admin → Master data & mapping)'),chk('rev','Revenue'),chk('bd','BD revenue'),chk('sf','Shortfall'),chk('dr','Daily revenue'),chk('org','BAU','Business-as-usual expectation per row, with the calculation behind each figure'),
+  el('div',{class:'tools'},chk('bm','Branch manager','Branch manager mapped on the report date (Admin → Master data & mapping)'),chk('rev','Revenue'),chk('bd','BD revenue'),chk('sf','Shortfall'),chk('dr','Daily revenue'),chk('org','BAU','Business-as-usual expectation per row, with the calculation behind each figure'),chk('pot','Potential','Potential per month for each team × client family, how much of it is reached now (by value) and branches active of all — latest potential run'),
    el('label',{class:'chk'},zeroCb,' Hide zero rows'),xBtn,fsBtn),info,host,notes);
  tbx.sheet.append(panel);
  let J=null,model=null;
  const cmpTarget=()=>{const d=pick.value;if(ZT.cmp==='prev'){const i=snaps.indexOf(d);return i>0?snaps[i-1]:addMonths(d,-1)}if(ZT.cmp==='lm')return addMonths(d,-1);if(ZT.cmp==='ly')return addMonths(d,-12);if(ZT.cmp==='custom')return ZT.cmpDate||null;return null};
- function draw(){if(!J)return;ztRender(host,J,model);
+ function draw(){if(!J)return;if(ZT.show.pot&&!J.pot&&!J._potL){J._potL=1;api('market_potential',{month:J.report_month,filters:f}).then(P=>{J.pot=P;ztPotApply(model,P);draw()}).catch(()=>{J.pot={error:1};draw()})}ztRender(host,J,model);
   info.textContent=`Report date ${ddmm(J.snapshot)}`+(J.prev_snapshot?` · daily count vs ${ddmm(J.prev_snapshot)}`:' · first report of the month (daily = month-to-date)')+(J.compare_snapshot?` · compared with ${ddmm(J.compare_snapshot)}`+(J.requested_compare&&J.requested_compare!==J.compare_snapshot?` (nearest report on or before ${ddmm(J.requested_compare)})`:''):'')+(Object.keys(J.filters||{}).length?' · filtered: totals cover the filtered locations and clients only':'');
   lvlBtns.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===ZT.level))}
  async function load(){host.innerHTML='';host.append(el('p',{class:'note'},'Loading tracker…'));
@@ -1562,7 +1585,7 @@ async function dbHealthUI(s){const H=await adminCall('db_health',{});const mb=b=
 /* ---------- Revenue now (business · billing · collection) and branch managers ---------- */
 const bmData=(m,f,mgr)=>Promise.all([api('bm',{month:m,filters:f,...(mgr?{p:{manager:mgr}}:{})}),mgr?null:api('market_potential',{month:m,filters:f}).catch(()=>null)]).then(([B,P])=>{
  /* wave 101b: potential per branch manager (latest potential run, each team × client under the manager mapped at that date) */
- if(B&&!B.error&&P&&Array.isArray(P.by_bm)){const pm={};P.by_bm.forEach(x=>pm[x.manager]=x);(B.managers||[]).forEach(r=>{const x=pm[r.manager];if(x){r.potential=x.potential;r.pot_captured=x.penetration;r.pot_headroom=x.headroom}});B.potential_month=P.month}return B});
+ if(B&&!B.error&&P&&Array.isArray(P.by_bm)){const pm={};P.by_bm.forEach(x=>pm[x.manager]=x);(B.managers||[]).forEach(r=>{const x=pm[r.manager];if(x){r.potential=x.potential;r.pot_captured=x.penetration;r.pot_headroom=x.headroom;r.pot_branches=x.branches;r.pot_active=x.active_branches;r.pot_clients=x.clients}});B.potential_month=P.month}if(B&&!B.error&&P)B.pot=P;return B});
 const bmCtx=(mgr,m,f)=>({kind:'bm',title:mgr,mgr,m,f:{...f}});
 const rcptUna=B=>{const Fi=B.finance||{},T=B.total||{};const u=(Fi.unallocated||{})['collected_'+String(Fi.receipt_month||'').slice(0,7).replace('-','_')]||0;return T.collected_current>0?u/T.collected_current:0};
 const mAdd=(m,k)=>{const d=new Date(String(m).slice(0,10)+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+k);return d.toISOString().slice(0,10)};
@@ -1580,7 +1603,7 @@ function bmTable(box,B,m,f,opt={}){const Fi=B.finance||{};const R=(B.managers||[
    {key:'pace_gap',label:'vs pace needed today',num:1,fmt:v=>v==null?'–':chgEl(v,null,true),raw:r=>r.pace_gap},
    {key:'revenue_change_pct',label:B.partial?'vs same day last month':'vs last month',num:1,fmt:(v,r)=>r.revenue_change==null?'–':chgEl(r.revenue_change,v,true),raw:r=>r.revenue_change_pct},
    {key:'effort_pct',label:'Effort vs business as usual',num:1,fmt:v=>v==null?'–':el('span',{class:v>0.05?'good':v<-0.05?'bad':''},pctS(v)),raw:r=>r.effort_pct},
-   {key:'potential',label:'Potential per month'+(B.potential_month?` (${mlabel(B.potential_month)} basis)`:''),num:1,fmt:fmtL},{key:'pot_captured',label:'Captured of potential',num:1,fmt:v=>v==null?'–':sbar(v,pct(v)+' of the potential is current business')},{key:'pot_headroom',label:'Headroom to potential',num:1,fmt:fmtL},
+   {key:'potential',label:'Potential per month'+(B.potential_month?` (${mlabel(B.potential_month)} basis)`:''),num:1,fmt:fmtL},{key:'pot_captured',label:'Now, % of potential',num:1,fmt:v=>v==null?'–':sbar(v,'current business is '+pct(v)+' of the potential (by value)')},{key:'pot_headroom',label:'Gap to potential',num:1,fmt:fmtL},{key:'pot_active',label:'Branches active',num:1,fmt:(v,r)=>r.pot_branches?`${fmt(v)} of ${fmt(r.pot_branches)}`:'–',raw:r=>r.pot_branches?r.pot_active/r.pot_branches:null},{key:'pot_clients',label:'Clients (potential)',num:1,fmt:fmt},
    {key:'cases',label:'Cases',num:1,fmt:fmt},
    {key:'billing_ratio',label:`Billed ÷ expected ${mlabel(Fi.last_complete_billing_month)}`,num:1,fmt:(v,r)=>v==null?'–':el('span',{title:r.billed_complete_allocated?`${fmtL(r.billed_complete_allocated)} of ${fmtL(r.billed_complete)} from zone-level invoices (location not identified; the zone has only this manager for that client)`:`${fmtL(r.billed_complete)} billed`},pct(v)+(r.billed_complete_allocated?' *':''))},
    ...(ip?[{key:'billing_progress_ratio',label:`${mlabel(ip)} billed so far`,num:1,fmt:pct}]:[]),
@@ -1816,25 +1839,59 @@ const stLabel=v=>ST[v]||v;
 const POTG=[['current','Current business','var(--blue)'],['recover','Back to own best','#3E8EA8'],['dormant','Reactivate dormant branches','#2D7A57'],['never_served','Never-active branches of clients the team serves','var(--ochre)'],['extend_team','Clients Crux has, team not serving them yet','#8A6D3B'],['extend_no_team','Clients Crux has, area with no Crux team yet','#6B5CA5'],['new_client','New clients (no Crux business yet)','#B23A30']];
 const POTL=Object.fromEntries(POTG.map(([k,l])=>[k,l]));
 function sbar(v,t){return v==null?'–':el('span',{class:'dbar',style:`--w:${Math.max(0,Math.min(100,v*100)).toFixed(1)}%`,title:t||pct(v)},pct(v))}
+/* wave 107 (D317–D319): potential and business as usual always come with what stands behind them, and the gap to potential is explained where it is shown */
+const nS=(n,w)=>`${fmt(n)} ${w}${+n===1?'':'s'}`;
+const potBr=T=>T?(T.branches!=null?+T.branches:(+T.active_branches||0)+(+T.dormant_branches||0)+(+T.never_branches||0)):0;
+function potSupport(T){return T&&T.potential?`${T.clients!=null?nS(T.clients,'client')+' · ':''}${fmt(potBr(T))} branches, ${fmt(T.active_branches)} active`:''}
+function potNow(T){return T&&T.potential?`now ${pct(T.penetration)} of it (by value)`:''}
+function bauSupport(O,short){const t=O&&(O.total||O);return t&&t.clients!=null?`${nS(t.clients,'client')} · ${nS(t.teams,'team')}${short?'':` · ${fmt(t.lines)} team × client lines`}`:''}
+const lc1=x=>String(x||'').charAt(0).toLowerCase()+String(x||'').slice(1);
+const POTB=[['current','Current business (full month)','active_branches','clients_current','branches active (a Force1 case in the last 3 months)'],
+ ['recover','Back to own best','recover_pairs','clients_recover','team × client lines below their own best three months since Apr-2024'],
+ ['dormant','Reactivate dormant branches','dormant_branches','clients_dormant','branches with cases since Jan-2026 but none in the last 3 months'],
+ ['never_served','Never-active branches of clients the team serves','never_served_branches','clients_never_served','branches with no Force1 case since Jan-2026'],
+ ['extend_team','Clients Crux has, not yet served by the local team','extend_team_branches','clients_extend_team','branches here of clients Crux serves elsewhere'],
+ ['extend_no_team','Clients Crux has, area with no Crux team yet','extend_no_team_branches','clients_extend_no_team','branches in districts no Crux team covers'],
+ ['new_client','New clients (no Crux business yet)','new_client_branches','clients_new_client','banks to empanel first']];
+/* the bridge: current business → each source of the gap (with its branches and clients) → potential; plus "so far → full month" and the biggest pieces */
+function potBridge(P,T,{asOf}={}){T=T||(P&&P.total)||{};if(!T.potential)return el('p',{class:'note'},'No potential figure for this selection.');
+ const sh=+((P&&P.inputs)||{}).share_to_date||null,soFar=sh&&sh<1?Math.round(T.current*sh):null,gap=T.headroom||0,tot=T.potential;
+ const cnt=(k,unit)=>T[k]==null?'–':unit==='lines'?nS(T[k],'line'):fmt(T[k]);
+ const rows=POTB.filter(([k])=>k==='current'||(+T[k]||0)>0).map(([k,l,bk,ck,what],i)=>el('tr',{class:k==='current'?'total':'delta','data-pk':k},
+   el('th',{scope:'row'},(i?'+ ':'')+l,el('div',{class:'note'},what)),el('td',{class:'num'},fmtL(T[k]||0)),el('td',{class:'num'},k==='recover'?cnt(bk,'lines'):cnt(bk)),
+   el('td',{class:'num'},T[ck]==null?'–':fmt(T[ck])),el('td',{class:'num'},pct((+T[k]||0)/tot))));
+ rows.push(el('tr',{class:'total','data-pk':'potential'},el('th',{scope:'row'},'= Potential per month'),el('td',{class:'num'},fmtL(tot)),el('td',{class:'num'},fmt(potBr(T))),el('td',{class:'num'},T.clients==null?'–':fmt(T.clients)),el('td',{class:'num'},'100%')));
+ const parts=POTB.slice(1).map(([k,l,bk,ck])=>({k,l,v:+T[k]||0,b:T[bk],c:T[ck]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+ const big=parts.slice(0,2).map(x=>`${lc1(x.l)} ${fmtL(x.v)}${x.k==='recover'?'':x.b!=null?` (${fmt(x.b)} branches${x.c!=null?' of '+nS(x.c,'client'):''})`:''}`).join('; ');
+ const brShare=potBr(T)?T.active_branches/potBr(T):null;
+ const cl=((P&&P.by_client)||[]).filter(x=>(+x.headroom||0)>0).sort((a,b)=>b.headroom-a.headroom).slice(0,3).map(x=>{const top=POTB.slice(1).map(([k,l])=>[k,l,+x[k]||0]).sort((a,b)=>b[2]-a[2])[0];
+   return `${x.client_family} ${fmtL(x.headroom)}${top&&top[2]>0?' (mostly '+lc1(top[1])+')':''}`});
+ return el('div',{class:'potbridge'},
+  el('p',{},soFar!=null?`Current business ${fmtL(T.current)} = ${fmtL(soFar)} so far${asOf?` (to ${ddmm(asOf)})`:''} ÷ ${pct(sh)}, the share of a month's business normally done by this working day. It is ${pct(T.penetration)} of the potential ${fmtL(tot)} by value; the gap is ${fmtL(gap)}.`
+    :`Current business ${fmtL(T.current)} is ${pct(T.penetration)} of the potential ${fmtL(tot)} by value; the gap is ${fmtL(gap)}.`),
+  el('table',{class:'bridge potb'},el('thead',{},el('tr',{},el('th',{scope:'col'},'Step'),el('th',{scope:'col',class:'num'},'₹ a month'),el('th',{scope:'col',class:'num'},'Branches'),el('th',{scope:'col',class:'num'},'Clients'),el('th',{scope:'col',class:'num'},'Share'))),el('tbody',{},rows)),
+  el('p',{},`Why the gap: ${big||'—'}.`+(brShare!=null?` By branches, ${fmt(T.active_branches)} of ${fmt(potBr(T))} (${pct(brShare)}) are active — the share by value is higher because the busiest branches are already active, while each inactive branch is valued at a typical (median) active branch of the same client.`:'')),
+  cl.length?el('p',{},`Largest gaps by client: ${cl.join(' · ')}.`):null,
+  el('p',{class:'note'},'Potential = what every verified branch of our active clients could bring a month if it did business like a typical active branch of the same client (indicative, not a forecast). Business as usual is different: the trend of the business we already have.'))}
 async function potentialCard(box,m,f,{compact=false}={}){
  box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Potential — all client branches')));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let P,O=null;try{P=await api('market_potential',{month:m,filters:f});O=await api('organic',{month:P.month,filters:f,group:'total',measure:'revenue'}).catch(()=>null)}catch(e){msg.textContent='Potential unavailable: '+e.message;return}
  msg.remove();const T=P.total||{};if(!box.isConnected)return;if(!T.potential){box.append(el('p',{class:'note'},'No potential figure for this selection.'));return}
- LIVE.bizpotential=()=>[`${mlabel(P.month)} basis, this selection: potential ${fmtL(T.potential)} = current ${fmtL(T.current)} + back to own best ${fmtL(T.recover)} + dormant ${fmtL(T.dormant)} + never-active ${fmtL(T.never_served)} + clients to more teams ${fmtL(T.extend_team)} + areas with no team ${fmtL(T.extend_no_team)} + new clients ${fmtL(T.new_client)}.`,`Captured: ${pct(T.penetration)} (current ÷ potential) · headroom ${fmtL(T.headroom)}.`];
+ LIVE.bizpotential=()=>[`${mlabel(P.month)} basis, this selection: potential ${fmtL(T.potential)} = current ${fmtL(T.current)} + back to own best ${fmtL(T.recover)} + dormant ${fmtL(T.dormant)} + never-active ${fmtL(T.never_served)} + clients to more teams ${fmtL(T.extend_team)} + areas with no team ${fmtL(T.extend_no_team)} + new clients ${fmtL(T.new_client)}.`,`Current business = ${pct(T.penetration)} of the potential (by value) · gap to potential ${fmtL(T.headroom)} · ${potSupport(T)}.`];
  const near=(T.current||0)+(T.recover||0)+(T.dormant||0)+(T.never_served||0),org=O&&O.total?O.total.organic_month:null;
- box.append(el('p',{class:'note'},`Monthly revenue, ${mlabel(P.month)} basis (tracker to ${ddmm(P.as_of)}, projected to month end) · ${fmt(T.active_branches+T.dormant_branches+T.never_branches)} client branches: ${fmt(T.active_branches)} active, ${fmt(T.dormant_branches)} dormant, ${fmt(T.never_branches)} never active.`),
-  el('div',{class:'tiles kpi4'},tile('Potential per month',fmtL(T.potential),`${fmt(T.potential_cases)} cases · if every branch did business like a typical active branch of the same client`),
-   tile('Current business',fmtL(T.current),`${pct(T.penetration)} of the potential · ${fmt(T.current_cases)} cases`),
-   tile('Business-as-usual expectation',fmtL(org),'trend of the current business only — what comes if nothing changes'),
+ box.append(el('p',{class:'note'},`Monthly revenue, ${mlabel(P.month)} basis (tracker to ${ddmm(P.as_of)}, projected to month end) · ${fmt(T.active_branches+T.dormant_branches+T.never_branches)} client branches of ${nS(T.clients,'client')}: ${fmt(T.active_branches)} active, ${fmt(T.dormant_branches)} dormant, ${fmt(T.never_branches)} never active.`),
+  el('div',{class:'tiles kpi4'},tile('Potential per month',fmtL(T.potential),`${fmt(T.potential_cases)} cases · ${potSupport(T)} · if every branch did business like a typical active branch of the same client`),
+   tile('Current business',fmtL(T.current),`now ${pct(T.penetration)} of the potential (by value) · ${fmt(T.active_branches)} active branches · ${fmt(T.current_cases)} cases`),
+   tile('Business-as-usual expectation',fmtL(org),`trend of the current business only — what comes if nothing changes${O?' · '+bauSupport(O):''}`),
    tile('Reachable with existing clients and teams',fmtL(near),`current + back to best + dormant + never-active branches of clients each team already serves (${pct(near/T.potential)})`)),
-  strip(POTG.map(([k,l,c])=>({k:l,v:T[k]||0,col:c})),'Potential by source',fmtL),
+  strip(POTG.map(([k,l,c])=>({k:l,v:T[k]||0,col:c})),'Potential by source',fmtL),el('h4',{},'From current business to potential — and why the gap'),potBridge(P,T,{asOf:P.as_of}),
   el('details',{class:'note'},el('summary',{},'Potential and business as usual'),
    el('p',{},`Business as usual (${fmtL(org)} for ${mlabel(P.month)}) asks: what will the business we already have bring if nothing changes? It is projected from our own recent months, so it can never show business we have not started. It is the yardstick for effort (actual − business as usual).`),
    el('p',{},`Potential (${fmtL(T.potential)}) asks: how much could all our clients' branches bring? Every verified branch, active or not, is valued at what a typical active branch of the same client gives today. The difference from current business (${fmtL(T.headroom)}) is the business-development headroom: ${fmtL(T.recover)} by getting each location × client back to its best three months, ${fmtL(T.dormant)} by reactivating branches that stopped, ${fmtL(T.never_served)} from branches of clients the team already serves, ${fmtL((T.extend_team||0)+(T.extend_no_team||0))} by taking clients we already have to more teams or areas${T.no_team_branches?` (${fmt(T.no_team_branches)} branches are in areas with no Crux team yet)`:''}, ${T.new_client>0?`and ${fmtL(T.new_client)} from banks with no Crux business yet`:'and nothing from clients with no Crux business'}. Clients with no business anywhere in India in the last three months${((P.inputs||{}).inactive_clients||[]).length?' ('+P.inputs.inactive_clients.join(', ')+')':''} are left out of potential and targets.`),
    el('p',{},P.method)));
  if(compact){box.append(el('div',{class:'tools'},el('button',{class:'btn',onclick:()=>{S.planTab='potential';go('planning')}},'Potential by zone, team, client and the top branches →')));return}
- const cols=lead=>[...lead,...POTG.map(([k,l])=>({key:k,label:l,num:1,fmt:fmtL})),{key:'potential',label:'Potential',num:1,fmt:fmtL},{key:'penetration',label:'Current ÷ potential',num:1,fmt:v=>sbar(v,pct(v)+' of the potential is current business')},{key:'never_branches',label:'Never-active branches',num:1,fmt:fmt},{key:'dormant_branches',label:'Dormant branches',num:1,fmt:fmt},{key:'no_team_branches',label:'Branches with no team',num:1,fmt:fmt}];
- const hide=['recover','dormant','extend_no_team','dormant_branches','no_team_branches'];
+ const cols=lead=>[...lead,...POTG.map(([k,l])=>({key:k,label:l,num:1,fmt:fmtL})),{key:'potential',label:'Potential',num:1,fmt:fmtL},{key:'penetration',label:'Now, % of potential',num:1,fmt:v=>sbar(v,'current business is '+pct(v)+' of the potential (by value)')},{key:'headroom',label:'Gap to potential',num:1,fmt:fmtL},{key:'clients',label:'Clients',num:1,fmt:fmt},{key:'branches',label:'Branches',num:1,fmt:fmt},{key:'active_branches',label:'Active branches',num:1,fmt:fmt},{key:'never_branches',label:'Never-active branches',num:1,fmt:fmt},{key:'dormant_branches',label:'Dormant branches',num:1,fmt:fmt},{key:'no_team_branches',label:'Branches with no team',num:1,fmt:fmt}];
+ const hide=['recover','dormant','extend_no_team','dormant_branches','no_team_branches','headroom'];
  const tsel=el('div',{class:'seg',role:'group','aria-label':'Potential breakdown'}),host=el('div');let cur='zone';
  const views={zone:['By zone',()=>table((P.by_zone||[]).map(r=>({...r,zone:zoneLabel(r.zone_group)})),cols([{key:'zone',label:'Zone'}]),{name:'potential_by_zone.csv',defaultHidden:hide,rowAction:r=>r.zone_group?bizCtx(P.month,{...f,zone_group:r.zone_group}):null})],
   location:['By team',()=>table((P.by_location||[]).map(r=>({...r,zone:zoneLabel(r.zone_group)})),cols([{key:'location',label:'Team (location)'},{key:'zone',label:'Zone'}]),{name:'potential_by_team.csv',defaultHidden:hide,rowAction:r=>r.location_id?bizCtx(P.month,{...f,location_id:r.location_id}):null})],
@@ -1857,7 +1914,7 @@ function waterfall(cv,items,{fmtV=fmtL}={}){const c=C();let run=0;const data=[],
 function bridgeTable(items){return el('table',{class:'bridge'},el('tbody',{},items.map(it=>el('tr',{class:it.kind},el('th',{scope:'row'},it.label),el('td',{class:'num'},it.kind==='total'?fmtL(it.value):sL(it.value))))))}
 function qcard(q){const gap=q.needed_vs_pace;return el('div',{class:'card qplan','data-q':q.quarter},el('h4',{style:'margin:0 0 6px'},`${q.label} (${mlabel(q.from)} – ${mlabel(q.to)}) · ${q.quarter==='this'?'this quarter':'next quarter'}`),
   el('div',{class:'tiles'},tile('Plan',fmtL(q.plan),'sum of the monthly plan'),
-   tile('Outlook',fmtL(q.outlook),q.actual_to_date>0?`${fmtL(q.actual_to_date)} actual so far + forecast for the rest`:'forecast at the current pace'),
+   tile('Likely for the quarter',fmtL(q.outlook),q.actual_to_date>0?`${fmtL(q.actual_to_date)} actual so far + ${fmtL(Math.max(0,q.outlook-q.actual_to_date))} expected at the current pace`:'expected at the current pace'),
    tile(q.delta>=0?'Ahead of plan':'Shortfall',fmtL(Math.abs(q.delta)),`${pctS(q.plan?q.delta/q.plan:null)} vs plan`,q.delta>=0?'good':'bad'),
    tile('Needed per working day',fmtL(q.needed_per_workday),`${fmt(q.remaining_workdays)} working days left · current pace ${fmtL(q.pace_per_workday)}${gap!=null?` · ${gap>0?pctS(gap)+' above the pace':'the pace is enough'}`:''}`,gap>0.1?'bad':gap>0?'warn':'good')))}
 
@@ -1865,11 +1922,11 @@ function qcard(q){const gap=q.needed_vs_pace;return el('div',{class:'card qplan'
 async function planSnapshot(box,m,f){box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Plan, forecast and potential')));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let J,P;try{[J,P]=await Promise.all([api('plan',{month:m,filters:f}),api('market_potential',{month:m,filters:f}).catch(()=>null)])}catch(e){msg.textContent='Plan unavailable: '+e.message;return}
  msg.remove();if(!box.isConnected)return;const Q=J.quarters||[],T=(P&&P.total)||{};
- LIVE.plan=()=>Q.map(q=>`${q.label}: plan ${fmtL(q.plan)}, outlook ${fmtL(q.outlook)} → ${q.delta>=0?'ahead by ':'short by '}${fmtL(Math.abs(q.delta))}; needs ${fmtL(q.needed_per_workday)} per working day vs pace ${fmtL(q.pace_per_workday)}.`);
- if(T.potential)LIVE.bizpotential=()=>[`${mlabel(P.month)} basis, this selection: potential ${fmtL(T.potential)}; current ${fmtL(T.current)} = ${pct(T.penetration)} captured; headroom ${fmtL(T.headroom)}.`];
+ LIVE.plan=()=>Q.map(q=>`${q.label}: plan ${fmtL(q.plan)}, likely ${fmtL(q.outlook)} → ${q.delta>=0?'ahead by ':'short by '}${fmtL(Math.abs(q.delta))}; needs ${fmtL(q.needed_per_workday)} per working day vs pace ${fmtL(q.pace_per_workday)}.`);
+ if(T.potential)LIVE.bizpotential=()=>[`${mlabel(P.month)} basis, this selection: potential ${fmtL(T.potential)} (${potSupport(T)}); current business ${fmtL(T.current)} = ${pct(T.penetration)} of it by value; gap to potential ${fmtL(T.headroom)}.`];
  const go2=t=>()=>{S.planTab=t;go('planning')};
- box.append(el('div',{class:'tiles kpi4'},...Q.map(q=>tile(`${q.label} plan`,fmtL(q.plan),`outlook ${fmtL(q.outlook)} · ${q.delta>=0?'ahead '+fmtL(q.delta):'short '+fmtL(-q.delta)}`,q.delta>=0?'good':'bad')),
-   T.potential?tile('Potential per month',fmtL(T.potential),`${pct(T.penetration)} captured · headroom ${fmtL(T.headroom)}`):null,
+ box.append(el('div',{class:'tiles kpi4'},...Q.map(q=>tile(`${q.label} plan`,fmtL(q.plan),`likely ${fmtL(q.outlook)} · ${q.delta>=0?'ahead '+fmtL(q.delta):'short '+fmtL(-q.delta)}`,q.delta>=0?'good':'bad')),
+   T.potential?tile('Potential per month',fmtL(T.potential),`${potNow(T)} · gap ${fmtL(T.headroom)} · ${potSupport(T)}`):null,
    Q[0]?tile('Needed per working day',fmtL(Q[0].needed_per_workday),`to make the ${Q[0].label} plan · pace ${fmtL(Q[0].pace_per_workday)}`,Q[0].needed_vs_pace>0.1?'bad':''):null),
   el('div',{class:'tools'},el('button',{class:'btn',onclick:go2('plan')},'Plan vs actual →'),el('button',{class:'btn',onclick:go2('targets')},'Targets by month →'),el('button',{class:'btn',onclick:go2('potential')},'Potential & branch names →')))}
 
@@ -1887,7 +1944,7 @@ const vPlanning=guard(async s=>{const m=$('#fMonth').value,f=filters();
 async function planTabPlan(box,m,f){const msg=el('p',{class:'note'},'Loading…');box.append(msg);let J;
  try{J=await api('plan',{month:m,filters:f})}catch(e){msg.textContent='Plan unavailable: '+e.message;return}msg.remove();if(!box.isConnected)return;
  const Q=J.quarters||[],M=J.months||[];if(!Q.length){box.append(el('p',{class:'note'},'No plan figures for this selection.'));return}const pv=J.plan;
- LIVE.plan=()=>Q.map(q=>`${q.label}: plan ${fmtL(q.plan)}, outlook ${fmtL(q.outlook)} → ${q.delta>=0?'ahead by ':'short by '}${fmtL(Math.abs(q.delta))}; needs ${fmtL(q.needed_per_workday)} per working day for ${q.remaining_workdays} working days vs current pace ${fmtL(q.pace_per_workday)}.`);
+ LIVE.plan=()=>Q.map(q=>`${q.label}: plan ${fmtL(q.plan)}, likely ${fmtL(q.outlook)} → ${q.delta>=0?'ahead by ':'short by '}${fmtL(Math.abs(q.delta))}; needs ${fmtL(q.needed_per_workday)} per working day for ${q.remaining_workdays} working days vs current pace ${fmtL(q.pace_per_workday)}.`);
  box.append(el('div',{class:'tools'},el('h3',{style:'margin:0'},'Quarter plan vs actual — this and next quarter')),
   el('p',{class:'note'},`Actuals to ${ddmm(J.data_as_of)} · `+(pv?`saved plan "${pv.name}" (version ${pv.version}, saved ${ddmm(String(pv.saved_at).slice(0,10))})`:'no plan saved yet: each month uses the tracker target where it exists, otherwise the suggested target (Admin → Plan & targets)')+' · recalculated with every tracker upload, so actuals replace the forecast automatically.'),
   el('div',{class:'grid2'},...Q.map(qcard)));
@@ -1895,27 +1952,27 @@ async function planTabPlan(box,m,f){const msg=el('p',{class:'note'},'Loading…'
  let qq='this';const wbox=el('div'),tbox=el('div');
  const qseg=el('div',{class:'seg',role:'group','aria-label':'Quarter'},Q.map(q=>el('button',{type:'button',class:'btn sm'+(q.quarter===qq?' on':''),'aria-pressed':String(q.quarter===qq),'data-q':q.quarter,
   onclick:()=>{qq=q.quarter;qseg.querySelectorAll('button').forEach(b=>{const on=b.dataset.q===qq;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});paintB();paintT()}},q.label)));
- box.append(el('h3',{},'Variance bridge — plan to outlook by zone'),el('div',{class:'tools'},el('span',{class:'note'},'Quarter'),qseg),wbox,
-  el('h3',{},'Variance at every level — zone → team → client'),el('p',{class:'note'},'Open a zone to see its teams, a team to see its clients. Worst variance first. Variance = outlook − plan.'),tbox);
+ box.append(el('h3',{},'Variance bridge — plan to likely, by zone'),el('div',{class:'tools'},el('span',{class:'note'},'Quarter'),qseg),wbox,
+  el('h3',{},'Variance at every level — zone → team → client'),el('p',{class:'note'},'Open a zone to see its teams, a team to see its clients. Worst variance first. Variance = likely − plan (likely = actual so far + expected at the current pace).'),tbox);
  function paintB(){wbox.innerHTML='';chartsGc();const q=Q.find(x=>x.quarter===qq)||Q[0];const Z=(J.by_zone||[]).map(z=>({label:zoneLabel(z.zone_group)||'(no zone)',value:+z['delta_'+qq]||0})).filter(z=>Math.abs(z.value)>=1).sort((a,b)=>a.value-b.value);
-  const items=[{label:`Plan ${q.label}`,value:q.plan,kind:'total'},...Z.map(z=>({...z,kind:'delta'})),{label:`Outlook ${q.label}`,value:q.outlook,kind:'total'}];
-  const cv=el('canvas',{'aria-label':`Bridge from the ${q.label} plan to the outlook, zone by zone`});wbox.append(el('div',{class:'chartbox',style:'height:320px'},cv));waterfall(cv,items);
-  wbox.append(el('details',{class:'note'},el('summary',{},'Bridge as a table'),bridgeTable(items)),el('p',{class:'note'},`Blue = totals; red = a zone's outlook below its plan, green = above. ${q.label}: plan ${fmtL(q.plan)} → outlook ${fmtL(q.outlook)} (${sL(q.delta)}).`))}
+  const items=[{label:`Plan ${q.label}`,value:q.plan,kind:'total'},...Z.map(z=>({...z,kind:'delta'})),{label:`Likely ${q.label}`,value:q.outlook,kind:'total'}];
+  const cv=el('canvas',{'aria-label':`Bridge from the ${q.label} plan to the likely figure, zone by zone`});wbox.append(el('div',{class:'chartbox',style:'height:320px'},cv));waterfall(cv,items);
+  wbox.append(el('details',{class:'note'},el('summary',{},'Bridge as a table'),bridgeTable(items)),el('p',{class:'note'},`Blue = totals; red = a zone likely to finish below its plan, green = above. ${q.label}: plan ${fmtL(q.plan)} → likely ${fmtL(q.outlook)} (${sL(q.delta)}).`))}
  function paintT(){tbox.innerHTML='';vtree(tbox,J,qq,{m,f})}
  paintB();paintT();
  // monthly view
- const cv=el('canvas',{'aria-label':'Plan and outlook by month'});const c=C();
+ const cv=el('canvas',{'aria-label':'Plan and likely by month'});const c=C();
  box.append(el('h3',{},'Month by month'),el('div',{class:'chartbox',style:'height:280px'},cv));
  chart(cv,{type:'bar',data:{labels:M.map(x=>mlabel(x.month)),datasets:[
    {label:'Plan',data:M.map(x=>x.plan),backgroundColor:c.muted+'55',borderColor:c.muted,borderWidth:1},
-   {label:'Outlook (actual, then forecast)',data:M.map(x=>x.outlook),backgroundColor:M.map(x=>x.actual!=null&&!/projection/.test(x.basis||'')?c.blue:x.actual!=null?c.blue+'AA':c.ochre+'AA')},
+   {label:'Likely (actual, then expected at the current pace)',data:M.map(x=>x.outlook),backgroundColor:M.map(x=>x.actual!=null&&!/projection/.test(x.basis||'')?c.blue:x.actual!=null?c.blue+'AA':c.ochre+'AA')},
    {type:'line',label:'Tracker target',data:M.map(x=>x.tracker_target),borderColor:c.bad,backgroundColor:c.bad,pointRadius:3,showLine:false}]},
   options:{maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:t=>`${t.dataset.label}: ${fmtL(t.raw)}`}}},scales:{y:{ticks:{callback:v=>fmtL(v)}}}}});
  box.append(el('p',{class:'note'},'Blue = actual (lighter: current month, actual so far ÷ the usual share of a month done by this working day); ochre = forecast at the current pace; grey = plan; red dot = the tracker\'s own monthly target.'),
   table(M.map(x=>({...x,q:(Q.find(q=>q.quarter===x.quarter)||{}).label})),[{key:'month',label:'Month',fmt:mlabel},{key:'q',label:'Quarter'},{key:'plan',label:'Plan',num:1,fmt:fmtL},
   {key:'plan_source',label:'Plan from',fmt:v=>el('span',{class:'chip '+(PSRCC[v]||'')},v||'–')},{key:'tracker_target',label:'Tracker target',num:1,fmt:fmtL},{key:'actual',label:'Actual so far',num:1,fmt:fmtL},
-  {key:'outlook',label:'Outlook',num:1,fmt:fmtL},{key:'basis',label:'Outlook basis'},{key:'delta',label:'Delta (outlook − plan)',num:1,fmt:v=>signed(v,fmtL)},{key:'shortfall',label:'Shortfall',num:1,fmt:v=>v>0?fmtL(v):'–'},{key:'workdays',label:'Working days',num:1,fmt:fmt}],{name:'quarter_plan_months.csv',search:false,exportable:S.role==='admin'}),
-  el('details',{class:'note'},el('summary',{},'How the plan and outlook are calculated'),el('p',{},J.method)))}
+  {key:'outlook',label:'Likely',num:1,fmt:fmtL},{key:'basis',label:'How the likely figure is worked out',fmt:v=>v?String(v).replace('forecast at current pace','expected at the current pace'):'–'},{key:'delta',label:'Likely − plan',num:1,fmt:v=>signed(v,fmtL)},{key:'shortfall',label:'Shortfall',num:1,fmt:v=>v>0?fmtL(v):'–'},{key:'workdays',label:'Working days',num:1,fmt:fmt}],{name:'quarter_plan_months.csv',search:false,exportable:S.role==='admin'}),
+  el('details',{class:'note'},el('summary',{},'How the plan and the likely figure are calculated'),el('p',{},J.method)))}
 /* variance tree: PAN → zone → team → client, expandable, worst first. Admins: Excel export of every level.
    wave 102p: viewers get zones and teams; a team's clients load when it is opened (one team at a time, no full download) */
 function vtToggle(tb,tg,path){const open=tg.getAttribute('aria-expanded')!=='true';tg.setAttribute('aria-expanded',String(open));tg.textContent=open?'▾':'▸';
@@ -1941,7 +1998,7 @@ function vtree(box,J,qq,ctx={}){const K=k=>k+'_'+qq,thisQ=qq==='this',isAdm=S.ro
    C2.forEach(c=>row(3,c.client_family,node(c),lp+'/c:'+c.client_family,lp,false))})});
  tb.querySelectorAll('tr.vt1').forEach(r=>r.hidden=false);
  const q=(J.quarters||[]).find(x=>x.quarter===qq)||{};
- const xb=isAdm&&!lazy?el('button',{type:'button',class:'btn sm',onclick:()=>{const wb=XLSX.utils.book_new();const H=['Plan','Actual to date','Outlook','Variance','Variance %'];
+ const xb=isAdm&&!lazy?el('button',{type:'button',class:'btn sm',onclick:()=>{const wb=XLSX.utils.book_new();const H=['Plan','Actual to date','Likely','Variance','Variance %'];
    const mkS=(rows,lead)=>{const a=[[...lead.map(x=>x[0]),...H]];rows.forEach(r=>{const o=node(r),d=o.out-o.plan;a.push([...lead.map(x=>x[1](r)),Math.round(o.plan),o.act==null?'':Math.round(o.act),Math.round(o.out),Math.round(d),o.plan?+(d/o.plan).toFixed(4):''])});return XLSX.utils.aoa_to_sheet(a)};
    XLSX.utils.book_append_sheet(wb,mkS(zones,[['Zone',r=>zoneLabel(r.zone_group)]]),'Zones');
    XLSX.utils.book_append_sheet(wb,mkS(locs,[['Zone',r=>zoneLabel(r.zone_group)],['Team',r=>r.location]]),'Teams');
@@ -1949,7 +2006,7 @@ function vtree(box,J,qq,ctx={}){const K=k=>k+'_'+qq,thisQ=qq==='this',isAdm=S.ro
    XLSX.writeFile(wb,`Crux_variance_${(q.label||qq).replace(/\s+/g,'_')}_${J.data_as_of||''}.xlsx`)}},'Export every level (Excel)'):null;
  box.append(el('div',{class:'tools'},xb,el('span',{class:'note'},`${q.label||''}: ${zones.length} zones · ${locs.length} teams · `+(lazy?'open a team to see its clients (the full export is for admins)':`${cells.length} team × client rows`))),
   el('div',{class:'tablewrap'},el('table',{class:'vtree'},el('thead',{},el('tr',{},el('th',{scope:'col'},'Zone / team / client'),el('th',{scope:'col',class:'num'},'Plan'),thisQ?el('th',{scope:'col',class:'num'},'Actual to date'):null,
-   el('th',{scope:'col',class:'num'},'Outlook'),el('th',{scope:'col',class:'num'},'Variance'),el('th',{scope:'col',class:'num'},'Variance %'))),tb)))}
+   el('th',{scope:'col',class:'num'},'Likely'),el('th',{scope:'col',class:'num'},'Variance'),el('th',{scope:'col',class:'num'},'Variance %'))),tb)))}
 /* ---- wave 103: target sheet in the Zonal Tracker layout (admin download). Same rows, order, totals and colours as the Main Tracker
    (zone header → client roll-ups → zone total → location blocks → location totals → Region & Pan India → client-wise → stakeholder-wise),
    with the owner's columns, branch counts, situation, reason and the full maths per row. ExcelJS is loaded only when an admin downloads. ---- */
@@ -2216,7 +2273,7 @@ function targetsView(box,T,f){box.innerHTML='';const R=T.reference||{},M=T.month
  LIVE.targets=()=>MS.map(x=>`${x.months} months (${mlabel(x.month)}): target ${fmtL(x.monthly_target)} vs pace ${fmtL(x.monthly_pace)} → ${pctS(x.growth_vs_reference)} vs today's pace; cumulative ${fmtL(x.cumulative_target)}.`);
  box.append(el('p',{class:'note'},(T.source==='plan'?`Saved plan, version ${T.version}`:'Preview — not saved')+` · reference month ${mlabel(T.reference_month)} (tracker projected to month end with ${pct(T.reference_share)} of the month done) · revenue, expected (cases × rate).`),
   el('div',{class:'tiles kpi4'},tile('Current pace per month',fmtL(R.pace),`${mlabel(T.reference_month)} projected to month end`),tile('Potential per month',fmtL(R.organic),'all client branches, active or not'),
-   tile('Opportunity per month',fmtL(R.opportunity),'potential − current pace'),tile('Captured by the horizon',pct(((M[M.length-1]||{}).target/((M[M.length-1]||{}).factor||1)-R.pace)/(R.opportunity||1)),`of the opportunity in month ${M.length} (seasonality removed)`)),
+   tile('Opportunity per month',fmtL(R.opportunity),'potential − current pace'),tile('Share of the gap closed by the horizon',pct(((M[M.length-1]||{}).target/((M[M.length-1]||{}).factor||1)-R.pace)/(R.opportunity||1)),`of the opportunity in month ${M.length} (seasonality removed)`)),
   el('h4',{},'Milestones'),el('div',{class:'tiles'},MS.map(x=>tile(`${x.months} months · ${mlabel(x.month)}`,fmtL(x.monthly_target),`${pctS(x.growth_vs_reference)} vs today's pace · pace alone ${fmtL(x.monthly_pace)} · cumulative ${fmtL(x.cumulative_target)} vs ${fmtL(x.cumulative_pace)}`,x.growth_vs_reference>0?'good':''))));
  const cv=el('canvas',{'aria-label':'Targets, pace and potential by month'});box.append(el('div',{class:'chartbox',style:'height:300px;margin-top:10px'},cv));const c=C();
  chart(cv,{type:'line',data:{labels:M.map(x=>mlabel(x.month)),datasets:[{label:'Target',data:M.map(x=>x.target),borderColor:c.blue,backgroundColor:c.blue,pointRadius:3,tension:.2},
@@ -2225,7 +2282,7 @@ function targetsView(box,T,f){box.innerHTML='';const R=T.reference||{},M=T.month
   options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:t=>`${t.dataset.label}: ${fmtL(t.raw)}`}}},scales:{y:{ticks:{callback:v=>fmtL(v)}}}}});
  const rows=M.map((x,i)=>({...x,mom:i?x.target/M[i-1].target-1:x.target/(R.pace||1)-1,captured:x.opportunity?(x.target-x.pace)/x.opportunity:null}));
  box.append(table(rows,[{key:'month',label:'Month',fmt:mlabel},{key:'factor',label:'Month factor',num:1,fmt:v=>v==null?'–':(+v).toFixed(3)},{key:'pace',label:'Current pace',num:1,fmt:fmtL},{key:'target',label:'Target',num:1,fmt:fmtL},
-  {key:'stretch',label:'Target ÷ pace − 1',num:1,fmt:pctS},{key:'mom',label:'vs previous month',num:1,fmt:pctS},{key:'organic',label:'Potential',num:1,fmt:fmtL},{key:'opportunity',label:'Opportunity',num:1,fmt:fmtL},{key:'captured',label:'Share of opportunity in the target',num:1,fmt:pct}],{name:'targets_by_month.csv',search:false}));
+  {key:'stretch',label:'Target ÷ pace − 1',num:1,fmt:pctS},{key:'mom',label:'vs previous month',num:1,fmt:pctS},{key:'organic',label:'Potential',num:1,fmt:fmtL},{key:'opportunity',label:'Opportunity',num:1,fmt:fmtL},{key:'captured',label:'Share of the gap built into the target',num:1,fmt:pct}],{name:'targets_by_month.csv',search:false}));
  const mcols=M.map((x,i)=>({key:'t'+i,label:mlabel(x.month),num:1,fmt:fmtL}));const hideM=mcols.slice(3).map(x=>x.key);
  const flat=r=>{const o={...r,uplift:r.total_pace?r.total_target/r.total_pace-1:null};(r.targets||[]).forEach((v,i)=>o['t'+i]=v);return o};
  const lead={zone:[{key:'zone',label:'Zone'}],location:[{key:'location',label:'Team (location)'},{key:'zone',label:'Zone'}],client:[{key:'client_family',label:'Client'}]};
@@ -2245,9 +2302,9 @@ const vAdmPlan=guard(async s=>{if(!admHead(s,'adm_plan'))return;const m=$('#fMon
   if(mode==='preview')try{localStorage.setItem('crux_plan_par',JSON.stringify(par))}catch{}
   try{const T=await api('targets',{month:m,filters:f,p});if(out.isConnected)targetsView(out,T,f)}catch(e){out.innerHTML='';out.append(el('p',{class:'bad'},'Targets unavailable: '+e.message))}}
  s.append(el('div',{class:'card'},el('h3',{style:'margin-top:0'},'Settings'),
-  el('p',{class:'note'},'Target for month k = (current pace + c × opportunity) × the month\'s seasonal and working-day factor, never below last month\'s actual business + the minimum growth in the first month and the previous month\'s target + the minimum growth after that, for the same team × client (old tracker targets are not a floor), except a month that fell 5% or more in every year on record (only April today). c rises in equal steps until the chosen share of the opportunity is captured at the horizon; growth from one month to the next stays between the minimum and the maximum, so targets keep rising but stay reachable. Opportunity = potential − current pace, per team × client.'),
+  el('p',{class:'note'},'Target for month k = (current pace + c × opportunity) × the month\'s seasonal and working-day factor, never below last month\'s actual business + the minimum growth in the first month and the previous month\'s target + the minimum growth after that, for the same team × client (old tracker targets are not a floor), except a month that fell 5% or more in every year on record (only April today). c rises in equal steps until the chosen share of the opportunity is closed at the horizon; growth from one month to the next stays between the minimum and the maximum, so targets keep rising but stay reachable. Opportunity = potential − current pace, per team × client.'),
   el('div',{class:'pgrid'},fld('horizon','Horizon (months)',{type:'number',min:1,max:24,step:1},'targets for this many months after the latest tracker month'),
-   fld('capture','Share of the opportunity captured by the horizon (%)',{type:'number',min:0,max:100,step:1},'30% = a third of the gap to potential closed in a year'),
+   fld('capture','Share of the gap to potential to close by the horizon (%)',{type:'number',min:0,max:100,step:1},'30% = a third of the gap to potential closed in a year'),
    fld('gmin','Minimum growth per month (%)',{type:'number',min:-20,max:50,step:0.5},'targets never grow less than this'),
    fld('gmax','Maximum growth per month (%)',{type:'number',min:0,max:50,step:0.5},'keeps each step reachable'),
    fld('cap','Ceiling over what the team does (%)',{type:'number',min:0,max:300,step:5},'no team × client target above its best of last month / 3-month average × (1 + this)'),
@@ -2629,20 +2686,21 @@ function zoneGrid(box,O,P,month,f,SP,MP){const pz={};((P&&P.rows)||[]).forEach(r
    const mixed=s&&(s.most||s.carried)&&(v==null||v>-0.05);const bg=mixed?'var(--ochre)':tint(v);
    const why=s?(s.carried?`half its business comes from ${s.g.n50} of ${s.g.members} teams`:'')+(s.most?`${s.carried?'; ':''}${s.beh} of ${s.wt} teams behind their target to date`:''):'';
    const t=el('div',{class:'zt2'+(mixed?' zwarn':''),tabindex:'0',role:'button','data-zone':r.group,'data-mixed':mixed?'1':'0',style:'--tone:'+bg,
-     title:`${r.group}: ${ZGM.F(r.actual)}${ZGM.unit} so far · BAU so far ${ZGM.F(r.organic_to_date)} (${pctS(r.effort_pct)}) · likely ${lk!=null?pct(lk):'–'} of target`+(s?` · ${s.g.on_track} of ${s.wt} teams on track, half from ${s.g.n50} of ${s.g.members}`:'')+(mp?` · potential ${fmtL(mp.potential)} (${pct(mp.penetration)} captured)`:'')+'. Click for the drill-down.'},
+     title:`${r.group}: ${ZGM.F(r.actual)}${ZGM.unit} so far · BAU so far ${ZGM.F(r.organic_to_date)} (${pctS(r.effort_pct)}) · likely ${lk!=null?pct(lk):'–'} of target`+(s?` · ${s.g.on_track} of ${s.wt} teams on track, half from ${s.g.n50} of ${s.g.members}`:'')+(r.clients!=null?` · BAU from ${bauSupport(r)}`:'')+(mp?` · potential ${fmtL(mp.potential)} a month (${potSupport(mp)}); current business ${fmtL(mp.current)} is ${pct(mp.penetration)} of it by value, gap ${fmtL(mp.headroom)}`:'')+'. Click for the drill-down and why the gap.'},
     el('b',{},r.group),el('span',{class:'zv'},ZGM.F(r.actual)),
     el('span',{class:'zn'},mode==='organic'?(r.organic_to_date>=ZGM.min?pctS(r.effort_pct)+' vs business as usual':'too small to compare'):(lk!=null?'likely '+pct(lk)+' of target':'no target')),
     mixed?el('span',{class:'zflag'},'⚠ '+(s.carried?`carried by ${s.g.n50} of ${s.g.members}`:`${s.beh} of ${s.wt} teams behind`)):null,
     mem.length>1?el('div',{class:'zsplit','aria-label':`Teams in ${r.group}: ${s?s.g.on_track+' on track, '+s.beh+' behind':''}`},mem.map(x=>el('i',{class:'s-'+String(x.status||'no target').replace(/ /g,'-'),style:`flex:${Math.max(0.004,x.share||0).toFixed(4)} 1 0`,title:`${x.member}: ${pct(x.share)} of the zone · ${x.achievement!=null?pct(x.achievement)+' of its target to date':'no target'} (${x.status})`}))):null,
     s?el('span',{class:'zn'},`${s.g.on_track} of ${s.wt} on track · half from ${s.g.n50} of ${s.g.members}`):(mem.length===1?el('span',{class:'zn'},'1 team'):null),
-    mp?el('span',{class:'zn zpot'},`potential ${fmtL(mp.potential)} · ${pct(mp.penetration)} captured`):null,
+    mp?el('span',{class:'zn zpot'},`potential ${fmtL(mp.potential)} · now ${pct(mp.penetration)} of it`):null,
+    mp?el('span',{class:'zn zpot'},`${fmt(mp.active_branches)} of ${fmt(potBr(mp))} branches active · ${nS(mp.clients,'client')}`):null,
     el('div',{class:'zb'},el('i',{style:`width:${Math.min(100,(lk||0)*100).toFixed(1)}%`})));
    if(mixed)t.setAttribute('data-why',why);
    const fn=()=>DD.go(entityCtx('zone',r.group,month,f),t);t.onclick=fn;t.setAttribute('aria-label',r.group+(mixed?' — looks fine in total but '+why:'')+' — open details');t.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}};grid.append(t)});
   const lab=mode==='organic'?['below business as usual','above business as usual']:['below target','above target'];scale.innerHTML='';
   scale.append(el('span',{},lab[0]),...[-0.3,-0.15,0,0.15,0.3].map(x=>el('i',{style:'background:'+tint(x)})),el('span',{},lab[1]),
    el('i',{style:'background:var(--ochre);margin-left:10px'}),el('span',{},'looks fine in total, but carried by a few or most teams behind'),
-   el('span',{class:'note',style:'margin-left:8px'},`Grey = within ±5 %. Bar in each zone = its teams (width = share of the zone's ${SP&&SP.measure==='cases'?'cases':'expected revenue'}; each team against its own target to date: green on track ≥ 90%, amber behind, red far behind < 60%, grey no target) — the same split as "Inside each group". Potential = what all the zone's client branches could bring a month. Line at the bottom = likely % of the case target. Click a zone for its drill-down.`))};
+   el('span',{class:'note',style:'margin-left:8px'},`Grey = within ±5 %. Bar in each zone = its teams (width = share of the zone's ${SP&&SP.measure==='cases'?'cases':'expected revenue'}; each team against its own target to date: green on track ≥ 90%, amber behind, red far behind < 60%, grey no target) — the same split as "Inside each group". Potential = what all the zone's client branches could bring a month; "now x%" = current business as a share of it by value. Line at the bottom = likely % of the case target. Click a zone for its drill-down.`))};
  const seg=el('div',{class:'seg',role:'group','aria-label':'Colour zones by'},[['organic','vs business as usual'],['target','likely vs target']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-zm':k,
   onclick:e=>{mode=k;seg.querySelectorAll('button').forEach(b=>{const on=b===e.currentTarget;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
  box.append(el('div',{class:'tools'},el('span',{class:'note'},'Colour by'),seg),scale,grid);draw()}
@@ -3193,6 +3251,7 @@ const COVM={active_6m:['Active (6 months)','good'],gone_quiet_6m:['Gone quiet (6
 const utilChip=v=>v==null?'–':el('span',{class:'chip '+(v>=.8?'good':v>=.4?'warn':'bad')},pct(v));
 const signed=(v,f=fmt)=>v==null||isNaN(v)?'–':el('span',{class:v<0?'bad':v>0?'good':''},(v>0?'+':v<0?'−':'')+f(Math.abs(v)));
 function normCode(c){const s=String(c||'').toUpperCase().replace(/^[A-Z_]+-/,'').replace(/[^0-9A-Z]/g,'').replace(/^0+/,'');return s||null}
+const bauT=t=>{t.dataset.tile='bau';return t};
 function ddSec(title,id){const body=el('div',{class:'note'},'Loading…');const s=el('section',{class:'ddsec','data-sec':id},el('h4',{},title),body);s.fill=(...n)=>{body.className='';body.innerHTML='';body.append(...n.flat().filter(Boolean))};s.fail=e=>{body.className='note bad';body.textContent='Could not load: '+(e&&e.message||e)};return s}
 const OPS=['tat','force1','coverage','lifecycle','revenue','penalty'];
 function opsLoad(m,f,level){const o={};OPS.forEach(p=>{o[p]=api('drill_ops',{month:m,filters:f,level,part:p})});return o}
@@ -3266,17 +3325,19 @@ async function ddBiz(o,c){const J=await api('drill',{month:c.m,filters:c.f,level
  const L=J.lfl||{};const lc=L.current!=null&&L.previous!=null?L.current-L.previous:null;
  const revT=el('div',{class:'tile'},el('div',{class:'k'},'Revenue so far'),el('div',{class:'v'},'…'),el('div',{class:'n'},'loading'));
  const potT=el('div',{class:'tile','data-tile':'potential'},el('div',{class:'k'},'Potential per month'),el('div',{class:'v'},'…'),el('div',{class:'n'},'loading'));
- api('market_potential',{month:c.m,filters:c.f}).then(P=>{const T=(P&&P.total)||{};potT.querySelector('.v').textContent=T.potential?fmtL(T.potential):'–';potT.querySelector('.n').textContent=T.potential?`${pct(T.penetration)} captured · headroom ${fmtL(T.headroom)} · ${mlabel(P.month)} basis, revenue`:'no potential figure for this selection'}).catch(()=>{potT.querySelector('.v').textContent='–';potT.querySelector('.n').textContent='unavailable'});
+ const potS=ddSec('Potential — from current business to potential, and why the gap','potential');potT.classList.add('dd');potT.tabIndex=0;potT.setAttribute('role','button');potT.title='Show what makes up the gap';potT.onclick=()=>potS.scrollIntoView({behavior:'smooth',block:'start'});
+ api('market_potential',{month:c.m,filters:c.f}).then(P=>{const T=(P&&P.total)||{};potT.querySelector('.v').textContent=T.potential?fmtL(T.potential):'–';potT.querySelector('.n').textContent=T.potential?`${potNow(T)} · gap ${fmtL(T.headroom)} · ${potSupport(T)} · ${mlabel(P.month)} basis, revenue`:'no potential figure for this selection';if(potS.isConnected){T.potential?potS.fill(potBridge(P,T,{asOf:P.as_of})):potS.fill(el('p',{class:'note'},'No potential figure for this selection.'));if(c.focus==='potential')setTimeout(()=>potS.scrollIntoView({block:'start'}),50)}}).catch(e=>{potT.querySelector('.v').textContent='–';potT.querySelector('.n').textContent='unavailable';potS.fail(e)});
  const sec0=el('section',{class:'ddsec','data-sec':'business'},el('div',{class:'tiles'},
   tile('Cases so far',fmt(s.mtd),pa?`${pct(share)} of ${fmt(pa.mtd)} (${ctxTitle(J.parent_filters||{})})`:'Pan India total'),
   tile('Target',fmt(s.target),s.target?pct(s.mtd/s.target)+' achieved':'no target'),
   tile('Likely month end',fmt(s.likely),s.low!=null?`range ${fmt(s.low)}–${fmt(s.high)}${s.target?' · '+pct(s.achievement_likely)+' of target':''}`:''),
   el('div',{class:'tile'},el('div',{class:'k'},'Status (RAG)'),el('div',{class:'v'},chipS(RAG,s.status)),el('div',{class:'n'},s.required_per_day!=null?`needs ${fmt(s.required_per_day)} / working day · recent ${fmt(s.recent_per_day)} / day`:'')),
-  (()=>{const og=J.organic;return og&&og.organic_to_date!=null?tile('Business-as-usual expectation',fmt(og.organic_month),`so far ${fmt(og.organic_to_date)} → actual ${og.effort_to_date>=0?'+':'−'}${fmt(Math.abs(og.effort_to_date))}${sgnp(og.effort_pct)}`)
-   :tile('Business-as-usual expectation',fmt(s.organic),s.organic?'for the full month':'')})(),
+  bauT((()=>{const og=J.organic;return og&&og.organic_to_date!=null?tile('Business-as-usual expectation',fmt(og.organic_month),`so far ${fmt(og.organic_to_date)} → actual ${og.effort_to_date>=0?'+':'−'}${fmt(Math.abs(og.effort_to_date))}${sgnp(og.effort_pct)}`)
+   :tile('Business-as-usual expectation',fmt(s.organic),s.organic?'for the full month':'')})()),
   el('div',{class:'tile'},el('div',{class:'k'},'vs same point last month'),el('div',{class:'v'},signed(lc)),el('div',{class:'n'},L.previous!=null?`${fmt(L.previous)} on ${ddmm(String(L.comparison_snapshot||''))} → ${fmt(L.current)} on ${ddmm(String(L.current_snapshot||''))}`:'no comparable report last month')),
   revT,potT),el('p',{class:'note'},DEF[c.focus]||DEF.mtd));
  o.append(sec0);
+ api('organic',{month:c.m,filters:c.f,group:'total',measure:'cases'}).then(O=>{const t=sec0.querySelector('[data-tile="bau"] .n');if(t&&bauSupport(O))t.append(' · '+bauSupport(O))}).catch(()=>{});
  // breakdown first with business columns; operational columns are added when they arrive
  const bk=el('div');
  if(c.level==='branch'){const B=J.branches||[];o.append(el('h4',{},`Branches sending Force1 cases — ${mlabel(c.m)}`),el('p',{class:'note'},`${fmt(J.force1_cases_month)} Force1 cases this month in this selection; top ${B.length} branches by cases. ${DEF.force1}`),bk);
@@ -3296,6 +3357,7 @@ async function ddBiz(o,c){const J=await api('drill',{month:c.m,filters:c.f,level
   DD.charts.push(new Chart(cv,{type:'bar',data:{labels:H.map(h=>mlabel(h.month)),datasets:[{label:'Cases',data:H.map(h=>h.cases),backgroundColor:H.map(h=>h.month===c.m?cc.ochre:cc.blue)},{type:'line',label:'Target',data:H.map(h=>h.target),borderColor:cc.muted,pointRadius:2}]},
    options:{maintainAspectRatio:false,onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},onClick:(e,els)=>{if(!els.length)return;const h=H[els[0].index];if(h.month!==c.m)setTimeout(()=>DD.push(bizCtx(h.month,c.f,{title:base+' — '+mlabel(h.month),level:c.level,p:c.p})),0)}}}))}
  // operational sections
+ o.append(potS);
  const sT=ddSec('Turnaround time (TAT)','tat'),sF=ddSec('Force1 utilisation','force1'),sB=ddSec('Branches — status and coverage','branches'),sA=ddSec('What needs attention','attention'),sD=ddSec('Daily additions','daily');
  o.append(sT,sF,sB,sA,sD);
  O.revenue.then(r=>{const t=r.total||{};revT.querySelector('.v').textContent=inr(t.mtd);revT.querySelector('.n').innerHTML='';revT.querySelector('.n').append(t.target?`${pct(t.mtd/t.target)} of ${inr(t.target)} · likely ${inr(t.likely)} `:'no revenue target ',t.status?chipS(RAG,t.status):'')}).catch(()=>{revT.querySelector('.v').textContent='–';revT.querySelector('.n').textContent='not available'});
@@ -3620,12 +3682,12 @@ async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.k
 
 /* ---------- Plain-language explanations: "?" buttons and automatic hints on technical terms ---------- */
 const GLOSS={
- bizpotential:['Potential (all client branches)','What all our clients\' branches could bring each month: current business + each location × client back to its best three months + dormant branches reactivated + never-active branches valued at what a typical active branch of the same client gives. Headroom, not a forecast. Business as usual is different: the trend of the business we already have (the yardstick for effort).'],
+ bizpotential:['Potential (all client branches)','What all our clients\' branches could bring each month: current business + each location × client back to its best three months + dormant branches reactivated + never-active branches valued at what a typical active branch of the same client gives — always shown with its clients and branches (active, dormant, never active). "Now x%" = current business as a share of the potential by value (not by branches); the gap to potential is shown step by step with the branches behind each step. Indicative, not a forecast. Business as usual is different: the trend of the business we already have (the yardstick for effort).'],
  pace:['Current pace','What the business would bring each month if it simply kept today\'s speed: the latest tracker month (projected to month end) per working day, scaled by each month\'s working days and its usual seasonal level.'],
  opportunity:['Opportunity','Potential − current pace for every team × client (never below zero): the extra business available if every client branch performed at its own best, dormant branches came back and never-active branches started.'],
  targets:['Targets (next months)','Suggested monthly targets: today\'s pace plus a growing share of the opportunity (potential − pace). For each team × client the first month is never below what it actually did last month + 2% and each later month never below the month before + 2%, except April (a proven seasonal dip), and never above 1.5× what the team actually does. Old tracker targets are not a floor. A pair with no business keeps its old target; a pair with no business and no old target gets none. Clients with no business anywhere in India in the last three months are left out.'],
- plan:['Quarter plan vs actual','This and next quarter, month by month. Plan = the saved plan, else the tracker target, else the suggested target. Completed months show the actual, the current month its likely month end, later months the current pace. Delta = outlook − plan; shortfall = the part of the plan the outlook does not reach.'],
- variance:['Variance','Outlook − plan for the same months and the same team × client: negative = the outlook is short of the plan. Outlook = actual for completed months, actual so far ÷ the usual share of a month for the running month, current pace for later months.'],
+ plan:['Quarter plan vs actual','This and next quarter, month by month. Plan = the saved plan, else the tracker target, else the suggested target. Completed months show the actual, the current month its likely month end, later months the current pace. Likely − plan = the difference; shortfall = the part of the plan the likely figure does not reach.'],
+ variance:['Variance','Likely − plan for the same months and the same team × client: negative = likely to fall short of the plan. Likely = actual for completed months, actual so far ÷ the usual share of a month for the running month, expected at the current pace for later months.'],
  branch_list:['Branches by status','Every verified branch of our active clients: active = a Force1 case in the last three months; dormant = cases earlier, none in the last three months; never active = no Force1 case since Jan-2026. Estimated value: the branch\'s own average, or the median of active branches of the same client in the same team.'],
  target_sheet:['Target for a month','Each location × client gets a situation and its own rule: new = last month + 15%; growing = keeps half its momentum (at most +10%); stable = last month carried to the month\'s working days and season; declining = back to its 3-month average; collapsed = recovers half the gap (find the cause first); dormant = old target kept. New, growing and stable add 2.5% of their untapped branch potential, their plan share when higher and the team\'s quarter shortfall by room to grow. Never below last month + 2%, never above 1.5× capacity. Every row shows its branches (active / inactive), reason and maths. Viewers see zone and team totals and one team at a time; admins download the full sheet in the Zonal Tracker layout.'],
  rca:['Root cause','Gap = target − likely month end (expected revenue so far ÷ the usual share of a month reached by this working day). Business slowdown = expected revenue so far more than 5% below business as usual; target stretch = business at or above its usual level but likely under 95% of target; on track = likely ≥ 95%. Signals: same point last month, branches losing traction or dormant (Force1), cases past due and SLA, branch coverage.'],
@@ -3658,7 +3720,7 @@ const GLOSS={
  penalty:['Penalty','A ₹ amount charged against Crux (e.g. by a client for a delay or quality issue). Entered by admins with a reason; shown as a report and not deducted from revenue.'],
  potential:['Remaining-days potential','What the rest of the month can still add, based on the pace so far and how earlier months finished from the same day. Shown as low / likely / high.'],
  working:['Working days','Monday–Saturday, minus days marked "no report" (holidays).']};
-const GLOSS_AUTO=[[/^Variance/i,'variance'],[/Branches by status|^Branch names/i,'branch_list'],[/Target build-up|Target sheet|^Target by team/i,'target_sheet'],[/Current pace|^Pace\b|Pace per/i,'pace'],[/Opportunity/,'opportunity'],[/Suggested target|Targets? \(next|Monthly targets/i,'targets'],[/Quarter plan|Plan vs|^Plan\b|^Outlook\b/i,'plan'],[/\bMTD\b/,'mtd'],[/% ?Achmt|Achievement/,'achievement'],[/Projection|Projected|Forecast/,'projection'],[/Run-?rate/i,'runrate'],[/Required (per|\/) ?day|Needed per day/i,'required'],
+const GLOSS_AUTO=[[/^Variance/i,'variance'],[/Branches by status|^Branch names/i,'branch_list'],[/Target build-up|Target sheet|^Target by team/i,'target_sheet'],[/Current pace|^Pace\b|Pace per/i,'pace'],[/Opportunity/,'opportunity'],[/Suggested target|Targets? \(next|Monthly targets/i,'targets'],[/Quarter plan|Plan vs|^Plan\b|^Outlook\b|^Likely\b/i,'plan'],[/\bMTD\b/,'mtd'],[/% ?Achmt|Achievement/,'achievement'],[/Projection|Projected|Forecast/,'projection'],[/Run-?rate/i,'runrate'],[/Required (per|\/) ?day|Needed per day/i,'required'],
  [/Shortfall/,'shortfall'],[/\bTAT\b/,'tat'],[/\bSLA\b/,'sla'],[/\bP90\b/,'p90'],[/[Mm]edian/,'median'],[/Force1 utilisation|Force usage/,'force1'],[/Like-for-like/i,'lfl'],
  [/Business[- ]as[- ]usual|\bBAU\b/i,'organic'],[/Effort/,'effort'],[/Coverage/,'coverage'],[/Attrition/,'attrition'],[/Revenue target|Revenue Tgt/i,'revtarget'],[/Daily count|Day's addition|Daily change/i,'daily'],
  [/Penalt/,'penalty'],[/^Potential\b|Business potential|÷ potential|Potential per month/i,'bizpotential'],[/potential/i,'potential'],[/Field executive/,'fieldexec'],[/Back office/,'backoffice'],[/^Target\b|\bTarget$/,'target'],[/^Stakeholder$/,'stakeholder'],[/^Rate$/,'rate']];
