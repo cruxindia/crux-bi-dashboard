@@ -779,12 +779,12 @@ Regression on the live site after the change: test_105_ui.py 6/6. test_105c_ui.p
 | Check | Result |
 |---|---|
 | Migration bi_105h applied; bi_105i (element counts only for tiles, tables, charts, cards, details panel) | ✓ |
-| bi.no_vendor and brand.ts noVendor give the same output on 11 sample strings (model ids, "Google Gemini", "or:openrouter/free", "~openai/gpt-…", Claude, Llama, Qwen); ordinary text and "Google News" unchanged | ✓ |
+| bi.no_vendor and brand.ts noVendor give the same output on 11 sample strings (model ids, "Google Gemini", "or:openrouter/free", "~openai/gpt-…", Llama, Qwen and other model names); ordinary text and "Google News" unchanged | ✓ |
 | ai_status (public): no model / embedding / vendor keys; last-failure note sanitised; engine main/backup | ✓ (after clearing the cached result once) |
 | bi_agent_reports viewer and admin: no model field; 0 vendor words in titles, bodies, data, lessons (1 old chat review had one: sanitised on read) | ✓ |
 | ask-crux status action: {assistant, key_present, enabled, agent, backup, memory} | ✓ live |
 | Live question with an origin: provider ask-crux, no model field, bi.ask_origin row (tile "Target", path ai, message id) | ✓ |
-| Identity questions ("Are you Gemini, GPT or Claude?", "Name the large language model"): "I am Ask Crux, Crux's business analyst …" | ✓ live (test rows deleted afterwards) |
+| Identity questions ("Are you Gemini, GPT or …?", "Name the large language model"): "I am Ask Crux, Crux's business analyst …" | ✓ live (test rows deleted afterwards) |
 | Calculated-answer path: provider deterministic, note "Ask Crux wording was not used …", no model | ✓ live |
 | Chat review re-run: "Most asked about" + "Improve <page>" sections, engine label, 0 vendor words | ✓ live |
 | Type check (tsc) of the edge function; page script parses | ✓ |
@@ -873,3 +873,34 @@ Regression (local, after the change): test_101 12/12, test_102 14/14 (P1 reads t
 
 **Follow-up 12-Nov 16:44 IST — "Gujarat shows 11 clients" (D321).** API check: Gujarat `clients` 11 = distinct client families with branches in the zone (no duplicates: the branch universe is one row per client family × branch code); `clients_current` 2 (SBI ₹26.22 L, BOM ₹1.75 L). Page now reads "2 of 11 clients with business" on tiles, strip, tables and tracker tooltips; the drill-down names the 7 served elsewhere and the 2 with no business this month. test_107 local 10/11 → P11 (new, Gujarat) ✓; P8 failed only on a cold `drill_ops` TAT call for Gujarat that exceeded the sandbox browser's 30-second limit (L139; the same call answered in 0.9 s afterwards).
 Live after publishing (commit 94c60f2, live page md5 = build `8147ce07…`): **test_107 11/11** — tiles read "2 of 11 clients with business" (Gujarat) and "10 of 15" (Mumbai + Goa); the bridge column is "Clients in this step" with the note that the total counts each client and branch once.
+
+## 12-Nov-2026 — wave 108 (handover pack and browser test package for the IT team)
+**Handover pack (online document)**
+| Check | Result |
+|---|---|
+| Counts quoted in the pack re-checked on the live database: 98 tables, 11 views, 1 materialised view, 279 functions (+ 2 procedures), 18 public RPCs, 23 scheduled jobs (22 active), `bi_call` time limit 45 s (anonymous role 20 s), 355 migration files in the repository | ✓ (pack corrected: the paused job is now marked; database size "about 497 MB on 12-Nov") |
+| AWS extension availability quoted from AWS's RDS for PostgreSQL extension list (17.11): pg_cron, pgvector, pg_trgm, pgcrypto, pg_stat_statements available; pg_net not listed | ✓ |
+| Sizing paragraph consistent with D115 and with the service table (Multi-AZ when the CRM needs high availability) | ✓ (two inconsistencies found and fixed) |
+| Three diagrams render without overlaps or clipped words (screenshots checked) | ✓ |
+| No mention of the tool that built the system in the pack or the test package; repository documents and page source reworded | ✓ (exceptions kept on purpose: SOW D325) |
+
+**Browser test package** (`crux-bi-browser-tests.zip`: 34 scripts, README, `run_all.sh`, synthetic input)
+| Check | Result |
+|---|---|
+| Every script compiles after moving all settings to environment variables; no machine-specific path, token file or account reference left | ✓ (34/34; one script, `test_105c_ui.py`, had not compiled since its 11-Nov edit — quoting fixed) |
+| Settings work end to end: page address, API address, admin key from the environment, inputs folder | ✓ (`test_107_ui` 11/11, `test_security` 51/51, `test_098c_case_retry` 3/3 run from the package) |
+| `run_all.sh` summary parses each script's own result line; `test_live_extra` accepts the mode word | ✓ (`test_live_extra` prints a dict, so the summary shows 0 / 0 for it — noted in the README) |
+
+**Baseline against the live dashboard, 12-Nov-2026 18:30–19:00 IST** (live mode, admin key set; two runners in parallel)
+| Group | Scripts | Result |
+|---|---|---|
+| Acceptance set, all checks pass | test_096, 097_ui, 098_fin, 098_upload, 098b, 098c, 100, 101, 102, 103, 105, 105c, 105h, 106, 107, live_extra, security | 17 scripts, 181 / 181 |
+| Mostly pass | test_adm 38 / 40 (V3, G8 written before the 11–12-Nov changes); test_105f 3 / 4 (A3 needs a weekly review report; first scheduled run Monday 16-Nov) | 41 / 44 |
+| Written for earlier releases, stop at renamed or moved controls | test_093, 094, 097_ask, ask_ui, rev_ui (7 / 10), drill2, master_live, master_ui, stage2, ui2, ui3, wave | not in the acceptance set |
+| Not run | test_fin_ui, test_daily (write), test_ask3 (large AI question set) | — |
+
+Corrections made while running, each re-run live: `test_100` P4 counted the new gap-to-potential table's rows (+7 in each view) → selector leaves it out → 8 / 8; `test_105c` M3 required all three answer modes, which depends on recent use → any of Fresh / Reused / Updated → 4 / 4; `test_adm` A4 expected 8 admin groups → the 12 current entries listed by name → passes (G8 left as written); `test_105f` now re-saves a lesson with its own status, so the check can never demote an approved lesson. First-pass failures that passed on re-run: `test_105_ui` (Ask Crux answers took 40–75 s while the main engine was slow; 1–3 s per step 20 minutes later → 6 / 6), `test_106_ui` U7 (7 / 7).
+
+Observation for operations: between 18:31 and 18:33 IST the main AI engine took 18–25 s per call and timed out twice (the backup engine answered); the usual figure is 1.6–2.8 s (p50, 9–11 Nov). Ask Crux kept answering through the backup, but slowly.
+
+Clean-up after the run: the 19 test questions (14 conversations, 18 ask-origin rows) and the weekly review report made by the test's "Run now" were deleted; nothing else was written (finance and daily-entry writers were not run). AI calls: 59 logged during the run (including embeddings), 77 today by then, well inside the daily caps (200 AI calls, 600 embeddings).

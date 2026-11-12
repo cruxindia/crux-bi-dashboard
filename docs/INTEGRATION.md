@@ -3,7 +3,7 @@
 The owner's new tool runs on GitHub, keeps its data in its own Supabase project, and brings in Zonal Tracker information and
 more. This note explains how to connect it to the Crux BI dashboard safely. It contains no keys or tokens.
 
-> **Update 7-Nov-2026 18:39 IST — the owner chose full unification (option D, one product).** The new tool's Claude chat takes over as the development platform: it audits the tool first (fitment, opportunities, user experience, dashboard integration, UI/UX), then designs one Supabase project in the operations.alert@cruxindia.com organisation with one database (no duplicated tables or data), one logic layer, one login with role-scoped data, and the tool's data as the primary source. The Force1 Case Wise / Point Wise uploads and the Zonal Excel upload stay live until the tool's MTD equals the Excel for every location × client on 10 consecutive working report days including a month-end (D233). The role prompt, technical pack and deck were handed to the owner directly; they hold business figures and are not in this repository. Options A–C below remain valid for the transition period only.
+> **Update 7-Nov-2026 18:39 IST — the owner chose full unification (option D, one product).** The new tool's development team takes over development: it audits the tool first (fitment, opportunities, user experience, dashboard integration, UI/UX), then designs one Supabase project in the operations.alert@cruxindia.com organisation with one database (no duplicated tables or data), one logic layer, one login with role-scoped data, and the tool's data as the primary source. The Force1 Case Wise / Point Wise uploads and the Zonal Excel upload stay live until the tool's MTD equals the Excel for every location × client on 10 consecutive working report days including a month-end (D233). The role prompt, technical pack and deck were handed to the owner directly; they hold business figures and are not in this repository. Options A–C below remain valid for the transition period only.
 
 ## What exists on the dashboard side
 
@@ -23,11 +23,11 @@ more. This note explains how to connect it to the Crux BI dashboard safely. It c
 
 ## Steps for option A
 
-1. **Tell Claude** three things: the repository (owner/name), the tool's Supabase project (or an invitation to its organisation), and which tables hold the Zonal Tracker data and how often they change. Neither is visible to this session today.
-2. **Data contract.** Claude maps the tool's tables to the tracker model already used by the Upload Centre: report date, team (location), client, target cases, MTD cases, rate / revenue. The contract lists each field, its unit and its checks.
+1. **Tell the development team** three things: the repository (owner/name), the tool's Supabase project (or an invitation to its organisation), and which tables hold the Zonal Tracker data and how often they change. Neither is visible to the development team today.
+2. **Data contract.** The development team maps the tool's tables to the tracker model already used by the Upload Centre: report date, team (location), client, target cases, MTD cases, rate / revenue. The contract lists each field, its unit and its checks.
 3. **Token.** An admin issues one `ingest` token for the tool, with a label such as "tool name — tracker push", an expiry and an owner. Keep it on the tool's server side only, for example as an Edge Function secret or a GitHub Actions secret. Never put it in front-end code or in the repository.
 4. **Push.** The tool's server side calls `POST https://czdjbbhxboweawqbjywr.supabase.co/rest/v1/rpc/bi_ingest` with the public API key in the headers and `{p_token, p_action, p_payload}` in the body. It follows the same batch steps as the Upload Centre (`begin`, pieces of at most 300 rows, `commit`) and retries a piece that times out.
-5. **Parallel run (one week).** Keep uploading the tracker by hand as well. Claude adds a Data Health check that compares the tool's batch with the manual upload for the same report date; this check is not built yet. Switch off the manual upload only when they agree.
+5. **Parallel run (one week).** Keep uploading the tracker by hand as well. The development team adds a Data Health check that compares the tool's batch with the manual upload for the same report date; this check is not built yet. Switch off the manual upload only when they agree.
 6. **Operate.** Batches from the tool show as `ingest-token: <label>` in the audit log. If the tool misbehaves, revoke its token (`bi.ingest_token.revoked = true`) and reject its batches; nothing else is affected.
 
 ## Rules that stay in force

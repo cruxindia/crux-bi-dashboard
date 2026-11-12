@@ -18,7 +18,7 @@ Data quality → exceptions (status open/accepted/resolved), location aliases (c
 * Bulk-load token: create random token, store `encode(digest(token,'sha256'),'hex')` in `bi.ingest_token` with an expiry; revoke after use.
 
 ## Hosting options for the standalone app (`web/index.html`)
-1. Keep using the Claude artifact (live via each admin's Supabase connector) — works today.
+1. Keep using the connector-mode page in the AI workspace (live via each admin's Supabase connector) — works today.
 2. GitHub Pages: requires a paid GitHub plan for a private repo, or making the repo public (code only — still safe because data access needs Supabase Auth + approved role).
 3. Any static host (Netlify, Cloudflare Pages, Supabase-adjacent hosting).
 
@@ -179,11 +179,11 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 - **Tracker labels with a new team suffix** are mapped to the existing location and listed under Admin → Mapping for review; change the target with "retarget" if the team really is a new location.
 - **Finance workbooks:** Admin → File uploads shows the detected dates and per-sheet checks before import; after import the live status appears; Revenue & collections → Cash shows the outstanding status and the collection-workbook check.
 - **Roles:** Admin → Mapping → "Operations handlers and collections owners": Preview first; tick "additional person" for a shared role; Edit asks for a reason and keeps the old row; End sets the last day; Withdraw is for a row entered by mistake.
-- **Night compaction 29-Oct (one-off):** cancelled during the incident; the `bi-claude-compact-*` jobs were removed from the schedule.
+- **Night compaction 29-Oct (one-off):** cancelled during the incident; the one-off night compaction jobs were removed from the schedule.
 
 ## Cached figures and the 29-Oct incident (wave 097)
 - **How caching works now (D191):** `public.bi_call` keys each request; after any data change the last answer is served at once and the request is queued in `bi.api_cache_queue`; cron `bi-api-revalidate` recomputes the queue one request at a time (created as `call bi.api_revalidate(100)` every minute; set to `call bi.api_revalidate(60)` every 5 minutes on 29-Oct while the instance recovers — return to every minute when it is back to normal speed: `select cron.alter_job(jobid, schedule := '* * * * *', command := 'call bi.api_revalidate(100)') from cron.job where jobname = 'bi-api-revalidate';`). Check: `select count(*) filter (where done_at is null) waiting, max(requested_at) last_request, count(*) filter (where last_error is not null) errors from bi.api_cache_queue;`
-- **Paused on 29-Oct (D193):** `bi-refresh-point-derived`, `bi-organic-refresh`, `bi-branch-activity`, `bi-warm-drill-cache`, `bi-force-attr-refresh`, `bi-tat-month-stat` (`bi-api-revalidate` was paused too and resumed at 16:05 IST at a slow pace; the one-off `bi-claude-compact-*` jobs were removed). Check speed first: `do $t$ declare t0 timestamptz := clock_timestamp(); n bigint; begin select count(*) into n from generate_series(1, 500000); raise exception '%', clock_timestamp() - t0; end $t$;` (normal well under 0.1 s). Then resume one job at a time, a few minutes apart: `select cron.alter_job(jobid, active := true) from cron.job where jobname = 'bi-api-revalidate';` then the refresh jobs. Leave `bi-warm-drill-cache` paused (the revalidation queue replaces it).
+- **Paused on 29-Oct (D193):** `bi-refresh-point-derived`, `bi-organic-refresh`, `bi-branch-activity`, `bi-warm-drill-cache`, `bi-force-attr-refresh`, `bi-tat-month-stat` (`bi-api-revalidate` was paused too and resumed at 16:05 IST at a slow pace; the one-off night compaction jobs were removed). Check speed first: `do $t$ declare t0 timestamptz := clock_timestamp(); n bigint; begin select count(*) into n from generate_series(1, 500000); raise exception '%', clock_timestamp() - t0; end $t$;` (normal well under 0.1 s). Then resume one job at a time, a few minutes apart: `select cron.alter_job(jobid, active := true) from cron.job where jobname = 'bi-api-revalidate';` then the refresh jobs. Leave `bi-warm-drill-cache` paused (the revalidation queue replaces it).
 - **API cannot load its schema ("Could not query the database for the schema cache"):** the database is too slow for the API's start-up queries. `authenticator` now has `statement_timeout = 120s` (D192). If it happens again: stop heavy work, then `select pg_terminate_backend(pid) from pg_stat_activity where usename = 'authenticator';` makes the API reconnect.
 
 ## Wave 098 (29-Oct-2026 evening) — refresh schedule, stale limit, uploads, Ask timeout
@@ -220,7 +220,7 @@ Method from 22-Oct-2026: 50 % last month (MoM), 40 % last quarter with its trend
 | bi-agent-daily-brief | 00:50 UTC (06:20) | daily_brief report (everyone; Overview → AI briefing) |
 | bi-agent-market-news | 01:10 UTC (06:40) | market_news report (everyone) |
 | bi-agent-weekly-review | Mon 01:30 UTC (Mon 07:00) | weekly_review report (admin) |
-| Weekly dashboard improver (Claude scheduled task) | Mon 10:55 IST | GitHub pull requests labelled `improver` (never merged or deployed by itself) |
+| Weekly dashboard improver (external scheduled AI task) | Mon 10:55 IST | GitHub pull requests labelled `improver` (never merged or deployed by itself) |
 Run any job now: Admin → AI agents → Run now, or POST ask-crux `{"action":"agent_run","job":"daily_brief","token":<admin or job token>}`. Switch all agents off: bi.ai_config AGENTS_ENABLED = off.
 
 **AI used.** Gemini first (AGENT_MODEL, then AGENT_FALLBACK_MODEL `gemini-2.5-flash,or:openrouter/free`). `or:` models go to OpenRouter, free models only (OPENROUTER_PAID_ALLOWED = off refuses any other model in code) and only providers that do not train on the data. The OpenRouter key is an Edge Function secret **OPENROUTER_API_KEY** (Supabase dashboard → Edge Functions → Secrets); without it the backup is simply skipped. AI_DAILY_CAP (default 200 calls per UTC day) covers Ask Crux and the agents together.
