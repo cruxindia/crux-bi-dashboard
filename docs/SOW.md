@@ -939,3 +939,13 @@ Status values: verified complete · incomplete · blocked · failed. Evidence is
 | Premium, Fortune-company feel; less clutter | design system, folding, notes on demand, quieter buttons, zone map, dark theme | UX_AUDIT §4: Overview 5,064 → 3,190 px, words −41 %, notes −61 %; test_106 7/7 live | Done (first pass); next steps listed in UX_AUDIT §5 |
 | Standing: no secrets in repo or output; additive migrations; verify every step | key never read or printed; bi_106a additive; tests above | secret scan 0 hits | Done |
 
+
+## Requirement audit — 12-Nov-2026 15:53 IST (quarter label, potential with support everywhere, plain words — wave 107)
+| Requirement | Work performed | Evidence | Result |
+|---|---|---|---|
+| "Q3FY27 … ideally Q3FY26 … financial year is 2026-27" | Checked the convention (FY27 = FY 2026-27; Q3 FY26 = Oct–Dec 2025); labels written in full "Q3 FY 2026-27 (Oct–Dec 2026)" in plan, target sheet, growth and Ask Crux | D316; DSIJ source; `fy_qlabel` checks; test_growth F3; P7 | Done — kept FY27 meaning, wrote the year in full (owner told before building) |
+| Potential "everywhere" with clients and branches | Overview potential tile, zone tiles, drill-down section at every level, plan card, Planning (potential tab + tables), branch managers, Root cause, Management summary, Business tracker "Potential" option | D317, D320; bi_107a/c; P1–P6, P9, P10 | Done (Growth & trends and finance pages stay on actual vs BAU — D320) |
+| Clients and branches for BAU ("organic") too | BAU tiles name client families and teams; drill-down BAU tile adds them; API `clients/teams/lines` | bi_107a/b; P1, P3 | Done (counts differ from potential by definition — L142) |
+| Ease "Outlook" and "captured" | Likely (actual so far + expected at the current pace); "now x% of potential (by value)"; "gap to potential"; glossary, Ask Crux prompt rule 9 and SQL answer texts | D318; P7 scan of 6 pages = 0 hits; Ask Crux answer check | Done |
+| Explain the ₹54.37 L vs ₹28.48 L gap | Bridge: so far ÷ share = full month ₹29.74 L; + back to best ₹3.16 L + 203 dormant ₹2.49 L + 1,119 never-active ₹7.46 L + 1,122 branches of 7 clients served elsewhere ₹11.52 L = ₹54.37 L; branch share 16.2% vs value share 54.7% explained; largest client gaps | D319; P3 (steps and branches add up) | Done |
+| Standing: verify every step; no secrets; additive migrations | patches counted; reconciliations; local + live tests; temporary token stored hashed and to be revoked | TEST_REPORT wave 107 | Done |
