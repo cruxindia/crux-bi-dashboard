@@ -854,3 +854,19 @@ Regression: test_105h_ui 8/8 local and live (H2 now also checks the button is hi
 | `by_pair` (356 team × client family rows) adds up to `by_location` (₹7,74,85,624 vs ₹7,74,85,615, rounding) | ✓ |
 | BAU support (`api_organic`): Pan India 17 client families, 35 teams, 485 lines; Mumbai + Goa 11 families, 2 teams, 33 lines | ✓ |
 | Ask Crux texts: potential answer says "now 54.7% of the potential, by value. The gap of ₹24.63 L is …"; plan chart series "Likely" | ✓ |
+
+**Browser (test_107_ui.py)** — local 10/10 (P10 added after the first local run of 9/9), **live 10/10** (live page md5 = build `ab643a5e…`)
+| Check | Result |
+|---|---|
+| P1 overview strip: potential tile ₹8.51 cr "now 28.1% of it · 17 clients · 2,942 of 66,087 branches active"; BAU tile "from 17 clients · 35 teams" | ✓ |
+| P2 Mumbai + Goa tile: "potential ₹54.37 L · now 54.7% of it", "471 of 2,915 branches active · 15 clients" (= API) | ✓ |
+| P3 drill-down bridge (Mumbai + Goa): ₹29.74 L + 3.16 + 2.49 + 7.46 + 11.52 = ₹54.37 L; branches 471 + 203 + 1,119 + 1,122 = 2,915; "₹28.48 L so far … ÷ 95.8%"; why the gap and largest client gaps named | ✓ |
+| P4 overview potential tile opens the drill-down at its potential section | ✓ |
+| P5 Planning: "₹2.29 cr actual so far + ₹4.94 cr expected" = likely ₹7.23 cr; potential tab bridge with Clients / Branches / Active branches | ✓ |
+| P6 management summary potential line with branches, clients, "by value" and the two largest gap parts | ✓ |
+| P7 visible text of overview, planning (3 tabs), growth, summary: 0 × captured / Outlook / headroom / "FY27"-style labels; quarters "FY 2026-27" | ✓ |
+| P8 branch managers: Now % of potential, Gap to potential, Branches active, Clients; phone without horizontal scroll; no console errors | ✓ |
+| P9 Business tracker "Potential": Pan India ₹8,50,97,697; 28 team totals = their family rows + clients with no row there (API); repeated family rows ″ | ✓ |
+| P10 Root cause: zone rows with potential, "now x%" and branches active; potential tile behind the numbers | ✓ |
+
+Regression (local, after the change): test_101 12/12, test_102 14/14 (P1 reads the "Likely for the quarter" tile), test_103 10/10, test_105h 8/8, test_106 7/7 on re-run — the first run failed U5 (sections that loaded after the 12-second fold window under a cold cache, L140; a direct check of all five pages folded correctly) and U6 (the test expected no stored backup key; the owner saved one on 11-Nov 14:14 IST — the test now checks the key state is unchanged). Ask Crux v30 = commit 4d6e394: status ok (backup key present); a live question on Mumbai + Goa answered "54.7% of its potential … gap of ₹24.63 L" with the four parts and none of the old words or vendor names.
