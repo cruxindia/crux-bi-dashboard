@@ -904,3 +904,13 @@ Corrections made while running, each re-run live: `test_100` P4 counted the new 
 Observation for operations: between 18:31 and 18:33 IST the main AI engine took 18–25 s per call and timed out twice (the backup engine answered); the usual figure is 1.6–2.8 s (p50, 9–11 Nov). Ask Crux kept answering through the backup, but slowly.
 
 Clean-up after the run: the 19 test questions (14 conversations, 18 ask-origin rows) and the weekly review report made by the test's "Run now" were deleted; nothing else was written (finance and daily-entry writers were not run). AI calls: 59 logged during the run (including embeddings), 77 today by then, well inside the daily caps (200 AI calls, 600 embeddings).
+
+## 13-Nov-2026 00:40–01:15 IST — night check of the storage fix (wave 108, not applied)
+| Check | Result |
+|---|---|
+| Monthly summary built from `point_derived` (temporary): groups / visits / TAT values / size | 17,765 / 833,032 (= 833,032 rows) / 412,863 (= non-null TAT rows) / 3.8 MB ✓ |
+| `api_force1`, Jan–Oct 2026 × 5 filters | 50 / 50 identical ✓ |
+| `api_drill_ops` force1 part, levels none / zone / client / location, 4 filters | 40 / 40 identical (children compared as a set; tie order not fixed in the live function) ✓ |
+| `api_attrition`, Jan–Oct 2026 × 3 filters | 30 / 30 identical ✓ |
+| Verifier's main location per month (`mode()` vs most visits, ties → lowest id) | 3,515 / 3,515 identical ✓ |
+| Applied to production | No — migration approval not available unattended (STORAGE_AUDIT §13, SOW D327) |

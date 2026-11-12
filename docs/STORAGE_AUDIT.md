@@ -305,3 +305,22 @@ Row counts were checked after the rewrite (92,239 / 13,272 / 63,465 / 686 / 4,29
 - `bi_ask`, `api_db_health`, `test_identity`, `test_master_data`: latest month, sizes, totals.
 
 Replace it with `bi.point_month_stat` at grain (month, recon_unit, location_id, client_code, category, route, verifier_id, verifier_class) — **17,765 rows today** — holding `n`, and `tat real[]` (the group's TAT values, 412,863 in total, ≈ 1.7 MB before compression). Percentiles stay exact (`percentile_cont` over `unnest(tat)` of the filtered groups), `mode()` becomes "location with the largest `n`", counts become `sum(n)`. Estimated size 3–5 MB instead of 75 MB (≈ 70 MB freed, ≈ 1.7 months of growth). Acceptance: for every month and a set of zone / client filters, `api_force1`, `api_drill_ops`, `api_attrition` and `person_month` give identical results before and after (compared in SQL), I11 changed to `sum(n) = count(point_store)`; rollback = run the current `refresh_point_derived()` again. Beyond that, staying on Free needs an archive rule for visit history (owner decision, Q19); otherwise Pro (owner decision; no paid use authorised).
+
+## 13. Night of 13-Nov-2026 (00:40–01:15 IST) — lasting fix verified, not yet applied
+**Size at 00:40 IST:** all databases 497,881,265 bytes (Supabase's measure) — **2.1 MB under the 500 MB limit**. `bi.point_derived` 75,448,320 bytes, 833,032 rows.
+
+**Built and compared (temporary copies only; nothing in production changed):** the monthly visit summary at the §12 grain from `bi.point_derived` = **17,765 groups, 833,032 visits, 412,863 TAT values, 3.8 MB** (vs 75.4 MB). Each reader was copied with exact, counted text replacements and run against the summary next to the live function:
+
+| Reader | Compared | Result |
+|---|---|---|
+| `api_force1` | Jan–Oct 2026 × 5 filters (all India; GUJARAT; SBI; MUMBAI_GOA + BOM; REST_MAHA) = 50 | identical |
+| `api_drill_ops` (`force1` part) | Jan–Oct 2026 at levels none, zone, client; location level for Apr/Sep/Oct; zone/client/location with GUJARAT, SBI, MUMBAI_GOA + BOM, REST_MAHA = 40 calls, 585 child rows | identical figures (children compared as a set: the live function's order among rows that tie on tracker cases is not fixed, e.g. PUNJAB/TAMILNADU swap) |
+| `api_attrition` | Jan–Oct 2026 × 3 filters = 30 | identical |
+| `person_activity_refresh` location (`mode()` → location with most visits, ties → lowest id) | all 3,515 verifier-months | identical |
+
+**Not applied — why.** Creating the table and replacing the functions is a database migration, and migrations need an approval that nobody could give at 00:40 (the request was cancelled automatically). Creating the summary without dropping `point_derived` would add 3.8 MB and push the database over 500 MB, so nothing was created.
+
+**Ready to apply (one migration, a few minutes, light work):**
+1. `bi.point_month_stat` (+ index on month, unit; RLS on, no grants) and `bi.refresh_point_month_stat()` — same route / verifier-class coding as `refresh_point_derived`; writes `refresh_state` row `point_month_stat` (rows = visits).
+2. Readers, exact replacements as verified: `api_force1` (lok/g from the summary, `count(*) n` → `sum(n) n`, TAT from `unnest(tat)`, `points_as_of` from `point_month_stat`); `api_drill_ops` (summary in lok/pts; counts → `coalesce(sum(n) …, 0)`; the two medians → sub-queries over `unnest(p2.tat)` per row key); `api_attrition` (`count(*)` → `coalesce(sum(pd.n), 0)`); `person_activity_refresh` (location with most visits); `bi_ask` (latest month); `test_identity` I11 (`sum(n)` = visits since 2024-04-01 IST); `test_master_data` (`sum(n)`); `api_db_health` (size of summary; obsolete primary-key action removed); `refresh_if_stale` (checks and refreshes the summary).
+3. Drop `bi.point_derived`; keep `refresh_point_derived()` for one wave (rollback = re-create the table and run it). Expected result ≈ 426 MB (−72 MB).
