@@ -950,3 +950,50 @@ All against the live database and the live Ask Crux function (commits 22bef9e �
 | T109-N2 | Gap with a reported row (rolled back): Pune Oct gap 1,981 → still unexplained 1,969 | ✓ |
 | T109-N3 | November has no Force1 case data → page shows October (59,547 tracker, 34,176 Force1, gap 26,004) with a note | ✓ |
 | T109-X1 | Secret scan of every publish (keys, backup key, JWT) | 0 hits ✓ |
+
+## 13/14-Nov-2026 — wave 110 (partner/own grid, manual daily numbers, learning that visibly works, every agent run live)
+Live page = https://cruxindia.github.io/crux-bi-dashboard/ (admin session; nothing saved from the browser). Database checks ran inside transactions that were rolled back.
+
+| # | Check | Result |
+|---|---|---|
+| T110-G1 | Admin → Partner & own branches opens on the grid | 126 client × location rows (business in the last 6 months), Run-by dropdown Not set / Own branch / Partner, From date, partner name; filters zone / show / find ✓ |
+| T110-G2 | Change tracking | 1 dropdown change → Save enabled, "1 change not saved", row marked; undo → "No changes", Save disabled ✓ |
+| T110-G3 | Quick fill | Show "Not set only" + find "pune" → 6 rows; "Apply to rows shown that are not set" → "6 changes not saved" (not saved) ✓ |
+| T110-G4 | `save_many` (rolled back) | 2 rows valid (1 own branch from 1-Apr-2024, 1 partner from 1-Oct-2026 with partner name); the grid then shows both with their dates ✓ |
+| T110-M1 | Manual daily numbers: Check file on the live page (3-row test file) | 2 ready (50 cases received, 75 field visits, 12-Nov), 1 row with problems skipped ✓ |
+| T110-M2 | Summary maths (rolled back: 2 days for one location, day 2 without "within TAT" and staff) | received 52, completed 40, case TAT 33.8 h (weighted by cases), field TAT 18 h, pending 19 (last day). First run: SLA 50% and staff 3.0/day — wrong, the day without those figures was counted in the denominator ✗ → fixed (bi_110c, D349) → SLA 80% (20 of 25), staff 6.0/day ✓ |
+| T110-M3 | Same date sent again | replaces the day (updated 1, inserted 0) ✓ |
+| T110-M4 | Bad row | 5 problems listed: future date, unknown location, no figures, two numbers not whole ✓ |
+| T110-M5 | Force1 gap with manual numbers (rolled back, October, one location) | gap 416 → still open 364 after 52 reported; covered 89.7% → 91.0% ✓ |
+| T110-L1 | Lesson trial (quality agent, report #53) | 1 lesson switched on (unit-type distinction, trial answer passed the figure check), 4 rejected with reasons; lessons now 3 active, 2 proposed (waiting for the next trial), 5 rejected ✓ |
+| T110-L2 | Chat review (report #32) proposes lessons from failures and 👎 notes | 15 questions reviewed, 2 lessons proposed ✓ |
+| T110-L3 | Weekly improver opens pull requests | see below |
+| T110-D1 | Overview strip "Asked most in the last 2 weeks" | 4 questions from the trends ✓ |
+| T110-D2 | First Ask Crux suggestion on Overview comes from the trends, then the fixed ones | ✓ |
+| T110-D3 | Admin → Ask Crux → What people ask | 66 questions in 14 days, types, 2 👍 · 7 👎, 25-row table with type, times asked, wordings, 👍/👎 ✓ |
+| T110-X1 | Page errors during all browser checks | 0 ✓ |
+
+**Agents — every job run live on 13-Nov 23:11–23:21 IST** (after the fixes: retry once, 95 s deadline, older model skipped on the agent keys, "not found" → next model). Engine: main = the agent's own key; backup = the backup engine, used when the agent's key was out of quota or busy.
+
+| Agent | Job | Report | Result | Engine |
+|---|---|---|---|---|
+| process_5 Ask Crux quality review | chat_review | #32 | ok | main |
+| pd_7 Second-opinion checker | lesson_trial | #53 | ok | main |
+| pdm_7 Weekly review | weekly_review | #35 | ok | main |
+| pdm_1 Morning brief | daily_brief | #33 | ok | main |
+| pd_5 Market and client news | market_news | #34 | ok | main |
+| pdm_2 Target and pace watch | target_watch | #46 | ok (first try: worker limit → fixed) | main |
+| pdm_3 Zone review — West | zone_west | #47 | ok (first try failed) | backup (key out of quota) |
+| pdm_4 Zone review — North and East | zone_north_east | #57 | ok (first try failed) | main |
+| pdm_5 Zone review — South | zone_south | #51 | ok | backup (key out of quota) |
+| pdm_6 Client review | client_review | #59 | ok | main |
+| pd_2 Branch network and potential | branch_network | #60 | ok | main |
+| pd_3 Force1 and TAT operations | ops_watch | #61 | ok | main |
+| pd_4 Collections and receivables | collections_watch | #62 | ok | main |
+| pd_1 Data readiness and anomaly watch | data_watch | #49 | ok | main |
+| pdm_8 Month-close summary | month_close | #64 | ok | main |
+| pd_6 Decision-log auditor | decision_audit | #50 | ok | main |
+| process_1 / process_2 / process_3 / process_6 | Ask Crux answers (users, management, deep analysis, tile explainer) | — | answered on their own keys (3 / 9 / 6 / 1 calls ok) | main |
+| process_4 Memory curator | — | — | no job: memory is written by code after each checked answer | — |
+
+All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not found" error after the fix went live (23:17 IST).
