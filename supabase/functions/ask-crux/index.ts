@@ -541,6 +541,8 @@ async function unitFast(body: any): Promise<Record<string, unknown> | null> {
   const U: any = await api('branch_units', { filters, p: { ...(uq.unit_type?.length ? { unit_type: uq.unit_type } : {}), list: true, limit: 200 } });
   if (!U?.summary) return null;
   const S = U.summary, types: any[] = U.by_unit_type ?? [];
+  // LHO is a unit type only once the database rule knows it (supabase/proposals/2026-11-14_lho_unit_type.sql); until then, and when none is in scope, the agent answers
+  if ((uq.unit_type ?? []).includes('LHO') && !types.some((t) => t?.unit_type === 'LHO')) return null;
   const team = filters.location_id != null ? (meta?.locations ?? []).find((l: any) => Number(l.id) === Number(filters.location_id))?.label ?? `team ${filters.location_id}` : null;
   const scope = [filters.client_family, team ?? (filters.zone_group ? zoneName(String(filters.zone_group)) : 'All India')].filter(Boolean).join(' · ');
   const sm = String(U.status_month ?? '').slice(0, 10); const m = sm ? new Date(sm + 'T00:00:00Z') : null;
