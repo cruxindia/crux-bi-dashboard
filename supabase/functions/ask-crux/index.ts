@@ -549,6 +549,7 @@ async function unitFast(body: any): Promise<Record<string, unknown> | null> {
   let answer = `${scope}: ${n_(S.total)} ${typeTxt} — ${n_(S.active)} active, ${n_(S.dormant)} dormant, ${n_(S.never_active)} never active.`;
   if (types.length > 1) answer += ` By type: ${types.map((t) => `${t.unit_type} ${n_(t.total)} (${n_(t.active)} active)`).join(', ')}.`;
   if (+S.no_team) answer += ` ${n_(S.no_team)} of them are not yet linked to a Crux team.`;
+  if (S.force1_cases_last_3_months != null && +S.total) answer += ` Force1 cases from these units in ${win}: ${n_(S.force1_cases_last_3_months)} (the Zonal Tracker does not split business by unit).`;
   if (!+S.total) answer = `${scope}: no ${typeTxt} in the client branch master.`;
   const notes = `Active = at least one Crux case in ${win}; dormant = Crux cases earlier but none in ${win}; never active = no Crux case found for the unit.` +
     ((uq.unit_type ?? []).includes('RACPC') && !(uq.unit_type ?? []).includes('Mini RACPC') ? ' RACPC here does not include Mini RACPC.' : '') +

@@ -267,7 +267,8 @@ function originSummary(o: any) {
 // figure cannot be traced is left out. Reports are admin-only unless said otherwise. Nothing here changes data.
 const ZONES: Record<string, string[]> = { zone_west: ['REST_MAHA', 'MUMBAI_GOA', 'GUJARAT', 'BHOPAL_MP'], zone_north_east: ['DELHI', 'LUCKNOW', 'PATNA', 'PUNJAB', 'KOLKATA', 'GUWAHATI', 'ODISHA'],
   zone_south: ['BENGALURU', 'HYDERABAD', 'TAMILNADU'] };
-const STYLE = 'Write for managers: short bold labels instead of headings, plain words, no field names or raw decimals (6.8%, not -0.068). Never name or score a person. ' +
+const STYLE = 'Write for managers: short bold labels instead of headings, plain words, no field names or raw decimals (6.8%, not -0.068). Zone names in words (Rest of Maharashtra, Mumbai & Goa, ' +
+  'Bhopal / MP — never REST_MAHA or MUMBAI_GOA); rupees in lakh or crore (₹63.14 L, ₹1.66 cr). Never name or score a person. ' +
   'Every figure must be copied from a look-up made today (rounding is fine); do not add up or average rows yourself. Counts (cases, units) and rupees are different measures: say which. ' +
   'SHARED MEMORY is context from earlier runs: use it to say what changed, never as a source of figures. End with **Open questions** (at most 2) only if something needs a human decision.';
 const zoneJob = (k: string, label: string) => ({ title: `Zone review — ${label}`, audience: 'admin', rounds: 6, topics: ZONES[k].map((z) => 'zone:' + z.toLowerCase()),
@@ -329,6 +330,12 @@ async function reviewJob(env: JobEnv, job: string) {
     out = { text: p.text + `\n\n*${p.dropped} statement${p.dropped === 1 ? ' was' : 's were'} left out because their figures could not be checked against the dashboard.*`,
       model: d.model, rounds: d.rounds, usage: d.usage, steps: (e as AgentError).steps ?? [], check: { figures: d.check.figures - d.check.untraced.length, traced: d.check.traced, untraced: [] } };
   }
+  // a report never keeps a statement whose figure could not be traced, even when the answer passed overall
+  if (!pruned && out.check?.untraced?.length) {
+    const p = prune(out.text, out.check.untraced);
+    if (p.dropped) { pruned = { dropped: p.dropped, total: p.total, untraced: out.check.untraced.map((x: string) => env.pseudo.show(x)) };
+      out = { ...out, text: p.text, check: { ...out.check, figures: out.check.figures - out.check.untraced.length, untraced: [] } }; }
+  }
   const body = clean(env.pseudo.show(noVendor(out.text))).replace(/\s*\(`?[a-z]+(?:_[a-z0-9]+)+`?\s*:\s*`?[-\d.,%]+`?\)/g, '');
   const steps = out.steps.filter((s: any) => !s.discarded).map((s: any) => ({ tool: s.tool, label: env.pseudo.show(String(s.label ?? s.tool)), ok: s.ok, rows: s.rows ?? null }));
   return { kind: job, for_date: day, audience: R.audience, title: `${R.title} · ${day}`, body_md: body, model: out.model, _topics: R.topics,
@@ -346,7 +353,9 @@ async function decisionAudit(env: JobEnv) {
     'Call the assistant only "Ask Crux"; never name an AI model, company or provider.';
   const prompt = `SHARED MEMORY ITEMS (newest first):\n${rows}\n\nReturn JSON: {"summary": "3-4 sentences", "status_updates": [{"id": n, "status": "superseded | rejected | confirmed", "why": "one line"}], ` +
     `"contradictions": [{"ids": [a, b], "issue": "what disagrees and which is more recent"}], "open_questions": [{"question": "a decision a human must take", "ids": [..]}]}. ` +
-    `Mark an item superseded only when a newer item on the same topic and scope replaces it; rejected only when another item shows it was wrong; confirmed when two or more independent items agree. At most 15 updates.`;
+    `Mark an item superseded only when a newer item on the same topic and scope replaces it; rejected only when another item shows it was wrong; ` +
+    `confirmed ONLY when an item from a DIFFERENT agent states the same figure or conclusion for the same scope and the same as-of date (being "consistent" or "complementary" is not enough). ` +
+    `Leave everything else unchanged. At most 15 updates.`;
   const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_decision_audit');
   const ids = new Set(items.map((m) => +m.id));
   const ups = (Array.isArray(json?.status_updates) ? json.status_updates : []).filter((u: any) => ids.has(+u.id) && ['superseded', 'rejected', 'confirmed'].includes(u.status)).slice(0, 15);
