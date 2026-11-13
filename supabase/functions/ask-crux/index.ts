@@ -377,7 +377,7 @@ async function jobEnv(cfg: Record<string, string>, job = ''): Promise<JobEnv> {
   const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
   const system = pseudo.hide(systemPrompt({ teams: meta?.locations ?? [], clients: meta?.clients ?? [], docs, dataAsOf, dataMonth, today }));
   const fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
-  const models = [...new Set([cfg.AGENT_MODEL, ...fbs].filter(Boolean))];
+  const models = [...new Set([cfg.AGENT_MODEL, ...fbs].filter(Boolean))].filter((m) => !(agentId && /^gemini-2\.5/.test(m)));   // agent keys are new projects: 2.5 is not offered
   const pe = provider(20000, 1), dim = Number(cfg.EMBED_DIM || 768);
   const embed = async (texts: string[]) => {
     if (!cfg.GEMINI_EMBEDDING_MODEL || !texts.length) return null;
@@ -385,7 +385,7 @@ async function jobEnv(cfg: Record<string, string>, job = ''): Promise<JobEnv> {
     await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_documents', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? `agent lessons ${texts.length}` : r.error });
     return r.ok ? r.vectors : null;
   };
-  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), agentId ? keys[agentId].key : undefined), models, api, gw,
+  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), agentId ? keys[agentId].key : undefined, 1), models, api, gw,
     rec: (p: Record<string, unknown>) => record({ ...p, agent: p.agent !== undefined ? p.agent : String(p.model ?? '').startsWith('or:') ? null : agentId }), pseudo, system, docs, meta, dataMonth, dataAsOf, cfg, embed, t0, agent: agentId };
 }
 

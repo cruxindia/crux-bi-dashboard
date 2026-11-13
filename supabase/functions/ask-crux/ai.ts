@@ -259,9 +259,10 @@ export class KeyFailover implements AIProvider {
   embed(m: string, t: string[], k: string, d: number) { return this.main.embed(m, t, k, d); }
 }
 // wave 106a: the backup key comes from the Edge Function secret OPENROUTER_API_KEY or, when that is not set, from Vault (passed in by index.ts)
-export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string, agentKey?: string): AIProvider {
-  const main = new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, 0);
-  const g = agentKey ? new KeyFailover(new GeminiProvider(agentKey, timeoutMs, 0), main) : main;
+// retries: scheduled jobs pass 1 so a short "busy / resource exhausted" spell (seen 13-Nov 23:15 IST) is waited out once on the same key and model
+export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string, agentKey?: string, retries = 0): AIProvider {
+  const main = new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, retries);
+  const g = agentKey ? new KeyFailover(new GeminiProvider(agentKey, timeoutMs, retries), main) : main;
   return new MultiProvider(g, new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') || backupKey || '', timeoutMs, paidAllowed));
 }
 // wave 109b: key check without spending tokens (lists one model); the key is never returned or logged
