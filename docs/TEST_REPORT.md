@@ -914,3 +914,39 @@ Clean-up after the run: the 19 test questions (14 conversations, 18 ask-origin r
 | `api_attrition`, Jan–Oct 2026 × 3 filters | 30 / 30 identical ✓ |
 | Verifier's main location per month (`mode()` vs most visits, ties → lowest id) | 3,515 / 3,515 identical ✓ |
 | Applied to production | No — migration approval not available unattended (STORAGE_AUDIT §13, SOW D327) |
+
+## 13-Nov-2026 — wave 109 (agent teams on 26 keys, shared memory, Ask Crux counts and speed, unit counts, partner vs own, people not on Force1)
+All against the live database and the live Ask Crux function (commits 22bef9e → 3938992), 21:05–23:50 IST. Database changes were first run inside transactions that were rolled back.
+
+| ID | Check | Result |
+|---|---|---|
+| T109-K1 | Key check of all 26 Vault keys (lists one model per key, no tokens spent; keys never returned) | 26 / 26 accepted ✓ |
+| T109-K2 | `bi.ai_secret` refuses any other Vault name (e.g. service role) | null ✓ |
+| T109-J1 | Target & pace watch on its own key (pdm_2) | ok, 2 AI calls, 21/21 figures traced ✓ |
+| T109-J2 | Zone review West (pdm_3) | first run failed (worker limit + model 404 on the new project) → fixed (lighter review, 404 → next model) → ok, 6 calls ✓ |
+| T109-J3 | Zone review South (pdm_5) | ok, 4 calls, 51 s ✓ |
+| T109-J4 | Data readiness (pd_1) | ok, 51/51 figures traced; flags case/point data 13 days old and the October Force1 gap ✓ |
+| T109-J5 | Decision-log audit (pd_6) | ok; first run confirmed 9 items too easily → reset to open, rule tightened (D333) ✓ |
+| T109-M1 | Memory write/read by audience (rolled back): viewer reads 1 of 2, admin reads 2 of 2 | ✓ |
+| T109-M2 | Ask Crux answers carry the memory they read (`trace.memory_items` = 6 on admin questions) and write a finding after each checked answer | 17 items after the tests ✓ |
+| T109-M3 | Per-key budget counts only that key (`agent_id` on usage rows); main-key budget unchanged | used 0 → 1 after one recorded call ✓ |
+| T109-A1 | "give count of gujarat of SBI RACPC, Mini RACPC and RASMECC units" | counts, no AI: 27 (RACPC 20, RASMECCC 4, Mini 3), 22 active; 5.1 s (was 31 units, 13 s) ✓ |
+| T109-A2 | "How many are mini RACPC units?" then follow-up "Give same data of gurajat" (parser) | 114 all India; follow-up keeps Mini RACPC + Gujarat ✓ |
+| T109-A3 | "list SBI RACPC in Gujarat" → "and for Rajkot?" | 20 units listed (6.8 s); Rajkot 6 (3.2 s) ✓ |
+| T109-A4 | "How much business did active SBI RACPC units in Gujarat give?" | first run attributed SBI's whole Gujarat tracker business to RACPCs ✗ → rule added → 4,853 Force1 cases in 3 months from 17 active units, with the note that the tracker is not split by unit ✓ |
+| T109-A5 | "How many cases did Gujarat do this month?" | first line in cases (2,077), 4.3 s ✓ |
+| T109-A6 | Partner vs own (admin) and "October cases missing in Force1 for Delhi" | new tools used; "not set" explained; Delhi 10,475 of 10,966 ✓ |
+| T109-S1 | Speed: unit answers 2.3–6.8 s (were 8–76 s); all-India unit counts 9.0 s → 1.9 s in the database | ✓ |
+| T109-U1 | Unit-name fixes: "MINI RACPAC TALAJA" → Mini RACPC; 19 "SMECC …" → SMECCC; nothing else changed type | diff of all 92,239 rows: 23 changed, as intended ✓ |
+| T109-U2 | Page card, Ask Crux and view `ai.branches` give the same Gujarat SBI counts | 20 / 3 / 4 ✓ |
+| T109-U3 | Counts unchanged by the speed work (Gujarat SBI 27, Mini RACPC 114, Surat RACPC 4) | ✓ |
+| T109-T1 | Tracker data for November | loaded to 12-Nov (6 files, 13-Nov 17:30 IST); every target cell 0 → Overview note shown ✓ (targets: owner decision) |
+| T109-P1 | Live page (warm): first tiles 4.2 s, network idle 6.9 s; Meeting view opens the tracker sheet at zone level | ✓ |
+| T109-O1 | Partner/own bulk check (rolled back): 2 valid, 1 with 4 problems, "1 open period will be closed" | ✓ |
+| T109-O2 | Shift: own branch from 1-Apr-2024, partner from 1-Oct-2026 → own ends 30-Sep-2026; Sep counts own, Oct counts partner | ✓ |
+| T109-O3 | Overlap with a closed period is refused with the period in the message | ✓ |
+| T109-O4 | Admin page: register, add form, business split, template, check file in the browser | ✓, no page errors |
+| T109-N1 | Non-Force1 upload check: 1 valid (12 cases, 30 points), 1 row with 4 problems (future month, name, role, source) | ✓ |
+| T109-N2 | Gap with a reported row (rolled back): Pune Oct gap 1,981 → still unexplained 1,969 | ✓ |
+| T109-N3 | November has no Force1 case data → page shows October (59,547 tracker, 34,176 Force1, gap 26,004) with a note | ✓ |
+| T109-X1 | Secret scan of every publish (keys, backup key, JWT) | 0 hits ✓ |
