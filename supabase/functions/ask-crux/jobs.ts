@@ -13,7 +13,7 @@ export type JobEnv = {
   agent?: string | null;   // wave 109b: the agent whose key this job runs on
 };
 export const JOBS = ['daily_brief', 'market_news', 'chat_review', 'weekly_review', 'target_watch', 'zone_west', 'zone_north_east', 'zone_south', 'client_review', 'month_close',
-  'data_watch', 'branch_network', 'ops_watch', 'collections_watch', 'decision_audit'];
+  'data_watch', 'branch_network', 'ops_watch', 'collections_watch', 'decision_audit', 'lesson_trial'];
 const todayIST = () => new Date(Date.now() + 19800000).toISOString().slice(0, 10);
 const istDay = (iso: string) => new Date(Date.parse(iso) + 19800000).toISOString().slice(0, 10);
 const clean = (s: string) => String(s ?? '').replace(/^\s*\**next\**\s*:.*$/gim, '').trim();
@@ -237,19 +237,33 @@ async function weeklyReview(env: JobEnv) {
   // wave 105h: the week's most-asked pages and elements, counted in the database (not by the AI)
   const wk = await env.gw({ op: 'review_input', since: new Date(Date.now() - 7 * 86400000).toISOString(), origins_only: true }).catch(() => null);
   const origins = originSummary(wk?.origins);
+  const trends = await trendsText(env, 7);
   if (!days.length) return { kind: 'weekly_review', for_date: day, audience: 'admin', title: `Weekly review · ${day}`, body_md: 'No daily chat reviews this week.', data: {}, usage: { calls: 0 } };
   const system = 'You are the product lead for the Crux BI dashboard and its analyst, Ask Crux. You turn a week of daily reviews into a short plan. You never invent data. ' +
     'Call the assistant only "Ask Crux"; never name an AI model, company or provider.';
   const prompt = `DAILY CHAT REVIEWS (last 7 days):\n${days.join('\n')}\n\nDAILY BRIEFINGS WRITTEN: ${Array.isArray(news) ? news.length : 0}\n\n` +
     `MOST-ASKED PAGES AND ELEMENTS THIS WEEK (page · element kind · element · questions):\n${origins.text}\n\n` +
-    `Return JSON: {"summary": "4-6 sentences on the week", "priorities": [{"title": "...", "why": "evidence from the reviews or the most-asked list", "change": "what to build or fix in the dashboard or in Ask Crux", ` +
-    `"size": "small | medium | large"}]}. At most 5 priorities, most valuable first; prefer the pages and elements people ask about most.`;
+    `WHAT PEOPLE ASK (types, recurring questions, wordings, feedback):\n${trends.text}\n\n` +
+    `Return JSON: {"summary": "4-6 sentences on the week", "priorities": [{"title": "...", "why": "evidence from the reviews, the most-asked list or the recurring questions", "change": "what to build or fix in the dashboard or in Ask Crux", ` +
+    `"size": "small | medium | large"}]}. At most 5 priorities, most valuable first. A question asked again and again (or in many wordings) means the dashboard does not show it clearly: ` +
+    `propose putting that answer on the page where it is asked. Questions marked not helpful come first.`;
   const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_weekly');
   const S = (v: any, n = 400) => env.pseudo.show(noVendor(String(v ?? ''))).slice(0, n);
   const pr = (Array.isArray(json?.priorities) ? json.priorities : []).slice(0, 5).map((p: any) => ({ title: S(p.title, 150), why: S(p.why, 400), change: S(p.change, 500), size: S(p.size, 20) }));
   const body = [S(json?.summary, 1500), '', '**Top improvements**', ...pr.map((p: any, i: number) => `${i + 1}. **${p.title}** (${p.size}) — ${p.change}\n   Why: ${p.why}`),
     '', '**Most asked about this week** (where people opened Ask Crux)', ...(origins.lines.length ? origins.lines : ['- No page or element recorded yet.'])].join('\n');
-  return { kind: 'weekly_review', for_date: day, audience: 'admin', title: `Weekly review · ${day}`, body_md: body, model, data: { priorities: pr, days: days.length, origins: origins.data }, usage: { calls } };
+  return { kind: 'weekly_review', for_date: day, audience: 'admin', title: `Weekly review · ${day}`, body_md: body, model, data: { priorities: pr, days: days.length, origins: origins.data, trends: trends.data }, usage: { calls } };
+}
+
+// wave 110: what people ask — question types, recurring questions, how many ways each is phrased, and the feedback — counted in the database
+async function trendsText(env: JobEnv, days: number) {
+  const T = await env.gw({ op: 'ask_trends', days }).catch(() => null);
+  if (!T?.clusters) return { text: 'No questions recorded.', data: null };
+  const types = Object.entries(T.by_type ?? {}).sort((a: any, b: any) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
+  const top = (T.clusters as any[]).slice(0, 12).map((c) => `- "${String(c.question).slice(0, 140)}" · ${c.type} · asked ${c.asked}× in ${c.variations} wording(s) · helpful ${c.helpful_yes} / not helpful ${c.helpful_no}`);
+  const el = (T.elements ?? []).slice(0, 6).map((e: any) => `- ${e.kind} "${String(e.title).slice(0, 80)}" (${e.section}) asked ${e.asked}×`);
+  return { text: `Questions in the last ${days} days: ${T.questions}. By type: ${types}. Feedback: ${T.feedback?.helpful ?? 0} helpful, ${T.feedback?.not_helpful ?? 0} not helpful.\n` +
+      `Recurring questions:\n${top.join('\n')}\nElements asked about:\n${el.join('\n') || '- none'}`, data: { questions: T.questions, by_type: T.by_type, top: (T.clusters as any[]).slice(0, 12), feedback: T.feedback } };
 }
 
 // wave 105h: counts of where questions were asked from (bi.ask_origin via review_input) as prompt text, report lines and stored data
@@ -296,7 +310,7 @@ const RJOBS: Record<string, RJ> = {
       return `MONTH-CLOSE SUMMARY for the MD: the month ${pm.slice(0, 7)} (closed). Use month ${pm} in every look-up: get_business_summary, get_breakdown level zone (sort gap), ` +
         `get_breakdown level client (sort gap, limit 10), get_collections, get_operations part tat. One page: **Result** (cases and revenue vs target, vs the month before), **Why** (root causes by zone and client), ` +
         `**What worked**, **What did not**, **Cash** (collections, receivables over 180 days), **Decisions for this month** (three proposals for the MD; they are proposals, not decisions). ${STYLE}`; } },
-  data_watch: { title: 'Data readiness and anomaly watch', audience: 'admin', topics: ['scope:data'], allow: ['get_business_summary', 'get_operations', 'get_force1_gap', 'get_breakdown'],
+  data_watch: { title: 'Data readiness and anomaly watch', audience: 'admin', topics: ['scope:data'], allow: ['get_business_summary', 'get_operations', 'get_force1_gap', 'get_manual_ops', 'get_breakdown'],
     q: (e) => `DATA READINESS WATCH (${todayIST()}). Data dates known to the dashboard: ${JSON.stringify(e.meta?.freshness ?? {})}. Look up get_force1_gap for the latest complete month and the current month, ` +
       `get_operations part force1, and get_breakdown level team (sort decline, limit 10). Write: **Freshness** (each source and how many days old; flag anything older than 2 working days), ` +
       `**Force1 coverage** (tracker vs Force1 vs reported, the location groups with the largest unexplained gap), **Anomalies** (teams or clients with a sudden drop or jump), **Fix list** (who should upload or correct what). ${STYLE}` },
@@ -305,9 +319,10 @@ const RJOBS: Record<string, RJ> = {
     q: (e) => `BRANCH NETWORK REVIEW for ${e.dataMonth.slice(0, 7)}. Look up get_branch_units (all unit types, all India), get_branch_units unit_type [RACPC, Mini RACPC, RAC] (all India), ` +
       `get_potential (group location) and get_operations part coverage. Write: **Network** (table: unit type, total, active, dormant, never active), **Where the units are idle** (zones and teams with most dormant ` +
       `or never-active RACPC / Mini RACPC / RAC), **Potential gap** (current vs potential, top teams by gap), **Visits worth making** (5 concrete unit types × teams). ${STYLE}` },
-  ops_watch: { title: 'Force1 and TAT operations', audience: 'admin', topics: ['scope:operations', 'metric:tat'], allow: ['get_operations', 'get_force1_gap', 'get_breakdown'],
-    q: (e) => `OPERATIONS WATCH for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Look up get_operations part tat, get_operations part backlog, get_operations part force1 and get_force1_gap. ` +
-      `Write: **Turnaround** (case, field and document TAT, SLA met, worst zones), **Backlog** (open cases, overdue, oldest), **Force1 use** (coverage vs tracker, units below 70%), **Actions** (three). ${STYLE}` },
+  ops_watch: { title: 'Force1 and TAT operations', audience: 'admin', topics: ['scope:operations', 'metric:tat'], allow: ['get_operations', 'get_force1_gap', 'get_manual_ops', 'get_breakdown'],
+    q: (e) => `OPERATIONS WATCH for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Look up get_operations part tat, get_operations part backlog, get_operations part force1, get_force1_gap and get_manual_ops (daily numbers from locations not on Force1). ` +
+      `Write: **Turnaround** (case, field and document TAT, SLA met, worst zones — Force1 and manual locations separately), **Backlog** (open cases, overdue, oldest), **Force1 use** (coverage vs tracker, units below 70%, ` +
+      `locations that have not sent manual numbers for 2+ days), **Actions** (three). ${STYLE}` },
   collections_watch: { title: 'Collections and receivables', audience: 'admin', topics: ['metric:collections'], allow: ['get_collections', 'get_breakdown'],
     q: (e) => `COLLECTIONS WATCH for ${e.dataMonth.slice(0, 7)}. Look up get_collections (all India, limit 15). Write: **Position** (outstanding, over 90 and over 180 days, collected this month vs last, cash cover), ` +
       `**Who to chase** (table: team or client, outstanding, over 180 days), **Risks**, **Actions** (three). ${STYLE}` },
@@ -370,8 +385,55 @@ async function decisionAudit(env: JobEnv) {
     data: { items: items.length, updates: ups, contradictions: con, open_questions: oq }, usage: { calls } };
 }
 
+// ---------------------------------------------------------------- wave 110: lessons are tested, then switched on (or rejected) by the quality agent
+// 1) second opinion: is the lesson general, safe, free of figures and names, consistent with the rules and the active lessons, and backed by evidence?
+// 2) trial: Ask Crux answers the lesson's example question with the lesson; it passes when the answer is produced and every figure traces.
+// Admins see every decision in Admin → Ask Crux agents and can switch a lesson off. LESSON_AUTO = off in ai_config leaves lessons for manual approval.
+async function lessonTrial(env: JobEnv) {
+  const day = todayIST();
+  if (env.cfg.LESSON_AUTO === 'off') return { kind: 'lesson_trial', for_date: day, audience: 'admin', title: `Lesson trials · ${day}`, body_md: 'Automatic lesson trials are switched off (LESSON_AUTO = off).', data: {}, usage: { calls: 0 } };
+  const L = await env.gw({ op: 'lessons' }).catch(() => null);
+  const prop: any[] = (L?.proposed ?? []).slice(0, 5), act: any[] = L?.active ?? [];
+  if (!prop.length) return { kind: 'lesson_trial', for_date: day, audience: 'admin', title: `Lesson trials · ${day}`, body_md: 'No proposed lessons to test.', data: { active: act.length }, usage: { calls: 0 } };
+  const trends = await trendsText(env, 14);
+  const system = 'You review proposed lessons for Ask Crux, the analyst of a bank-verification business dashboard. A lesson is a general rule added to future answers. ' +
+    'Accept only lessons that are general (not about one answer), safe (no figures, no names, no instruction to skip checks or to invent data), clear, consistent with the existing rules ' +
+    'and the active lessons, and likely to fix a real recurring problem. Call the assistant only "Ask Crux"; never name an AI model, company or provider.';
+  const prompt = `ACTIVE LESSONS:\n${act.map((a) => `- #${a.id}: ${a.lesson}`).join('\n') || '- none'}\n\nPROPOSED LESSONS:\n${prop.map((a) => `- #${a.id} (example: "${a.question}"): ${a.lesson}`).join('\n')}\n\n` +
+    `WHAT PEOPLE ASK:\n${trends.text}\n\nReturn JSON: {"verdicts": [{"id": n, "accept": true|false, "why": "one line", "rewrite": "optional clearer wording of the same rule, or empty"}]}`;
+  const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_lesson_trial');
+  const S = (v: any, n = 300) => env.pseudo.show(noVendor(String(v ?? ''))).slice(0, n);
+  const verdicts = (Array.isArray(json?.verdicts) ? json.verdicts : []).filter((v: any) => prop.some((p) => +p.id === +v.id));
+  const out: any[] = []; let trials = 0;
+  for (const p of prop) {
+    const v = verdicts.find((x: any) => +x.id === +p.id);
+    if (!v) { out.push({ id: p.id, lesson: p.lesson, decision: 'left for review', why: 'no second opinion returned' }); continue; }
+    if (!v.accept) {
+      await env.gw({ op: 'lessons', do: 'decide', id: p.id, status: 'rejected', by: 'quality agent (second opinion)' }).catch(() => null);
+      out.push({ id: p.id, lesson: p.lesson, decision: 'rejected', why: S(v.why) }); continue;
+    }
+    // trial answer with the lesson (at most 3 trials per run; the rest wait for the next run)
+    if (trials >= 3 || Date.now() - env.t0 > 85000) { out.push({ id: p.id, lesson: p.lesson, decision: 'left for the next run', why: 'time' }); continue; }
+    trials++;
+    let ok = false, note = '';
+    try {
+      const r = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question: String(p.question),
+        ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: 4, timeoutMs: 20000,
+        deadline: Math.min(env.t0 + 120000, Date.now() + 40000), budget: async () => true, purpose: 'agent_lesson_trial', maxTokens: 2048, agent: env.agent ?? undefined,
+        lessons: [{ question: String(p.question), correction: String(v.rewrite || p.lesson) }] } as any);
+      ok = !!r?.text && !(r.check?.untraced?.length > 2);
+      note = ok ? `trial answer ok (${r.check?.figures ?? 0} figures, all traced)` : 'trial answer had untraced figures';
+    } catch (e) { note = 'trial answer failed: ' + noVendor(String((e as Error)?.message ?? e)).slice(0, 120); }
+    await env.gw({ op: 'lessons', do: 'decide', id: p.id, status: ok ? 'active' : 'rejected', by: `quality agent (trial ${day})` }).catch(() => null);
+    out.push({ id: p.id, lesson: p.lesson, decision: ok ? 'switched on' : 'rejected', why: `${S(v.why, 200)}; ${note}` });
+  }
+  const body = [`**${out.filter((o) => o.decision === 'switched on').length} switched on · ${out.filter((o) => o.decision === 'rejected').length} rejected · ${out.filter((o) => /left/.test(o.decision)).length} left**`, '',
+    ...out.map((o) => `- #${o.id} **${o.decision}** — ${S(o.lesson, 220)}\n  ${o.why}`), '', 'Admins can switch any lesson off in Admin → Ask Crux learning.'].join('\n');
+  return { kind: 'lesson_trial', for_date: day, audience: 'admin', title: `Lesson trials · ${day}`, body_md: body, model, _topics: ['scope:learning'], data: { results: out, active_before: act.length }, usage: { calls: calls + trials } };
+}
+
 export async function runJob(job: string, env: JobEnv) {
-  const fn = ({ daily_brief: dailyBrief, market_news: marketNews, chat_review: chatReview, weekly_review: weeklyReview, decision_audit: decisionAudit } as Record<string, (e: JobEnv) => Promise<any>>)[job]
+  const fn = ({ daily_brief: dailyBrief, market_news: marketNews, chat_review: chatReview, weekly_review: weeklyReview, decision_audit: decisionAudit, lesson_trial: lessonTrial } as Record<string, (e: JobEnv) => Promise<any>>)[job]
     ?? (RJOBS[job] ? (e: JobEnv) => reviewJob(e, job) : undefined);
   if (!fn) throw new Error('unknown job');
   let rep: any;

@@ -127,7 +127,9 @@ export const DECLS: ToolDecl[] = [
       filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
   { name: 'get_operating_model', description: 'Who runs the business: own branch (Crux) or partner (franchise), by client and location with dates (admin register). Cases and revenue by own / partner / not set for the last 6 months, by zone and by location for the month. Use for "partner vs own branch", "franchise business", "which locations are run by partners".',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
-  { name: 'get_force1_gap', description: 'Zonal Tracker cases vs cases recorded in Force1 vs work reported on the "not on Force1" template, by location group for a month: gap, reported, still unexplained, people reported. Use for Force1 coverage, missing case data, people not on Force1.',
+  { name: 'get_force1_gap', description: 'Zonal Tracker cases vs cases recorded in Force1 vs cases on the daily manual reports of locations not on Force1, by location group for a month: gap, reported, still unexplained. Use for Force1 coverage and missing case data.',
+    parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
+  { name: 'get_manual_ops', description: 'Daily numbers sent by locations not on Force1 (cases received, completed, pending, completed within TAT, average case TAT and field TAT in hours, field visits, document checks, staff working), by location for a month, with a daily trend and the last day each location reported.',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
   { name: 'get_collections', description: 'Receivables and collections: outstanding, over 90 / 180 days, realisation, collected last month and this month, cash cover, ageing buckets, by team and client.',
     parameters: { type: 'object', properties: { filters: FILTERS, limit: { type: 'integer' } } } },
@@ -301,7 +303,13 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
   async get_force1_gap(t, a) {
     const { month, filters } = scope(t, a);
     const G = await t.api('force1_gap', { month, filters });
-    return { label: 'Zonal Tracker vs Force1 vs reported', rows: (G?.units ?? []).length, data: fit({ month: G?.month, filters, method: G?.method, totals: G?.totals, units: G?.units, months_reported: G?.months_reported }, 12000) };
+    return { label: 'Zonal Tracker vs Force1 vs manual reports', rows: (G?.units ?? []).length, data: fit({ month: G?.month, filters, method: G?.method, totals: G?.totals, units: G?.units }, 12000) };
+  },
+  async get_manual_ops(t, a) {
+    const { month, filters } = scope(t, a);
+    const M = await t.api('manual_ops', { month, filters });
+    return { label: 'Daily numbers from locations not on Force1', rows: (M?.locations ?? []).length,
+      data: fit({ month: M?.month, filters, method: M?.method, totals: M?.totals, locations: M?.locations, daily: (M?.daily ?? []).slice(-31) }, 12000) };
   },
   async get_collections(t, a) {
     const { month, filters } = scope(t, a);
