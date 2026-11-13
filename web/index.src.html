@@ -387,7 +387,7 @@ function showLoginMsg(t){$('#loginMsg').textContent=t}
 const AREAS=[['Executive overview',[['overview','Executive overview'],['present','Management summary']]],['Business performance',[['tracker','Business tracker'],['rca','Root cause (why)'],['growth','Growth & trends'],['planning','Planning & forecasting'],['people','People']]],
  ['Operations & TAT',[['tat','TAT & operations'],['force1','Force1 utilisation']]],['Revenue & collections',[['collections','Revenue & collections']]],
  ['Data readiness',[['health','Data readiness']]],['Ask Crux',[['ask','Ask Crux']]]];
-const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_finance','Admin · Finance review'],['adm_plan','Admin · Plan & targets'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health'],['adm_ask','Admin · Ask Crux learning'],['adm_agents','Admin · Ask Crux agents']];
+const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_opmodel','Admin · Partner & own branches'],['adm_nonf1','Admin · People not on Force1'],['adm_finance','Admin · Finance review'],['adm_plan','Admin · Plan & targets'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health'],['adm_ask','Admin · Ask Crux learning'],['adm_agents','Admin · Ask Crux agents']];
 /* wave 096: simple line icons for the menu areas (decorative, aria-hidden) */
 const ICO={'Executive overview':'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
  'Business performance':'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>','Operations & TAT':'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
@@ -460,7 +460,7 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
 // wave 105h: "who made this change" columns show the operations connector by its role, not by the assistant's product name (the stored record is unchanged)
 function whoLabel(v){return String(v).replace(/^admin-key:/,'').replace(/\bclaude[-\w]*/gi,'operations')}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';const sb=staleBanner();if(sb)v.insertBefore(sb,s);await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
-function render(){S.renderAt=Date.now();for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk,adm_agents:vAdmAgents}[S.section]||vOverview)()}
+function render(){S.renderAt=Date.now();for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_opmodel:vAdmOpModel,adm_nonf1:vAdmNonF1,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk,adm_agents:vAdmAgents}[S.section]||vOverview)()}
 
 /* ---------- Overview ---------- */
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
@@ -1398,6 +1398,8 @@ const ADM_GROUPS=[
  ['adm_dq','Data-quality exceptions & reconciliation','Import exceptions with evidence, Force1 vs business count reconciliation, data coverage by location group'],
  ['adm_branch','Branch research & monitor','Research status by client and location, monthly monitor runs, branch review queue'],
  ['adm_hr','HR / workforce master data','Workforce list upload and employee classification'],
+ ['adm_opmodel','Partner & own branches','Which client in which location is run by a partner and which by our own branch, from and to dates; single edits, bulk upload, and the business split'],
+ ['adm_nonf1','People not on Force1','Template for teams whose work is not in Force1, upload with checks, and the gap between the Zonal Tracker and Force1 by location'],
  ['adm_finance','Finance review & records','Finance review queue; invoice and receipt detail by location'],
  ['adm_plan','Plan & targets','Suggested monthly targets from current pace, potential and opportunity: preview, save as the plan, version history'],
  ['adm_penalty','Penalties','Add or cancel penalties; complete audit history'],
@@ -1464,6 +1466,73 @@ async function reportCalendarUI(box){box.innerHTML='';
 const vAdmMapping=guard(async s=>{if(!admHead(s,'adm_mapping'))return;await mappingUI(s)});
 const vAdmDq=guard(async s=>{if(!admHead(s,'adm_dq'))return;const ib=el('div',{class:'card',id:'identityCard',style:'margin-bottom:14px'});s.append(ib);identityUI(ib);await dqUI(s,$('#fMonth').value,filters())});
 const vAdmBranch=guard(async s=>{if(!admHead(s,'adm_branch'))return;const a=el('div');s.append(a);await branchResearchSection(a);const b=el('div');s.append(b);await branchReviewSection(b)});
+/* wave 109c: partner vs own branch by client × location (dates, single edits, bulk upload) and people not on Force1 (template, upload, gap) */
+const edName=()=>{try{return localStorage.getItem('crux_editor')||''}catch{return ''}};
+const vAdmOpModel=guard(async s=>{if(!admHead(s,'adm_opmodel'))return;const m=$('#fMonth').value;
+ const sum=el('div',{class:'card'}),reg=el('div',{class:'card',style:'margin-top:14px'}),up=el('div',{class:'card',style:'margin-top:14px'});s.append(sum,reg,up);
+ const draw=async()=>{await omSummary(sum,m);await omRegister(reg,draw)};masterUI(up,{kind:'operating_model',fixed:true,onSaved:draw});await draw()});
+async function omSummary(box,m){box.innerHTML='';box.append(el('h3',{},'Business by who runs it — '+mlabel(m)));let a;
+ try{a=await api('operating_model',{month:m,filters:{}})}catch(e){box.append(el('p',{class:'note'},'Not available: '+e.message));return}
+ const T=(a.trend||[]).find(x=>x.month===a.month)||{},R=a.register||{};
+ box.append(el('p',{class:'note'},a.rule+' Client and location pairs with no entry show as "not set" until you add them below.'),
+  el('div',{class:'tiles'},tile('Own branch',fmtL(T.self_revenue),fmt(T.self_cases)+' cases'),tile('Partner',fmtL(T.partner_revenue),fmt(T.partner_cases)+' cases'),
+   tile('Not set yet',fmtL(T.not_set_revenue),fmt(T.not_set_cases)+' cases',T.not_set_revenue>0?'warn':''),tile('Register',fmt(R.current)+' current',`${fmt(R.self_locations)} locations own · ${fmt(R.partner_locations)} partner`)));
+ const tr=a.trend||[];if(tr.length){const cv=el('canvas',{'aria-label':'Revenue by who runs the business, last 6 months'});box.append(el('div',{class:'chartbox',style:'height:220px'},cv));
+  setTimeout(()=>{const c=C();chart(cv,{type:'bar',data:{labels:tr.map(x=>mlabel(x.month)),datasets:[{label:'Own branch',data:tr.map(x=>x.self_revenue||0),backgroundColor:c.blue},
+   {label:'Partner',data:tr.map(x=>x.partner_revenue||0),backgroundColor:c.ochre},{label:'Not set',data:tr.map(x=>x.not_set_revenue||0),backgroundColor:c.muted+'66'}]},
+   options:{maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>fmtL(v)}}},plugins:{tooltip:{callbacks:{label:t=>`${t.dataset.label}: ${fmtL(t.raw)}`}}}}})},0)}
+ const L=a.by_location||[];if(L.length)box.append(el('h4',{},'By location — '+mlabel(a.month)),table(L,[{key:'zone_group',label:'Zone'},{key:'location',label:'Location'},
+  {key:'self_clients',label:'Clients · own',num:1,fmt:fmt},{key:'partner_clients',label:'Clients · partner',num:1,fmt:fmt},{key:'not_set_clients',label:'Clients · not set',num:1,fmt:fmt},
+  {key:'self_revenue',label:'Revenue · own',num:1,fmt:fmtL},{key:'partner_revenue',label:'Revenue · partner',num:1,fmt:fmtL},{key:'not_set_revenue',label:'Revenue · not set',num:1,fmt:fmtL},
+  {key:'self_cases',label:'Cases · own',num:1,fmt:fmt},{key:'partner_cases',label:'Cases · partner',num:1,fmt:fmt}],{name:`partner_own_by_location_${a.month}.csv`,defaultHidden:['self_cases','partner_cases']}))}
+async function omRegister(box,redraw){box.innerHTML='';box.append(el('h3',{},'Register'),el('p',{class:'note'},'One row per client and location for each period. For a shift, add a row with the new model and its start date: the open row ends the day before. Partner names are seen by admins only.'));
+ const fams=[...new Set((S.meta.clients||[]).map(c=>c.family).filter(Boolean))].sort();
+ const cl=el('select',{'aria-label':'Client'},[...fams.map(f=>el('option',{value:f},f+' — all products')),...(S.meta.clients||[]).filter(c=>c.code!==c.family).map(c=>el('option',{value:c.code},c.code+' — '+(c.label||c.code)))]);
+ const lo=el('select',{'aria-label':'Location'},S.meta.locations.filter(l=>l.zone_group&&!l.is_rollup).sort((a,b)=>a.label.localeCompare(b.label)).map(l=>el('option',{value:l.label},l.label)));
+ const md=el('select',{'aria-label':'Run by'},[el('option',{value:'Own branch'},'Own branch'),el('option',{value:'Partner'},'Partner')]);
+ const pn=el('input',{type:'text',placeholder:'Partner name (optional)','aria-label':'Partner name',style:'max-width:180px'}),fr=el('input',{type:'date','aria-label':'From date'}),to=el('input',{type:'date','aria-label':'To date (optional)'});
+ const nt=el('input',{type:'text',placeholder:'Source / note','aria-label':'Source or note',style:'max-width:200px'});const add=el('button',{class:'btn primary',type:'button'},'Add');
+ add.onclick=async()=>{if(!fr.value){alert('Enter the from date.');fr.focus();return}if(!edName()){const n=prompt('Your name for the audit trail');if(!n)return;try{localStorage.setItem('crux_editor',n)}catch{}}
+  add.disabled=true;try{const r=await adminCall('operating_model',{op:'save',editor:edName()||'unnamed',row:{client:cl.value,location:lo.value,model:md.value,partner_name:pn.value,from_date:fr.value,to_date:to.value,source:nt.value}});
+   if(r&&r.invalid){alert('Not saved: '+((r.errors[0]||{}).errors||[]).join('; '));return}toast(r&&r.closed_previous?'Saved. The earlier open period now ends the day before.':'Saved.');redraw&&redraw()}catch(e){alert(e.message)}finally{add.disabled=false}};
+ box.append(el('div',{class:'tools'},cl,lo,md,pn,el('label',{class:'note'},'From ',fr),el('label',{class:'note'},'To ',to),nt,add));
+ let L;try{L=await adminCall('operating_model',{op:'list'})}catch(e){box.append(el('p',{class:'note'},'Register not available: '+e.message));return}
+ const rows=(L&&L.rows)||[];if(!rows.length){box.append(el('p',{class:'note'},'No entries yet. Add one above or upload the template below.'));return}
+ const act=(v,r)=>{const end=el('button',{class:'btn sm',type:'button'},'End…'),del=el('button',{class:'btn sm ghost',type:'button'},'Delete');
+  end.onclick=async()=>{const d=prompt('Last day of this arrangement (YYYY-MM-DD)',new Date().toISOString().slice(0,10));if(!d)return;try{await adminCall('operating_model',{op:'end',id:r.id,valid_to:d,editor:edName()||'unnamed'});toast('Ended.');redraw&&redraw()}catch(e){alert(e.message)}};
+  del.onclick=async()=>{if(!confirm(`Delete this entry (${r.client} · ${r.location} · from ${r.valid_from})? Use "End" for a real change; delete only mistakes.`))return;try{await adminCall('operating_model',{op:'delete',id:r.id,editor:edName()||'unnamed'});toast('Deleted.');redraw&&redraw()}catch(e){alert(e.message)}};
+  return el('span',{},r.valid_to?'':end,' ',del)};
+ box.append(table(rows,[{key:'zone_group',label:'Zone'},{key:'location',label:'Location'},{key:'client',label:'Client'},{key:'model',label:'Run by',fmt:v=>el('span',{class:'chip '+(v==='partner'?'warn':'')},v==='partner'?'Partner':'Own branch'),raw:r=>r.model==='partner'?'Partner':'Own branch'},
+  {key:'partner_name',label:'Partner'},{key:'valid_from',label:'From'},{key:'valid_to',label:'To',fmt:v=>v||'continuing',raw:r=>r.valid_to||''},{key:'current',label:'Now',fmt:v=>v?'✓':'',raw:r=>r.current?'yes':''},
+  {key:'source',label:'Source / note',fmt:(v,r)=>[v,r.note].filter(Boolean).join(' · '),raw:r=>[r.source,r.note].filter(Boolean).join(' · ')},{key:'updated_at',label:'Updated',fmt:(v,r)=>`${v||''} ${r.updated_by?'· '+String(r.updated_by).replace(/^admin-key:/,''):''}`},
+  {key:'id',label:'',fmt:act,raw:()=>''}],{name:'partner_own_register.csv'}))}
+const vAdmNonF1=guard(async s=>{if(!admHead(s,'adm_nonf1'))return;const m=$('#fMonth').value;
+ const how=el('div',{class:'card'}),gap=el('div',{class:'card',style:'margin-top:14px'}),lst=el('div',{class:'card',style:'margin-top:14px'}),up=el('div',{class:'card',style:'margin-top:14px'});s.append(how,gap,lst,up);
+ how.append(el('h3',{},'How to fill the gap'),el('ol',{},el('li',{},'Download the template (button below) and send it to each location head.'),
+  el('li',{},'One row per person per month: cases and field points they completed outside Force1. If one person works for several clients, use one row per client.'),
+  el('li',{},'Upload the filled files below. "Check file" lists every problem first; nothing is saved until you press Import. Re-uploading the same month replaces those rows.'),
+  el('li',{},'The table shows, for each location, the Zonal Tracker cases, the cases in Force1, what the template reports, and what is still unexplained.')),
+  el('div',{class:'tools'},el('button',{class:'btn',type:'button',onclick:()=>mdTemplate('non_force1')},'Download template')));
+ const draw=async()=>{await nfGap(gap,m);await nfList(lst,m,draw)};masterUI(up,{kind:'non_force1',fixed:true,onSaved:draw});await draw()});
+async function nfGap(box,m,tried){box.innerHTML='';box.append(el('h3',{},'Zonal Tracker vs Force1 vs reported — '+mlabel(m)));let g;
+ try{g=await api('force1_gap',{month:m,filters:filters()})}catch(e){box.append(el('p',{class:'note'},'Not available: '+e.message));return}
+ // a month whose Force1 case data is not loaded yet would show the whole tracker as a gap: show the latest complete month instead
+ if(!tried&&(g.units||[]).length&&(g.units||[]).every(u=>u.case_data===false||u.case_data==null)&&!(g.totals||{}).force1){const pm=new Date(m+'T00:00:00Z');pm.setUTCMonth(pm.getUTCMonth()-1);
+  const p=pm.toISOString().slice(0,10);await nfGap(box,p,true);box.prepend(el('div',{class:'banner'},`Force1 case data for ${mlabel(m)} is not loaded yet, so ${mlabel(p)} is shown. Reports for ${mlabel(m)} can still be uploaded.`));return}
+ const T=g.totals||{};box.append(el('p',{class:'note'},g.method+(g.as_of?` Tracker as of ${g.as_of}.`:'')),
+  el('div',{class:'tiles'},tile('Zonal Tracker cases',fmt(T.tracker)),tile('In Force1',fmt(T.force1),T.tracker?pct(T.force1/T.tracker)+' of tracker':''),tile('Gap',fmt(T.gap),'tracker cases not in Force1',T.gap>0?'warn':''),
+   tile('Reported on template',fmt(T.reported),`${fmt(T.people)} people · ${fmt(T.points)} points`),tile('Still unexplained',fmt(T.still_open),T.gap?pct((T.gap-T.still_open)/T.gap)+' of the gap explained':'',T.still_open>0?'bad':'good')));
+ box.append(table(g.units||[],[{key:'unit',label:'Location group'},{key:'tracker',label:'Tracker cases',num:1,fmt:fmt},{key:'force1',label:'Force1 cases',num:1,fmt:fmt},{key:'gap',label:'Gap',num:1,fmt:fmt},
+  {key:'reported',label:'Reported (not on Force1)',num:1,fmt:fmt},{key:'still_open',label:'Still unexplained',num:1,fmt:fmt},{key:'covered_pct',label:'Covered',num:1,fmt:v=>v==null?'–':v+'%'},
+  {key:'people',label:'People reported',num:1,fmt:fmt},{key:'points',label:'Points reported',num:1,fmt:fmt},{key:'over_reported',label:'Reported above the gap',num:1,fmt:fmt}],{name:`force1_gap_${m}.csv`,defaultHidden:['over_reported','points']}))}
+async function nfList(box,m,redraw){box.innerHTML='';box.append(el('h3',{},'Reported people — '+mlabel(m)),el('p',{class:'note'},'Admins only. Names never leave the admin workspace.'));let L;
+ try{L=await adminCall('non_force1',{op:'list',month:m})}catch(e){box.append(el('p',{class:'note'},'Not available: '+e.message));return}
+ const ms=(L&&L.months)||[];if(ms.length)box.append(el('p',{class:'note'},'Months with reports: '+ms.map(x=>`${mlabel(x.month)} (${fmt(x.people)} people, ${fmt(x.cases)} cases)`).join(' · ')));
+ const rows=(L&&L.rows)||[];if(!rows.length){box.append(el('p',{class:'note'},'Nothing reported for this month yet.'));return}
+ const del=(v,r)=>{const b=el('button',{class:'btn sm ghost',type:'button'},'Delete');b.onclick=async()=>{if(!confirm(`Delete ${r.name} · ${r.location} · ${mlabel(r.month)}?`))return;try{await adminCall('non_force1',{op:'delete',id:r.id,editor:edName()||'unnamed'});toast('Deleted.');redraw&&redraw()}catch(e){alert(e.message)}};return b};
+ box.append(table(rows,[{key:'zone_group',label:'Zone'},{key:'location',label:'Location'},{key:'name',label:'Name'},{key:'employee_id',label:'Employee ID'},{key:'role',label:'Role'},{key:'engaged_as',label:'Engaged as'},
+  {key:'client_family',label:'Client'},{key:'cases_done',label:'Cases',num:1,fmt:fmt},{key:'points_done',label:'Points',num:1,fmt:fmt},{key:'working_days',label:'Days',num:1,fmt:fmt},{key:'reason',label:'Why not on Force1'},
+  {key:'source',label:'Source'},{key:'id',label:'',fmt:del,raw:()=>''}],{name:`not_on_force1_${m}.csv`,defaultHidden:['engaged_as','source']}))}
 const vAdmHr=guard(async s=>{if(!admHead(s,'adm_hr'))return;const a=el('div');s.append(a);masterUI(a,{kind:'workforce',fixed:true});const b=el('div',{class:'card',style:'margin-top:14px'});s.append(b);await hrClassUI(b,$('#fMonth').value,filters())});
 const vAdmFinance=guard(async s=>{if(!admHead(s,'adm_finance'))return;const a=el('div',{class:'card'});s.append(a);finReviewUI(a);const b=el('div',{class:'card',style:'margin-top:14px'});s.append(b);finRecordsUI(b)});
 const vAdmPenalty=guard(async s=>{if(!admHead(s,'adm_penalty'))return;const m=$('#fMonth').value;const a=el('div',{class:'card'});s.append(a);penaltySection(a,m,{},true);const b=el('div',{class:'card',style:'margin-top:14px'});s.append(b);await penaltyAudit(b,m)});
@@ -1500,7 +1569,36 @@ const vAdmAsk=guard(async s=>{if(!admHead(s,'adm_ask'))return;const box=el('div'
 const AGENT_KINDS=[['daily_brief','Morning briefing','06:20 IST daily','Ask Crux reads the dashboard (all India, viewer-level data) and writes where the month stands, what moved, the zone table, a watch list and three actions. Every figure is checked against the dashboard; no person is named or scored.'],
  ['market_news','Market & client news','06:40 IST daily','Ask Crux reads free RBI and public news feeds for our largest client banks and the sector, and picks what matters for Crux. Links come from the feeds; our own figures beside each client come from the dashboard, not from Ask Crux.'],
  ['chat_review','Chat review','05:10 IST daily','Reads the previous day\u2019s Ask Crux questions, the pages, tiles, tables and charts they were asked from, failures, \ud83d\udc4e notes and errors; lists what went wrong, what is missing and which pages to improve first, and proposes lessons. A lesson is used only after you approve it below.'],
- ['weekly_review','Weekly review','Monday 07:00 IST','Turns the week\u2019s reviews and the most-asked pages and elements into the top improvements. The weekly dashboard improver uses it to open GitHub pull requests for your review.']];
+ ['weekly_review','Weekly review','Monday 07:00 IST','Turns the week\u2019s reviews and the most-asked pages and elements into the top improvements. The weekly dashboard improver uses it to open GitHub pull requests for your review.'],
+ ['target_watch','Target and pace watch','06:50 IST daily','Management team: which zones and clients will miss the month, the pace needed per remaining working day, and what moved since the last watch.'],
+ ['zone_west','Zone review — West','07:00 IST Mon–Sat','Rest of Maharashtra, Mumbai & Goa, Gujarat, Bhopal/MP: result vs target, root cause by team, RACPC / Mini RACPC / RAC units idle, three actions.'],
+ ['zone_north_east','Zone review — North and East','07:10 IST Mon–Sat','Delhi, Lucknow, Patna, Punjab, Kolkata, Guwahati, Odisha: the same review.'],
+ ['zone_south','Zone review — South','07:20 IST Mon–Sat','Bengaluru, Hyderabad, Tamil Nadu: the same review.'],
+ ['ops_watch','Force1 and TAT operations','07:30 IST Mon–Sat','Process & data team: turnaround, SLA, backlog, Force1 use against the tracker.'],
+ ['client_review','Client review','Tuesday 07:40 IST','Top clients: business, likely vs target, potential, units, risks and asks for the relationship team.'],
+ ['branch_network','Branch network and potential','Wednesday 07:40 IST','RACPC, Mini RACPC, RAC and branch counts, where units are idle, potential gap, visits worth making.'],
+ ['collections_watch','Collections and receivables','Thursday 07:40 IST','Outstanding, ageing over 90 / 180 days, collections vs last month, who to chase.'],
+ ['data_watch','Data readiness and anomaly watch','05:45 IST daily','Freshness of every upload, the Force1 gap, sudden drops or jumps, and who should fix what.'],
+ ['decision_audit','Decision-log audit','08:00 IST daily','Reads the teams\u2019 shared memory: confirms findings that agree, retires superseded ones, lists contradictions and the decisions management needs to take.'],
+ ['month_close','Month-close summary','3rd of the month, 08:30 IST','The closed month for the MD on one page: result, causes, what worked, cash, and three proposals for this month.']];
+/* wave 109b: the agent teams on their own keys, key check, shared memory */
+async function agentTeamCard(reload){const c=el('div',{class:'card',style:'margin:0 0 14px'});c.append(el('h3',{style:'margin:0'},'Agent teams'));
+ let T;try{T=await adminCall('agent_team',{op:'list'})}catch(e){c.append(el('p',{class:'note'},'Not available: '+e.message));return c}
+ const A=T.agents||[],M=T.memory||{};const ok=A.filter(a=>a.key_ok).length,chk=A.filter(a=>a.key_checked).length;
+ const out=el('span',{class:'note'});const kc=el('button',{type:'button',class:'btn sm'},'Check all keys');
+ kc.onclick=async()=>{kc.disabled=true;out.textContent='Checking 26 keys…';try{const r=await fetch(ASK.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ASK.jwt,apikey:ASK.jwt},body:JSON.stringify({action:'key_check',token:S.adminKey})});
+  const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'HTTP '+r.status);out.textContent=`${j.ok} of ${j.checked} keys accepted`+(j.failed&&j.failed.length?' · failing: '+j.failed.map(f=>f.key_name.replace('gemini_key_','')).join(', '):'');reload&&setTimeout(reload,1500)}catch(e){out.textContent='Failed: '+e.message}finally{kc.disabled=false}};
+ c.append(el('p',{class:'note'},'Each agent has its own key (a separate project with its own free allowance) and a daily cap of its own. If an agent\u2019s key is refused, it falls back to the main key; when its allowance is used up it moves to the backup engine — it never borrows another agent\u2019s allowance. Keys are kept in the database vault and are never shown.'),
+  el('div',{class:'tiles'},tile('Agents',fmt(A.filter(a=>a.enabled).length)+' on',`${fmt(A.length)} in 3 teams`),tile('Keys',chk?`${fmt(ok)} of ${fmt(chk)} accepted`:'not checked yet',A.find(a=>a.key_checked)?'checked '+A.find(a=>a.key_checked).key_checked:''),
+   tile('Calls today',fmt(A.reduce((s,a)=>s+(+a.calls_today||0),0)),fmt(A.reduce((s,a)=>s+(+a.fails_7d||0),0))+' failed in 7 days'),tile('Shared memory',fmt(M.total||0)+' items',`${fmt(M.decisions||0)} decisions · ${fmt(M.confirmed||0)} confirmed · ${fmt(M.superseded||0)} retired`)),
+  el('div',{class:'tools'},kc,out));
+ const tog=(v,r)=>{const b=el('button',{type:'button',class:'btn sm ghost'},r.enabled?'Switch off':'Switch on');b.onclick=async()=>{try{await adminCall('agent_team',{op:'enable',agent_id:r.agent_id,enabled:!r.enabled,editor:edName()||'unnamed'});reload&&reload()}catch(e){alert(e.message)}};return b};
+ c.append(table(A,[{key:'team',label:'Team'},{key:'title',label:'Agent'},{key:'role',label:'What it does'},{key:'enabled',label:'On',fmt:v=>v?'✓':'off',raw:r=>r.enabled?'on':'off'},
+  {key:'key_ok',label:'Key',fmt:(v,r)=>v==null?'–':v?'accepted':el('span',{class:'bad'},'refused'),raw:r=>r.key_ok==null?'':r.key_ok?'accepted':'refused'},{key:'calls_today',label:'Calls today',num:1,fmt:fmt},{key:'calls_7d',label:'Calls 7 days',num:1,fmt:fmt},
+  {key:'fails_7d',label:'Failed 7 days',num:1,fmt:fmt},{key:'memory_items',label:'Memory items',num:1,fmt:fmt},{key:'agent_id',label:'',fmt:tog,raw:()=>''}],{name:'agent_teams.csv',search:false,defaultHidden:['role','calls_7d']}));
+ const R=T.recent||[];if(R.length){const d=el('details',{},el('summary',{},`Latest shared memory (${R.length})`));d.append(table(R,[{key:'at',label:'When'},{key:'agent',label:'Agent'},{key:'kind',label:'Kind'},{key:'status',label:'Status'},
+  {key:'topics',label:'Topics',fmt:v=>(v||[]).join(', '),raw:r=>(r.topics||[]).join(', ')},{key:'content',label:'Content'}],{name:'agent_memory.csv'}));c.append(d)}
+ return c}
 async function agentReports(p={}){const {data,error}=await S.sb.rpc('bi_agent_reports',{p:S.adminKey?{...p,admin_key:S.adminKey}:p});if(error)throw new Error(error.message);return data||{}}
 function agentReportView(r,clip){const b=el('div',{class:'agbody'+(clip?' clip':'')},mdLite(r.body_md||''));if(!clip)return b;
  const more=el('button',{type:'button',class:'btn sm ghost',onclick:()=>{const c=b.classList.toggle('clip');more.textContent=c?'Show all':'Show less'}},'Show all');return el('div',{},b,more)}
@@ -1523,6 +1621,7 @@ const vAdmAgents=guard(async s=>{if(!admHead(s,'adm_agents'))return;const box=el
   catch(e){out.textContent='Failed: '+e.message;btn.disabled=false}};
  const load=async()=>{box.innerHTML='';box.append(el('p',{class:'note'},'Loading…'));let D;try{D=await agentReports()}catch(e){box.innerHTML='';box.append(el('p',{class:'bad'},e.message));return}box.innerHTML='';
   if(lastRun)box.append(el('p',{class:'note',id:'agRunMsg',role:'status',style:'font-weight:600'},'Last run — '+lastRun));
+  box.append(await agentTeamCard(load));
   box.append(el('p',{class:'lede'},'How the team works: each Ask Crux agent runs on a schedule (or with Run now) on Ask Crux\u2019s free main engine, with a free backup engine; nothing paid is used. People\u2019s names are replaced by codes before anything leaves the dashboard. Agents only write reports and propose lessons: nothing changes the dashboard numbers, its code or Ask Crux\u2019s rules until an admin approves it here (lessons) or on GitHub (the weekly improver\u2019s pull requests).'));
   for(const [k,l,when,what] of AGENT_KINDS){const r=(D.latest||{})[k];const out=el('span',{class:'note'});const btn=el('button',{type:'button',class:'btn sm',onclick:e=>run(k,e.target,out)},'Run now');
    const hist=(D.history||[]).filter(h=>h.kind===k).slice(0,10);const sel=hist.length>1?el('select',{'aria-label':l+' history',onchange:async e=>{try{const x=await agentReports({id:e.target.value});if(x&&x.body_md){body.innerHTML='';body.append(el('p',{class:'note'},`${x.title} · ${x.status}`),mdLite(x.body_md))}}catch(er){alert(er.message)}}},hist.map(h=>el('option',{value:h.id},`${h.for_date} · ${h.status}${h.usage&&h.usage.calls!=null?' · '+h.usage.calls+' calls':''}`))):null;
@@ -2367,7 +2466,20 @@ function topOpportunities(box,f){box.append(el('h3',{},'Top branch opportunities
    p.est_opportunity_monthly>0?` · est. +${fmt(p.est_opportunity_monthly)}/month vs peers`:'',el('small',{},' '+(p.recon_unit||p.location||''))),()=>({kind:'branch',title:p.branch,fam:famOf(p.client)||p.client,code:p.branch_code}),p.branch))),
    el('p',{class:'note'},'Branches seen in Force1 cases only. Opportunity values are peer-based estimates, not confirmed leakage. Full list: Business tracker → Branch lifecycle.'))})
  .catch(e=>{msg.textContent='Branch data unavailable: '+e.message})}
-async function branchSection(box,f){box.append(el('h3',{},'Branch lifecycle & opportunities'));const msg=el('p',{class:'note'},'Loading branch signals…');box.append(msg);
+/* wave 109a/b: one unit count (RACPC, Mini RACPC, RAC, …) for the page and Ask Crux */
+async function unitsCard(box,f){box.append(el('h3',{},'Units by type — RACPC, Mini RACPC, RAC and branches'),el('p',{class:'note'},'One count used everywhere, including Ask Crux: client branch master (active rows), unit type read from the unit name, status from Crux cases — active = at least one case in the last 3 months, dormant = cases earlier, never active = none. RACPC does not include Mini RACPC.'));
+ const msg=el('p',{class:'note'},'Loading…');box.append(msg);let U;try{U=await api('branch_units',{filters:f,p:{}})}catch(e){msg.textContent='Unit counts unavailable: '+e.message;return}msg.remove();
+ const T=U.summary||{},win=U.status_month?mlabel(U.status_month):'';
+ box.append(el('div',{class:'tiles'},tile('Units',fmt(T.total),'in the branch master'),tile('Active',fmt(T.active),win?'case in the 3 months to '+win:'','good'),tile('Dormant',fmt(T.dormant),'had cases, none lately','warn'),tile('Never active',fmt(T.never_active),'no Crux case yet'),tile('Not linked to a team',fmt(T.no_team),'branch master rows without a Crux team')));
+ const det=el('div');
+ const show=async t=>{det.innerHTML='';det.append(el('p',{class:'note'},'Loading '+t+'…'));let L;try{L=await api('branch_units',{filters:f,p:{unit_type:[t],list:true,limit:200}})}catch(e){det.innerHTML='';det.append(el('p',{class:'note'},e.message));return}det.innerHTML='';
+  const byZ=!f.zone_group&&!f.location_id,rows=byZ?(L.by_zone||[]):(L.by_team||[]);
+  det.append(el('h4',{},`${t} — by ${byZ?'zone':'team'}`),table(rows.map(r=>({...r,name:byZ?r.zone_group:r.team})),[{key:'name',label:byZ?'Zone':'Team'},{key:'total',label:'Units',num:1,fmt:fmt},{key:'active',label:'Active',num:1,fmt:fmt},{key:'dormant',label:'Dormant',num:1,fmt:fmt},{key:'never_active',label:'Never active',num:1,fmt:fmt}],{name:`units_${t.replace(/ /g,'_')}_by_${byZ?'zone':'team'}.csv`,search:false}),
+   el('h4',{},`${t} — units (${fmt((L.units||[]).length)}${+L.units_total>(L.units||[]).length?' of '+fmt(L.units_total):''})`),table(L.units||[],[{key:'unit',label:'Unit'},{key:'client_family',label:'Client'},{key:'branch_code',label:'Code'},{key:'team',label:'Team',fmt:v=>v||'No team yet'},{key:'zone_group',label:'Zone'},{key:'city',label:'City'},
+    {key:'status',label:'Status',fmt:v=>el('span',{class:'chip '+(v==='active'?'good':v==='dormant'?'warn':'')},v)},{key:'cases_last_3_months',label:'Cases, last 3 months',num:1,fmt:fmt},{key:'cases_since_jan',label:'Cases since Jan',num:1,fmt:fmt},{key:'last_case_month',label:'Last case',fmt:v=>v?mlabel(v):'–'}],{name:`units_${t.replace(/ /g,'_')}.csv`,defaultHidden:['cases_since_jan']}))};
+ box.append(table(U.by_unit_type||[],[{key:'unit_type',label:'Unit type'},{key:'total',label:'Units',num:1,fmt:fmt},{key:'active',label:'Active',num:1,fmt:fmt},{key:'dormant',label:'Dormant',num:1,fmt:fmt},{key:'never_active',label:'Never active',num:1,fmt:fmt},{key:'no_team',label:'No team yet',num:1,fmt:fmt},
+  {key:'_go',label:'',fmt:(v,r)=>el('button',{type:'button',class:'btn sm',onclick:()=>show(r.unit_type)},'Show units'),raw:()=>''}],{name:'units_by_type.csv',search:false}),det)}
+async function branchSection(box,f){const uc=el('div',{style:'margin-bottom:20px'});box.append(uc);unitsCard(uc,f);box.append(el('h3',{},'Branch lifecycle & opportunities'));const msg=el('p',{class:'note'},'Loading branch signals…');box.append(msg);
  let b;try{b=await api('branches',{filters:f})}catch(e){msg.textContent='Branch data unavailable: '+e.message;return}msg.remove();
  const sm=b.summary||{};box.append(el('div',{class:'tiles'},Object.keys(ST).map(k=>tile(ST[k],fmt(sm[k]||0),'branches',k==='losing_traction'||k==='dormant'?'warn':''))));
  const stc=v=>el('span',{class:'chip '+({growing:'good',new:'good',reactivated:'good',losing_traction:'bad',dormant:'bad'}[v]||'')},stLabel(v));
@@ -2382,6 +2494,18 @@ async function branchSection(box,f){box.append(el('h3',{},'Branch lifecycle & op
 
 /* ---------- Master data: client branch master + workforce master (upload, coverage, attrition) ---------- */
 const MD={
+ operating_model:{title:'Partner & own branch register',sheet:'Partner or own',key:'location',keyText:'client + location + from_date',
+  cols:['client','location','model','partner_name','from_date','to_date','note','source'],req:['client','location','model','from_date'],
+  help:{client:'Required. Client family for all its products (e.g. SBI), or a client code for one product (see "Valid clients")',location:'Required. Crux location label (see "Valid locations")',
+   model:'Required: Partner or Own branch',partner_name:'Optional. Partner / franchise name (admins only)',from_date:'Required. First day of this arrangement',
+   to_date:'Leave blank while it continues. A later row for the same client and location closes the open one the day before it starts',note:'Optional',source:'Recommended, e.g. "MD approval 12-Nov-2026"'}},
+ non_force1:{title:'People not on Force1 — monthly work',sheet:'Not on Force1',key:'location',keyText:'month + location + employee_id (else name) + client',
+  cols:['month','location','name','employee_id','role','engaged_as','client','cases_done','points_done','working_days','joined_on','left_on','reason_not_on_force1','source'],req:['month','location','name','role','source'],
+  help:{month:'Required. Month of the work, e.g. Nov-2026 or 01-11-2026',location:'Required. Crux location label (see "Valid locations")',name:'Required. Full name (admins only)',
+   employee_id:'Recommended. HR employee ID',role:'Required, e.g. Field executive, Back office, Supervisor',engaged_as:'Optional: Employee, Partner staff or Freelancer',
+   client:'Optional. Client family the work was for; blank = all clients',cases_done:'Cases completed in the month that are not in Force1 (whole number)',
+   points_done:'Field visits / verification points done in the month outside Force1 (whole number)',working_days:'Optional. Days worked in the month (0–31)',
+   joined_on:'Optional date',left_on:'Optional date, if the person left',reason_not_on_force1:'Optional, e.g. "Partner uses its own app", "No Force1 login yet"',source:'Required, e.g. "Pune team sheet 14-Nov-2026"'}},
  branch:{title:'Client branch master',sheet:'Branch master',key:'branch_code',
   cols:['client','branch_code','branch_name','state','city','location','status','opened_on','closed_on','source','verified_on','confidence'],
   req:['client','branch_code','source','verified_on'],
@@ -2402,9 +2526,9 @@ const mdNorm=h=>String(h||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').re
 function mdTemplate(kind){if(!window.XLSX){alert('Excel library not loaded.');return}const d=MD[kind];const wb=XLSX.utils.book_new();
  const ws=XLSX.utils.aoa_to_sheet([d.cols]);ws['!cols']=d.cols.map(c=>({wch:Math.max(12,c.length+4)}));XLSX.utils.book_append_sheet(wb,ws,d.sheet);
  const rm=XLSX.utils.aoa_to_sheet([['Column','Required','What to enter'],...d.cols.map(c=>[c,d.req.includes(c)?'Yes':'',d.help[c]]),[],
-  ['Dates','','DD-MM-YYYY, DD-Mon-YYYY, YYYY-MM-DD or Excel date cells'],['Re-uploading','','The same key ('+(kind==='branch'?'client + branch_code':'employee_id, else name')+') updates the existing row. An upload never removes rows.'],
+  ['Dates','','DD-MM-YYYY, DD-Mon-YYYY, YYYY-MM-DD or Excel date cells'],['Re-uploading','','The same key ('+(d.keyText||(kind==='branch'?'client + branch_code':'employee_id, else name'))+') updates the existing row. An upload never removes rows.'],
   ['Check first','','Use "Check file" in the dashboard. Nothing is saved until you press Import.']]);rm['!cols']=[{wch:16},{wch:9},{wch:110}];XLSX.utils.book_append_sheet(wb,rm,'Read me');
- if(kind==='branch')XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['client (code)','client name','family'],...(S.meta.clients||[]).map(c=>[c.code,c.label,c.family])]),'Valid clients');
+ if(kind!=='workforce')XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['client (code)','client name','family'],...(S.meta.clients||[]).map(c=>[c.code,c.label,c.family])]),'Valid clients');
  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['location (label)','zone','region','stakeholder'],...S.meta.locations.filter(l=>l.zone_group).sort((a,b)=>a.label.localeCompare(b.label)).map(l=>[l.label,l.zone_label,l.region,l.stakeholder])]),'Valid locations');
  XLSX.writeFile(wb,`${d.sheet.replace(/ /g,'_')}_template.xlsx`)}
 function mdParse(kind,wb){const d=MD[kind];const sn=wb.SheetNames.find(n=>n.trim().toLowerCase()===d.sheet.toLowerCase())||wb.SheetNames[0];
@@ -2414,15 +2538,15 @@ function mdParse(kind,wb){const d=MD[kind];const sn=wb.SheetNames.find(n=>n.trim
  const map=aoa[hr].map(keyOf);const missing=d.req.filter(c=>!map.includes(c));
  const rows=[],sheetRow=[];for(let i=hr+1;i<aoa.length;i++){const r=aoa[i];if(!r||r.every(v=>String(v).trim()===''))continue;const o={};map.forEach((k,j)=>{if(k&&!(k in o)){const v=r[j];o[k]=v==null?'':typeof v==='number'?String(v):String(v).trim()}});rows.push(o);sheetRow.push(i+1)}
  return{sheet:sn,rows,sheetRow,missing,ignored:aoa[hr].filter((h,j)=>String(h).trim()&&!map[j]).map(String)}}
-async function mdRun(kind,P,dry,editor,onProgress){const CH=4000;const tot={rows:0,valid:0,invalid:0,inserted:0,updated:0,already_in_master:0,duplicate_keys_in_file:0,matched_to_force_names:0,matched_official_unchanged:0,status_conflicts_for_review:0,by_client:{},errors:[]};
+async function mdRun(kind,P,dry,editor,onProgress){const CH=4000;const tot={rows:0,valid:0,invalid:0,inserted:0,updated:0,already_in_master:0,duplicate_keys_in_file:0,matched_to_force_names:0,matched_official_unchanged:0,status_conflicts_for_review:0,closed_previous:0,cases_reported:0,points_reported:0,by_client:{},errors:[]};
  for(let i=0;i<P.rows.length;i+=CH){onProgress&&onProgress(i,P.rows.length);const r=await adminCall('master_import',{kind,dry_run:dry,editor,rows:P.rows.slice(i,i+CH)});if(!r)throw new Error('No response from the server');
-  ['rows','valid','invalid','inserted','updated','already_in_master','duplicate_keys_in_file','matched_to_force_names','matched_official_unchanged','status_conflicts_for_review'].forEach(k=>tot[k]+=+(r[k]||0));Object.entries(r.by_client||{}).forEach(([k,v])=>tot.by_client[k]=(tot.by_client[k]||0)+v);
+  ['rows','valid','invalid','inserted','updated','already_in_master','duplicate_keys_in_file','matched_to_force_names','matched_official_unchanged','status_conflicts_for_review','closed_previous','cases_reported','points_reported'].forEach(k=>tot[k]+=+(r[k]||0));Object.entries(r.by_client||{}).forEach(([k,v])=>tot.by_client[k]=(tot.by_client[k]||0)+v);
   (r.errors||[]).forEach(e=>tot.errors.push({...e,row:P.sheetRow[i+e.row-1]||e.row,errors:(e.errors||[]).map(x=>String(x).replace(/\(rows ([\d, ]+)\)/,(_,l)=>'(sheet rows '+l.split(',').map(n=>P.sheetRow[i+(+n)-1]||n).join(', ')+')'))}))}
  return tot}
-function mdCrossChunkDups(kind,P){const seen=new Map(),out=[];const k=kind==='branch'?r=>(String(r.client||'').toUpperCase().trim()+'|'+String(r.branch_code||'').toUpperCase().trim()):r=>(r.employee_id?String(r.employee_id).toUpperCase().trim():'N:'+String(r.name||'').toUpperCase().replace(/\s+/g,' ').trim());
+function mdCrossChunkDups(kind,P){const seen=new Map(),out=[];if(kind!=='branch'&&kind!=='workforce')return out;const k=kind==='branch'?r=>(String(r.client||'').toUpperCase().trim()+'|'+String(r.branch_code||'').toUpperCase().trim()):r=>(r.employee_id?String(r.employee_id).toUpperCase().trim():'N:'+String(r.name||'').toUpperCase().replace(/\s+/g,' ').trim());
  P.rows.forEach((r,i)=>{const key=k(r);if(seen.has(key))out.push([seen.get(key),i]);else seen.set(key,i)});return out}
-function masterUI(box,opt={}){box.append(el('h3',{},opt.fixed?(opt.kind==='workforce'?'Workforce master list':'Client branch master list'):'Master data — client branch list & workforce list'));
- const ms=(S.meta&&S.meta.masters)||{};box.append(el('p',{class:'note'},'The branch master unlocks branch coverage (Business tracker → Branch coverage). Headcount and attrition (People) now come from Force1 activity only (owner rule 29-Oct-2026), so the workforce list is optional: keep it if HR wants a reference copy of joining and exit dates.'),
+function masterUI(box,opt={}){box.append(el('h3',{},opt.fixed?({workforce:'Workforce master list',branch:'Client branch master list'}[opt.kind]||'Bulk upload — '+MD[opt.kind].title.toLowerCase()):'Master data — client branch list & workforce list'));
+ const ms=(S.meta&&S.meta.masters)||{};if(!opt.fixed||['branch','workforce'].includes(opt.kind))box.append(el('p',{class:'note'},'The branch master unlocks branch coverage (Business tracker → Branch coverage). Headcount and attrition (People) now come from Force1 activity only (owner rule 29-Oct-2026), so the workforce list is optional: keep it if HR wants a reference copy of joining and exit dates.'),
   el('div',{class:'tiles'},tile('Branch master rows',fmt(ms.branch_rows||0),ms.branch_last_update?'updated '+String(ms.branch_last_update).slice(0,10):'not uploaded yet'),tile('Workforce master rows',fmt(ms.workforce_rows||0),ms.workforce_last_update?'updated '+String(ms.workforce_last_update).slice(0,10):'not uploaded yet')));
  const kindSel=el('div',{class:'seg',role:'group','aria-label':'Which list'});let kind='branch';
  const segB=el('button',{type:'button',class:'btn on','aria-pressed':'true'},'Client branch master'),segW=el('button',{type:'button',class:'btn','aria-pressed':'false'},'Workforce master');kindSel.append(segB,segW);
@@ -2438,11 +2562,11 @@ function masterUI(box,opt={}){box.append(el('h3',{},opt.fixed?(opt.kind==='workf
  segB.onclick=()=>setKind('branch');segW.onclick=()=>setKind('workforce');tpl.onclick=()=>mdTemplate(kind);file.onchange=reset;drawHelp();if(opt.kind){setKind(opt.kind);if(opt.fixed)kindSel.classList.add('hidden')}
  async function load(){const f=file.files[0];if(!f)throw new Error('Choose a file first.');if(!window.XLSX)throw new Error('Excel library not loaded.');const buf=await f.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});return mdParse(kind,wb)}
  function show(res,dry){out.innerHTML='';const d=MD[kind];
-  out.append(el('div',{class:'tiles'},tile('Rows in file',fmt(res.rows)),tile(dry?'Ready to import':'Saved',fmt(dry?res.valid:res.inserted+res.updated),dry?(res.already_in_master?fmt(res.already_in_master)+' already in the branch master':'all new'):`${fmt(res.inserted)} new · ${fmt(res.updated)} updated`,'good'),
+  out.append(el('div',{class:'tiles'},tile('Rows in file',fmt(res.rows)),tile(dry?'Ready to import':'Saved',fmt(dry?res.valid:res.inserted+res.updated),dry?(kind==='operating_model'?(res.closed_previous?fmt(res.closed_previous)+' open period(s) will be closed the day before the new one':'no open period is changed'):kind==='non_force1'?`${fmt(res.cases_reported)} cases · ${fmt(res.points_reported)} points`+(res.already_in_master?` · ${fmt(res.already_in_master)} replace earlier rows`:''):res.already_in_master?fmt(res.already_in_master)+' already in the branch master':'all new'):`${fmt(res.inserted)} new · ${fmt(res.updated)} updated`+(kind==='operating_model'&&res.closed_previous?` · ${fmt(res.closed_previous)} earlier period(s) closed`:''),'good'),
    kind==='branch'&&res.matched_official_unchanged?tile('Matched an official record',fmt(res.matched_official_unchanged),'left unchanged (official source wins)'+(res.status_conflicts_for_review?` · ${fmt(res.status_conflicts_for_review)} status differences sent to review`:'')):null,
    tile('Rows with problems',fmt(res.invalid),res.invalid?'skipped — fix and re-upload':'none',res.invalid?'bad':''),kind==='workforce'?tile('Names found in Force1',fmt(res.matched_to_force_names),'of '+fmt(res.valid)+' valid rows'):null));
-  if(Object.keys(res.by_client||{}).length)out.append(table(Object.entries(res.by_client).map(([c,n])=>({client:c,n})),[{key:'client',label:'Client'},{key:'n',label:dry?'Valid branches':'Branches saved',num:1,fmt:fmt}],{search:false,name:'branch_master_by_client.csv'}));
-  if(res.errors.length)out.append(el('h4',{},'Rows to fix'+(res.errors.length>=200?' (first 200 per 4,000-row chunk)':'')),table(res.errors,[{key:'row',label:'Row in your file',num:1},{key:'client',label:kind==='branch'?'Client':'Name'},{key:'key',label:kind==='branch'?'Branch code':'Employee ID'},{key:'errors',label:'Problem',fmt:v=>(v||[]).join('; '),raw:r=>(r.errors||[]).join('; ')}],{name:`${d.sheet.replace(/ /g,'_')}_errors.csv`}))}
+  if(Object.keys(res.by_client||{}).length)out.append(table(Object.entries(res.by_client).map(([c,n])=>({client:kind==='operating_model'?(c==='self'?'Own branch':'Partner'):c,n})),[{key:'client',label:{operating_model:'Model',non_force1:'Month'}[kind]||'Client'},{key:'n',label:{operating_model:'Rows',non_force1:'People rows'}[kind]||(dry?'Valid branches':'Branches saved'),num:1,fmt:fmt}],{search:false,name:kind+'_by_group.csv'}));
+  if(res.errors.length)out.append(el('h4',{},'Rows to fix'+(res.errors.length>=200?' (first 200 per 4,000-row chunk)':'')),table(res.errors,[{key:'row',label:'Row in your file',num:1},{key:'client',label:kind==='branch'||kind==='operating_model'?'Client':'Name'},{key:'key',label:kind==='branch'?'Branch code':kind==='workforce'?'Employee ID':'Location'},{key:'errors',label:'Problem',fmt:v=>(v||[]).join('; '),raw:r=>(r.errors||[]).join('; ')}],{name:`${d.sheet.replace(/ /g,'_')}_errors.csv`}))}
  chk.onclick=async()=>{chk.disabled=true;imp.disabled=true;out.innerHTML='';out.append(el('p',{class:'note'},'Reading the file…'));
   try{P=await load();if(!P.rows.length)throw new Error(`Sheet "${P.sheet}" has no data rows under the header.`);
    if(P.missing.length)throw new Error(`Sheet "${P.sheet}" is missing required column(s): ${P.missing.join(', ')}. Download the template for the expected layout.`);
@@ -2459,7 +2583,7 @@ function masterUI(box,opt={}){box.append(el('h3',{},opt.fixed?(opt.kind==='workf
   if(!confirm(`Save ${fmt(checked.valid)} rows to the ${MD[kind].title.toLowerCase()}? Rows with problems are skipped. Existing rows with the same key are updated.`))return;
   imp.disabled=true;chk.disabled=true;const prog=el('p',{class:'note'});out.prepend(prog);
   try{const r=await mdRun(kind,P,false,editor.value,(i,n)=>prog.textContent=`Saving rows ${fmt(i+1)}–${fmt(Math.min(n,i+4000))} of ${fmt(n)}…`);show(r,false);
-   try{S.meta=await api('meta')}catch{}out.prepend(el('div',{class:'banner'},`Saved: ${fmt(r.inserted)} new, ${fmt(r.updated)} updated. ${kind==='branch'?'Coverage is in Business tracker → Branch coverage.':'Headcount and attrition are in People.'}`))}
+   try{S.meta=await api('meta')}catch{}out.prepend(el('div',{class:'banner'},`Saved: ${fmt(r.inserted)} new, ${fmt(r.updated)} updated. ${{branch:'Coverage is in Business tracker → Branch coverage.',workforce:'Headcount and attrition are in People.',operating_model:'The register and the business split above are refreshed.',non_force1:'The gap table above is refreshed.'}[kind]}`));if(opt.onSaved)opt.onSaved(r)}
   catch(e){out.prepend(el('div',{class:'banner err'},'Import stopped: '+(e.message||e)+'. Rows already saved stay saved; re-uploading the same file is safe.'))}finally{chk.disabled=false;prog.remove()}}}
 
 async function coverageSection(box,f){box.append(el('h3',{},'Branch coverage vs verified client branch list'));const cs=el('div');box.append(cs);coverageStatus(cs,f);const msg=el('p',{class:'note'},'Loading…');box.append(msg);
@@ -3588,7 +3712,7 @@ function askInit(){if(document.getElementById('askBtn'))return;try{ASK.conv=sess
    The button opens Ask Crux with an editable question about that element; Ask Crux is told which element it was (title, columns), and the
    ask-crux function records the page and element in bi.ask_origin (Admin → Ask Crux learning → What people ask about).
    Not on admin pages whose data Ask Crux cannot read (uploads, mapping, HR, penalties, database health) or on its own admin pages. */
-const ASKX={pend:false,skip:new Set(['adm_upload','adm_mapping','adm_hr','adm_penalty','adm_db','adm_ask','adm_agents']),ico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg>'};
+const ASKX={pend:false,skip:new Set(['adm_upload','adm_mapping','adm_hr','adm_opmodel','adm_nonf1','adm_penalty','adm_db','adm_ask','adm_agents']),ico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg>'};
 function secLabel(k){k=k||S.section;return((SECTIONS.find(x=>x[0]===k)||[])[1])||k||''}
 function askTxt(n,max=120){if(!n)return'';const c=n.cloneNode(true);c.querySelectorAll('button,select,input,.sorti,.qpop').forEach(x=>x.remove());return c.textContent.replace(/[▾▸↕▲▼⤢]/g,' ').replace(/\s+/g,' ').trim().slice(0,max)}
 // the nearest heading before an element: its previous siblings, then its parents' previous siblings (5 levels)

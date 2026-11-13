@@ -12,7 +12,8 @@ export type JobEnv = {
   dataMonth: string; dataAsOf: string; cfg: Record<string, string>; embed: (texts: string[]) => Promise<number[][] | null>; t0: number;
   agent?: string | null;   // wave 109b: the agent whose key this job runs on
 };
-export const JOBS = ['daily_brief', 'market_news', 'chat_review', 'weekly_review'];
+export const JOBS = ['daily_brief', 'market_news', 'chat_review', 'weekly_review', 'target_watch', 'zone_west', 'zone_north_east', 'zone_south', 'client_review', 'month_close',
+  'data_watch', 'branch_network', 'ops_watch', 'collections_watch', 'decision_audit'];
 const todayIST = () => new Date(Date.now() + 19800000).toISOString().slice(0, 10);
 const istDay = (iso: string) => new Date(Date.parse(iso) + 19800000).toISOString().slice(0, 10);
 const clean = (s: string) => String(s ?? '').replace(/^\s*\**next\**\s*:.*$/gim, '').trim();
@@ -22,7 +23,7 @@ async function askJson(env: JobEnv, system: string, prompt: string, purpose: str
   let calls = 0, last = 'no model';
   for (const model of env.models) {
     for (let k = 0; k < 2; k++) {
-      if (!(await env.gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok) throw new AgentError('AI daily limit reached', 429);
+      if (!(await env.gw({ op: 'budget', purpose: 'ask', ...(env.agent ? { agent: env.agent } : {}) }).catch(() => ({ ok: false }))).ok) throw new AgentError('AI daily limit reached', 429);
       const r = await env.ai.chat(model, { system, contents: [{ role: 'user', parts: [{ text: k ? prompt + '\n\nReturn ONLY one valid JSON object, no other text.' : prompt }] }], maxTokens: 6000, temperature: 0.2 });
       calls++;
       await env.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose, ok: r.ok, ms: r.ms, in: prompt.length + system.length, out: r.text.length,
@@ -34,6 +35,13 @@ async function askJson(env: JobEnv, system: string, prompt: string, purpose: str
     }
   }
   throw new AgentError(last, 0);
+}
+
+// wave 109b: what the teams found recently (all-India and target topics) as context for the morning brief
+async function briefMemory(env: JobEnv): Promise<string | undefined> {
+  const mem = await env.gw({ op: 'memory_read', topics: ['scope:all-india', 'metric:target', 'scope:data'], audience: 'all', limit: 6 }).catch(() => []);
+  const t = (Array.isArray(mem) ? mem : []).map((m: any) => `- [${m.at}, ${m.kind}] ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 400)}`).join('\n');
+  return t ? env.pseudo.hide(t) : undefined;
 }
 
 // ---------------------------------------------------------------- daily business watcher
@@ -54,7 +62,7 @@ async function dailyBrief(env: JobEnv) {
   let out: any, pruned: any = null;
   try { out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question,
     ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: 6, timeoutMs: 25000,
-    deadline: env.t0 + 115000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok,
+    deadline: env.t0 + 115000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask', ...(env.agent ? { agent: env.agent } : {}) }).catch(() => ({ ok: false }))).ok, memory: await briefMemory(env),
     allow: ['get_business_summary', 'get_breakdown', 'get_operations', 'get_collections', 'get_potential', 'get_plan', 'get_targets', 'run_sql'], purpose: 'agent_brief', maxTokens: 8192, agent: env.agent ?? undefined }); }
   catch (e) {
     // a long briefing with a few unverifiable figures: leave out the statements that carry them (never show an unchecked figure)
@@ -254,8 +262,108 @@ function originSummary(o: any) {
   return { lines, text, data: { pages: pages.slice(0, 10), elements: els.slice(0, 15) } };
 }
 
+// ---------------------------------------------------------------- wave 109b: the management and process & data teams (one key per agent)
+// Each review is the agent loop with its own question and tools, the team's shared memory as context, and the figure check; a statement whose
+// figure cannot be traced is left out. Reports are admin-only unless said otherwise. Nothing here changes data.
+const ZONES: Record<string, string[]> = { zone_west: ['REST_MAHA', 'MUMBAI_GOA', 'GUJARAT', 'BHOPAL_MP'], zone_north_east: ['DELHI', 'LUCKNOW', 'PATNA', 'PUNJAB', 'KOLKATA', 'GUWAHATI', 'ODISHA'],
+  zone_south: ['BENGALURU', 'HYDERABAD', 'TAMILNADU'] };
+const STYLE = 'Write for managers: short bold labels instead of headings, plain words, no field names or raw decimals (6.8%, not -0.068). Never name or score a person. ' +
+  'Every figure must be copied from a look-up made today (rounding is fine); do not add up or average rows yourself. Counts (cases, units) and rupees are different measures: say which. ' +
+  'SHARED MEMORY is context from earlier runs: use it to say what changed, never as a source of figures. End with **Open questions** (at most 2) only if something needs a human decision.';
+const zoneJob = (k: string, label: string) => ({ title: `Zone review — ${label}`, audience: 'admin', rounds: 8, topics: ZONES[k].map((z) => 'zone:' + z.toLowerCase()),
+  allow: ['get_business_summary', 'get_breakdown', 'get_branch_units', 'get_potential', 'get_operating_model', 'get_targets'],
+  q: (e: JobEnv) => `ZONE REVIEW (${label}) for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Zones: ${ZONES[k].join(', ')}. ` +
+    `Look up get_breakdown level zone (sort gap) once for all zones, then for the zones with the biggest gap get_breakdown level team with filters {zone_group: <zone>} (sort gap), ` +
+    `and get_branch_units with filters {zone_group: <zone>} and unit_type [RACPC, Mini RACPC, RAC] for those zones. ` +
+    `Write: **Headline** (two sentences), **Zones** (table: zone, likely vs target %, gap, root cause), **Teams to act on** (the 3–5 teams with the biggest gap and why), ` +
+    `**Units** (active, dormant and never-active RACPC / Mini RACPC / RAC per zone, from get_branch_units), **Actions** (three, each naming a zone or team). ${STYLE}` });
+type RJ = { title: string; audience: string; rounds?: number; topics: string[]; allow: string[]; q: (e: JobEnv) => string };
+const RJOBS: Record<string, RJ> = {
+  target_watch: { title: 'Target and pace watch', audience: 'admin', topics: ['metric:target', 'scope:all-india'],
+    allow: ['get_business_summary', 'get_breakdown', 'get_targets', 'get_plan', 'get_potential'],
+    q: (e) => `TARGET AND PACE WATCH for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. The starting snapshot has the all-India month so far. Look up get_breakdown level zone (sort gap), ` +
+      `get_breakdown level client (sort gap, limit 12) and get_targets. Write: **Month so far** (cases and revenue vs target, likely month end, what is needed per remaining working day), ` +
+      `**Zones that will miss** (table: zone, likely vs target %, gap), **Clients that will miss** (up to 5), **Since the last watch** (what moved, against SHARED MEMORY), **Three actions**. ${STYLE}` },
+  zone_west: zoneJob('zone_west', 'West'), zone_north_east: zoneJob('zone_north_east', 'North and East'), zone_south: zoneJob('zone_south', 'South'),
+  client_review: { title: 'Client review', audience: 'admin', rounds: 8, topics: ['scope:clients'], allow: ['get_business_summary', 'get_breakdown', 'get_potential', 'get_branch_units', 'get_collections'],
+    q: (e) => `CLIENT REVIEW for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Look up get_breakdown level client (sort revenue, limit 10), get_potential (group client), ` +
+      `get_collections, and get_branch_units with filters {client_family: <family>} for the three largest client families. Write: **Headline**, **Top clients** (table: client, revenue so far, likely vs target %, ` +
+      `change vs last month, share of potential), **Units** (for the three largest: RACPC / Mini RACPC / RAC / branches active, dormant, never active), **Risks** (falling clients, receivables over 180 days), ` +
+      `**Asks for the relationship team** (three). ${STYLE}` },
+  month_close: { title: 'Month-close summary', audience: 'admin', rounds: 8, topics: ['scope:all-india', 'metric:month-close'], allow: ['get_business_summary', 'get_breakdown', 'get_targets', 'get_collections', 'get_operations'],
+    q: (e) => { const d = new Date(e.dataMonth + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 1); const pm = d.toISOString().slice(0, 10);
+      return `MONTH-CLOSE SUMMARY for the MD: the month ${pm.slice(0, 7)} (closed). Use month ${pm} in every look-up: get_business_summary, get_breakdown level zone (sort gap), ` +
+        `get_breakdown level client (sort gap, limit 10), get_collections, get_operations part tat. One page: **Result** (cases and revenue vs target, vs the month before), **Why** (root causes by zone and client), ` +
+        `**What worked**, **What did not**, **Cash** (collections, receivables over 180 days), **Decisions for this month** (three proposals for the MD; they are proposals, not decisions). ${STYLE}`; } },
+  data_watch: { title: 'Data readiness and anomaly watch', audience: 'admin', topics: ['scope:data'], allow: ['get_business_summary', 'get_operations', 'get_force1_gap', 'get_breakdown'],
+    q: (e) => `DATA READINESS WATCH (${todayIST()}). Data dates known to the dashboard: ${JSON.stringify(e.meta?.freshness ?? {})}. Look up get_force1_gap for the latest complete month and the current month, ` +
+      `get_operations part force1, and get_breakdown level team (sort decline, limit 10). Write: **Freshness** (each source and how many days old; flag anything older than 2 working days), ` +
+      `**Force1 coverage** (tracker vs Force1 vs reported, the location groups with the largest unexplained gap), **Anomalies** (teams or clients with a sudden drop or jump), **Fix list** (who should upload or correct what). ${STYLE}` },
+  branch_network: { title: 'Branch network and potential', audience: 'admin', rounds: 8, topics: ['unit:racpc', 'unit:mini racpc', 'unit:rac', 'metric:potential'],
+    allow: ['get_branch_units', 'get_potential', 'get_breakdown', 'get_operations'],
+    q: (e) => `BRANCH NETWORK REVIEW for ${e.dataMonth.slice(0, 7)}. Look up get_branch_units (all unit types, all India), get_branch_units unit_type [RACPC, Mini RACPC, RAC] (all India), ` +
+      `get_potential (group location) and get_operations part coverage. Write: **Network** (table: unit type, total, active, dormant, never active), **Where the units are idle** (zones and teams with most dormant ` +
+      `or never-active RACPC / Mini RACPC / RAC), **Potential gap** (current vs potential, top teams by gap), **Visits worth making** (5 concrete unit types × teams). ${STYLE}` },
+  ops_watch: { title: 'Force1 and TAT operations', audience: 'admin', topics: ['scope:operations', 'metric:tat'], allow: ['get_operations', 'get_force1_gap', 'get_breakdown'],
+    q: (e) => `OPERATIONS WATCH for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Look up get_operations part tat, get_operations part backlog, get_operations part force1 and get_force1_gap. ` +
+      `Write: **Turnaround** (case, field and document TAT, SLA met, worst zones), **Backlog** (open cases, overdue, oldest), **Force1 use** (coverage vs tracker, units below 70%), **Actions** (three). ${STYLE}` },
+  collections_watch: { title: 'Collections and receivables', audience: 'admin', topics: ['metric:collections'], allow: ['get_collections', 'get_breakdown'],
+    q: (e) => `COLLECTIONS WATCH for ${e.dataMonth.slice(0, 7)}. Look up get_collections (all India, limit 15). Write: **Position** (outstanding, over 90 and over 180 days, collected this month vs last, cash cover), ` +
+      `**Who to chase** (table: team or client, outstanding, over 180 days), **Risks**, **Actions** (three). ${STYLE}` },
+};
+async function reviewJob(env: JobEnv, job: string) {
+  const R = RJOBS[job]; const day = todayIST();
+  const mem = await env.gw({ op: 'memory_read', topics: R.topics, audience: 'admin', limit: 8 }).catch(() => []);
+  const memory = (Array.isArray(mem) ? mem : []).map((m: any) => `- [${m.at}, ${m.agent}, ${m.kind}${m.status === 'confirmed' ? ', confirmed' : ''}] ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 500)}`).join('\n');
+  let out: any, pruned: any = null;
+  try { out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question: R.q(env),
+    ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: R.rounds ?? 6, timeoutMs: 25000,
+    deadline: env.t0 + 130000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask', ...(env.agent ? { agent: env.agent } : {}) }).catch(() => ({ ok: false }))).ok,
+    allow: R.allow, purpose: 'agent_' + job, maxTokens: 8192, agent: env.agent ?? undefined, memory: memory ? env.pseudo.hide(memory) : undefined }); }
+  catch (e) {
+    const d = (e as AgentError)?.detail;
+    if ((e as AgentError)?.status !== 422 || !d?.text) throw e;
+    const p = prune(d.text, d.check.untraced);
+    if (!p.total || p.dropped / p.total > 0.4) throw e;
+    pruned = { dropped: p.dropped, total: p.total, untraced: d.check.untraced.map((x: string) => env.pseudo.show(x)) } as any;
+    out = { text: p.text + `\n\n*${p.dropped} statement${p.dropped === 1 ? ' was' : 's were'} left out because their figures could not be checked against the dashboard.*`,
+      model: d.model, rounds: d.rounds, usage: d.usage, steps: (e as AgentError).steps ?? [], check: { figures: d.check.figures - d.check.untraced.length, traced: d.check.traced, untraced: [] } };
+  }
+  const body = clean(env.pseudo.show(noVendor(out.text))).replace(/\s*\(`?[a-z]+(?:_[a-z0-9]+)+`?\s*:\s*`?[-\d.,%]+`?\)/g, '');
+  const steps = out.steps.filter((s: any) => !s.discarded).map((s: any) => ({ tool: s.tool, label: env.pseudo.show(String(s.label ?? s.tool)), ok: s.ok, rows: s.rows ?? null }));
+  return { kind: job, for_date: day, audience: R.audience, title: `${R.title} · ${day}`, body_md: body, model: out.model, _topics: R.topics,
+    data: { as_of: env.dataAsOf, month: env.dataMonth, agent: env.agent ?? null, memory_items: Array.isArray(mem) ? mem.length : 0,
+      check: { ...out.check, untraced: out.check.untraced.map((x: string) => env.pseudo.show(x)) }, pruned, steps }, usage: out.usage };
+}
+// the decision-log auditor: compares recent memory items, confirms what today's reports support, retires what is superseded, lists contradictions for a human
+async function decisionAudit(env: JobEnv) {
+  const day = todayIST();
+  const mem = await env.gw({ op: 'memory_read', audience: 'admin', limit: 60 }).catch(() => []);
+  const items: any[] = Array.isArray(mem) ? mem : [];
+  if (items.length < 2) return { kind: 'decision_audit', for_date: day, audience: 'admin', title: `Decision-log audit · ${day}`, body_md: 'Not enough shared memory yet to audit.', data: { items: items.length }, usage: { calls: 0 } };
+  const rows = items.map((m) => `#${m.id} · ${m.at} · ${m.agent} · ${m.kind}/${m.status} · topics ${(m.topics ?? []).join(',')} · as of ${m.as_of ?? '?'}\n  ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 400)}`).join('\n');
+  const system = 'You audit the shared memory of the Ask Crux agent teams for a bank-verification business. You never invent data. Codes like PX3 are hidden names: keep them. ' +
+    'Call the assistant only "Ask Crux"; never name an AI model, company or provider.';
+  const prompt = `SHARED MEMORY ITEMS (newest first):\n${rows}\n\nReturn JSON: {"summary": "3-4 sentences", "status_updates": [{"id": n, "status": "superseded | rejected | confirmed", "why": "one line"}], ` +
+    `"contradictions": [{"ids": [a, b], "issue": "what disagrees and which is more recent"}], "open_questions": [{"question": "a decision a human must take", "ids": [..]}]}. ` +
+    `Mark an item superseded only when a newer item on the same topic and scope replaces it; rejected only when another item shows it was wrong; confirmed when two or more independent items agree. At most 15 updates.`;
+  const { json, model, calls } = await askJson(env, system, env.pseudo.hide(prompt), 'agent_decision_audit');
+  const ids = new Set(items.map((m) => +m.id));
+  const ups = (Array.isArray(json?.status_updates) ? json.status_updates : []).filter((u: any) => ids.has(+u.id) && ['superseded', 'rejected', 'confirmed'].includes(u.status)).slice(0, 15);
+  if (ups.length) await env.gw({ op: 'memory_write', agent_id: env.agent ?? 'pd_6', status_updates: ups.map((u: any) => ({ id: +u.id, status: u.status })) }).catch(() => null);
+  const S = (v: any, n = 400) => env.pseudo.show(noVendor(String(v ?? ''))).slice(0, n);
+  const con = (Array.isArray(json?.contradictions) ? json.contradictions : []).slice(0, 8);
+  const oq = (Array.isArray(json?.open_questions) ? json.open_questions : []).slice(0, 6);
+  const body = [S(json?.summary, 1200), '', `**Memory updated** — ${ups.length} item${ups.length === 1 ? '' : 's'}`, ...ups.map((u: any) => `- #${u.id} → ${u.status}: ${S(u.why, 200)}`),
+    '', '**Contradictions**', ...(con.length ? con.map((c: any) => `- #${(c.ids ?? []).join(', #')}: ${S(c.issue, 300)}`) : ['- None found.']),
+    '', '**Decisions needed from management**', ...(oq.length ? oq.map((q: any) => `- ${S(q.question, 300)}`) : ['- None.'])].join('\n');
+  return { kind: 'decision_audit', for_date: day, audience: 'admin', title: `Decision-log audit · ${day}`, body_md: body, model, _topics: ['scope:memory'],
+    data: { items: items.length, updates: ups, contradictions: con, open_questions: oq }, usage: { calls } };
+}
+
 export async function runJob(job: string, env: JobEnv) {
-  const fn = ({ daily_brief: dailyBrief, market_news: marketNews, chat_review: chatReview, weekly_review: weeklyReview } as Record<string, (e: JobEnv) => Promise<any>>)[job];
+  const fn = ({ daily_brief: dailyBrief, market_news: marketNews, chat_review: chatReview, weekly_review: weeklyReview, decision_audit: decisionAudit } as Record<string, (e: JobEnv) => Promise<any>>)[job]
+    ?? (RJOBS[job] ? (e: JobEnv) => reviewJob(e, job) : undefined);
   if (!fn) throw new Error('unknown job');
   let rep: any;
   try { rep = await fn(env); }
@@ -270,7 +378,14 @@ export async function runJob(job: string, env: JobEnv) {
     const today = await env.gw({ op: 'reports_recent', kind: job, days: 0 }).catch(() => []);
     if (Array.isArray(today) && today.some((r: any) => r.for_date === rep.for_date)) return { ...rep, saved: false, note: 'kept the earlier report of today' };
   }
+  const topics = rep._topics ?? [job === 'daily_brief' || job === 'weekly_review' ? 'scope:all-india' : 'scope:' + job]; delete rep._topics;
   const saved = await env.gw({ op: 'report_save', ...rep });
+  // wave 109b: the report's headline goes to the team's shared memory (what the next runs and Ask Crux build on); failed runs are not remembered
+  if (rep.status !== 'failed' && saved?.id && rep.body_md) {
+    const gist = String(rep.body_md).split('\n').filter((l: string) => l.trim() && !/^\s*\|/.test(l)).slice(0, 4).join(' ').replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').slice(0, 600);
+    await env.gw({ op: 'memory_write', agent_id: env.agent ?? 'main', audience: rep.audience === 'viewer' ? 'all' : 'admin',
+      items: [{ kind: 'finding', topics, as_of: env.dataAsOf || null, content: `${rep.title}: ${gist}`, evidence: { report_id: saved.id, job } }] }).catch(() => null);
+  }
   let proposed = 0;
   if (Array.isArray(lessons) && lessons.length && saved?.id) {
     const vs = await env.embed(lessons.map((l: any) => env.pseudo.stable(l.question)));

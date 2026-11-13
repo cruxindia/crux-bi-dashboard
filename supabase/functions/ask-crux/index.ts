@@ -495,7 +495,7 @@ Deno.serve(async (req) => {
 
   const t0 = Date.now();
   const res = await answer(body, cfg, ai, action);
-  await logOrigin(body, res, Date.now() - t0);
+  background(logOrigin(body, res, Date.now() - t0));   // wave 109b: recorded after the answer is sent
   return res;
 });
 

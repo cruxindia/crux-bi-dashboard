@@ -125,6 +125,10 @@ export const DECLS: ToolDecl[] = [
   { name: 'get_branch_units', description: 'COUNTS of client units by type — RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, other CPC, other processing centre, SME branch, branch — with active, dormant and never active, by zone, team and client, the rows in the branch master that cannot be counted (with reason), and optionally the list of units. Use for any "how many / count / which / list" question about branches, RACPCs, RACs or other units. RACPC excludes Mini RACPC unless both are asked.',
     parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'] }, description: 'omit for all unit types' },
       filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
+  { name: 'get_operating_model', description: 'Who runs the business: own branch (Crux) or partner (franchise), by client and location with dates (admin register). Cases and revenue by own / partner / not set for the last 6 months, by zone and by location for the month. Use for "partner vs own branch", "franchise business", "which locations are run by partners".',
+    parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
+  { name: 'get_force1_gap', description: 'Zonal Tracker cases vs cases recorded in Force1 vs work reported on the "not on Force1" template, by location group for a month: gap, reported, still unexplained, people reported. Use for Force1 coverage, missing case data, people not on Force1.',
+    parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
   { name: 'get_collections', description: 'Receivables and collections: outstanding, over 90 / 180 days, realisation, collected last month and this month, cash cover, ageing buckets, by team and client.',
     parameters: { type: 'object', properties: { filters: FILTERS, limit: { type: 'integer' } } } },
   { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes.',
@@ -287,6 +291,18 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
         units: U?.units ?? undefined, method: U?.method }, 16000) };
   },
 
+  // wave 109c: partner vs own branch (no partner names) and the Force1 gap
+  async get_operating_model(t, a) {
+    const { month, filters } = scope(t, a);
+    const O = await t.api('operating_model', { month, filters });
+    return { label: 'Own branch vs partner', rows: (O?.by_location ?? []).length,
+      data: fit({ month: O?.month, filters, rule: O?.rule, register: O?.register, trend: O?.trend, by_zone: O?.by_zone, by_location: (O?.by_location ?? []).slice(0, 40) }, 14000) };
+  },
+  async get_force1_gap(t, a) {
+    const { month, filters } = scope(t, a);
+    const G = await t.api('force1_gap', { month, filters });
+    return { label: 'Zonal Tracker vs Force1 vs reported', rows: (G?.units ?? []).length, data: fit({ month: G?.month, filters, method: G?.method, totals: G?.totals, units: G?.units, months_reported: G?.months_reported }, 12000) };
+  },
   async get_collections(t, a) {
     const { month, filters } = scope(t, a);
     const lim = Math.min(Math.max(Number(a?.limit) || 15, 1), 40);
