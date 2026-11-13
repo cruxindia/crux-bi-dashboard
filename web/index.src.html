@@ -3755,7 +3755,7 @@ function askSuggest(){const k=S.section;
  // wave 110: the questions people actually ask most on this page come first (learned from the last 2 weeks; unhelpful ones left out)
  return [...new Set([...askTop(k,2),...base])].slice(0,5)}
 /* wave 110: the page adapts to what people ask — frequency, wordings and feedback from the last 2 weeks (bi.api_ask_trends; viewer questions only, no names) */
-const askTrends=()=>S.trendsP||(S.trendsP=api('ask_trends',{days:14}).then(t=>(S.trendsV=t)).catch(()=>null));
+const askTrends=()=>S.trendsP||(S.trendsP=(S.adminKey?adminCall('ask_trends',{days:14}):api('ask_trends',{days:14})).then(t=>(S.trendsV=t)).catch(()=>null));   // admins see their own questions too
 function askTop(sec,n=3){const T=S.trendsV;if(!T){askTrends();return[]}return (T.clusters||[]).filter(c=>c.asked>=2&&!(c.helpful_no>c.helpful_yes)&&(!sec||!c.section||c.section===sec)).slice(0,n).map(c=>c.question)}
 async function askTrendStrip(box){const T=await askTrends();const top=((T&&T.clusters)||[]).filter(c=>c.asked>=2&&!(c.helpful_no>c.helpful_yes)).slice(0,5);if(!top.length)return;
  box.append(el('div',{class:'askchips askstrip',style:'margin:10px 0'},el('span',{class:'note'},'Asked most in the last 2 weeks: '),

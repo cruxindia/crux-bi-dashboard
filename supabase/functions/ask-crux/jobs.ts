@@ -333,8 +333,8 @@ async function reviewJob(env: JobEnv, job: string) {
   const memory = (Array.isArray(mem) ? mem : []).map((m: any) => `- [${m.at}, ${m.agent}, ${m.kind}${m.status === 'confirmed' ? ', confirmed' : ''}] ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 500)}`).join('\n');
   let out: any, pruned: any = null;
   try { out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question: R.q(env),
-    ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: R.rounds ?? 6, timeoutMs: 25000,
-    deadline: env.t0 + 130000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask', ...(env.agent ? { agent: env.agent } : {}) }).catch(() => ({ ok: false }))).ok,
+    ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: R.rounds ?? 6, timeoutMs: 20000,
+    deadline: env.t0 + 95000, /* wave 110: inside the worker's limits */ budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask', ...(env.agent ? { agent: env.agent } : {}) }).catch(() => ({ ok: false }))).ok,
     allow: R.allow, purpose: 'agent_' + job, maxTokens: 8192, agent: env.agent ?? undefined, memory: memory ? env.pseudo.hide(memory) : undefined }); }
   catch (e) {
     const d = (e as AgentError)?.detail;
