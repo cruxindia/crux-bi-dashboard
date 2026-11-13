@@ -270,11 +270,11 @@ const ZONES: Record<string, string[]> = { zone_west: ['REST_MAHA', 'MUMBAI_GOA',
 const STYLE = 'Write for managers: short bold labels instead of headings, plain words, no field names or raw decimals (6.8%, not -0.068). Never name or score a person. ' +
   'Every figure must be copied from a look-up made today (rounding is fine); do not add up or average rows yourself. Counts (cases, units) and rupees are different measures: say which. ' +
   'SHARED MEMORY is context from earlier runs: use it to say what changed, never as a source of figures. End with **Open questions** (at most 2) only if something needs a human decision.';
-const zoneJob = (k: string, label: string) => ({ title: `Zone review — ${label}`, audience: 'admin', rounds: 8, topics: ZONES[k].map((z) => 'zone:' + z.toLowerCase()),
+const zoneJob = (k: string, label: string) => ({ title: `Zone review — ${label}`, audience: 'admin', rounds: 6, topics: ZONES[k].map((z) => 'zone:' + z.toLowerCase()),
   allow: ['get_business_summary', 'get_breakdown', 'get_branch_units', 'get_potential', 'get_operating_model', 'get_targets'],
   q: (e: JobEnv) => `ZONE REVIEW (${label}) for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Zones: ${ZONES[k].join(', ')}. ` +
-    `Look up get_breakdown level zone (sort gap) once for all zones, then for the zones with the biggest gap get_breakdown level team with filters {zone_group: <zone>} (sort gap), ` +
-    `and get_branch_units with filters {zone_group: <zone>} and unit_type [RACPC, Mini RACPC, RAC] for those zones. ` +
+    `Look up get_breakdown level zone (sort gap) once, get_branch_units once with unit_type [RACPC, Mini RACPC, RAC] and no filters (its by_zone has every zone), ` +
+    `then get_breakdown level team (sort gap, limit 8) with filters {zone_group: <zone>} for at most the two of these zones with the biggest gap. Make no other look-ups. ` +
     `Write: **Headline** (two sentences), **Zones** (table: zone, likely vs target %, gap, root cause), **Teams to act on** (the 3–5 teams with the biggest gap and why), ` +
     `**Units** (active, dormant and never-active RACPC / Mini RACPC / RAC per zone, from get_branch_units), **Actions** (three, each naming a zone or team). ${STYLE}` });
 type RJ = { title: string; audience: string; rounds?: number; topics: string[]; allow: string[]; q: (e: JobEnv) => string };

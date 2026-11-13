@@ -384,7 +384,7 @@ async function boot(){
 function showLoginMsg(t){$('#loginMsg').textContent=t}
 
 
-const AREAS=[['Executive overview',[['overview','Executive overview'],['present','Management summary']]],['Business performance',[['tracker','Business tracker'],['rca','Root cause (why)'],['growth','Growth & trends'],['planning','Planning & forecasting'],['people','People']]],
+const AREAS=[['Executive overview',[['overview','Executive overview'],['meeting','Meeting view'],['present','Management summary']]],['Business performance',[['tracker','Business tracker'],['rca','Root cause (why)'],['growth','Growth & trends'],['planning','Planning & forecasting'],['people','People']]],
  ['Operations & TAT',[['tat','TAT & operations'],['force1','Force1 utilisation']]],['Revenue & collections',[['collections','Revenue & collections']]],
  ['Data readiness',[['health','Data readiness']]],['Ask Crux',[['ask','Ask Crux']]]];
 const SECTIONS=[...AREAS.flatMap(a=>a[1]).filter(x=>x[0]!=='ask'),['adm_upload','Admin · Uploads'],['adm_mapping','Admin · Master data & mapping'],['adm_dq','Admin · Data quality'],['adm_branch','Admin · Branch research'],['adm_hr','Admin · HR master'],['adm_opmodel','Admin · Partner & own branches'],['adm_nonf1','Admin · People not on Force1'],['adm_finance','Admin · Finance review'],['adm_plan','Admin · Plan & targets'],['adm_penalty','Admin · Penalties'],['adm_db','Admin · Database health'],['adm_ask','Admin · Ask Crux learning'],['adm_agents','Admin · Ask Crux agents']];
@@ -460,7 +460,7 @@ function table(rows,cols,{name='export.csv',search=true,pageSize=200,defaultHidd
 // wave 105h: "who made this change" columns show the operations connector by its role, not by the assistant's product name (the stored record is unchanged)
 function whoLabel(v){return String(v).replace(/^admin-key:/,'').replace(/\bclaude[-\w]*/gi,'operations')}
 function guard(fn){return async()=>{kill();const v=$('#view');v.innerHTML='';const s=el('section',{'aria-busy':'true'},el('p',{class:'note'},'Loading…'));v.append(s);try{s.innerHTML='';const sb=staleBanner();if(sb)v.insertBefore(sb,s);await fn(s)}catch(e){s.innerHTML='';s.append(el('div',{class:'banner err'},e.message||String(e)))}s.removeAttribute('aria-busy')}}
-function render(){S.renderAt=Date.now();for(const k in LIVE)delete LIVE[k];({overview:vOverview,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_opmodel:vAdmOpModel,adm_nonf1:vAdmNonF1,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk,adm_agents:vAdmAgents}[S.section]||vOverview)()}
+function render(){S.renderAt=Date.now();for(const k in LIVE)delete LIVE[k];({overview:vOverview,meeting:vMeeting,present:vPresent,rca:vRca,force1:vForce1,tracker:vTracker,growth:vGrowth,planning:vPlanning,tat:vTat,people:vPeople,collections:vCollections,health:vHealth,adm_upload:vAdmUpload,adm_mapping:vAdmMapping,adm_dq:vAdmDq,adm_branch:vAdmBranch,adm_hr:vAdmHr,adm_opmodel:vAdmOpModel,adm_nonf1:vAdmNonF1,adm_finance:vAdmFinance,adm_penalty:vAdmPenalty,adm_plan:vAdmPlan,adm_db:vAdmDb,adm_ask:vAdmAsk,adm_agents:vAdmAgents}[S.section]||vOverview)()}
 
 /* ---------- Overview ---------- */
 const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
@@ -468,6 +468,9 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
  const [ov,daily,ins,og]=await Promise.all([api('overview',{month:m,filters:f}),api('daily',{month:m,filters:f}),api('insights',{month:m,filters:f}),api('organic',{month:m,filters:f,group:'total',measure:'cases'}).catch(()=>null)]);
  const B=await bmP;const fc=ov.forecast||{};const tgtC=ov.target_cases||0;const wpace=fc.workdays_in_month?fc.workdays_elapsed/fc.workdays_in_month:null;const OT=og&&og.total||{};
  const tl=(k,v,n,cls,q)=>{const t=tile(k,v,n,cls);if(q)t.querySelector('.k').append(' ',q);return t};
+ // wave 109: a month whose tracker files carry no targets says so plainly (instead of showing 0 targets and blank achievement)
+ if(!tgtC&&!(ov.revenue_target>0)&&ov.mtd_cases>0&&!Object.keys(f).length)s.append(el('div',{class:'banner'},`The ${mlabel(m)} Zonal Tracker files uploaded so far (latest ${ov.as_of||'–'}) have no targets — every target cell is 0 — so achievement and shortfall cannot be shown. Upload a tracker file with targets, or save the suggested targets as the plan in `,
+  el('button',{type:'button',class:'lnk',onclick:()=>go('adm_plan')},'Admin → Plan & targets'),'.'));
  /* Hero: one block, Revenue (expected, business) by default with a Cases toggle (shared measure state). Revenue projection uses the same share of month as the case projection. */
  {const ok=B&&!B.error&&B.total,T=ok?B.total:{},Fi=ok?B.finance||{}:{};const rv=S.measure!=='cases'&&T.revenue_target>0&&ov.mtd_cases>0;
   const F=rv?fmtL:fmt,so=rv?T.expected_revenue:ov.mtd_cases,tg=rv?T.revenue_target:tgtC;
@@ -825,6 +828,8 @@ async function trackerZoneChart(box,m,f){try{const lv=f.location_id?'client':f.z
  const c=C();chart(cv,{type:'bar',drill:(ds,i)=>{const r=R[i];if(!r)return null;const ff={...f};if(lv==='zone')ff.zone_group=r.id;else if(lv==='location')ff.location_id=+r.id;else return null;return bizCtx(m,ff,{title:r.group})},
   data:{labels:R.map(r=>r.group),datasets:[{label:'Achieved so far',data:R.map(r=>r.mtd),backgroundColor:c.blue},{label:'Likely month end',data:R.map(r=>r.likely),backgroundColor:c.ochre+'aa'},{label:'Target',data:R.map(r=>r.target),backgroundColor:c.muted+'66'}]},
   options:{indexAxis:'y',maintainAspectRatio:false,scales:{x:{title:{display:true,text:'cases'}}},plugins:{tooltip:{callbacks:{afterBody:x=>{const r=R[x[0].dataIndex];return r.target?`Likely ${pct(r.achievement_likely)} of target`:''}}}}}})}catch(e){box.remove()}}
+// wave 109: one click to the Excel-style tracker for management discussions — zones first, compared with the same day last month, no extra columns
+const vMeeting=()=>{S.trTab='sheet';Object.assign(ZT,{level:'zones',cmp:'lm',hist:0,q:'',hideZero:true});Object.assign(ZT.show,{dr:false,org:false,pot:false});try{ztSave()}catch{}go('tracker')};
 const vTracker=guard(async s=>{const m=$('#fMonth').value,f=filters();const daily=await api('daily',{month:m,filters:{}});const snaps=daily.map(d=>d.date);
  s.append(el('h2',{},'Business tracker'),el('p',{class:'lede'},'Month-to-date business by zone → location → client, with every total worked out for you. Collapse to zones or locations, compare with another date, add monthly history or the business-as-usual benchmark, and export to Excel. Filters at the top apply.'));
  if(!snaps.length){s.append(el('div',{class:'banner'},'No business reports yet for '+mlabel(m)+'.'));return}

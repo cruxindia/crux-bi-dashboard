@@ -724,7 +724,8 @@ export async function runAgent(o: {
       if (!failed) lastErr = { msg: 'no final answer', status: 0 };
       // a busy or exhausted model: try the next one; anything else: stop
       // (status 200 with an error = empty or cut-off reply: also worth the next model)
-      if (failed && !(lastErr.status === 429 || lastErr.status >= 500 || lastErr.status === 0 || lastErr.status === 200)) break;
+      // wave 109: 404 = this model is not offered to this key's project (agent keys are new projects): also worth the next model
+      if (failed && !(lastErr.status === 429 || lastErr.status >= 500 || lastErr.status === 0 || lastErr.status === 200 || lastErr.status === 404)) break;
       continue;
     }
     const check = finalCheck!;
