@@ -1,0 +1,74 @@
+name: Improver branch
+# wave 110 (13-Nov-2026): the weekly dashboard improver runs in a scheduled session that can read this public repository but
+# cannot push. It sends its change here as a patch; this workflow puts it on a NEW branch improver/<date>-<slug> (never main),
+# rebuilds web/index.html, checks for secrets and pushes the branch. The improver then opens the pull request; the owner
+# reviews and merges. Only these paths may change: web/index.src.html, supabase/functions/ask-crux/*.ts, docs/*.md,
+# supabase/proposals/*.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'New branch name: improver/YYYY-MM-DD-short-slug'
+        required: true
+      title:
+        description: 'Commit message (one line)'
+        required: true
+      patch_b64:
+        description: 'git diff against main (without web/index.html), gzip -9 then base64 -w0'
+        required: true
+permissions:
+  contents: write
+concurrency: improver-branch
+jobs:
+  branch:
+    runs-on: ubuntu-latest
+    env:
+      BR: ${{ inputs.branch }}
+      TITLE: ${{ inputs.title }}
+      PATCH_B64: ${{ inputs.patch_b64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Check the branch name
+        run: |
+          [[ "$BR" =~ ^improver/20[0-9]{2}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]{2,59}$ ]] || { echo "::error::branch must look like improver/YYYY-MM-DD-short-slug"; exit 1; }
+          if git ls-remote --exit-code --heads origin "$BR" >/dev/null; then echo "::error::branch $BR already exists"; exit 1; fi
+          [[ "$TITLE" != *$'\n'* && ${#TITLE} -le 120 ]] || { echo "::error::title must be one line of at most 120 characters"; exit 1; }
+      - name: Apply the patch (allowed paths only)
+        run: |
+          printf '%s' "$PATCH_B64" | base64 -d | gunzip > "$RUNNER_TEMP/p.diff"
+          files=$(grep -E '^(\+\+\+ b/|--- a/)' "$RUNNER_TEMP/p.diff" | sed -E 's#^(\+\+\+ b/|--- a/)##' | sort -u)
+          [ -n "$files" ] || { echo "::error::empty patch"; exit 1; }
+          for f in $files; do
+            case "$f" in
+              web/index.src.html|supabase/functions/ask-crux/*.ts|docs/*.md|supabase/proposals/*) ;;
+              *) echo "::error::path not allowed: $f"; exit 1 ;;
+            esac
+            case "$f" in *..*) echo "::error::path not allowed: $f"; exit 1 ;; esac
+          done
+          if grep -qE '^deleted file mode|^(rename|copy) (from|to) |^GIT binary patch|^(old|new) mode ' "$RUNNER_TEMP/p.diff"; then
+            echo "::error::only edits and new text files are allowed"; exit 1
+          fi
+          git apply --check "$RUNNER_TEMP/p.diff"
+          git apply "$RUNNER_TEMP/p.diff"
+          git status --short
+      - name: Secret check on added lines
+        run: |
+          if grep -E '^\+' "$RUNNER_TEMP/p.diff" | grep -nE 'AIza[0-9A-Za-z_-]{30,}|sk-or-v1-[0-9a-f]{20,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*c2VydmljZV9yb2xl|BI_EXPORT_TOKEN=|-----BEGIN [A-Z ]*PRIVATE KEY'; then
+            echo "::error::the patch adds something that looks like a key or token"; exit 1
+          fi
+      - name: Build the page
+        run: python3 tools/build.py
+      - name: Commit and push the branch
+        run: |
+          git config user.name "crux-bi-improver"
+          git config user.email "crux-bi-improver@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add -A
+          git diff --cached --quiet && { echo "::error::the patch changes nothing"; exit 1; }
+          git commit -q -m "$TITLE" -m "Weekly dashboard improver — proposed change; review the pull request before merging."
+          git push -q origin "$BR"
+          echo "pushed $BR: $(git rev-parse HEAD)"
+          git show --stat --oneline HEAD | head -20
