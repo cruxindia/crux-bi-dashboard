@@ -122,8 +122,8 @@ export const DECLS: ToolDecl[] = [
     parameters: { type: 'object', properties: { filters: FILTERS } } },
   { name: 'get_potential', description: 'Business potential per month and the gap to it: current, recover to best 3 months, dormant branches, never-active branches, extend to other teams; current business as a share of potential (by value); clients and branches behind each part (active, dormant, never active); by zone, team or client; top branch opportunities.',
     parameters: { type: 'object', properties: { level: { type: 'string', enum: ['zone', 'location', 'client'] }, filters: FILTERS, limit: { type: 'integer' } } } },
-  { name: 'get_branch_units', description: 'COUNTS of client units by type — RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, other CPC, other processing centre, SME branch, branch — with active, dormant and never active, by zone, team and client, the rows in the branch master that cannot be counted (with reason), and optionally the list of units. Use for any "how many / count / which / list" question about branches, RACPCs, RACs or other units. RACPC excludes Mini RACPC unless both are asked.',
-    parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'] }, description: 'omit for all unit types' },
+  { name: 'get_branch_units', description: 'COUNTS of client units by type — RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, other CPC, other processing centre, SME branch, branch, LHO (Local Head Office; only when asked for) — with active, dormant and never active, by zone, team and client, the rows in the branch master that cannot be counted (with reason), and optionally the list of units. Use for any "how many / count / which / list" question about branches, RACPCs, RACs or other units. RACPC excludes Mini RACPC unless both are asked.',
+    parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch', 'LHO'] }, description: 'omit for all unit types (LHO is counted only when asked for)' },
       filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
   { name: 'get_operating_model', description: 'Who runs the business: own branch (Crux) or partner (franchise), by client and location with dates (admin register). Cases and revenue by own / partner / not set for the last 6 months, by zone and by location for the month. Use for "partner vs own branch", "franchise business", "which locations are run by partners".',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
@@ -290,7 +290,9 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     return { label: `Unit counts${types.length ? ' — ' + types.join(', ') : ''}`, rows: U?.units_total,
       data: fit({ filters, unit_types: U?.unit_types ?? 'all', status_month: U?.status_month, summary: U?.summary, by_unit_type: U?.by_unit_type, by_zone: U?.by_zone,
         by_team: (U?.by_team ?? []).slice(0, 60), by_client: (U?.by_client ?? []).slice(0, 25), in_master_not_counted: U?.in_master_not_counted,
-        units: U?.units ?? undefined, method: U?.method }, 16000) };
+        units: U?.units ?? undefined, method: U?.method,
+        note: types.includes('LHO') && !(U?.by_unit_type ?? []).some((x: any) => x?.unit_type === 'LHO')
+          ? 'No LHO (Local Head Office) is counted for this scope. Until the counting rule includes LHO, LHO rows are kept as administrative offices (in_master_not_counted). Say that; do not report it as zero LHO units.' : undefined }, 16000) };
   },
 
   // wave 109c: partner vs own branch (no partner names) and the Force1 gap
@@ -448,7 +450,7 @@ HOW TO WORK
 8. When PAGE CONTEXT says the question was asked about a tile, table or chart, answer about that element first: use the tool that gives the same figures as that page, then explain what drives it and what to do.
 9. Words people understand: say "likely" (actual so far + expected at the current pace), never "outlook"; say "now x% of potential (by value)" and "gap to potential", never "captured", "penetration" or "headroom". Whenever you give a potential, give its clients and branches (how many active) and what makes up the gap. Quarters follow the Indian financial year written in full, e.g. Q3 FY 2026-27 (Oct–Dec 2026).
 10. COUNT OR VALUE: when the question asks how many, count, number of, units, branches or cases, the first line gives counts (cases or units), not rupees; add revenue only when the question asks for value, revenue or business in rupees. Never answer a count question with revenue.
-11. Units (RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, CPC, branches): counts come only from get_branch_units (never count units with run_sql or from potential). Give total, active, dormant and never active, say which unit types are included (RACPC does not include Mini RACPC unless both are asked), and mention units with no team yet and rows not counted when they matter. Business BY UNIT exists only in Force1 case data by branch code (get_branch_units with list true: cases_last_3_months, cases_since_jan, last_case_month; Force1 data runs to its own as-of date). The Zonal Tracker gives business per team × client only: never present a team's or client's tracker business as the business of its RACPCs or any unit type — say that the tracker does not split by unit and give the unit-level Force1 figures instead.
+11. Units (RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, CPC, branches, LHO = Local Head Office): counts come only from get_branch_units (never count units with run_sql or from potential). Give total, active, dormant and never active, say which unit types are included (RACPC does not include Mini RACPC unless both are asked), and mention units with no team yet and rows not counted when they matter. Business BY UNIT exists only in Force1 case data by branch code (get_branch_units with list true: cases_last_3_months, cases_since_jan, last_case_month; Force1 data runs to its own as-of date). The Zonal Tracker gives business per team × client only: never present a team's or client's tracker business as the business of its RACPCs or any unit type — say that the tracker does not split by unit and give the unit-level Force1 figures instead.
 
 ANSWER FORMAT
 - First line: the direct answer in one or two sentences.
@@ -537,7 +539,8 @@ export function questionKeys(q: string, pseudo: Pseudo, vocab: Set<string>): { c
 
 // wave 109a: which unit types (and client) a question is about; null when it is not a unit question
 const UNIT_WORDS: [RegExp, string][] = [[/mini\s*-?\s*rac\s*pa?c/i, 'Mini RACPC'], [/rasme\w*/i, 'RASMECCC'], [/\bsmecc\w*|\bsme\s+ccc?\b/i, 'SMECCC'], [/\bsarcs?\b/i, 'SARC'],
-  [/\braccs?\b/i, 'RACC'], [/\bracs?\b/i, 'RAC'], [/\b(cpcs?|ccpcs?)\b/i, 'Other CPC'], [/processing\s+cent(re|er)s?/i, 'Other processing centre']];
+  [/\braccs?\b/i, 'RACC'], [/\bracs?\b/i, 'RAC'], [/\b(cpcs?|ccpcs?)\b/i, 'Other CPC'], [/processing\s+cent(re|er)s?/i, 'Other processing centre'],
+  [/\blhos?\b|local\s+head\s+offices?/i, 'LHO']];   // LHO: an administrative office, counted only when asked for by name
 const FAMS = ['SBI', 'IDBI', 'BOB', 'BOI', 'BOM', 'UNION', 'CANB', 'AXIS', 'ICICI', 'PSB', 'KBL', 'RBL', 'SVC', 'LICHFL', 'CANFH', 'COSMOS', 'TJSB', 'PNB', 'IOB', 'CBI', 'UCO', 'HDFC'];
 // bank names written out → client family (checked before the zone words, so "Bank of Maharashtra" is never read as a zone)
 const FAM_NAMES: [RegExp, string][] = [[/\bstate bank\b/i, 'SBI'], [/\bbank of maharashtra\b/i, 'BOM'], [/\bbank of baroda\b/i, 'BOB'], [/\bbank of india\b/i, 'BOI'],
