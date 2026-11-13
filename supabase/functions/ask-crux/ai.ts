@@ -3,7 +3,7 @@
 export type GenReq = { system?: string; prompt: string; maxTokens?: number; temperature?: number };
 export type GenRes = {
   ok: boolean; text: string; model: string; status: number; retries: number; ms: number;
-  promptTokens?: number; outputTokens?: number; finish?: string; error?: string;
+  promptTokens?: number; outputTokens?: number; finish?: string; error?: string; via?: string;
 };
 export type EmbRes = { ok: boolean; vectors: number[][]; model: string; status: number; retries: number; ms: number; error?: string };
 export type ModelInfo = {
@@ -25,7 +25,7 @@ export type ToolDecl = { name: string; description: string; parameters: Record<s
 export type ChatReq = { system?: string; contents: Content[]; tools?: ToolDecl[]; noTools?: boolean; maxTokens?: number; temperature?: number; thinkingBudget?: number };
 export type ChatRes = {
   ok: boolean; text: string; calls: { name: string; args: Record<string, unknown>; id?: string }[]; content?: Content;
-  model: string; status: number; retries: number; ms: number; promptTokens?: number; outputTokens?: number; finish?: string; error?: string;
+  model: string; status: number; retries: number; ms: number; promptTokens?: number; outputTokens?: number; finish?: string; error?: string; via?: string;
 };
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -245,10 +245,32 @@ export class MultiProvider implements AIProvider {
   embed(m: string, t: string[], k: string, d: number) { return this.g.embed(m, t, k, d); }
   async chat(m: string, q: ChatReq) { const [p, x] = this.pick(m); const r = await p.chat(x, q); return { ...r, model: p === this.o ? 'or:' + r.model : r.model }; }
 }
+// wave 109b: each agent has its own key (a separate project, owner 13-Nov-2026). The main key is used only when the agent's key itself is refused
+// (invalid, revoked or the API not enabled) — never to get round a quota: a 429 stays a 429 and the agent moves on to its fallback model or the backup engine.
+const keyRefused = (r: { ok: boolean; status: number; error?: string }) =>
+  !r.ok && (r.status === 401 || r.status === 403 || (r.status === 400 && /API[_ ]?KEY|api key/i.test(r.error ?? '')));
+export class KeyFailover implements AIProvider {
+  readonly name = 'gemini';
+  constructor(private own: AIProvider, private main: AIProvider) {}
+  configured() { return this.own.configured() || this.main.configured(); }
+  listModels() { return this.own.configured() ? this.own.listModels() : this.main.listModels(); }
+  async generate(m: string, q: GenReq) { const r = await this.own.generate(m, q); return keyRefused(r) && this.main.configured() ? { ...(await this.main.generate(m, q)), via: 'main' } : r; }
+  async chat(m: string, q: ChatReq) { const r = await this.own.chat(m, q); return keyRefused(r) && this.main.configured() ? { ...(await this.main.chat(m, q)), via: 'main' } : r; }
+  embed(m: string, t: string[], k: string, d: number) { return this.main.embed(m, t, k, d); }
+}
 // wave 106a: the backup key comes from the Edge Function secret OPENROUTER_API_KEY or, when that is not set, from Vault (passed in by index.ts)
-export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string): AIProvider {
-  return new MultiProvider(new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, 0),
-    new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') || backupKey || '', timeoutMs, paidAllowed));
+export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string, agentKey?: string): AIProvider {
+  const main = new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, 0);
+  const g = agentKey ? new KeyFailover(new GeminiProvider(agentKey, timeoutMs, 0), main) : main;
+  return new MultiProvider(g, new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') || backupKey || '', timeoutMs, paidAllowed));
+}
+// wave 109b: key check without spending tokens (lists one model); the key is never returned or logged
+export async function checkKey(key: string): Promise<{ ok: boolean; status: number; note: string }> {
+  try {
+    const r = await fetch(`${BASE}/models?pageSize=1`, { headers: { 'x-goog-api-key': key }, signal: AbortSignal.timeout(10000) });
+    const j: any = await r.json().catch(() => null);
+    return { ok: r.ok, status: r.status, note: r.ok ? 'key accepted' : String(j?.error?.status ?? '') + (j?.error?.message ? ': ' + String(j.error.message).slice(0, 160) : '') };
+  } catch (e) { return { ok: false, status: 0, note: (e as Error)?.name === 'TimeoutError' ? 'timeout' : 'network error' }; }
 }
 
 // Model choice: a stable "gemini-X.Y-flash" model (highest version) is preferred over moving aliases such as

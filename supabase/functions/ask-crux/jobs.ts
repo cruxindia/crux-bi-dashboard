@@ -10,6 +10,7 @@ import { engineOf, noVendor } from './brand.ts';
 export type JobEnv = {
   ai: AIProvider; models: string[]; api: Api; gw: Gw; rec: Rec; pseudo: Pseudo; system: string; docs: Record<string, any>; meta: any;
   dataMonth: string; dataAsOf: string; cfg: Record<string, string>; embed: (texts: string[]) => Promise<number[][] | null>; t0: number;
+  agent?: string | null;   // wave 109b: the agent whose key this job runs on
 };
 export const JOBS = ['daily_brief', 'market_news', 'chat_review', 'weekly_review'];
 const todayIST = () => new Date(Date.now() + 19800000).toISOString().slice(0, 10);
@@ -54,7 +55,7 @@ async function dailyBrief(env: JobEnv) {
   try { out = await runAgent({ ai: env.ai, models: env.models, api: env.api, gw: env.gw, rec: env.rec, pseudo: env.pseudo, system: env.system, question,
     ctx: { month: env.dataMonth, filters: {}, section: 'overview' }, history: [], docs: env.docs, dataMonth: env.dataMonth, maxRounds: 6, timeoutMs: 25000,
     deadline: env.t0 + 115000, budget: async () => !!(await env.gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok,
-    allow: ['get_business_summary', 'get_breakdown', 'get_operations', 'get_collections', 'get_potential', 'get_plan', 'get_targets', 'run_sql'], purpose: 'agent_brief', maxTokens: 8192 }); }
+    allow: ['get_business_summary', 'get_breakdown', 'get_operations', 'get_collections', 'get_potential', 'get_plan', 'get_targets', 'run_sql'], purpose: 'agent_brief', maxTokens: 8192, agent: env.agent ?? undefined }); }
   catch (e) {
     // a long briefing with a few unverifiable figures: leave out the statements that carry them (never show an unchecked figure)
     const d = (e as AgentError)?.detail;

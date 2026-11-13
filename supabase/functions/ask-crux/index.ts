@@ -7,9 +7,9 @@
 // each question records where on the dashboard it was asked from (bi.ask_origin: page, tile / table / chart, its title) to see what people ask about most.
 // Secrets (Edge Function secrets only): GEMINI_API_KEY. Non-secret settings live in bi.ai_config
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
-import { embeddingCandidates, fallbackCandidates, generationCandidates, multiProvider, provider, type AIProvider, type ModelInfo } from './ai.ts';
+import { checkKey, embeddingCandidates, fallbackCandidates, generationCandidates, multiProvider, provider, type AIProvider, type ModelInfo } from './ai.ts';
 import { JOBS, runJob, type JobEnv } from './jobs.ts';
-import { AgentError, DECLS, Pseudo, planOf, questionKeys, runAgent, systemPrompt, vocabOf, type Ctx } from './agent.ts';
+import { AgentError, DECLS, Pseudo, planOf, questionKeys, runAgent, systemPrompt, unitQuestion, vocabOf, type Ctx } from './agent.ts';
 import { noVendor } from './brand.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
@@ -178,6 +178,42 @@ async function backupKey(): Promise<string> {
   return bkC.v;
 }
 
+// wave 109b: the agent teams — one key per agent (owner's separate projects, Vault), read through the gateway and cached 10 minutes; never logged
+let akC: { at: number; v: Record<string, { key: string; team: string; title: string; job_kind: string | null }> } | null = null;
+async function agentKeys() {
+  if (akC && Date.now() - akC.at < 600000) return akC.v;
+  try { const r = await gw({ op: 'agent_keys' }); akC = { at: Date.now(), v: r && typeof r === 'object' && !Array.isArray(r) ? r : {} }; }
+  catch { akC = { at: Date.now() - 540000, v: akC?.v ?? {} }; }   // retry in a minute
+  return akC.v;
+}
+const DEEP = /\b(why|root cause|compare|comparison|versus|vs\.?|strategy|plan|recommend\w*|suggest\w*|what should|how can|improve|forecast|scenario|explain why)\b/i;
+// management (admin key) has its own analyst; questions from a tile, table or chart go to the explainer; long "why / compare / plan" questions to deep analysis
+function pickAgent(body: any, question: string, admin: boolean): string {
+  if (admin) return 'process_2';
+  const k = String(body?.origin?.kind ?? 'panel');
+  if (['tile', 'table', 'chart', 'card', 'drill'].includes(k)) return 'process_6';
+  if (DEEP.test(question) || question.length > 160) return 'process_3';
+  return 'process_1';
+}
+async function agentProvider(cfg: Record<string, string>, agent: string) {
+  const keys = await agentKeys();
+  const id = keys[agent]?.key ? agent : keys.process_1?.key ? 'process_1' : '';
+  return { id: id || null, ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), id ? keys[id].key : undefined) };
+}
+const ZONE_LABEL: Record<string, string> = { REST_MAHA: 'Rest of Maharashtra', MUMBAI_GOA: 'Mumbai & Goa', BHOPAL_MP: 'Bhopal / MP', TAMILNADU: 'Tamil Nadu' };
+const zoneName = (z: string) => ZONE_LABEL[z] ?? z.charAt(0) + z.slice(1).toLowerCase();
+// shared-memory topics of a question: its scope (zone, team, client) and the unit types it asks about
+function topicsOf(filters: Record<string, unknown>, uq: ReturnType<typeof unitQuestion>): string[] {
+  const f = { ...filters, ...(uq?.filters ?? {}) } as Record<string, unknown>;
+  const t: string[] = [];
+  if (f.zone_group) t.push('zone:' + String(f.zone_group).toLowerCase());
+  if (f.location_id != null) t.push('team:' + f.location_id);
+  if (f.client_family) t.push('client:' + String(f.client_family).toLowerCase());
+  for (const u of uq?.unit_type ?? []) t.push('unit:' + u.toLowerCase());
+  if (!t.length) t.push('scope:all-india');
+  return t;
+}
+
 // wave 105h: where the question was asked from (the Ask Crux button on a tile, table or chart, a suggestion, or the panel itself)
 const ORIGIN_KINDS = ['panel', 'tile', 'table', 'chart', 'card', 'suggestion', 'next', 'menu', 'drill'];
 function originOf(body: any) {
@@ -263,9 +299,18 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const lessons = (Array.isArray(mem?.lessons) ? mem.lessons : []).map((x: any) => ({ question: String(x.question ?? ''), correction: String(x.correction ?? '') }));
   const primary = cfg.AGENT_MODEL, fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
   const models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
-  const out = await runAgent({ ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey()), models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
-    docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
-    budget: async () => !!(await gw({ op: 'budget', purpose: 'ask' }).catch(() => ({ ok: false }))).ok, seed, hints, lessons });
+  // wave 109b: the answering agent (own key) and what the team already found about this scope
+  const lastQ = Array.isArray(history) && history.length ? String(history[history.length - 1]?.question ?? '') : '';
+  const uq = unitQuestion(question, meta?.locations ?? [], lastQ);
+  const topics = topicsOf(filters, uq);
+  const [{ id: agentId, ai: agentAi }, memItems] = await Promise.all([agentProvider(cfg, pickAgent(body, question, !!adminKey)),
+    cfg.AGENT_MEMORY === 'off' ? Promise.resolve([]) : gw({ op: 'memory_read', topics, audience: adminKey ? 'admin' : 'all', limit: 6 }).catch(() => [])]);
+  const memText = (Array.isArray(memItems) ? memItems : []).map((m: any) => `- [${m.at}, ${m.kind}${m.status === 'confirmed' ? ', confirmed' : ''}] ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 400)}`).join('\n');
+  const deep = agentId === 'process_3';
+  const out = await runAgent({ ai: agentAi, models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
+    docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5) + (deep ? 2 : 0), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
+    budget: async () => !!(await gw({ op: 'budget', purpose: 'ask', ...(agentId ? { agent: agentId } : {}) }).catch(() => ({ ok: false }))).ok, seed, hints, lessons,
+    agent: agentId ?? undefined, memory: memText ? pseudo.hide(memText) : undefined, teams: meta?.locations ?? [] });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
   // names back for display; the "Next:" line becomes a suggested question
   let text = pseudo.show(noVendor(out.text)).trim();
@@ -292,18 +337,31 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   try {
     log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...ctx, admin: !!adminKey }, filters, provider: 'gemini', model: out.model, intent: 'agent', answer,
       mode, reuse_of: seed?.id ?? null, embedding: vecTxt(emb), ctx_key: ctxKey, plan: planOf(out.steps, pseudo),
-      trace: { steps: out.steps, rounds: out.rounds, usage: out.usage, check: out.check, models_tried: models, names_hidden: pseudo.count, ms: Date.now() - t0,
+      trace: { steps: out.steps, rounds: out.rounds, usage: out.usage, check: out.check, models_tried: models, names_hidden: pseudo.count, ms: Date.now() - t0, agent: agentId, memory_items: (memItems as any[])?.length ?? 0,
         memory: { mode, of: seed?.id ?? null, sim: seed?.sim ?? null, lessons: lessons.length, hints: hints.length, candidates: cands.length,
           top: cands[0] ? { id: cands[0].id, sim: cands[0].sim, same_ctx: cands[0].same_ctx } : null, follow_up: followUp } } });
   } catch { log = {}; }
+  // wave 109b: the finding goes to the team's shared memory (only answers whose figures all traced; kept 45 days; admin answers stay admin-only)
+  if (cfg.AGENT_MEMORY !== 'off' && text && !check.untraced.length) {
+    const gist = text.split('\n').filter((l) => l.trim() && !/^\s*\|/.test(l)).slice(0, 3).join(' ').replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').slice(0, 420);
+    background(gw({ op: 'memory_write', agent_id: agentId ?? 'main', audience: adminKey ? 'admin' : 'all',
+      items: [{ kind: 'finding', topics, scope: { filters: { ...filters, ...(uq?.filters ?? {}) }, month: ctx.month }, as_of: dataAsOf, content: `Q: ${question} → ${gist}`,
+        evidence: { message_id: log?.message_id ?? null, tools: steps.filter((x) => x.ok).map((x) => x.tool) } }] }).catch(() => null));
+  }
   return { mode: 'agent', provider: 'ask-crux', answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory,
     period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt, as_of: dataAsOf, month: ctx.month,
     message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
 }
 
+// work that must not delay the answer (the runtime keeps it alive after the response)
+function background(p: Promise<unknown>) { const w = (globalThis as any).EdgeRuntime?.waitUntil; if (typeof w === 'function') w.call((globalThis as any).EdgeRuntime, p); }
+
 // wave 105f: environment for the scheduled agent jobs (viewer-level data: the anon key only, never an admin key)
-async function jobEnv(cfg: Record<string, string>): Promise<JobEnv> {
+async function jobEnv(cfg: Record<string, string>, job = ''): Promise<JobEnv> {
   const t0 = Date.now();
+  // wave 109b: each job runs on its own agent's key (bi.ai_agent.job_kind); the main key when no agent is set up for it
+  const keys = await agentKeys();
+  const agentId = Object.entries(keys).find(([, v]) => v?.job_kind === job && v?.key)?.[0] ?? null;
   const api = async (fn: string, args: Record<string, unknown>) => {
     const r = await rpc('bi_call', { p_fn: fn, p_args: args }, ANON);
     if (r && typeof r === 'object' && !Array.isArray(r) && r.error) throw new Error(String(r.error));
@@ -327,8 +385,8 @@ async function jobEnv(cfg: Record<string, string>): Promise<JobEnv> {
     await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_documents', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? `agent lessons ${texts.length}` : r.error });
     return r.ok ? r.vectors : null;
   };
-  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey()), models, api, gw, rec: record, pseudo, system, docs, meta,
-    dataMonth, dataAsOf, cfg, embed, t0 };
+  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), agentId ? keys[agentId].key : undefined), models, api, gw,
+    rec: (p: Record<string, unknown>) => record({ ...p, agent: p.agent !== undefined ? p.agent : String(p.model ?? '').startsWith('or:') ? null : agentId }), pseudo, system, docs, meta, dataMonth, dataAsOf, cfg, embed, t0, agent: agentId };
 }
 
 Deno.serve(async (req) => {
@@ -393,7 +451,24 @@ Deno.serve(async (req) => {
     if (!JOBS.includes(job)) return json({ error: 'unknown job' }, 400);
     if (cfg.AGENTS_ENABLED === 'off' && body?.force !== true) return json({ skipped: 'AGENTS_ENABLED is off' });
     if (!ai.configured()) return json({ error: 'the main AI key is not set (Edge Function secret, see OPERATIONS.md)' }, 412);
-    try { return json(await runJob(job, await jobEnv(cfg))); } catch (e) { return json({ error: noVendor((e as Error).message).slice(0, 300) }, 502); }
+    try { return json(await runJob(job, await jobEnv(cfg, job))); } catch (e) { return json({ error: noVendor((e as Error).message).slice(0, 300) }, 502); }
+  }
+
+  // wave 109b: check every agent key (lists one model: no tokens spent); results stored per key name, keys never returned
+  if (action === 'key_check') {
+    if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
+    const names = [...Array.from({ length: 9 }, (_, i) => `gemini_key_process_${i + 1}`), ...Array.from({ length: 8 }, (_, i) => `gemini_key_pdm_${i + 1}`),
+      ...Array.from({ length: 9 }, (_, i) => `gemini_key_pd_${i + 1}`)];
+    const results = await Promise.all(names.map(async (n) => {
+      const v = await gw({ op: 'secret', name: n }).catch(() => null);
+      const key = typeof v?.value === 'string' ? v.value : '';
+      if (!key) return { key_name: n, ok: false, http_status: null, note: 'not in Vault' };
+      const r = await checkKey(key);
+      return { key_name: n, ok: r.ok, http_status: r.status, note: noVendor(r.note) };
+    }));
+    await gw({ op: 'key_check_put', results }).catch(() => null);
+    akC = null;
+    return json({ checked: results.length, ok: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).map((r) => ({ key_name: r.key_name, status: r.http_status, note: r.note })) });
   }
 
   if (action === 'probe') {
@@ -436,7 +511,80 @@ async function logOrigin(body: any, res: Response, ms: number) {
   } catch { /* recording is best effort */ }
 }
 
+// ---------------------------------------------------------------- wave 109b: unit counts answered by the counting function itself
+// "How many RACPCs in Gujarat", "list SBI Mini RACPCs", "same for Pune": exact, in about a second, no AI call. Questions that mix units with business,
+// potential, targets etc. still go to the agent (which gets the same counts up front).
+const NOT_UNITS = /\b(revenue|business|potential|targets?|tat|turnaround|collections?|outstanding|receivables?|why|compare|comparison|trend|growth|rupees?|value|amount|bau|forecast|pace|penetration|share|billing|sla|force1|managers?|rate|rates|performance|analysis|analyse|analyze|strategy|plan)\b|₹/i;
+const UNIT_TYPES_ALL = ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'];
+const n_ = (v: unknown) => Number(v ?? 0).toLocaleString('en-IN');
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+async function unitFast(body: any): Promise<Record<string, unknown> | null> {
+  const t0 = Date.now();
+  const question = redactQ(String(body?.question ?? '').slice(0, 500));
+  if (question.length < 4 || NOT_UNITS.test(question)) return null;
+  const adminKey = typeof body?.admin_key === 'string' && body.admin_key.length > 10 ? body.admin_key : null;
+  const api = async (fn: string, args: Record<string, unknown>) => {
+    const r = await rpc('bi_call', { p_fn: fn, p_args: adminKey ? { ...args, admin_key: adminKey } : args }, ANON);
+    if (r && typeof r === 'object' && !Array.isArray(r) && r.error) throw new Error(String(r.error));
+    return r;
+  };
+  const [metaR, hist] = await Promise.all([cached(metaC, 600000, () => api('meta', {})),
+    body?.conversation_id ? gw({ op: 'history', conversation_id: body.conversation_id, n: 1 }).catch(() => []) : Promise.resolve([])]);
+  const meta: any = metaR[0]; metaC = metaR[1];
+  const lastQ = Array.isArray(hist) && hist.length ? String(hist[hist.length - 1]?.question ?? '') : '';
+  const uq = unitQuestion(question, meta?.locations ?? [], lastQ);
+  if (!uq) return null;
+  const c = body?.context ?? {};
+  const pageF: Record<string, unknown> = {};
+  for (const k of ['zone_group', 'location_id', 'client_family']) if (c?.filters?.[k] != null && c.filters[k] !== '') pageF[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
+  const filters = uq.filters ?? pageF;
+  const U: any = await api('branch_units', { filters, p: { ...(uq.unit_type?.length ? { unit_type: uq.unit_type } : {}), list: true, limit: 200 } });
+  if (!U?.summary) return null;
+  const S = U.summary, types: any[] = U.by_unit_type ?? [];
+  const team = filters.location_id != null ? (meta?.locations ?? []).find((l: any) => Number(l.id) === Number(filters.location_id))?.label ?? `team ${filters.location_id}` : null;
+  const scope = [filters.client_family, team ?? (filters.zone_group ? zoneName(String(filters.zone_group)) : 'All India')].filter(Boolean).join(' · ');
+  const sm = String(U.status_month ?? '').slice(0, 10); const m = sm ? new Date(sm + 'T00:00:00Z') : null;
+  const win = m ? `${MON[(m.getUTCMonth() + 10) % 12]}–${MON[m.getUTCMonth()]} ${m.getUTCFullYear()}` : 'the last 3 months';
+  const typeTxt = (uq.unit_type ?? []).length ? (uq.unit_type ?? []).join(', ') : 'units of all types';
+  let answer = `${scope}: ${n_(S.total)} ${typeTxt} — ${n_(S.active)} active, ${n_(S.dormant)} dormant, ${n_(S.never_active)} never active.`;
+  if (types.length > 1) answer += ` By type: ${types.map((t) => `${t.unit_type} ${n_(t.total)} (${n_(t.active)} active)`).join(', ')}.`;
+  if (+S.no_team) answer += ` ${n_(S.no_team)} of them are not yet linked to a Crux team.`;
+  if (!+S.total) answer = `${scope}: no ${typeTxt} in the client branch master.`;
+  const notes = `Active = at least one Crux case in ${win}; dormant = Crux cases earlier but none in ${win}; never active = no Crux case found for the unit.` +
+    ((uq.unit_type ?? []).includes('RACPC') && !(uq.unit_type ?? []).includes('Mini RACPC') ? ' RACPC here does not include Mini RACPC.' : '') +
+    (+U.in_master_not_counted?.total ? ` ${n_(U.in_master_not_counted.total)} rows in the branch master are not counted (${Object.entries(U.in_master_not_counted.by_reason ?? {}).map(([k, v]) => `${k}: ${v}`).join(', ')}).` : '');
+  const byTeam = filters.location_id == null && !filters.zone_group;
+  const rowsBy: any[] = byTeam ? (U.by_zone ?? []) : (U.by_team ?? []);
+  const label = (r: any) => byTeam ? zoneName(String(r.zone_group ?? 'No zone')) : String(r.team ?? 'No team yet');
+  const findings = { columns: [byTeam ? 'Zone' : 'Team', 'Units', 'Active', 'Dormant', 'Never active'], rows: rowsBy.slice(0, 30).map((r) => [label(r), r.total, r.active, r.dormant, r.never_active]) };
+  const units: any[] = Array.isArray(U.units) ? U.units : [];
+  const tables = uq.list || units.length <= 40 ? [{ title: `Units (${n_(Math.min(units.length, 200))}${+U.units_total > units.length ? ' of ' + n_(U.units_total) : ''})`,
+    columns: ['Unit', 'Type', 'Code', 'Team', 'City', 'Status', 'Cases, last 3 months', 'Last case'],
+    rows: units.map((u) => [u.unit, u.unit_type, u.branch_code, u.team ?? 'No team yet', u.city ?? '', u.status, u.cases_last_3_months ?? 0, u.last_case_month ? String(u.last_case_month).slice(0, 7) : '–']) }] : [];
+  const chart = rowsBy.length > 1 ? { type: 'stacked', title: `${typeTxt} by ${byTeam ? 'zone' : 'team'}`, unit: 'units', labels: rowsBy.slice(0, 20).map(label),
+    series: [{ name: 'Active', values: rowsBy.slice(0, 20).map((r) => r.active) }, { name: 'Dormant', values: rowsBy.slice(0, 20).map((r) => r.dormant) },
+      { name: 'Never active', values: rowsBy.slice(0, 20).map((r) => r.never_active) }] } : null;
+  const t1 = (uq.unit_type ?? [])[0] ?? 'unit';
+  const next = [`Business from the active ${t1} units this month`, `Which never-active ${t1} units in ${scope} are worth a visit?`];
+  const out: Record<string, any> = { mode: 'units', provider: 'calculated', intent: 'units', answer, notes, scope, period: `Unit status as of ${win}`, findings, tables, chart, next,
+    method: 'Client branch master (active rows; one row per client and branch code), unit type from the branch name; status from Crux cases by branch code.',
+    limitations: 'Counts follow the branch master as uploaded; a unit named differently by the bank may be typed as a branch.', sources: ['Branch master', 'Crux cases by branch'],
+    filters, unit_types: uq.unit_type ?? UNIT_TYPES_ALL, ms: 0 };
+  try {
+    const log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...c, admin: !!adminKey }, filters, provider: 'calculated', model: null,
+      intent: 'units', mode: 'calculated', answer: { answer: `${answer} ${notes}`.slice(0, 1400), findings: { ...findings, rows: findings.rows.slice(0, 12) } },
+      trace: { mode: 'units', uq, ms: Date.now() - t0 } });
+    out.message_id = log?.message_id ?? null; out.conversation_id = log?.conversation_id ?? body?.conversation_id ?? null;
+  } catch { out.conversation_id = body?.conversation_id ?? null; }
+  out.ms = Date.now() - t0;
+  return out;
+}
+
 async function answer(body: any, cfg: Record<string, string>, ai: AIProvider, action: string): Promise<Response> {
+  // ---- wave 109b: unit counts straight from the counting function ----
+  if (action === 'ask' && cfg.UNIT_FAST !== 'off') {
+    try { const u = await unitFast(body); if (u) return json(u); } catch { /* the agent answers instead */ }
+  }
   // ---- ask (v4 agent) ----
   let agentNote: string | null = null;
   if (action === 'ask' && cfg.AGENT_ENABLED === 'on' && ai.configured() && cfg.AGENT_MODEL) {

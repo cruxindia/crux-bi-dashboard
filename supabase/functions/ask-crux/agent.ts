@@ -122,6 +122,9 @@ export const DECLS: ToolDecl[] = [
     parameters: { type: 'object', properties: { filters: FILTERS } } },
   { name: 'get_potential', description: 'Business potential per month and the gap to it: current, recover to best 3 months, dormant branches, never-active branches, extend to other teams; current business as a share of potential (by value); clients and branches behind each part (active, dormant, never active); by zone, team or client; top branch opportunities.',
     parameters: { type: 'object', properties: { level: { type: 'string', enum: ['zone', 'location', 'client'] }, filters: FILTERS, limit: { type: 'integer' } } } },
+  { name: 'get_branch_units', description: 'COUNTS of client units by type — RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, other CPC, other processing centre, SME branch, branch — with active, dormant and never active, by zone, team and client, the rows in the branch master that cannot be counted (with reason), and optionally the list of units. Use for any "how many / count / which / list" question about branches, RACPCs, RACs or other units. RACPC excludes Mini RACPC unless both are asked.',
+    parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'] }, description: 'omit for all unit types' },
+      filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
   { name: 'get_collections', description: 'Receivables and collections: outstanding, over 90 / 180 days, realisation, collected last month and this month, cash cover, ageing buckets, by team and client.',
     parameters: { type: 'object', properties: { filters: FILTERS, limit: { type: 'integer' } } } },
   { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes.',
@@ -271,6 +274,19 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       top_branch_opportunities: (M?.top ?? []).slice(0, 10) }, 15000) };
   },
 
+  async get_branch_units(t, a) {
+    // wave 109a: one counting function (bi.api_branch_units) for every unit-count question, so counts agree everywhere
+    const { filters } = scope(t, a);
+    const types = Array.isArray(a?.unit_type) ? a.unit_type.filter((x: any) => typeof x === 'string' && x) : typeof a?.unit_type === 'string' && a.unit_type ? [a.unit_type] : [];
+    const lim = Math.min(Math.max(Number(a?.limit) || 60, 1), 200);
+    const U = await t.api('branch_units', { filters, p: { ...(types.length ? { unit_type: types } : {}), list: !!a?.list, limit: lim } });
+    if (U?.error) throw new Error(String(U.error));
+    return { label: `Unit counts${types.length ? ' — ' + types.join(', ') : ''}`, rows: U?.units_total,
+      data: fit({ filters, unit_types: U?.unit_types ?? 'all', status_month: U?.status_month, summary: U?.summary, by_unit_type: U?.by_unit_type, by_zone: U?.by_zone,
+        by_team: (U?.by_team ?? []).slice(0, 60), by_client: (U?.by_client ?? []).slice(0, 25), in_master_not_counted: U?.in_master_not_counted,
+        units: U?.units ?? undefined, method: U?.method }, 16000) };
+  },
+
   async get_collections(t, a) {
     const { month, filters } = scope(t, a);
     const lim = Math.min(Math.max(Number(a?.limit) || 15, 1), 40);
@@ -407,6 +423,8 @@ HOW TO WORK
 7. You are Ask Crux. Never name, guess or discuss the AI model, company or provider behind you; if asked which AI you are, say you are Ask Crux, Crux's business analyst, and offer to help with the business.
 8. When PAGE CONTEXT says the question was asked about a tile, table or chart, answer about that element first: use the tool that gives the same figures as that page, then explain what drives it and what to do.
 9. Words people understand: say "likely" (actual so far + expected at the current pace), never "outlook"; say "now x% of potential (by value)" and "gap to potential", never "captured", "penetration" or "headroom". Whenever you give a potential, give its clients and branches (how many active) and what makes up the gap. Quarters follow the Indian financial year written in full, e.g. Q3 FY 2026-27 (Oct–Dec 2026).
+10. COUNT OR VALUE: when the question asks how many, count, number of, units, branches or cases, the first line gives counts (cases or units), not rupees; add revenue only when the question asks for value, revenue or business in rupees. Never answer a count question with revenue.
+11. Units (RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, CPC, branches): counts come only from get_branch_units (never count units with run_sql or from potential). Give total, active, dormant and never active, say which unit types are included (RACPC does not include Mini RACPC unless both are asked), and mention units with no team yet and rows not counted when they matter.
 
 ANSWER FORMAT
 - First line: the direct answer in one or two sentences.
@@ -435,7 +453,7 @@ DATA VIEWS for run_sql (PostgreSQL; only these views; no schema prefix; revenue 
 - monthly_business(month, team_id, team, zone_group, client_code, client_family, cases, revenue, target_cases, revenue_target, as_of) — tracker month totals; current month = to date
 - tracker_daily(snapshot_date, month, zone_group, team_id, team, client_code, client_family, target_cases, mtd_cases, rate, revenue_target, mtd_revenue) — cumulative month to date per report date
 - cases(case_id, client_code, client_family, branch_code, team_id, status, received_on, completed_on, due_on, received_month, points_declared, raw_tat_hours) — Force1 case records
-- branches(client_family, branch_code, branch_name, city, district, state, pincode, team_id, team, zone_group, first_case_month, last_case_month, cases_total, cases_last_3_months, crux_status, status_month) — crux_status: 'active' | 'dormant' | 'never active'
+- branches(client_family, branch_code, branch_name, city, district, state, pincode, team_id, team, zone_group, first_case_month, last_case_month, cases_total, cases_last_3_months, crux_status, status_month, unit_type) — crux_status: 'active' | 'dormant' | 'never active'; unit_type: 'RACPC' | 'Mini RACPC' | 'RASMECCC' | 'SMECCC' | 'SARC' | 'RAC' | 'RACC' | 'Other CPC' | 'Other processing centre' | 'SME branch' | 'Branch'
 - potential(zone_group, team_id, team, client_family, layer, branches, cases, revenue, basis_month, run_id) — layers: current, recover, dormant, never_served, never_not_served, never_no_team
 - outstanding(team_id, team, zone_group, client_family, invoice_month, invoices, gross, net, outstanding, as_of)
 - collections(team_id, team, zone_group, client_family, receipt_month, receipts, collected, as_of)
@@ -493,6 +511,61 @@ export function questionKeys(q: string, pseudo: Pseudo, vocab: Set<string>): { c
   return { content: [...content].sort().join(' '), entity: [...entity].sort().join(' ') };
 }
 
+// wave 109a: which unit types (and client) a question is about; null when it is not a unit question
+const UNIT_WORDS: [RegExp, string][] = [[/mini\s*-?\s*rac\s*pa?c/i, 'Mini RACPC'], [/rasme\w*/i, 'RASMECCC'], [/\bsmecc\w*|\bsme\s+ccc?\b/i, 'SMECCC'], [/\bsarcs?\b/i, 'SARC'],
+  [/\braccs?\b/i, 'RACC'], [/\bracs?\b/i, 'RAC'], [/\b(cpcs?|ccpcs?)\b/i, 'Other CPC'], [/processing\s+cent(re|er)s?/i, 'Other processing centre']];
+const FAMS = ['SBI', 'IDBI', 'BOB', 'BOI', 'BOM', 'UNION', 'CANB', 'AXIS', 'ICICI', 'PSB', 'KBL', 'RBL', 'SVC', 'LICHFL', 'CANFH', 'COSMOS', 'TJSB', 'PNB', 'IOB', 'CBI', 'UCO', 'HDFC'];
+// bank names written out → client family (checked before the zone words, so "Bank of Maharashtra" is never read as a zone)
+const FAM_NAMES: [RegExp, string][] = [[/\bstate bank\b/i, 'SBI'], [/\bbank of maharashtra\b/i, 'BOM'], [/\bbank of baroda\b/i, 'BOB'], [/\bbank of india\b/i, 'BOI'],
+  [/\bcanara\b/i, 'CANB'], [/\bunion bank\b/i, 'UNION'], [/\bkarnataka bank\b/i, 'KBL'], [/\bpunjab (and|&) sind\b/i, 'PSB'], [/\bpunjab national\b/i, 'PNB'],
+  [/\blic\b|\blic housing\b/i, 'LICHFL'], [/\bcan fin\b/i, 'CANFH'], [/\bindian overseas\b/i, 'IOB'], [/\bcentral bank\b/i, 'CBI']];
+// zone groups by their own names (cities that are teams are matched against the team list instead)
+const ZONE_WORDS: [RegExp, string][] = [[/\bguj\w*|\bgurajat\b/i, 'GUJARAT'], [/\bmumbai\b|\bbombay\b|\bgoa\b/i, 'MUMBAI_GOA'], [/\brest of maha\w*|\brom\b|\bmaharashtra\b/i, 'REST_MAHA'],
+  [/\bdelhi\b|\bncr\b/i, 'DELHI'], [/\bbengaluru\b|\bbangalore\b|\bkarnataka\b/i, 'BENGALURU'], [/\bhyderabad\b|\btelangana\b|\bandhra\b/i, 'HYDERABAD'],
+  [/\blucknow\b|\buttar pradesh\b/i, 'LUCKNOW'], [/\btamil\s*nadu\b|\bchennai\b/i, 'TAMILNADU'], [/\bbhopal\b|\bmadhya pradesh\b/i, 'BHOPAL_MP'], [/\bpatna\b|\bbihar\b/i, 'PATNA'],
+  [/\bkolkata\b|\bcalcutta\b|\bwest bengal\b/i, 'KOLKATA'], [/\bpunjab\b|\bchandigarh\b/i, 'PUNJAB'], [/\bodisha\b|\borissa\b|\bbhubaneswar\b/i, 'ODISHA'], [/\bguwahati\b|\bassam\b/i, 'GUWAHATI']];
+const UNIT_FOLLOW = /^\s*(and|also|what about|how about|same|give same|now|then)\b|\bsame\b|\b(for|of|in)\s+\w+\s*\??\s*$/i;
+// wave 109a/b: unit questions are recognised here (no AI call) so the counting function runs before the model starts; a short follow-up
+// ("Give same data of Gujarat") takes the unit types of the previous question
+export function unitQuestion(q: string, teams: { id: number; label: string; zone_group?: string }[] = [], prevQ = ''): { unit_type?: string[]; filters?: Record<string, string | number>; list: boolean; limit: number } | null {
+  const s = String(q ?? '');
+  const types = new Set<string>();
+  const noMini = s.replace(/mini\s*-?\s*rac\s*pa?c/ig, ' ');
+  if (/rac\s*pa?c/i.test(noMini)) types.add('RACPC');
+  for (const [re, ty] of UNIT_WORDS) if (re.test(s)) types.add(ty);
+  const countish = /\b(how many|count|counts|number of|no\.? of|total|units?|active|inactive|dormant|never|list|details?|which)\b/i.test(s);
+  // "branch" counts as a unit type only when asked for itself ("how many branches", "branches and RACs"), not in "branch wise" or "not all branches"
+  const brAsked = types.size ? /\bbranches\s*(and|&|,)|(\band|&|,)\s*branches\b/i.test(s) : /\bbranch(es)?\b(?!\s*-?\s*wise)/i.test(s) && !/\bnot\s+(all\s+)?branch/i.test(s);
+  if (brAsked && countish && /\b(how many|count|counts|number of|no\.? of|total|units?|branches)\b/i.test(s)) types.add('Branch');
+  let base: ReturnType<typeof unitQuestion> = null;
+  if (!types.size) {
+    if (!prevQ || !UNIT_FOLLOW.test(s) || s.length > 120) return null;
+    base = unitQuestion(prevQ, teams);
+    if (!base) return null;
+  }
+  // scope: bank names first, then teams by name, then zone names (several zones or "all India" = no zone filter: by_zone shows each)
+  let rest = ' ' + s + ' ';
+  const filters: Record<string, string | number> = {};
+  for (const [re, f] of FAM_NAMES) if (re.test(rest)) { filters.client_family = f; rest = rest.replace(re, ' '); break; }
+  if (!filters.client_family) { const up = rest.toUpperCase(); const fam = FAMS.find((f) => new RegExp('\\b' + f + '\\b').test(up)); if (fam) filters.client_family = fam; }
+  const team = teams.filter((t) => t?.label && String(t.label).length >= 4).find((t) => new RegExp('\\b' + String(t.label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(rest));
+  const zones = [...new Set(ZONE_WORDS.filter(([re]) => re.test(rest)).map(([, z]) => z))];
+  const allIndia = /\b(pan[\s-]*india|all[\s-]*india|india[\s-]*wide|all locations|all zones)\b/i.test(s);
+  // a team whose name is also its zone's name ("Mumbai") means the zone
+  const teamIsZone = !!team && zones.length === 1 && team.zone_group === zones[0] && ZONE_WORDS.some(([re, z]) => z === zones[0] && re.test(' ' + team.label + ' '));
+  if (team && !teamIsZone && !(team.zone_group && zones.length && !zones.includes(team.zone_group))) filters.location_id = Number(team.id);
+  else if (zones.length === 1 && !allIndia) filters.zone_group = zones[0];
+  // nothing named: the page filters apply (filters left out); "all India" clears them
+  if (base) {
+    // follow-up: keep the earlier scope where the new question names none
+    const scoped = filters.location_id != null || filters.zone_group != null || allIndia;
+    const merged = { ...(scoped ? Object.fromEntries(Object.entries(base.filters ?? {}).filter(([k]) => k === 'client_family')) : (base.filters ?? {})), ...filters };
+    return { ...base, filters: Object.keys(merged).length || allIndia ? merged : undefined,
+      list: base.list || /\b(list|details?|which|names?)\b/i.test(s) };
+  }
+  return { unit_type: [...types], filters: Object.keys(filters).length || allIndia ? filters : undefined, list: /\b(list|details?|which|names?|branch\s*wise|unit\s*wise)\b/i.test(s), limit: 60 };
+}
+
 // ---------------------------------------------------------------- the agent loop
 export class AgentError extends Error { constructor(msg: string, public status = 0, public steps: any[] = [], public detail: any = null) { super(msg); } }
 export type AgentOut = { text: string; model: string; rounds: number; steps: any[]; check: ReturnType<typeof checkFigures>; usage: { calls: number; prompt: number; output: number } };
@@ -503,15 +576,32 @@ export async function runAgent(o: {
   seed?: { question: string; answer: string; asked: string; replay: { tool: string; args: Record<string, unknown> }[] } | null;
   hints?: string[]; lessons?: { question: string; correction: string }[];
   allow?: string[]; purpose?: string; maxTokens?: number;   // wave 105f: agent jobs restrict the tools (no people scores in the daily brief)
+  agent?: string; memory?: string; teams?: { id: number; label: string; zone_group?: string }[];   // wave 109b: the agent's id (its own key), shared memory, team list for unit questions
 }): Promise<AgentOut> {
   const decls = o.allow ? DECLS.filter((d) => o.allow!.includes(d.name)) : DECLS;
   const { pseudo } = o;
   const t: ToolCtx = { api: o.api, gw: o.gw, ctx: o.ctx, pseudo, docs: o.docs, dataMonth: o.dataMonth };
   // starting snapshot for the page context: many questions need no further tool call
-  let snap: any = null;
-  try { snap = (await TOOLS.get_business_summary(t, {})).data; } catch { snap = null; }
+  // wave 109a: unit questions (RACPC, Mini RACPC, RAC, ...) get the one counting function up front, so the first answer already has the right counts
+  // wave 109b: the snapshot and the unit counts are fetched together (faster first answer)
+  const uq = unitQuestion(o.question, o.teams ?? [], o.history.length ? String(o.history[o.history.length - 1]?.question ?? '') : '');
+  const t0u = Date.now();
+  const [snapR, unitR] = await Promise.all([TOOLS.get_business_summary(t, {}).then((x) => x.data).catch(() => null),
+    uq ? TOOLS.get_branch_units(t, uq).catch((e) => ({ error: e })) : Promise.resolve(null)]);
+  const snap: any = snapR;
   const evidence: any[] = snap ? [snap] : [];
   const steps: any[] = snap ? [{ tool: 'get_business_summary', label: 'Business summary (page month and filters)', args: {}, ok: true, ms: 0, auto: true }] : [];
+  let unitText = '';
+  if (uq && unitR && !(unitR as any).error) {
+    const t0 = t0u;
+    try {
+      const out = unitR as any;
+      const hidden = pseudo.hideAny(out.data);
+      evidence.push(hidden);
+      steps.push({ tool: 'get_branch_units', label: out.label, args: uq, ok: true, rows: out.rows, ms: Date.now() - t0, auto: true });
+      unitText = `\nUNIT COUNTS (get_branch_units ${JSON.stringify(uq)}; use these for counts; call get_branch_units again only for another scope):\n${JSON.stringify(hidden)}\n`;
+    } catch { /* the model can still call the tool */ }
+  }
   // wave 105c memory: a similar earlier answer is adapted — its look-ups are re-run on today's data first (no AI call), then the AI updates it
   let seedText = '';
   if (o.seed) {
@@ -540,7 +630,8 @@ export async function runAgent(o: {
   const first: Content = { role: 'user', parts: [{ text: pseudo.hide(
     `QUESTION: ${o.question}\nPAGE CONTEXT: month ${o.ctx.month}; filters ${JSON.stringify(o.ctx.filters ?? {})}; page ${o.ctx.section ?? 'overview'}` +
     (o.ctx.element ? `; asked about ${o.ctx.element}` : '') + '\n' +
-    (snap ? `STARTING SNAPSHOT (get_business_summary for the page context):\n${JSON.stringify(snap)}` : '') + seedText + hintText + lessonText) }] };
+    (snap ? `STARTING SNAPSHOT (get_business_summary for the page context):\n${JSON.stringify(snap)}` : '') + unitText + seedText + hintText + lessonText +
+    (o.memory ? `\nSHARED MEMORY (earlier findings and decisions of the Ask Crux team, newest first; context only — their figures may be out of date: quote a figure only from today's look-ups, and say so when today's data contradicts a memory item):\n${o.memory}\n` : '')) }] };
   const hist: Content[] = [];
   for (const h of o.history.slice(-3)) {
     hist.push({ role: 'user', parts: [{ text: pseudo.hide(`(earlier question) ${h.question}`) }] });
@@ -556,12 +647,12 @@ export async function runAgent(o: {
     const mEvidence: any[] = [];
     while (rounds < o.maxRounds + extra) {
       if (Date.now() > o.deadline) { lastErr = { msg: 'time limit reached', status: 0 }; failed = true; break; }
-      if (!(await o.budget())) throw new AgentError('AI daily limit reached', 429, steps);
+      if ((rounds === 0 || rounds === 3) && !(await o.budget())) throw new AgentError('AI daily limit reached', 429, steps);   // wave 109b: fewer database round trips
       rounds++;
       const last = rounds >= o.maxRounds || toolCalls >= 8;
       const r = await o.ai.chat(model, { system: o.system, contents, tools: decls, noTools: last, maxTokens: o.maxTokens ?? 4096, temperature: 0.2 });
       usage.calls++; usage.prompt += r.promptTokens ?? 0; usage.output += r.outputTokens ?? 0;
-      await o.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose: o.purpose ?? 'agent', ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
+      await o.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose: o.purpose ?? 'agent', agent: model.startsWith('or:') || r.via === 'main' ? null : (o.agent ?? null), ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
         prompt_tokens: r.promptTokens, output_tokens: r.outputTokens, note: r.ok ? (r.calls.length ? 'tools: ' + r.calls.map((c) => c.name).join(',') : 'answer') : r.error });
       if (!r.ok) { lastErr = { msg: r.error ?? 'model error', status: r.status }; failed = true; break; }
       contents.push(r.content!);

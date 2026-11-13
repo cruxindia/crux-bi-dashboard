@@ -3520,6 +3520,9 @@ function askRender(a,askNext){if(a.mode==='agent')return askRenderAgent(a,askNex
  box.append(el('p',{class:'note'},`${a.scope||''} · ${a.period||''}${a.confidence?' · confidence '+a.confidence:''}`));
  const F=a.findings;if(F&&(F.rows||[]).length){const t=el('table',{class:'asktbl'},el('thead',{},el('tr',{},(F.columns||[]).map(c=>el('th',{},c)))),el('tbody',{},F.rows.map(r=>el('tr',{},(Array.isArray(r)?r:[r]).map(c=>el('td',{},c==null?'–':String(c)))))));
   box.append(el('h4',{},'Key findings'),el('div',{class:'tablewrap'},t))}
+ // wave 109b: further tables (e.g. the list of units); long ones start folded
+ (a.tables||[]).forEach(T=>{if(!(T.rows||[]).length)return;const tb=el('div',{class:'tablewrap'},el('table',{class:'asktbl'},el('thead',{},el('tr',{},(T.columns||[]).map(c=>el('th',{},c)))),el('tbody',{},T.rows.map(r=>el('tr',{},(Array.isArray(r)?r:[r]).map(c=>el('td',{},c==null?'–':String(c))))))));
+  box.append(T.rows.length>15?el('details',{},el('summary',{},T.title||'Details'),tb):el('div',{},el('h4',{},T.title||'Details'),tb))});
  const ch=a.chart;if(ch&&(ch.labels||[]).length&&(ch.series||[]).length){const cv=el('canvas');box.append(el('h4',{},ch.title||'Chart'),el('div',{class:'askchart'},cv));
   setTimeout(()=>{try{const c=C(),cols=[c.blue,c.ochre,c.bad,c.good];const hb=ch.type==='hbar',st=ch.type==='stacked';
    chart(cv,{type:ch.type==='line'?'line':'bar',data:{labels:ch.labels,datasets:ch.series.map((x,k)=>({label:x.name,data:x.values,borderColor:cols[k%4],backgroundColor:ch.type==='line'?cols[k%4]:cols[k%4]+'cc',borderDash:ch.type==='line'&&k>0?[5,4]:undefined,pointRadius:ch.type==='line'?2:undefined}))},
