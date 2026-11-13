@@ -512,6 +512,12 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
   {const ab=el('div',{class:'card agbrief',id:'agentBrief',style:'margin:12px 0'});s.append(ab);agentBriefCard(ab)}
   {const sa=el('div',{class:'card',id:'sevenQ',style:'margin:12px 0'});s.append(sa);sevenAnswers(sa,B,ok,m,f)}
   {const zh=el('div',{class:'card',style:'margin:12px 0'});s.append(zh);zoneHighlights(zh,m,f)}
+  /* weekly improver (14-Nov-2026): unit counts (RACPC, Mini RACPC, RAC, branches …) were asked about again and again from this page in many wordings;
+    the same card as Business tracker → Branches, loaded only when opened so the Overview stays quick */
+  {const uc=el('div',{class:'card',style:'margin:12px 0',id:'ovUnits'});const ub=el('div');
+  const hint_=el('p',{class:'note'},'How many RACPC, Mini RACPC, RASMECCC, RAC and other units each client has — active, dormant and never active, by zone or team, with the list of units. The same counts Ask Crux uses.');
+  const open=el('button',{type:'button',class:'btn',onclick:()=>{open.remove();hint_.remove();unitsCard(ub,f,{noTitle:true})}},'Show unit counts');
+  uc.append(el('h3',{style:'margin-top:0'},'Units by type — RACPC, Mini RACPC, RAC and branches'),hint_,open,ub);s.append(uc)}
   {const pq=el('div',{class:'card',id:'planCard',style:'margin:12px 0'});s.append(pq);planSnapshot(pq,m,f)}
   {const tb=el('div',{class:'card teams',style:'margin:12px 0',id:'teamCards'},el('h3',{style:'margin-top:0'},'Operations and Collections — '+mlabel(m)),el('p',{class:'note'},'Loading…'));s.append(tb);
    Promise.all([api('ops',{month:m,filters:f}).catch(()=>null),api('os_recon',{month:m,filters:{}}).catch(()=>null)]).then(([O,R])=>{if(!tb.isConnected)return;tb.lastChild.remove();
@@ -2536,7 +2542,7 @@ function topOpportunities(box,f){box.append(el('h3',{},'Top branch opportunities
    el('p',{class:'note'},'Branches seen in Force1 cases only. Opportunity values are peer-based estimates, not confirmed leakage. Full list: Business tracker → Branch lifecycle.'))})
  .catch(e=>{msg.textContent='Branch data unavailable: '+e.message})}
 /* wave 109a/b: one unit count (RACPC, Mini RACPC, RAC, …) for the page and Ask Crux */
-async function unitsCard(box,f){box.append(el('h3',{},'Units by type — RACPC, Mini RACPC, RAC and branches'),el('p',{class:'note'},'One count used everywhere, including Ask Crux: client branch master (active rows), unit type read from the unit name, status from Crux cases — active = at least one case in the last 3 months, dormant = cases earlier, never active = none. RACPC does not include Mini RACPC.'));
+async function unitsCard(box,f,o={}){box.append(...[o.noTitle?null:el('h3',{},'Units by type — RACPC, Mini RACPC, RAC and branches'),el('p',{class:'note'},'One count used everywhere, including Ask Crux: client branch master (active rows), unit type read from the unit name, status from Crux cases — active = at least one case in the last 3 months, dormant = cases earlier, never active = none. RACPC does not include Mini RACPC.')].filter(Boolean));
  const msg=el('p',{class:'note'},'Loading…');box.append(msg);let U;try{U=await api('branch_units',{filters:f,p:{}})}catch(e){msg.textContent='Unit counts unavailable: '+e.message;return}msg.remove();
  const T=U.summary||{},win=U.status_month?mlabel(U.status_month):'';
  box.append(el('div',{class:'tiles'},tile('Units',fmt(T.total),'in the branch master'),tile('Active',fmt(T.active),win?'case in the 3 months to '+win:'','good'),tile('Dormant',fmt(T.dormant),'had cases, none lately','warn'),tile('Never active',fmt(T.never_active),'no Crux case yet'),tile('Not linked to a team',fmt(T.no_team),'branch master rows without a Crux team'),T.force1_cases_last_3_months!=null?tile('Force1 cases, last 3 months',fmt(T.force1_cases_last_3_months),'from these units (the tracker does not split by unit)'):null));
