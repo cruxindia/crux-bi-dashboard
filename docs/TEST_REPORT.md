@@ -967,7 +967,7 @@ Live page = https://cruxindia.github.io/crux-bi-dashboard/ (admin session; nothi
 | T110-M5 | Force1 gap with manual numbers (rolled back, October, one location) | gap 416 → still open 364 after 52 reported; covered 89.7% → 91.0% ✓ |
 | T110-L1 | Lesson trial (quality agent, report #53) | 1 lesson switched on (unit-type distinction, trial answer passed the figure check), 4 rejected with reasons; lessons now 3 active, 2 proposed (waiting for the next trial), 5 rejected ✓ |
 | T110-L2 | Chat review (report #32) proposes lessons from failures and 👎 notes | 15 questions reviewed, 2 lessons proposed ✓ |
-| T110-L3 | Weekly improver opens pull requests | see below |
+| T110-L3 | Weekly improver opens pull requests | Runs on 13-Nov 23:21 IST opened nothing and left no record ✗. With the run log (issue #1) the cause showed: the scheduled session cannot push and has no valid GitHub login ✗ → "Improver branch" workflow added (D348; local dry run passed; a patch touching .github/ and one with a key-like string were both refused). 23:38 IST run stopped at once on the plan's usage limit (L154). 14-Nov 01:52 IST run: first patch refused because main moved during the run (the workflow worked as designed), retried on the new main → **pull requests #2 (Ask Crux: LHO unit questions, with proposal SQL) and #3 (Executive overview: unit counts card)** opened with label improver, evidence, tests, risks and undo ✓. Both diffs checked: no keys, no tool or vendor names, page builds; both merge cleanly together (their test notes moved to docs/improver-notes/ so they never conflict in this file) ✓ |
 | T110-D1 | Overview strip "Asked most in the last 2 weeks" | 4 questions from the trends ✓ |
 | T110-D2 | First Ask Crux suggestion on Overview comes from the trends, then the fixed ones | ✓ |
 | T110-D3 | Admin → Ask Crux → What people ask | 66 questions in 14 days, types, 2 👍 · 7 👎, 25-row table with type, times asked, wordings, 👍/👎 ✓ |
@@ -997,3 +997,5 @@ Live page = https://cruxindia.github.io/crux-bi-dashboard/ (admin session; nothi
 | process_4 Memory curator | — | — | no job: memory is written by code after each checked answer | — |
 
 All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not found" error after the fix went live (23:17 IST).
+
+**Scheduled run, 14-Nov-2026 05:35–08:00 IST (no one started them):** chat review #69, data readiness #70, lesson trials #71 (the 2 proposed lessons tested and switched on → 5 active, 5 rejected), morning brief #72, market news #73, target watch #74, zone West #75, North and East #76, South #77, Force1 and TAT operations #78, decision-log audit #79 — all ok, all on the agents' own keys (no backup engine needed) ✓
