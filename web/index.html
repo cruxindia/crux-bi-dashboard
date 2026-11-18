@@ -481,18 +481,18 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
  if(!tgtC&&!(ov.revenue_target>0)&&ov.mtd_cases>0&&!Object.keys(f).length)s.append(el('div',{class:'banner'},`The ${mlabel(m)} Zonal Tracker files uploaded so far (latest ${ov.as_of||'–'}) have no targets — every target cell is 0 — so achievement and shortfall cannot be shown. Upload a tracker file with targets, or save the suggested targets as the plan in `,
   el('button',{type:'button',class:'lnk',onclick:()=>go('adm_plan')},'Admin → Plan & targets'),'.'));
  /* Hero: one block, Revenue (expected, business) by default with a Cases toggle (shared measure state). Revenue projection uses the same share of month as the case projection. */
- {const ok=B&&!B.error&&B.total,T=ok?B.total:{},Fi=ok?B.finance||{}:{};const rv=S.measure!=='cases'&&T.revenue_target>0&&ov.mtd_cases>0;
+ {const ok=B&&!B.error&&B.total,T=ok?B.total:{},Fi=ok?B.finance||{}:{};const rv=S.measure!=='cases'&&!!ok&&T.expected_revenue!=null;   // wave 113: Revenue works even when the month has no target
   const F=rv?fmtL:fmt,so=rv?T.expected_revenue:ov.mtd_cases,tg=rv?T.revenue_target:tgtC;
   const sc=rv?(fc.curve_projection&&T.projected_revenue?T.projected_revenue/fc.curve_projection:null):1;
   const pj=rv?T.projected_revenue:fc.curve_projection,rg=fc.curve_range&&sc?fc.curve_range.map(x=>Math.round(x*sc)):null,ach=tg&&pj?pj/tg:null;
   const max=(Math.max(tg,rg?rg[1]:0,so||0)||1)*1.06,behind=wpace&&tg?so-wpace*tg:null;
   const seg=el('div',{class:'seg meas',role:'group','aria-label':'Overview measure'},[['expected','Revenue'],['cases','Cases']].map(([k,l])=>{const on=(k==='cases')!==rv;return el('button',{type:'button',class:'btn sm'+(on?' on':''),'aria-pressed':String(on),'data-hm':k,onclick:()=>setMeasure(k)},l)}));
-  const track=el('div',{class:'track',role:'img','aria-label':`So far ${F(so)} of target ${F(tg)}`},el('div',{class:'mtd',style:`width:${100*(so||0)/max}%`}),
+  const track=el('div',{class:'track',role:'img','aria-label':`So far ${F(so)}`+(tg?` of target ${F(tg)}`:', target not set')},el('div',{class:'mtd',style:`width:${100*(so||0)/max}%`}),
    rg?el('div',{class:'fc',style:`left:${100*rg[0]/max}%;width:${100*(rg[1]-rg[0])/max}%`}):null,
    tg?el('div',{class:'tick',style:`left:${100*tg/max}%`,title:'Target'}):null,(wpace&&tg)?el('div',{class:'tick',style:`left:${100*wpace*tg/max}%;background:var(--ochre)`,title:'Pace needed today'}):null);
   s.append(el('div',{class:'tools',id:'ovHero'},el('h2',{style:'margin:0'},(rv?'Revenue — ':'Cases — ')+mlabel(m)),seg),
    el('p',{class:'lede'},rv?`Expected revenue (business) = Zonal Tracker cases × agreed rate, up to ${ddmm(B.as_of)}. Billed and collected are finance figures with their own dates.`:`Case volumes up to ${ddmm(ov.as_of||'')} (report date). Force1, TAT and forecast figures state their own period.`),
-   el('div',{class:'pace'},el('div',{class:'nums'},el('span',{class:'big'},F(so)),el('span',{class:'of'},'of '+F(tg)+(rv?' target revenue':' target cases')),
+   el('div',{class:'pace'},el('div',{class:'nums'},el('span',{class:'big'},F(so)),el('span',{class:'of'},tg?'of '+F(tg)+(rv?' target revenue':' target cases'):'target not set for '+mlabel(m)),
     el('span',{class:'of '+(behind==null?'':behind>=0?'good':'bad')},behind==null?'':(behind>=0?'+':'−')+F(Math.abs(behind))+' vs working-day pace'),
     fc.available&&rg?el('span',{class:'of'},`Projected ${F(rg[0])}–${F(rg[1])} (${pct(ach)})`):null),track,
    el('div',{class:'legend'},el('span',{},el('i',{style:'background:var(--blue)'}),'Achieved so far'),el('span',{},el('i',{style:'background:var(--ochre)'}),'Projected month-end range'),el('span',{},el('i',{style:'background:var(--ink)'}),'Target'),el('span',{},el('i',{style:'background:var(--ochre);width:3px'}),'Pace needed by today')),
