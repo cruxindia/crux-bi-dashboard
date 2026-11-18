@@ -675,6 +675,18 @@ export async function runAgent(o: {
       unitText = `\nUNIT COUNTS (get_branch_units ${JSON.stringify(uq)}; use these for counts; call get_branch_units again only for another scope):\n${JSON.stringify(hidden)}\n`;
     } catch { /* the model can still call the tool */ }
   }
+  // wave 112: "page A shows x, page B shows y" — the same-figure check is looked up first, so the answer starts from what actually differs
+  if (/\b(different|differ\w*|mismatch\w*|discrepanc\w*|inconsisten\w*|not\s+match\w*|n[o']t\s+match\w*|do\s+not\s+agree|don'?t\s+agree)\b/i.test(String(o.question ?? '')) &&
+      /\b(page|pages|number|numbers|figure|figures|count|counts|total|totals|value|values|amount|shows?|showing|dashboard|tab)\b/i.test(String(o.question ?? ''))) {
+    const t0c = Date.now();
+    try {
+      const out = await TOOLS.get_consistency(t, {});
+      const hidden = pseudo.hideAny(out.data);
+      evidence.push(hidden);
+      steps.push({ tool: 'get_consistency', label: out.label, args: {}, ok: true, rows: out.rows, ms: Date.now() - t0c, auto: true });
+      unitText += `\nSAME-FIGURE CHECK (get_consistency; start the answer from this: which figures agree, which differ, the sources and the difference):\n${JSON.stringify(hidden)}\n`;
+    } catch { /* the model can still call the tool */ }
+  }
   // wave 105c memory: a similar earlier answer is adapted — its look-ups are re-run on today's data first (no AI call), then the AI updates it
   let seedText = '';
   if (o.seed) {
