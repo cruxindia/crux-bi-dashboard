@@ -1079,6 +1079,14 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 **Ask Crux (live, after each deploy).**
 | Question | First result | After fix |
 |---|---|---|
-| What is the November target and how much have we achieved so far? | Planned target ₹2.56 cr / 67,778 cases, ₹77.46 L and 20,793 so far, "targets source is planned"; but "65.1% below BAU" (so far vs full-month BAU) | see below |
-| What is Tezzract and what is BRT? | Did not read the structure reference; expanded BRT to an invented name | see below |
+| What is the November target and how much have we achieved so far? | Planned target ₹2.56 cr / 67,778 cases, ₹77.46 L and 20,793 so far, "targets source is planned"; but "65.1% below BAU" (so far vs full-month BAU) | Pass: same figures, the fixed sentence "These are the dashboard's planned targets; the tracker file with your own targets replaces them automatically when it is uploaded.", "24.6% below business-as-usual" (D373) |
+| What is Tezzract and what is BRT? | Did not read the structure reference; expanded BRT to an invented name | Pass: "Tezzract (TEZZ) is an MSME lending platform client …"; "BRT … product line under the Bank of Maharashtra (BOM)", no invented expansion |
+
+**Live page (published build = repository build).**
+| Check | Result |
+|---|---|
+| Overview note, hero and Cases view with planned targets | Pass (same as the local build) |
+| Admin → Plan & targets card | Pass |
+| Drive by link at the live address: Zonal Tracker "nothing new" (136 files); Point wise 15 files read and previewed, not imported; every Drive call 200; no sign-in | Pass |
+| Revenue / Cases switches | Pass 9/9 (a first run timed out on the tracker tab while the pages recomputed after the target change; rerun 9/9), 0 JavaScript errors |
 
