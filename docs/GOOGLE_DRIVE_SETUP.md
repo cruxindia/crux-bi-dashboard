@@ -4,11 +4,14 @@ Prepared by Shantanu Suravase · 18-Nov-2026 · wave 112
 
 The upload page (Admin → Uploads) has a **Pick from Google Drive** card with one button per report folder:
 
-| Button | Drive folder ID |
+| Button | Folder |
 |---|---|
-| Zonal Tracker | `1ANPZ30iQkVXbTFt99UaZnAjn6sQRcpUu` |
-| Point wise | `1mhhGbTkgcwBcZFLUtNpu6U1X-IP6CW9v` |
-| Case wise | `1YBf8fO2HdhWToB9Pi99sfS2bKgjHglWR` |
+| Zonal Tracker | the owner's Zonal Tracker folder |
+| Point wise | the owner's Point Wise folder |
+| Case wise | the owner's Case Wise folder |
+
+The folder IDs are kept in the database (`bi.app_setting`, key `google_drive`) and shown to admins only — never in this public
+repository, because a Drive folder ID works like a link.
 
 A button opens Google's own file picker on that folder. The admin ticks one or more files and presses **Select**. The files are downloaded
 in the admin's browser with the admin's own Google access and go through exactly the same steps as a dropped file: file type detected,

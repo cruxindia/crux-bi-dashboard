@@ -4,9 +4,9 @@
 insert into bi.app_setting (key, value, note, updated_by)
 values ('google_drive', jsonb_build_object('client_id', null, 'api_key', null, 'app_id', null,
           'folders', jsonb_build_array(
-            jsonb_build_object('key', 'zonal', 'label', 'Zonal Tracker', 'id', '1ANPZ30iQkVXbTFt99UaZnAjn6sQRcpUu'),
-            jsonb_build_object('key', 'point', 'label', 'Point wise', 'id', '1mhhGbTkgcwBcZFLUtNpu6U1X-IP6CW9v'),
-            jsonb_build_object('key', 'case', 'label', 'Case wise', 'id', '1YBf8fO2HdhWToB9Pi99sfS2bKgjHglWR'))),
+            jsonb_build_object('key', 'zonal', 'label', 'Zonal Tracker', 'id', '<zonal-folder-id: kept in bi.app_setting>'),
+            jsonb_build_object('key', 'point', 'label', 'Point wise', 'id', '<point-wise-folder-id: kept in bi.app_setting>'),
+            jsonb_build_object('key', 'case', 'label', 'Case wise', 'id', '<case-wise-folder-id: kept in bi.app_setting>'))),
         'wave 112d: Google Drive picker settings (admin only). Folders from the owner, 18-Nov-2026.', 'wave 112d')
 on conflict (key) do nothing;
 
