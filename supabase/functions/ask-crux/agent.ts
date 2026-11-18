@@ -127,6 +127,8 @@ export const DECLS: ToolDecl[] = [
       filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
   { name: 'get_operating_model', description: 'The register of who runs each client in each location: a Business Associate (a partner; older words partner / franchise) or a Crux Branch (our own team; older words own branch), with from / to dates, and how many pairs are not set yet. Use for "which locations or clients are run by Business Associates", "since when", "what is not set". For performance (business, growth, TAT) use get_assoc_comparison.',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
+  { name: 'get_consistency', description: 'The latest "same figure on every page" check: for business so far, cases so far, likely month end, business as usual, target and client branch counts, the value each page / data source gives, whether they agree, the lowest, highest and difference. Use when someone says two pages (or Ask Crux) show different numbers, or asks whether the figures match.',
+    parameters: { type: 'object', properties: {} } },
   { name: 'get_client_structure', description: 'How a client bank is organised: its levels (e.g. SBI Corporate Centre → Local Head Office → Administrative Office → Regional Business Office → branch; other banks head office → zone / circle → region → branch) and its processing centres (RACPC, Mini RACPC, RASMECCC, SMECCC, RACC, Retail Loan Points, MSME Loan Points, Retail Asset Hubs, MSME Sulabh, RAC, retail hubs …) with what each does, the products it handles, the published count, units in the client branch master, units that sent Crux work in the last 3 months, Force1 cases by level in the last 3 months, and the source of each description. Use for "how is <bank> organised", "what does a RACPC / LHO / RBO / ULP handle", "which level sends us work".',
     parameters: { type: 'object', properties: { client_family: { type: 'string', description: 'client family code, e.g. SBI, BOM, UNION, CANB, IDBI, BOI; omit for all clients' }, filters: FILTERS } } },
   { name: 'get_assoc_comparison', description: 'PERFORMANCE of Business Associates (partner-run business) vs Crux Branches (our own teams) for a month — the same figures as the page "Business Associates vs Crux Branches": business so far and cases, likely month end, share of business, locations, clients, revenue per case and per location, growth vs the previous month at the same working day, likely vs the same month last year, target, Force1 cases, case TAT (typical case and slowest 10%) and on-time share (last full Force1 month while the current month is open), untapped potential; a 6-month trend; by zone, by location (who runs it), by client and client × location. Use for any comparison of associates / partners / franchise with Crux Branches / own branches, or the performance of either group.',
@@ -304,6 +306,12 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     return { label: 'Business Associates & Crux Branches register', rows: (O?.by_location ?? []).length,
       data: fit({ month: O?.month, filters, words: 'partner_* = Business Associates, self_* = Crux Branches, not_set_* = not set yet', rule: O?.rule, register: O?.register, trend: O?.trend,
         by_zone: O?.by_zone, by_location: (O?.by_location ?? []).slice(0, 40) }, 14000) };
+  },
+  // wave 112: the same-figure-everywhere check (runs 08:50, 14:50 and 19:50 IST)
+  async get_consistency(t) {
+    const R = await t.api('consistency', {});
+    return { label: 'Same figure on every page', rows: (R?.rows ?? []).length,
+      data: fit({ checked_at: R?.checked_at, month: R?.month, as_of: R?.as_of, checks: R?.checks, agree: R?.agree, differ: R?.differ, method: R?.method, rows: R?.rows }, 12000) };
   },
   // wave 112c: how a client bank is organised (levels, processing centres, products, sources, where Crux work comes from)
   async get_client_structure(t, a) {

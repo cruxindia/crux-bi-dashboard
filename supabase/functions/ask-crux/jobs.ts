@@ -310,9 +310,10 @@ const RJOBS: Record<string, RJ> = {
       return `MONTH-CLOSE SUMMARY for the MD: the month ${pm.slice(0, 7)} (closed). Use month ${pm} in every look-up: get_business_summary, get_breakdown level zone (sort gap), ` +
         `get_breakdown level client (sort gap, limit 10), get_collections, get_operations part tat. One page: **Result** (cases and revenue vs target, vs the month before), **Why** (root causes by zone and client), ` +
         `**What worked**, **What did not**, **Cash** (collections, receivables over 180 days), **Decisions for this month** (three proposals for the MD; they are proposals, not decisions). ${STYLE}`; } },
-  data_watch: { title: 'Data readiness and anomaly watch', audience: 'admin', topics: ['scope:data'], allow: ['get_business_summary', 'get_operations', 'get_force1_gap', 'get_manual_ops', 'get_breakdown'],
+  data_watch: { title: 'Data readiness and anomaly watch', audience: 'admin', topics: ['scope:data'], allow: ['get_business_summary', 'get_operations', 'get_force1_gap', 'get_manual_ops', 'get_breakdown', 'get_consistency'],
     q: (e) => `DATA READINESS WATCH (${todayIST()}). Data dates known to the dashboard: ${JSON.stringify(e.meta?.freshness ?? {})}. Look up get_force1_gap for the latest complete month and the current month, ` +
-      `get_operations part force1, and get_breakdown level team (sort decline, limit 10). Write: **Freshness** (each source and how many days old; flag anything older than 2 working days), ` +
+      `get_operations part force1, get_consistency once, and get_breakdown level team (sort decline, limit 10). Write: **Freshness** (each source and how many days old; flag anything older than 2 working days), ` +
+      `**Same figure everywhere** (how many checks agree; for each that differs: the figure, the lowest and highest page and the difference — copy them from get_consistency), ` +
       `**Force1 coverage** (tracker vs Force1 vs reported, the location groups with the largest unexplained gap), **Anomalies** (teams or clients with a sudden drop or jump), **Fix list** (who should upload or correct what). ${STYLE}` },
   branch_network: { title: 'Branch network and potential', audience: 'admin', rounds: 8, topics: ['unit:racpc', 'unit:mini racpc', 'unit:rac', 'metric:potential'],
     allow: ['get_branch_units', 'get_potential', 'get_breakdown', 'get_operations'],
