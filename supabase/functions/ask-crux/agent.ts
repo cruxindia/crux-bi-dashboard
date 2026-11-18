@@ -125,7 +125,9 @@ export const DECLS: ToolDecl[] = [
   { name: 'get_branch_units', description: 'COUNTS of client units by type — RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, other CPC, other processing centre, SME branch, branch — with active, dormant and never active, by zone, team and client, the rows in the branch master that cannot be counted (with reason), and optionally the list of units. Use for any "how many / count / which / list" question about branches, RACPCs, RACs or other units. RACPC excludes Mini RACPC unless both are asked.',
     parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'] }, description: 'omit for all unit types' },
       filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
-  { name: 'get_operating_model', description: 'Who runs the business: own branch (Crux) or partner (franchise), by client and location with dates (admin register). Cases and revenue by own / partner / not set for the last 6 months, by zone and by location for the month. Use for "partner vs own branch", "franchise business", "which locations are run by partners".',
+  { name: 'get_operating_model', description: 'The register of who runs each client in each location: a Business Associate (a partner; older words partner / franchise) or a Crux Branch (our own team; older words own branch), with from / to dates, and how many pairs are not set yet. Use for "which locations or clients are run by Business Associates", "since when", "what is not set". For performance (business, growth, TAT) use get_assoc_comparison.',
+    parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
+  { name: 'get_assoc_comparison', description: 'PERFORMANCE of Business Associates (partner-run business) vs Crux Branches (our own teams) for a month — the same figures as the page "Business Associates vs Crux Branches": business so far and cases, likely month end, share of business, locations, clients, revenue per case and per location, growth vs the previous month at the same working day, likely vs the same month last year, target, Force1 cases, case TAT (typical case and slowest 10%) and on-time share (last full Force1 month while the current month is open), untapped potential; a 6-month trend; by zone, by location (who runs it), by client and client × location. Use for any comparison of associates / partners / franchise with Crux Branches / own branches, or the performance of either group.',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
   { name: 'get_force1_gap', description: 'Zonal Tracker cases vs cases recorded in Force1 vs cases on the daily manual reports of locations not on Force1, by location group for a month: gap, reported, still unexplained. Use for Force1 coverage and missing case data.',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
@@ -293,12 +295,23 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
         units: U?.units ?? undefined, method: U?.method }, 16000) };
   },
 
-  // wave 109c: partner vs own branch (no partner names) and the Force1 gap
+  // wave 109c: who runs each client × location (no associate names) and the Force1 gap. wave 112: Business Associate = partner, Crux Branch = own branch.
   async get_operating_model(t, a) {
     const { month, filters } = scope(t, a);
     const O = await t.api('operating_model', { month, filters });
-    return { label: 'Own branch vs partner', rows: (O?.by_location ?? []).length,
-      data: fit({ month: O?.month, filters, rule: O?.rule, register: O?.register, trend: O?.trend, by_zone: O?.by_zone, by_location: (O?.by_location ?? []).slice(0, 40) }, 14000) };
+    return { label: 'Business Associates & Crux Branches register', rows: (O?.by_location ?? []).length,
+      data: fit({ month: O?.month, filters, words: 'partner_* = Business Associates, self_* = Crux Branches, not_set_* = not set yet', rule: O?.rule, register: O?.register, trend: O?.trend,
+        by_zone: O?.by_zone, by_location: (O?.by_location ?? []).slice(0, 40) }, 14000) };
+  },
+  // wave 112: Business Associates vs Crux Branches performance (the page of the same name)
+  async get_assoc_comparison(t, a) {
+    const { month, filters } = scope(t, a);
+    const A = await t.api('assoc', { month, filters });
+    const nz = (r: any) => (r.cases ?? 0) !== 0 || (r.revenue ?? 0) !== 0 || (r.cmp_revenue ?? 0) !== 0;
+    return { label: 'Business Associates vs Crux Branches', rows: (A?.pairs ?? []).length,
+      data: fit({ month: A?.month, as_of: A?.as_of, month_still_open: A?.partial, filters, growth_compared_with: A?.comparison, rule: A?.rule, totals: A?.totals,
+        summary: A?.summary, note: 'f1_last_full = Force1 TAT of the last full month (use it while the current month is open); potential.untapped = room to grow per month (lost + dormant + never-active branches)',
+        trend: A?.trend, by_zone: (A?.by_zone ?? []).filter(nz), by_client: (A?.by_client ?? []).slice(0, 30), by_location: (A?.by_location ?? []).slice(0, 40) }, 16000) };
   },
   async get_force1_gap(t, a) {
     const { month, filters } = scope(t, a);
@@ -449,6 +462,7 @@ HOW TO WORK
 9. Words people understand: say "likely" (actual so far + expected at the current pace), never "outlook"; say "now x% of potential (by value)" and "gap to potential", never "captured", "penetration" or "headroom". Whenever you give a potential, give its clients and branches (how many active) and what makes up the gap. Quarters follow the Indian financial year written in full, e.g. Q3 FY 2026-27 (Oct–Dec 2026).
 10. COUNT OR VALUE: when the question asks how many, count, number of, units, branches or cases, the first line gives counts (cases or units), not rupees; add revenue only when the question asks for value, revenue or business in rupees. Never answer a count question with revenue.
 11. Units (RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, CPC, branches): counts come only from get_branch_units (never count units with run_sql or from potential). Give total, active, dormant and never active, say which unit types are included (RACPC does not include Mini RACPC unless both are asked), and mention units with no team yet and rows not counted when they matter. Business BY UNIT exists only in Force1 case data by branch code (get_branch_units with list true: cases_last_3_months, cases_since_jan, last_case_month; Force1 data runs to its own as-of date). The Zonal Tracker gives business per team × client only: never present a team's or client's tracker business as the business of its RACPCs or any unit type — say that the tracker does not split by unit and give the unit-level Force1 figures instead.
+12. BRANCH WORDS: a "Business Associate" (older words: partner, associate, franchise) is a partner that runs a client in a location for Crux; a "Crux Branch" (older words: own branch, our branch) is our own team in a location. A "branch" named with a bank or client (SBI branch, HDFC branches) or a unit type (RACPC, RAC) is the CLIENT's branch (get_branch_units). "Crux Branch", "our branches", "own branches" or a Crux location name means our own team. Questions comparing associates / partners with Crux Branches / own branches, or about either group's performance, use get_assoc_comparison (who runs what and since when: get_operating_model). In answers always say "Business Associates" and "Crux Branches" (never "partners" or "own branches"), and never call client branches Crux Branches. If "branch" could mean either, say which meaning you used in the first line.
 
 ANSWER FORMAT
 - First line: the direct answer in one or two sentences.
@@ -501,7 +515,7 @@ const STOP = new Set(('A AN THE IS ARE WAS WERE BE BEEN BEING AM DO DOES DID DOI
   'THERE HERE THEN THAN KNOW LET SEE CURRENT CURRENTLY NOW RIGHT').split(' '));
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const GROUPS: [RegExp, string][] = [
-  [/^(TEAMS?|LOCATIONS?)$/, 'L:TEAM'], [/^(ZONES?|REGIONS?)$/, 'L:ZONE'], [/^(CLIENTS?|BANKS?)$/, 'L:CLIENT'], [/^(BRANCH|BRANCHES)$/, 'L:BRANCH'], [/^(MANAGERS?|BMS?)$/, 'L:MGR'],
+  [/^(TEAMS?|LOCATIONS?)$/, 'L:TEAM'], [/^(ZONES?|REGIONS?)$/, 'L:ZONE'], [/^(CLIENTS?|BANKS?)$/, 'L:CLIENT'], [/^(BRANCH|BRANCHES)$/, 'L:BRANCH'], [/^(ASSOCIATES?|PARTNERS?|FRANCHISE\w*)$/, 'G:ASSOC'], [/^(MANAGERS?|BMS?)$/, 'L:MGR'],
   [/^(AHEAD|ABOVE|EXCEED\w*|BEAT\w*|OVERACHIEV\w*)$/, 'P:UP'], [/^(BEHIND|BELOW|SHORT\w*|LAG\w*|MISS\w*|UNDERPERFORM\w*)$/, 'P:DOWN'],
   [/^(TOP|BEST|HIGHEST|MOST|LARGEST|BIGGEST|MAX\w*)$/, 'P:MAX'], [/^(BOTTOM|WORST|LOWEST|LEAST|SMALLEST|MIN|MINIMUM)$/, 'P:MIN'],
   [/^(GREW|GROW\w*|INCREAS\w*|RISE|RISEN|ROSE|RISING|UP|GAIN\w*|IMPROV\w*)$/, 'P:GROW'], [/^(FELL|FALL\w*|DECLIN\w*|DECREAS\w*|DROP\w*|DOWN|LOST|LOSS|LOSING|DIP\w*)$/, 'P:FALL'],
