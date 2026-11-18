@@ -310,7 +310,14 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const { filters } = scope(t, a);
     const fam = typeof a?.client_family === 'string' && a.client_family.trim() ? a.client_family.trim().toUpperCase() : undefined;
     const D = await t.api('client_structure', { filters, p: fam ? { client_family: fam } : {} });
-    const C = (D?.clients ?? []).map((c: any) => ({ ...c, units: (c.units ?? []).filter((u: any) => u.role || u.in_master > 0) }));
+    const C = (D?.clients ?? []).map((c: any) => {
+      const units = (c.units ?? []).filter((u: any) => u.role || u.in_master > 0);
+      const tot = units.reduce((s: number, u: any) => s + (Number(u.cases_3m) || 0), 0);
+      // where the work comes from, largest first, with each level's share — so the answer never guesses which level sends most
+      const work_from_largest_first = units.filter((u: any) => Number(u.cases_3m) > 0).sort((x: any, y: any) => y.cases_3m - x.cases_3m)
+        .map((u: any) => ({ level: u.name, force1_cases_3m: u.cases_3m, share_pct: tot ? Math.round(1000 * u.cases_3m / tot) / 10 : null, units_sending_work: u.active }));
+      return { ...c, force1_cases_3m_total: tot, work_from_largest_first, units };
+    });
     return { label: `Client structure${fam ? ' — ' + fam : ''}`, rows: C.length, data: fit({ filters, status_month: D?.status_month, method: D?.method, clients: fam ? C : C.slice(0, 8) }, 16000) };
   },
   // wave 112: Business Associates vs Crux Branches performance (the page of the same name)

@@ -4107,6 +4107,57 @@ function calmText(root){if(!root)return;root.querySelectorAll('p.lede,p.note,div
 
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
+/* wave 112d: pick report files from the Google Drive folders. Google's own sign-in and file picker run in the admin's browser; the files are
+   downloaded with the admin's own access (drive.file: only the files picked) and go through exactly the same checks as a manual upload. */
+const loadJs=(()=>{const P={};return src=>P[src]||(P[src]=new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.async=true;x.onload=ok;x.onerror=()=>{delete P[src];no(new Error('could not load '+src))};document.head.append(x)}))})();
+async function drivePicker(box,onFiles){box.innerHTML='';
+ box.append(el('h3',{style:'margin-top:0'},'Pick from Google Drive'),el('p',{class:'note'},'Open a report folder, tick the files and press Select. They are read in your browser and checked exactly like files you drop below; nothing is written until you press Import.'));
+ let G;try{G=await adminCall('drive_config',{op:'get'})}catch(e){box.append(el('p',{class:'note'},'Drive settings unavailable: '+e.message));return}
+ const st=el('p',{class:'note'}),F=G.folders||[];let tc=null,token=null,tokenExp=0,pending=null,ready=false;
+ const setup=el('details',{class:'card',style:'margin-top:8px'},el('summary',{},'Google Drive settings (one-time, admin)'));
+ const btns=el('div',{class:'tools'},...F.map(fd=>el('button',{type:'button',class:'btn','data-folder':fd.key,disabled:G.configured?null:'',onclick:()=>pick(fd)},'📁 '+fd.label)),
+  el('button',{type:'button',class:'btn ghost',onclick:()=>{setup.open=!setup.open}},G.configured?'Drive settings':'Set up Drive access'));
+ box.append(btns,st,setup);
+ // settings form (values are not secrets in the usual sense — the browser key only works from the dashboard's own address — but they are shown to admins only)
+ const mask=v=>v?v.slice(0,6)+'…'+v.slice(-4):'not set';
+ const iC=el('input',{type:'text',placeholder:G.client_id||'1234567890-abc.apps.googleusercontent.com','aria-label':'OAuth client ID',style:'min-width:340px'}),
+  iK=el('input',{type:'password',placeholder:G.api_key?'set — '+mask(G.api_key):'AIza…','aria-label':'Browser API key',style:'min-width:260px',autocomplete:'off'}),
+  iA=el('input',{type:'text',placeholder:G.app_id||'Project number (digits)','aria-label':'Google Cloud project number',style:'max-width:200px'});
+ const fRows=F.map(fd=>{const i=el('input',{type:'text',value:fd.id,'aria-label':fd.label+' folder ID',style:'min-width:300px'});return{fd,i}});
+ const msg=el('p',{class:'note'});
+ const save=el('button',{type:'button',class:'btn primary',onclick:async()=>{const p={op:'set',editor:edName()||'unnamed',folders:fRows.map(r=>({key:r.fd.key,label:r.fd.label,id:r.i.value.trim()}))};
+   if(iC.value.trim())p.client_id=iC.value.trim();if(iK.value.trim())p.api_key=iK.value.trim();if(iA.value.trim())p.app_id=iA.value.trim();
+   try{await adminCall('drive_config',p);toast('Drive settings saved.');drivePicker(box,onFiles)}catch(e){msg.textContent=e.message;msg.className='bad'}}},'Save Drive settings');
+ setup.append(el('p',{class:'note'},'Needed once from Google Cloud (about 15 minutes; the full guide is docs/GOOGLE_DRIVE_SETUP.md in the repository): turn on the Google Drive API and the Google Picker API, create an OAuth client ID of type "Web application" with https://cruxindia.github.io as an authorised JavaScript origin, create a browser API key restricted to https://cruxindia.github.io/* and the Picker API, and copy the project number from Project settings.'),
+  el('div',{class:'tools'},el('label',{class:'note'},'OAuth client ID ',iC)),el('div',{class:'tools'},el('label',{class:'note'},'Browser API key ',iK)),el('div',{class:'tools'},el('label',{class:'note'},'Project number ',iA)),
+  el('p',{class:'note'},`Now: client ID ${G.client_id?'set':'not set'} · API key ${mask(G.api_key)} · project number ${G.app_id||'not set'}.`),
+  el('h4',{},'Report folders'),...fRows.map(r=>el('div',{class:'tools'},el('label',{class:'note'},r.fd.label+' ',r.i))),el('div',{class:'tools'},save),msg);
+ if(!G.configured){st.textContent='Drive access is not set up yet: an admin adds the Google settings once (Set up Drive access). Until then, download the files from Drive and drop them below.';return}
+ st.textContent='Loading Google sign-in…';
+ try{await Promise.all([loadJs('https://accounts.google.com/gsi/client'),loadJs('https://apis.google.com/js/api.js')]);
+  await new Promise(ok=>gapi.load('picker',ok));
+  tc=google.accounts.oauth2.initTokenClient({client_id:G.client_id,scope:'https://www.googleapis.com/auth/drive.file',
+   callback:r=>{if(r.error){st.textContent='Google sign-in failed: '+(r.error_description||r.error);return}token=r.access_token;tokenExp=Date.now()+(+r.expires_in||3600)*1000;if(pending){const fd=pending;pending=null;openPicker(fd)}},
+   error_callback:e=>{st.textContent='Google sign-in was closed or blocked ('+(e&&(e.message||e.type)||'unknown')+'). Allow pop-ups for this page and try again.'}});
+  ready=true;st.textContent='Choose a folder. The first time, Google asks you to sign in and allow access to the files you pick.'}catch(e){st.textContent='Google sign-in could not load: '+e.message+'. Download the files from Drive and drop them below instead.'}
+ function pick(fd){if(!ready){st.textContent='Still loading Google sign-in…';return}
+  if(token&&Date.now()<tokenExp-60000){openPicker(fd);return}pending=fd;tc.requestAccessToken({prompt:token?'':'consent'})}   // called straight from the click, so the sign-in window is not blocked
+ function openPicker(fd){const P=google.picker;
+  const view=new P.DocsView(P.ViewId.DOCS).setParent(fd.id).setIncludeFolders(true).setMode(P.DocsViewMode.LIST)
+   .setMimeTypes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.google-apps.spreadsheet,application/vnd.google-apps.folder');
+  let b=new P.PickerBuilder().addView(view).enableFeature(P.Feature.MULTISELECT_ENABLED).setOAuthToken(token).setDeveloperKey(G.api_key).setAppId(G.app_id)
+   .setTitle(fd.label+' — tick the files to upload').setCallback(d=>{if(d[P.Response.ACTION]===P.Action.PICKED)fetchPicked(d[P.Response.DOCUMENTS]||[],fd)});
+  if(P.Feature.SUPPORT_DRIVES)b=b.enableFeature(P.Feature.SUPPORT_DRIVES);
+  b.build().setVisible(true)}
+ async function fetchPicked(docs,fd){const files=[],bad=[];st.textContent=`Reading ${docs.length} file${docs.length===1?'':'s'} from ${fd.label}…`;
+  for(const doc of docs){const id=doc[google.picker.Document.ID]||doc.id,name=doc[google.picker.Document.NAME]||doc.name||id,mt=doc[google.picker.Document.MIME_TYPE]||doc.mimeType;
+   if(mt==='application/vnd.google-apps.folder'){bad.push(name+': a folder (open it and pick the files)');continue}
+   try{const sheet=mt==='application/vnd.google-apps.spreadsheet';
+    const url='https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+(sheet?'/export?mimeType='+encodeURIComponent('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):'?alt=media&supportsAllDrives=true');
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});if(!r.ok)throw new Error(r.status===403?'no access (ask the folder owner to share it with you)':r.status+' '+r.statusText);
+    const blob=await r.blob();files.push(new File([blob],sheet||!/\.xlsx?$/i.test(name)?name+'.xlsx':name,{type:blob.type||'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}catch(e){bad.push(name+': '+e.message)}}
+  st.textContent=`${files.length} file${files.length===1?'':'s'} read from ${fd.label}`+(bad.length?` · not read: ${bad.join('; ')}`:'')+(files.length?' — check the preview below, then Import.':'');
+  if(files.length)onFiles(files)}}
 function uploadUI(s){
  const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, Zonal Tracker, Collection or Outstanding workbook'));
  s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
@@ -4119,7 +4170,7 @@ function uploadUI(s){
  const list=el('div');const inp=el('input',{type:'file',multiple:'',accept:'.xlsx,.xls',class:'hidden',id:'fin'});
  const drop=el('div',{class:'drop',tabindex:0,role:'button','aria-label':'Choose files to upload'},el('p',{},el('strong',{},'Drop .xlsx files here'),' or ',el('button',{class:'btn',onclick:()=>inp.click()},'choose files')),el('p',{class:'note'},'Personal data (applicant names, mobile, PAN, Aadhaar, account numbers, addresses) is removed in your browser before upload.'),inp);
  ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
- drop.addEventListener('drop',ev=>handle([...ev.dataTransfer.files]));inp.onchange=()=>handle([...inp.files]);s.append(drop,list);
+ drop.addEventListener('drop',ev=>handle([...ev.dataTransfer.files]));inp.onchange=()=>handle([...inp.files]);const dvb=el('div',{class:'card',id:'drivePick',style:'margin:0 0 12px'});s.append(dvb,drop,list);drivePicker(dvb,fs=>handle(fs));   // wave 112d
  const items=[];const runBtn=el('button',{class:'btn primary',disabled:''},'Import validated files');list.append(el('div',{class:'tools'},runBtn));const tb=el('div');list.append(tb);
  async function handle(files){for(const file of files){const it={file,status:'Reading…'};items.push(it);draw();try{const buf=await file.arrayBuffer();it.hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');
    const wb=XLSX.read(buf,{type:'array',cellFormula:true,sheets:undefined});const x=CruxExtract.extractWorkbook(wb,file.name);it.x=x;it.kind=x.kind;
