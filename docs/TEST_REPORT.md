@@ -1076,3 +1076,9 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Drive without sign-in (local build served at https://cruxindia.github.io) | Pass | Zonal Tracker: 136 files, "nothing new or changed"; Point wise: 15 November files read with the browser key and previewed (e.g. MUMBAI_NOV.xlsx 15,163 rows, Ready), not imported; Case wise 162 files listed; a Google Sheet exported to .xlsx (1.03 MB); 17 Drive calls all 200; 0 JavaScript errors |
 | Drive from another address (file://) | Refused by Google as expected | 403 — the key only works from the dashboard's address |
 
+**Ask Crux (live, after each deploy).**
+| Question | First result | After fix |
+|---|---|---|
+| What is the November target and how much have we achieved so far? | Planned target ₹2.56 cr / 67,778 cases, ₹77.46 L and 20,793 so far, "targets source is planned"; but "65.1% below BAU" (so far vs full-month BAU) | see below |
+| What is Tezzract and what is BRT? | Did not read the structure reference; expanded BRT to an invented name | see below |
+

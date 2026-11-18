@@ -1,0 +1,3 @@
+-- wave 113d (18-Nov-2026), applied as migration bi_113d_client_structure_code_to_family.
+-- bi.api_client_structure: a client code or label asked for resolves to its client family, so "what is BRT" reads the BOM structure (BRT is a BOM product):
+--   v_fam := coalesce((select c.family from bi.client c where upper(c.code) = upper(v_fam) or upper(c.label) = upper(v_fam) limit 1), v_fam);
