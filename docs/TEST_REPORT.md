@@ -999,3 +999,53 @@ Live page = https://cruxindia.github.io/crux-bi-dashboard/ (admin session; nothi
 All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not found" error after the fix went live (23:17 IST).
 
 **Scheduled run, 14-Nov-2026 05:35–08:00 IST (no one started them):** chat review #69, data readiness #70, lesson trials #71 (the 2 proposed lessons tested and switched on → 5 active, 5 rejected), morning brief #72, market news #73, target watch #74, zone West #75, North and East #76, South #77, Force1 and TAT operations #78, decision-log audit #79 — all ok, all on the agents' own keys (no backup engine needed) ✓
+
+## 14 → 18-Nov-2026 — wave 111 (one figure everywhere, meeting view removed, search)
+| Check | Result | Evidence |
+|---|---|---|
+| One likely month end | Pass | 14-Nov report: Business tracker, drill-downs, Root cause, Management summary, plan, branch managers, potential and BAU model all ₹1,67,37,392 (7 sources) |
+| Zones add up to Pan India | Pass | sum of zone likely = Pan India likely (same-figure check row) |
+| Business so far / cases so far | Pass | ₹77,45,934 and 20,793 from every source |
+| BAU with a missing rate | Pass | 13/14-Nov tracker rows without a rate now use the latest known rate (BAU so far no longer ₹0) |
+| Speed after the change | Pass | potential by zone 78 s → 2.8 s (month share computed once) |
+| Same-figure check | 10 of 12 agree | client branches 66,082 vs 65,968 and active 2,749 vs 2,708 differ until the potential model is rebuilt with the 111c filter (rebuild due tonight 02:15 IST, D364) |
+| Search lands on the exact table / figure | Pass 25/25 | headless browser: typed query → Enter → highlighted element in view (e.g. "units by type", "tat pune", "variance bridge", "open cases by age", "zones at a glance") |
+| Meeting view removed | Pass | menu has no Meeting; "Meeting layout" button in the Zonal tracker applies the preset |
+
+## 18-Nov-2026 — wave 112 (Business Associates vs Crux Branches, client structures, Google Drive upload)
+**Database / API (live).**
+| Check | Result | Evidence |
+|---|---|---|
+| Comparison adds up (Nov, part month to 14-Nov) | Pass | Business Associates 14,435 cases ₹50,48,130 + Crux Branches 6,358 ₹26,97,804 = 20,793 / ₹77,45,934 (= every page); likely ₹1,09,07,985 + ₹58,29,407 = ₹1,67,37,392 (= every page); same-figure check rows "Business Associates vs Crux Branches (sum)" agree in business so far, cases and likely |
+| Growth basis | Pass | Nov compared with 15-Oct (same working day 12); Oct compared with Sep in full |
+| Targets and achievement (Oct) | Pass | Business Associates ₹1.61 cr of ₹2.14 cr = 75.4 %; Crux Branches ₹77.72 L of ₹1.19 cr = 65.3 %; Nov has no targets → "Not set" |
+| Force1 TAT by group (Oct, last full month) | Pass | Business Associates typical case 22.7 h, slowest 10 % 5.0 d, 63.3 % on time (20,579 cases = 45 % of tracker cases); Crux Branches 48.9 h, 6.8 d, 42.5 % (15,849 = 83 %); 1,708 Force1 cases in neither group |
+| Speed | Pass | first call 12.7 s (Nov) / 16.9 s (Oct), cached 0.7 s; current and previous month kept warm |
+| Register edits refresh the figures | Pass | save / end / delete clear the cached comparison and register summary |
+| Wording in the database | Pass | upload errors now say "Business Associate or Crux Branch"; "partner", "associate", "crux", "own" all accepted as values |
+| Client structure tags | Pass | 72,509 units tagged for 17 clients; false "other bank" tags (SBI "Sahakari Nagar" etc.) fixed (SBI 5 → 0) |
+| Where SBI work comes from (Force1, Sep–Nov) | Pass | branches 52,190 (69.4 %), RACPC 19,587 (26.1 %), RASMECCC 2,666, Mini RACPC 374, RBO 206 |
+
+**Browser (headless Chromium, local build against the live database; then live page = build).**
+| Check | Result |
+|---|---|
+| Business Associates vs Crux Branches page: summary sentence, 4 tiles, 21-measure table, two charts, tabs By zone 14 / By location 35 / By client 17 / Client × location 111 rows, 0 JavaScript errors | Pass |
+| October view: "Achieved vs target" 75.4 % / 65.3 %, target columns appear only when targets exist | Pass |
+| Overview card (two groups, revenue per case, TAT with month) and link to the page | Pass |
+| Admin → Business Associates & Crux Branches: no "Partner" / "Own branch" left (271 new-word occurrences) | Pass |
+| Search: "partner vs own branch performance", "business associates", "crux branches tat" → the comparison page first (location names with "Crux" no longer pull a filter) | Pass |
+| Business tracker → Branches & coverage → How each client is organised: SBI chain Corporate Centre → LHO (17 published · 14 in master) → AO (57 · 87) → RBO (431) → Branch; Union chain; sources and basis per row | Pass |
+| Upload page: Pick from Google Drive card with three folder buttons, disabled until set up; a wrong client ID is refused by the server with a clear message; nothing saved | Pass |
+| Google sign-in and picker with real files | Not run — needs the owner's Google Cloud project (open question 35) |
+
+**Ask Crux (live, after each deploy).**
+| Question | First result | After fix |
+|---|---|---|
+| Compare Business Associates vs Crux Branches this month, location wise | Correct shares, growth, revenue per case and location mix (get_assoc_comparison) | — |
+| Partner vs own branch performance for October with achievement % by zone | Totals and achievement correct (75.4 % / 65.3 %); zone list mis-ordered (from its own SQL) | rankings added to the tool |
+| How is SBI organised and which level sends most work? | Chain right, but said RACPCs send most | Branches 69.4 %, then RACPC (ready-made "work from" ranking) — Pass |
+| Top growing Crux Branches vs the same day last month, and TAT vs Business Associates | Listed a falling location as growing (Oct vs Sep) | Only growing locations, Nov vs 15-Oct; TAT from the last full month — Pass |
+| How many SBI branches are active in Pune? ("branch" = client branch) | Pass: 140 units, 65 active, 14 dormant, 61 never active (no AI needed) | — |
+| What does an SBI RASMECCC handle and how many sent us work? | Pass (counts): 86 units, 10 active, 2,666 Force1 cases | — |
+| Two pages show different counts of client branches — which and why? | Generic answer from unit counts | Pass: the same-figure check is looked up first; answer names the two pages (2,749 vs 2,708, 41 apart); the check now says why (nightly potential rebuild) |
+

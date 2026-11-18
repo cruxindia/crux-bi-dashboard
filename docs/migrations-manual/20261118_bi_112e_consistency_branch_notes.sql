@@ -1,0 +1,4 @@
+-- wave 112e (18-Nov-2026): the same-figure check explains why the client-branch counts can differ for a day (potential is rebuilt nightly).
+-- Applied with apply_migration (bi_112e_consistency_branch_notes): two notes added to bi.consistency_check rows "Client branches in the master"
+-- and "Active client branches" ("Potential is rebuilt each night (02:15 IST), so after a change of rule or master data the two can differ until the
+-- next rebuild."); previous definition kept in bi.fn_backup (wave 112e).
