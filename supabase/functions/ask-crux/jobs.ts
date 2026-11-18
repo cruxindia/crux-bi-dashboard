@@ -286,7 +286,7 @@ const STYLE = 'Write for managers: short bold labels instead of headings, plain 
   'Every figure must be copied from a look-up made today (rounding is fine); do not add up or average rows yourself. Counts (cases, units) and rupees are different measures: say which. ' +
   'SHARED MEMORY is context from earlier runs: use it to say what changed, never as a source of figures. End with **Open questions** (at most 2) only if something needs a human decision.';
 const zoneJob = (k: string, label: string) => ({ title: `Zone review — ${label}`, audience: 'admin', rounds: 6, topics: ZONES[k].map((z) => 'zone:' + z.toLowerCase()),
-  allow: ['get_business_summary', 'get_breakdown', 'get_branch_units', 'get_potential', 'get_operating_model', 'get_assoc_comparison', 'get_targets'],
+  allow: ['get_business_summary', 'get_breakdown', 'get_branch_units', 'get_potential', 'get_operating_model', 'get_assoc_comparison', 'get_client_structure', 'get_targets'],
   q: (e: JobEnv) => `ZONE REVIEW (${label}) for ${e.dataMonth.slice(0, 7)}, latest data ${e.dataAsOf}. Zones: ${ZONES[k].join(', ')}. ` +
     `Look up get_breakdown level zone (sort gap) once, get_branch_units once with unit_type [RACPC, Mini RACPC, RAC] and no filters (its by_zone has every zone), ` +
     `then get_breakdown level team (sort gap, limit 8) with filters {zone_group: <zone>} for at most the two of these zones with the biggest gap. Make no other look-ups. ` +
