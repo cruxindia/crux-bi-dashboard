@@ -1,6 +1,9 @@
 # Upload from Google Drive — one-time setup
 
-Prepared by Shantanu Suravase · 18-Nov-2026 · wave 112
+Prepared by Shantanu Suravase · 18-Nov-2026 · wave 112 (set-up completed in wave 113)
+
+**Status:** set up on 18-Nov-2026 in the Google Cloud project "BI Dashboard" and tested with the Zonal Tracker folder. The steps below
+are kept for reference (a new project, a new key, or moving the dashboard to another address).
 
 The upload page (Admin → Uploads) has a **Pick from Google Drive** card with one button per report folder:
 
@@ -45,6 +48,15 @@ Do this with the Google account that owns or can see the three folders (a Google
 
 Press a folder button. Google asks the admin to sign in and to allow "Crux BI" to see the files they pick (once per browser session).
 Allow pop-ups for the dashboard page if the browser blocks the sign-in window. Then tick the files and press **Select**.
+
+## Troubleshooting
+
+| Message | Cause and fix |
+|---|---|
+| "The API developer key is invalid." | Google Picker API (and Google Drive API) not enabled in the project, or not ticked in the key's API restrictions, or the page opened from an address the key does not allow. Enable both APIs; key → API restrictions → Google Picker API and Google Drive API; Website restrictions → `https://cruxindia.github.io/*`. Changes can take a few minutes. |
+| "Access blocked" / "not allowed" at sign-in | The account is outside the company Google Workspace (audience Internal), or the OAuth client does not list `https://cruxindia.github.io` as an authorised JavaScript origin. |
+| The sign-in window does not appear | The browser blocked the pop-up; allow pop-ups for the dashboard and press the folder button again. |
+| The folder opens empty | The signed-in account cannot open that folder; share it with them (viewer is enough). |
 
 ## Notes and limits
 

@@ -1,4 +1,4 @@
-# Statement of Work (living) — last updated 18-Nov-2026 (wave 112; waves 104–105f are recorded in the decision log D267–D296 and their requirement audits)
+# Statement of Work (living) — last updated 18-Nov-2026 (wave 113; waves 104–105f are recorded in the decision log D267–D296 and their requirement audits)
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
@@ -6,12 +6,19 @@
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
 
+## Wave 113 (requests 18-Nov-2026 16:44 IST "You have full access so you can do the setup of drive access" and 19:00 IST) — Google Drive access set up, key error, Revenue button
+**Objective.** (1) Finish the Google Drive set-up in the owner's Google Cloud project ("BI Dashboard project is already created"). (2) Fix "The API developer key is invalid." (3) "Revenue button to switch from case view to revenue is not working."
+**Causes found.** (2) The project's API key was limited to Google's default list of Cloud APIs and the Google Picker API and Google Drive API were not enabled, so Google refused the key inside the picker. (3) The Overview headline switched to Revenue only when the month had a revenue target; November has no target yet (open question 31), so it stayed on cases.
+**Work.** Google Drive API and Google Picker API enabled; the API key restricted to those two APIs and to the website https://cruxindia.github.io/*; OAuth web client (origin https://cruxindia.github.io, audience Internal), key and project number saved in Admin → Uploads → Set up Drive access. Overview headline: Revenue works with or without a target ("target not set for Nov 2026").
+**Decisions.** D365, D366.
+**Status.** Done 18-Nov-2026 — see TEST_REPORT wave 113. The picked test file (14-Nov tracker) was previewed but not imported because it is already loaded.
+
 ## Wave 112 (request 18-Nov-2026 15:03 IST, "Continue" 15:18) — search lands on the exact table, Business Associates vs Crux Branches, client bank structures, upload from Google Drive
 **Objective.** (1) "The search is just taking to the page but not the exact section." (2) Approved migrations 111b/111c ("approved all 3"). (3) "I am not getting the performance comparison of Partners/business associates vs own branches anywhere even in ask crux." (4) "When I use the term branch, ask crux and dashboard is getting confused, so let's change the terms everywhere to Business Associates for partners and Crux Branches for own branches." (5) "You have not researched and updated all the client/banks details as per their administrative chart … all the levels work different and for different products." (6) Connect the three Google Drive folders (Zonal Tracker, Point wise, Case wise): keep manual upload and add "click, I select the files and dashboard picks and uploads".
 **Defaults taken (questions unanswered at "Continue").** Drive: Google's file picker in the admin's browser with the narrowest access (drive.file) and a one-time Google Cloud setup by the owner (no service account). Banks: the 17 client families with business in the last 3 months first.
 **Scope.** In: search jump to tab + table / figure (done in wave 111 code, published 18-Nov); words everywhere (page, admin, uploads, errors, Ask Crux); comparison page, API, Overview card, Ask Crux tool, consistency row; client structure reference (98 rows, 58 name rules, sources), tagging of 72,509 master units, API, Business tracker card, Ask Crux tool; Drive picker on the upload page, admin settings, setup guide. Out: automatic nightly pick-up from Drive (needs a service account — offered); structures of client families without business in the last 3 months.
 **Decisions.** D357–D364.
-**Status.** Done 18-Nov-2026 except the owner's one-time Google Cloud setup (open question 35) — see TEST_REPORT wave 112.
+**Status.** Done 18-Nov-2026; the Google Cloud set-up was completed in wave 113 (open question 35 resolved) — see TEST_REPORT wave 112 and 113.
 
 ## Wave 111 (request 14-Nov-2026 11:01 IST, "continue" 11:20, "Continue" 18-Nov 14:04) — one figure everywhere, meeting view duplicate removed, search
 **Objective.** (1) "The meeting sheet and the zonal tracker tab is exactly the same." (2) "There is a data mismatch at many places, one place the figure is x, same is y at a different place, and chat says z." (3) A search at the top that takes a word or a statement and jumps to the tab, table or analysis. (4) Use this to find where duplication and mismatch happen.
@@ -583,6 +590,8 @@
 | D362 | **Upload from Google Drive**: one button per report folder opens Google's file picker; the admin signs in with Google (access only to the files picked), the files are read in the browser and go through the same checks as a dropped file; settings (OAuth client ID, browser key restricted to the dashboard address, project number, folder IDs) in bi.app_setting, admin only; the audit log records that a value was set, never the value. No automatic pick-up. |
 | D363 | **Ask Crux reads the same-figure check** (get_consistency) when someone reports different numbers, and gets ready-made rankings (locations growing / falling most per group; levels sending most work) so a decline is never listed as growth. |
 | D364 | **Potential rebuilt tonight with the wave 111c branch filter**: its refresh was marked due so the 02:15 IST run rebuilds it (no new upload would otherwise trigger it); afterwards the client-branch counts should match the unit counts. |
+| D365 | **Overview Revenue / Cases switch works without a target** (wave 113): the headline shows revenue so far, projection and "target not set for <month>" when no revenue target exists; before, it stayed on cases for any month without a target (November). |
+| D366 | **Google Drive access set up** (wave 113) in the owner's Google Cloud project "BI Dashboard": Google Drive API and Google Picker API enabled; the browser API key works only for those two APIs and only from https://cruxindia.github.io/*; OAuth web client for https://cruxindia.github.io with audience Internal (company Google accounts only) and the narrow drive.file access; values saved in Admin (bi.app_setting, admin only). Tested end to end with the Zonal Tracker folder. |
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app. **— Closed 29-Oct-2026: Lumen functions and tables are no longer reachable through the API (D207).**
 18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth. **— Superseded 29-Oct-2026: workforce and attrition come from Force1 only (D208); the HR list is optional.**
@@ -616,7 +625,7 @@
 32. ~~**Partner / own-branch register (13-Nov)**~~ — resolved: the register is filled (126 client × location rows: 69 Business Associates, 57 Crux Branches; renamed in wave 112, D357). Pairs that get new business show as "not set yet" until added in Admin → Business Associates & Crux Branches.
 33. **Manual daily numbers (13-Nov, replaced by D342):** send the daily template (Admin → Manual daily numbers) to the locations not on Force1; October's gap is 26,004 tracker cases not in Force1 (Delhi 10,475, Kolhapur-Vinayak 3,484, Nagpur-Yash 2,930).
 34. **Tezzract and BRT (18-Nov, wave 112):** both have business but are not banks in the client branch master and no public structure was found under these names. What are they (lender, platform, other) and should Crux track their branches?
-35. **Google Drive upload (18-Nov, wave 112):** one-time Google Cloud setup by the owner (docs/GOOGLE_DRIVE_SETUP.md, about 15 minutes): enable Drive and Picker APIs, create a Web OAuth client for https://cruxindia.github.io and a browser API key, then paste the client ID, key and project number in Admin → Uploads → Set up Drive access. Until then the folder buttons stay disabled and manual upload works as before.
+35. ~~**Google Drive upload (18-Nov, wave 112)**~~ — resolved 18-Nov (wave 113, D366): Google Cloud set-up done and tested; admins can pick files from the three folders in Admin → Uploads → Pick from Google Drive.
 
 ## Requirement audit (14-Oct-2026)
 | Requirement (user, 14-Oct) | Work performed | Evidence / verification | Result |
@@ -1085,4 +1094,11 @@ Status values: verified complete · incomplete · blocked · failed. Evidence is
 | Partners vs own branches performance "anywhere even in Ask Crux" | Page, Overview card, API, Ask Crux tool, consistency row | D359, D360, D363; TEST_REPORT wave 112 | Done |
 | "Change the terms everywhere to Business Associates … and Crux Branches" | Page, admin register, grid, templates, uploads, errors, glossary, search words, Ask Crux tools and rules | D357, D358; admin page shows no old words (test) | Done |
 | Client / bank administrative charts, levels work differently and for different products | 17 clients with business researched (sources per row); levels and centres with products; 72,509 master units tagged; card and Ask Crux tool | D361; TEST_REPORT wave 112 | Done for the 17; Tezzract / BRT open (question 34) |
-| Google Drive: manual upload stays, plus "click, I select the files and dashboard picks and uploads" from the three folders | Folder buttons with Google's picker, same checks as manual upload, admin settings, setup guide | D362; docs/GOOGLE_DRIVE_SETUP.md | Built; owner's one-time Google setup needed (question 35) |
+| Google Drive: manual upload stays, plus "click, I select the files and dashboard picks and uploads" from the three folders | Folder buttons with Google's picker, same checks as manual upload, admin settings, setup guide | D362; docs/GOOGLE_DRIVE_SETUP.md | Done (set-up completed in wave 113, D366) |
+
+## Requirement audit — 18-Nov-2026 16:44 and 19:00 IST (wave 113)
+| Requirement | Work performed | Evidence | Result |
+|---|---|---|---|
+| "You have full access so you can do the setup of drive access" / "BI Dashboard project is already created" | Used the existing project; Drive and Picker APIs enabled; key restricted; OAuth client, key and project number saved in Admin | D366; TEST_REPORT wave 113 (picker lists the Zonal Tracker folder, picked file previewed: 572 rows, Pan India 20,793, Ready) | Done |
+| "The API developer key is invalid." | Cause: Picker / Drive APIs not enabled and not allowed on the key; fixed in the project | key accepted from the dashboard address, refused from another site; picker opens without the error | Done |
+| "Revenue button to switch from case view to revenue is not working" | Overview headline no longer needs a target to show revenue; all Revenue / Cases switches re-tested | D365; live page: Overview ₹77.46 L ↔ 20,793 both ways; 9/9 switches and the BAU detail switch change the figures, 0 JavaScript errors | Done |

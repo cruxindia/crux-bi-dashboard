@@ -1036,7 +1036,7 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Search: "partner vs own branch performance", "business associates", "crux branches tat" → the comparison page first (location names with "Crux" no longer pull a filter) | Pass |
 | Business tracker → Branches & coverage → How each client is organised: SBI chain Corporate Centre → LHO (17 published · 14 in master) → AO (57 · 87) → RBO (431) → Branch; Union chain; sources and basis per row | Pass |
 | Upload page: Pick from Google Drive card with three folder buttons, disabled until set up; a wrong client ID is refused by the server with a clear message; nothing saved | Pass |
-| Google sign-in and picker with real files | Not run — needs the owner's Google Cloud project (open question 35) |
+| Google sign-in and picker with real files | Pass in wave 113 (below) |
 
 **Ask Crux (live, after each deploy).**
 | Question | First result | After fix |
@@ -1049,3 +1049,14 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | What does an SBI RASMECCC handle and how many sent us work? | Pass (counts): 86 units, 10 active, 2,666 Force1 cases | — |
 | Two pages show different counts of client branches — which and why? | Generic answer from unit counts | Pass: the same-figure check is looked up first; answer names the two pages (2,749 vs 2,708, 41 apart); the check now says why (nightly potential rebuild) |
 
+## 18-Nov-2026 — wave 113 (Google Drive set-up, key error, Revenue button)
+| Check | Result | Evidence |
+|---|---|---|
+| Cause of "The API developer key is invalid" | Found | the key was limited to Google's default Cloud API list; Google Picker API and Google Drive API were not enabled in the project |
+| Key after the fix | Pass | test request from the database server: accepted with the dashboard address as the referring page; refused with another site's address |
+| Picker end to end (owner's Chrome, admin page) | Pass | Google sign-in → Zonal Tracker folder listed → 14-Nov tracker picked → "1 file read from Zonal Tracker" → preview 572 rows, Pan India 20,793, Ready; Import not pressed (file already loaded) |
+| Admin key left in the browser after the test | Cleared | removed from the tab's session storage |
+| Overview Revenue / Cases switch (live page) | Pass | Revenue ₹77.46 L, "target not set for Nov 2026", projected ₹1.58 cr–₹1.75 cr ↔ Cases 20,793, projected 42,441–47,033; switched 4 times both ways |
+| Every Revenue / Cases switch (live page) | Pass 9/9 | Overview, Growth (expected revenue / billed revenue / cases), Business tracker → Daily count & case flow (two switches); 0 JavaScript errors |
+| Growth → BAU detail switch (live page) | Pass | Expected revenue shows ₹ figures; 0 JavaScript errors |
+| Live page = repository build | Pass | byte-for-byte equal |
