@@ -1,0 +1,2 @@
+-- Applied to Supabase project via MCP on 20261118100500
+-- wave 111c (18-Nov-2026): api_bm business as usual in ₹ uses the latest known rate; potential_refresh counts the same client units as Units by type (no administrative offices, no website-only rows). Owner asked for the mismatches to be fixed. Full text: docs/migrations-manual/20261118100500_bi_111c.sql

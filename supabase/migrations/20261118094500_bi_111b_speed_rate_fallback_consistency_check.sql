@@ -1,0 +1,2 @@
+-- Applied to Supabase project via MCP on 20261118094500
+-- wave 111b (18-Nov-2026): speed of the month-end potential (month share once per call), latest known rate for business as usual in ₹, and the daily same-figure-everywhere check (bi.cc_row, bi.consistency_run, bi.consistency_check, bi.api_consistency, bi_call "consistency", cron bi-consistency-check). Owner approved in chat 18-Nov 15:03 IST; applied with execute_sql after the approval prompt timed out. Full text: docs/migrations-manual/20261118094500_bi_111b.sql
