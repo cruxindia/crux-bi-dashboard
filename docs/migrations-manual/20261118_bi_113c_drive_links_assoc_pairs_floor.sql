@@ -1,0 +1,10 @@
+-- wave 113c (18-Nov-2026), applied as migration bi_113c_drive_links_assoc_pairs_floor. Full text is in the database migration history
+-- (supabase_migrations.schema_migrations); summary of the changes:
+-- (1) bi.drive_config_admin: op 'get' adds configured_link (browser key + folders set: the folder buttons work without Google sign-in);
+--     op 'imports' (latest committed upload per kind and file name, last 120 days) so the upload page pre-ticks new or changed Drive files;
+--     op 'set' accepts per folder {key, label, id, rk (resource key), link}; the link is stored for admins only.
+-- (2) bi.api_assoc pairs: the previous-period figures are joined per model as well (BOM at Pune has a Business Associate part and a Crux Branch part, BRT):
+--     left join (select location_id, fam, md, sum(revenue) r from cmp group by 1, 2, 3) p on p.location_id = g.location_id and p.fam = g.fam and p.md = g.md
+-- (3) bi.target_fill_plan / bi.target_fill_withdraw / bi.target_fill_on_commit (owner targets) insert a row in bi.api_cache_floor so every page recomputes
+--     at once instead of serving the previous figures while it refreshes.
+-- Run after it: insert into bi.audit_log ... ('wave 113c', 'code_change', 'function', 'bi.api_assoc', ...) and a cache floor (18-Nov-2026 14:5x UTC).

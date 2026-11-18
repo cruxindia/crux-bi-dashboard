@@ -480,6 +480,9 @@ const vOverview=guard(async s=>{const m=$('#fMonth').value,f=filters();
  {const st=el('div');s.append(st);askTrendStrip(st)}
  if(!tgtC&&!(ov.revenue_target>0)&&ov.mtd_cases>0&&!Object.keys(f).length)s.append(el('div',{class:'banner'},`The ${mlabel(m)} Zonal Tracker files uploaded so far (latest ${ov.as_of||'–'}) have no targets — every target cell is 0 — so achievement and shortfall cannot be shown. Upload a tracker file with targets, or save the suggested targets as the plan in `,
   el('button',{type:'button',class:'lnk',onclick:()=>go('adm_plan')},'Admin → Plan & targets'),'.'));
+ // wave 113b: say where the month's targets come from when the dashboard planned them (or carried the owner's targets to a file without them)
+ {const T0=ov.target_source||{},T1=T0.set||{};if(T0.source==='planned')s.append(el('p',{class:'note',id:'tgtSrc'},`Targets for ${mlabel(m)} are the dashboard's planned targets (${fmtL(T1.revenue)} · ${fmt(T1.cases)} cases, set ${ddmm(String(T1.created_at||'').slice(0,10))}) until a tracker file with your targets is imported — it replaces them on every report date.`));
+  else if(T0.source==='owner'&&T0.owner_targets_from)s.append(el('p',{class:'note',id:'tgtSrc'},`Targets for ${mlabel(m)} come from your tracker file of ${ddmm(T0.owner_targets_from)} (the latest file had none).`))}
  /* Hero: one block, Revenue (expected, business) by default with a Cases toggle (shared measure state). Revenue projection uses the same share of month as the case projection. */
  {const ok=B&&!B.error&&B.total,T=ok?B.total:{},Fi=ok?B.finance||{}:{};const rv=S.measure!=='cases'&&!!ok&&T.expected_revenue!=null;   // wave 113: Revenue works even when the month has no target
   const F=rv?fmtL:fmt,so=rv?T.expected_revenue:ov.mtd_cases,tg=rv?T.revenue_target:tgtC;
@@ -2592,11 +2595,34 @@ function targetsView(box,T,f){box.innerHTML='';const R=T.reference||{},M=T.month
  const draw=()=>{host.innerHTML='';host.append(table((src[cur]||[]).map(r=>flat({...r,zone:zoneLabel(r.zone_group)})),[...lead[cur],{key:'total_pace',label:`${M.length} months at pace`,num:1,fmt:fmtL},{key:'total_target',label:`${M.length} months target`,num:1,fmt:fmtL},{key:'uplift',label:'Uplift',num:1,fmt:pctS},...mcols],{name:'targets_by_'+cur+'.csv',defaultHidden:hideM}))};
  [['zone','By zone'],['location','By team'],['client','By client']].forEach(([k,l])=>tsel.append(el('button',{type:'button',class:'btn sm'+(k===cur?' on':''),'aria-pressed':String(k===cur),'data-tv':k,onclick:()=>{cur=k;tsel.querySelectorAll('button').forEach(b=>{const on=b.dataset.tv===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});draw()}},l)));
  box.append(el('div',{class:'tools',style:'margin-top:10px'},el('strong',{},'Monthly targets'),tsel,el('span',{class:'note'},'Use Columns to show every month.')),host,el('details',{class:'note'},el('summary',{},'How the targets are calculated'),el('p',{},T.method)));draw()}
+/* wave 113b (owner 18-Nov 19:30: "update the target as planned by you … mine should overwrite what you update"): the running month's targets when its
+   tracker files carry none — the dashboard's planned targets, written into the month's tracker rows and replaced by the owner's file with targets */
+async function runTargetsCard(box){box.innerHTML='';box.append(el('h3',{style:'margin-top:0'},'This month\'s targets'));
+ let J;try{J=await adminCall('target_fill',{op:'get'})}catch(e){box.append(el('p',{class:'bad'},'Unavailable: '+e.message));return}
+ const ts=J.target_source||{},st=ts.set||{},ml=mlabel(J.month),S0=(J.sets||[]).find(x=>x.month===J.month&&x.status==='active');
+ const SRC={planned:`${ml}: planned by the dashboard — ${fmtL(st.revenue)} · ${fmt(st.cases)} cases on ${fmt(st.rows)} team × client rows, set ${ddmm(String(st.created_at||'').slice(0,10))}. The first tracker file with your targets replaces them on every report date of ${ml} as soon as it is imported; files without targets keep them.`,
+  owner:`${ml}: from your tracker file of ${ddmm(ts.owner_targets_from)}; report dates whose files had no targets carry them.`,
+  tracker:`${ml}: from the tracker files (your targets).`,none:`${ml}: the tracker files have no targets and no planned targets are set.`};
+ box.append(el('p',{},SRC[ts.source]||''));
+ if(S0&&Array.isArray(S0.bridge))box.append(el('p',{class:'note'},'How the total is built: '+S0.bridge.map(b=>`${b.label} ${b.kind==='delta'?(b.value>0?'+':b.value<0?'−':'')+fmtL(Math.abs(b.value)):fmtL(b.value)}`).join(' → ')+'. Same rules as the target sheet (Planning), with last month complete as the base.'));
+ const msg=el('p',{class:'note'}),why=el('input',{type:'text',placeholder:'Reason (5+ characters)','aria-label':'Reason',style:'min-width:min(320px,100%)'});
+ const act=(op,label)=>el('button',{type:'button',class:'btn'+(op==='plan'?' primary':''),onclick:async e=>{if((why.value||'').trim().length<5){msg.textContent='Write a reason first.';msg.className='bad';return}
+   e.target.disabled=true;msg.className='note';msg.textContent=op==='plan'?'Working out the targets (about 15 seconds)…':'Withdrawing…';
+   try{await adminCall('target_fill',{op,month:J.month,reason:why.value.trim(),editor:edName()||'unnamed'});toast(op==='plan'?'Planned targets set.':'Planned targets withdrawn.');runTargetsCard(box)}
+   catch(err){msg.textContent=err.message;msg.className='bad';e.target.disabled=false}}},label);
+ if(ts.source==='planned')box.append(el('div',{class:'tools'},why,act('withdraw','Withdraw planned targets')),msg);
+ else if(ts.source==='none')box.append(el('div',{class:'tools'},why,act('plan','Set planned targets')),msg);
+ if((J.rows||[]).length&&S0){const d=el('details',{},el('summary',{},`Team × client rows (${J.rows.length})`));
+  d.append(table(J.rows,[{key:'zone_group',label:'Zone'},{key:'location',label:'Team'},{key:'client',label:'Client'},{key:'target_cases',label:'Target cases',num:1,fmt:fmt},
+   {key:'revenue_target',label:'Target revenue',num:1,fmt:fmtL},{key:'situation',label:'Situation'},{key:'reason',label:'Why'}],{name:'planned_targets_'+J.month+'.csv'}));box.append(d)}
+ const hist=(J.sets||[]).filter(x=>x.status!=='active');
+ if(hist.length)box.append(el('p',{class:'note'},'Earlier: '+hist.map(x=>`${mlabel(x.month)} set ${ddmm(String(x.created_at).slice(0,10))} — ${x.status==='withdrawn'?'withdrawn':'replaced by your file of '+ddmm(x.replaced_by_snapshot)}`).join('; ')+'.'))}
 const vAdmPlan=guard(async s=>{if(!admHead(s,'adm_plan'))return;const m=$('#fMonth').value,f=filters();
  let par={...PLAN0};try{Object.assign(par,JSON.parse(localStorage.getItem('crux_plan_par')||'{}'))}catch{}
  const fld=(k,lab,attrs,help)=>el('label',{class:'pfield'},el('span',{},lab),el('input',{...attrs,'data-k':k,'aria-label':lab,value:par[k],oninput:e=>{par[k]=e.target.value}}),help?el('small',{class:'note'},help):null);
 /* wave 102: no basis setting. wave 102o (owner 8-Nov): floor = last month's actual business + minimum growth, not the old target */
  {const tb=tgtDownloadBar(f);if(tb)s.append(tb)}
+ {const rc=el('div',{class:'card',id:'runTgt',style:'margin:12px 0'});s.append(rc);runTargetsCard(rc)}   // wave 113b
  const out=el('div',{class:'card',style:'margin-top:12px'}),pmsg=el('span',{class:'note'});let mode='preview';
  const msel=el('div',{class:'seg',role:'group','aria-label':'Show'},[['preview','Preview with these settings'],['plan','Saved plan']].map(([k,l])=>el('button',{type:'button',class:'btn sm'+(k===mode?' on':''),'aria-pressed':String(k===mode),'data-pm':k,onclick:()=>{mode=k;msel.querySelectorAll('button').forEach(b=>{const on=b.dataset.pm===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});load()}},l)));
  async function load(){out.innerHTML='';out.append(el('p',{class:'note'},'Calculating…'));pmsg.textContent='';
@@ -4107,57 +4133,100 @@ function calmText(root){if(!root)return;root.querySelectorAll('p.lede,p.note,div
 
 /* ---------- Upload centre ---------- */
 const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'Mumbai',NASHIK:'Nashik',ODISHA:'Odisha',GUJARAT:'Gujarat',KOLKATA:'Kolkata',LUCKNOW:'Lucknow',GUWAHATI:'Guwahati',BANGLORE:'Bangalore',BANGALORE:'Bangalore',HYDERABAD:'Hyderabad',JHARKHAND:'Jharkhand',MARATHWADA:'Marathwada',NAGPURYASH:'Nagpur-Yash',NAGPURSUDHIR:'Nagpur-Sudhir',KOLHAPURVINAYAK:'Kolhapur-Vinayak'};
-/* wave 112d: pick report files from the Google Drive folders. Google's own sign-in and file picker run in the admin's browser; the files are
-   downloaded with the admin's own access (drive.file: only the files picked) and go through exactly the same checks as a manual upload. */
+/* wave 113c (owner 18-Nov 19:30: "update the link to the folder once and then on click it should work … my team should be able to click and upload,
+   no need to login"): the report folders are shared "anyone with the link", so a folder button lists the folder with the dashboard's browser key — no Google
+   sign-in — and reads at once the files that are new or changed since they were last imported. They go through exactly the same checks as a dropped file and
+   nothing is written until Import. Google's sign-in and picker (wave 112d) stay only as the fallback for a folder that is not shared by link. */
 const loadJs=(()=>{const P={};return src=>P[src]||(P[src]=new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.async=true;x.onload=ok;x.onerror=()=>{delete P[src];no(new Error('could not load '+src))};document.head.append(x)}))})();
+const DRV={x:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',gs:'application/vnd.google-apps.spreadsheet',xls:'application/vnd.ms-excel',dir:'application/vnd.google-apps.folder'};
+const drvParse=s=>{s=String(s||'').trim();const m=s.match(/\/folders\/([A-Za-z0-9_-]{10,})/)||s.match(/[?&]id=([A-Za-z0-9_-]{10,})/)||s.match(/^([A-Za-z0-9_-]{10,})$/);
+ return m?{id:m[1],rk:(s.match(/[?&]resourcekey=([A-Za-z0-9_-]+)/)||[])[1]||'',link:/^https?:\/\//.test(s)?s:''}:null};
+const drvNorm=n=>String(n||'').toLowerCase().replace(/\.(xlsx|xls)$/,'').replace(/\s*\(\d+\)\s*$/,'').replace(/[\s_-]+/g,' ').trim();
+const drvHdr=(id,rk)=>rk?{'X-Goog-Drive-Resource-Keys':id+'/'+rk}:{};
+async function drvList(G,fd){const out=[];
+ const walk=async(id,rk,path,depth)=>{let tok='';do{
+  const u=new URL('https://www.googleapis.com/drive/v3/files');
+  u.search=new URLSearchParams({q:`'${id}' in parents and trashed = false`,key:G.api_key,pageSize:'1000',orderBy:'modifiedTime desc',supportsAllDrives:'true',includeItemsFromAllDrives:'true',
+   fields:'nextPageToken,files(id,name,mimeType,modifiedTime,size,resourceKey)',...(tok?{pageToken:tok}:{})});
+  const r=await fetch(u,{headers:drvHdr(id,rk)});const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||(r.status+' '+r.statusText));
+  for(const f of j.files||[]){if(f.mimeType===DRV.dir){if(depth<2)await walk(f.id,f.resourceKey||'',path+f.name+' / ',depth+1);continue}
+   if(/^~\$/.test(f.name)||![DRV.x,DRV.gs,DRV.xls].includes(f.mimeType))continue;out.push({...f,path})}   // Excel lock files (~$…) and other types skipped
+  tok=j.nextPageToken||''}while(tok)};
+ await walk(fd.id,fd.rk||'','',0);return out.sort((a,b)=>b.modifiedTime.localeCompare(a.modifiedTime))}
+async function drvRead(G,f,token){const sheet=f.mimeType===DRV.gs;
+ const u=new URL('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(f.id)+(sheet?'/export':''));
+ u.search=new URLSearchParams(sheet?{mimeType:DRV.x,...(token?{}:{key:G.api_key})}:{alt:'media',supportsAllDrives:'true',...(token?{}:{key:G.api_key})});
+ const r=await fetch(u,{headers:{...drvHdr(f.id,f.resourceKey),...(token?{Authorization:'Bearer '+token}:{})}});
+ if(!r.ok){let m=r.status+' '+r.statusText;try{const j=await r.json();m=(j.error&&j.error.message)||m}catch{}throw new Error(m)}
+ const blob=await r.blob();return new File([blob],sheet||!/\.xlsx?$/i.test(f.name)?f.name+'.xlsx':f.name,{type:blob.type||DRV.x})}
+const drvWhen=t=>t?new Date(t).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'';
 async function drivePicker(box,onFiles){box.innerHTML='';
- box.append(el('h3',{style:'margin-top:0'},'Pick from Google Drive'),el('p',{class:'note'},'Open a report folder, tick the files and press Select. They are read in your browser and checked exactly like files you drop below; nothing is written until you press Import.'));
+ box.append(el('h3',{style:'margin-top:0'},'Pick from Google Drive'),el('p',{class:'note'},'Press a folder: the files that are new or changed since they were last imported are read straight away — no Google sign-in. Check the preview below, then press Import validated files. Open the file list to add or leave out files.'));
  let G;try{G=await adminCall('drive_config',{op:'get'})}catch(e){box.append(el('p',{class:'note'},'Drive settings unavailable: '+e.message));return}
- const st=el('p',{class:'note'}),F=G.folders||[];let tc=null,token=null,tokenExp=0,pending=null,ready=false;
- const setup=el('details',{class:'card',style:'margin-top:8px'},el('summary',{},'Google Drive settings (one-time, admin)'));
- const btns=el('div',{class:'tools'},...F.map(fd=>el('button',{type:'button',class:'btn','data-folder':fd.key,disabled:G.configured?null:'',onclick:()=>pick(fd)},'📁 '+fd.label)),
-  el('button',{type:'button',class:'btn ghost',onclick:()=>{setup.open=!setup.open}},G.configured?'Drive settings':'Set up Drive access'));
- box.append(btns,st,setup);
- // settings form (values are not secrets in the usual sense — the browser key only works from the dashboard's own address — but they are shown to admins only)
+ const st=el('p',{class:'note',id:'drvStatus','aria-live':'polite'}),pane=el('div'),F=G.folders||[];let busy=false,IMP=null;
+ const setup=el('details',{class:'card',style:'margin-top:8px'},el('summary',{},'Folder links and Google settings (admin, once)'));
+ const btns=el('div',{class:'tools'},...F.map(fd=>el('button',{type:'button',class:'btn','data-folder':fd.key,disabled:G.configured_link?null:'',onclick:()=>openFolder(fd)},'📁 '+fd.label)),
+  el('button',{type:'button',class:'btn ghost',onclick:()=>{setup.open=!setup.open}},'Folder links'));
+ box.append(btns,st,pane,setup);
+ // settings: one link per folder (pasted once), the browser key, and the optional Google sign-in values for a folder that is not shared by link
  const mask=v=>v?v.slice(0,6)+'…'+v.slice(-4):'not set';
- const iC=el('input',{type:'text',placeholder:G.client_id||'1234567890-abc.apps.googleusercontent.com','aria-label':'OAuth client ID',style:'min-width:340px'}),
-  iK=el('input',{type:'password',placeholder:G.api_key?'set — '+mask(G.api_key):'AIza…','aria-label':'Browser API key',style:'min-width:260px',autocomplete:'off'}),
+ const fRows=F.map(fd=>{const i=el('input',{type:'text',value:fd.link||fd.id,'aria-label':fd.label+' folder link',placeholder:'https://drive.google.com/drive/folders/…',style:'min-width:min(460px,100%)'});return{fd,i}});
+ const iK=el('input',{type:'password',placeholder:G.api_key?'set — '+mask(G.api_key):'AIza…','aria-label':'Browser API key',style:'min-width:260px',autocomplete:'off'}),
+  iC=el('input',{type:'text',placeholder:G.client_id||'1234567890-abc.apps.googleusercontent.com','aria-label':'OAuth client ID',style:'min-width:340px'}),
   iA=el('input',{type:'text',placeholder:G.app_id||'Project number (digits)','aria-label':'Google Cloud project number',style:'max-width:200px'});
- const fRows=F.map(fd=>{const i=el('input',{type:'text',value:fd.id,'aria-label':fd.label+' folder ID',style:'min-width:300px'});return{fd,i}});
  const msg=el('p',{class:'note'});
- const save=el('button',{type:'button',class:'btn primary',onclick:async()=>{const p={op:'set',editor:edName()||'unnamed',folders:fRows.map(r=>({key:r.fd.key,label:r.fd.label,id:r.i.value.trim()}))};
-   if(iC.value.trim())p.client_id=iC.value.trim();if(iK.value.trim())p.api_key=iK.value.trim();if(iA.value.trim())p.app_id=iA.value.trim();
-   try{await adminCall('drive_config',p);toast('Drive settings saved.');drivePicker(box,onFiles)}catch(e){msg.textContent=e.message;msg.className='bad'}}},'Save Drive settings');
- setup.append(el('p',{class:'note'},'Needed once from Google Cloud (about 15 minutes; the full guide is docs/GOOGLE_DRIVE_SETUP.md in the repository): turn on the Google Drive API and the Google Picker API, create an OAuth client ID of type "Web application" with https://cruxindia.github.io as an authorised JavaScript origin, create a browser API key restricted to https://cruxindia.github.io/* and the Picker API, and copy the project number from Project settings.'),
-  el('div',{class:'tools'},el('label',{class:'note'},'OAuth client ID ',iC)),el('div',{class:'tools'},el('label',{class:'note'},'Browser API key ',iK)),el('div',{class:'tools'},el('label',{class:'note'},'Project number ',iA)),
-  el('p',{class:'note'},`Now: client ID ${G.client_id?'set':'not set'} · API key ${mask(G.api_key)} · project number ${G.app_id||'not set'}.`),
-  el('h4',{},'Report folders'),...fRows.map(r=>el('div',{class:'tools'},el('label',{class:'note'},r.fd.label+' ',r.i))),el('div',{class:'tools'},save),msg);
- if(!G.configured){st.textContent='Drive access is not set up yet: an admin adds the Google settings once (Set up Drive access). Until then, download the files from Drive and drop them below.';return}
- st.textContent='Loading Google sign-in…';
- try{await Promise.all([loadJs('https://accounts.google.com/gsi/client'),loadJs('https://apis.google.com/js/api.js')]);
-  await new Promise(ok=>gapi.load('picker',ok));
-  tc=google.accounts.oauth2.initTokenClient({client_id:G.client_id,scope:'https://www.googleapis.com/auth/drive.file',
-   callback:r=>{if(r.error){st.textContent='Google sign-in failed: '+(r.error_description||r.error);return}token=r.access_token;tokenExp=Date.now()+(+r.expires_in||3600)*1000;if(pending){const fd=pending;pending=null;openPicker(fd)}},
-   error_callback:e=>{st.textContent='Google sign-in was closed or blocked ('+(e&&(e.message||e.type)||'unknown')+'). Allow pop-ups for this page and try again.'}});
-  ready=true;st.textContent='Choose a folder. The first time, Google asks you to sign in and allow access to the files you pick.'}catch(e){st.textContent='Google sign-in could not load: '+e.message+'. Download the files from Drive and drop them below instead.'}
- function pick(fd){if(!ready){st.textContent='Still loading Google sign-in…';return}
-  if(token&&Date.now()<tokenExp-60000){openPicker(fd);return}pending=fd;tc.requestAccessToken({prompt:token?'':'consent'})}   // called straight from the click, so the sign-in window is not blocked
- function openPicker(fd){const P=google.picker;
-  const view=new P.DocsView(P.ViewId.DOCS).setParent(fd.id).setIncludeFolders(true).setMode(P.DocsViewMode.LIST)
-   .setMimeTypes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.google-apps.spreadsheet,application/vnd.google-apps.folder');
+ const save=el('button',{type:'button',class:'btn primary',onclick:async()=>{const folders=[];
+   for(const r of fRows){const p=drvParse(r.i.value);if(!p){msg.textContent=`${r.fd.label}: paste the folder's link from Google Drive (Share → Copy link) or its ID.`;msg.className='bad';return}
+    folders.push({key:r.fd.key,label:r.fd.label,id:p.id,rk:p.rk,link:p.link})}
+   const p={op:'set',editor:edName()||'unnamed',folders};if(iK.value.trim())p.api_key=iK.value.trim();if(iC.value.trim())p.client_id=iC.value.trim();if(iA.value.trim())p.app_id=iA.value.trim();
+   try{await adminCall('drive_config',p);toast('Drive settings saved.');drivePicker(box,onFiles)}catch(e){msg.textContent=e.message;msg.className='bad'}}},'Save');
+ setup.append(el('p',{class:'note'},'Paste each folder\'s link once (in Google Drive: Share → General access "Anyone with the link" → Copy link). After that a press on the folder button is enough for every admin — nobody signs in to Google.'),
+  ...fRows.map(r=>el('div',{class:'tools'},el('label',{class:'note'},r.fd.label+' ',r.i),r.fd.link||r.fd.id?el('a',{href:r.fd.link||('https://drive.google.com/drive/folders/'+r.fd.id),target:'_blank',rel:'noopener'},'Open in Drive'):null)),
+  el('div',{class:'tools'},el('label',{class:'note'},'Browser API key ',iK)),
+  el('details',{},el('summary',{},'Google sign-in (only for a folder that is not shared by link)'),
+   el('div',{class:'tools'},el('label',{class:'note'},'OAuth client ID ',iC)),el('div',{class:'tools'},el('label',{class:'note'},'Project number ',iA)),
+   el('p',{class:'note'},`Now: client ID ${G.client_id?'set':'not set'} · project number ${G.app_id||'not set'}. Full guide: docs/GOOGLE_DRIVE_SETUP.md.`)),
+  el('p',{class:'note'},`Browser key ${mask(G.api_key)} (works only from this dashboard's address).`),el('div',{class:'tools'},save),msg);
+ if(!G.configured_link){st.textContent='Folder links are not set yet: an admin pastes them once under Folder links. Until then, download the files from Drive and drop them below.';return}
+ st.textContent='Choose a folder.';
+ const imports=()=>IMP||(IMP=adminCall('drive_config',{op:'imports'}).then(j=>{const m={};for(const x of j.imports||[]){const k=x.kind+'|'+drvNorm(x.name);if(!m[k]||m[k]<x.at)m[k]=x.at}return m}).catch(()=>({})));
+ async function openFolder(fd){if(busy)return;busy=true;pane.innerHTML='';st.className='note';st.textContent=`Opening ${fd.label}…`;
+  try{let files;try{files=await drvList(G,fd)}catch(e){st.textContent=`${fd.label} could not be opened without Google sign-in (${e.message}). In Drive, set the folder to "Anyone with the link"`+(G.configured?', or use Google sign-in below.':'.');
+    if(G.configured)pane.append(el('button',{type:'button',class:'btn',onclick:()=>signIn(fd)},'Open '+fd.label+' with Google sign-in'));return}
+   const im=await imports(),now=Date.now();
+   for(const f of files){const at=im[fd.key+'|'+drvNorm(f.name)];f.last=at||null;f.state=!at?'new':(new Date(f.modifiedTime)>new Date(at)?'changed':'imported');f.recent=now-new Date(f.modifiedTime)<14*864e5}
+   const auto=files.filter(f=>f.state!=='imported'&&f.recent).slice(0,25);
+   const SX={new:'Not imported yet',changed:'Changed since its last import',imported:'Imported'};
+   const tb=el('tbody',{},...files.slice(0,400).map(f=>{f.cb=el('input',{type:'checkbox','aria-label':'Read '+f.name});f.cb.checked=auto.includes(f);
+    return el('tr',{},el('td',{},f.cb),el('td',{},f.path+f.name),el('td',{},drvWhen(f.modifiedTime)),el('td',{},SX[f.state]+(f.last?' '+drvWhen(f.last):'')))}));
+   const rd=el('button',{type:'button',class:'btn primary',onclick:()=>readFiles(files.filter(f=>f.cb&&f.cb.checked),fd)},'Read ticked files');
+   const det=el('details',{},el('summary',{},`Files in ${fd.label} (${files.length}${files.length>400?', newest 400 shown':''})`),
+    el('div',{class:'tablewrap'},el('table',{},el('thead',{},el('tr',{},el('th',{},''),el('th',{},'File'),el('th',{},'Changed in Drive (IST)'),el('th',{},'Status'))),tb)),el('div',{class:'tools'},rd));
+   pane.append(det);
+   if(auto.length)await readFiles(auto,fd);
+   else{st.textContent=`${fd.label}: nothing new or changed in the last 14 days since the last import (${files.length} files in the folder). Open the list to read a file again.`;det.open=true}}
+  finally{busy=false}}
+ async function readFiles(list,fd,token){if(!list.length){st.textContent='Tick at least one file.';return}const ok=[],bad=[];
+  for(const [i,f] of list.entries()){st.textContent=`Reading ${i+1} of ${list.length} from ${fd.label}: ${f.name}`;try{ok.push(await drvRead(G,f,token))}catch(e){bad.push(f.name+': '+e.message)}}
+  st.textContent=`${ok.length} file${ok.length===1?'':'s'} read from ${fd.label}`+(bad.length?` · not read: ${bad.join('; ')}`:'')+(ok.length?' — check the preview below, then press Import validated files.':'');
+  if(ok.length)onFiles(ok)}
+ // fallback: Google sign-in and Google's file picker (only for a folder that is not shared by link)
+ let tc=null,token=null,tokenExp=0,pending=null;
+ async function signIn(fd){try{if(!tc){st.textContent='Loading Google sign-in…';await Promise.all([loadJs('https://accounts.google.com/gsi/client'),loadJs('https://apis.google.com/js/api.js')]);
+    await new Promise(ok=>gapi.load('picker',ok));
+    tc=google.accounts.oauth2.initTokenClient({client_id:G.client_id,scope:'https://www.googleapis.com/auth/drive.file',
+     callback:r=>{if(r.error){st.textContent='Google sign-in failed: '+(r.error_description||r.error);return}token=r.access_token;tokenExp=Date.now()+(+r.expires_in||3600)*1000;if(pending){const p=pending;pending=null;picker(p)}},
+     error_callback:e=>{st.textContent='Google sign-in was closed or blocked ('+(e&&(e.message||e.type)||'unknown')+'). Allow pop-ups for this page and try again.'}});
+    st.textContent='Press the button again to sign in.';return}
+   if(token&&Date.now()<tokenExp-60000){picker(fd);return}pending=fd;tc.requestAccessToken({prompt:token?'':'consent'})}catch(e){st.textContent='Google sign-in could not load: '+e.message}}
+ function picker(fd){const P=google.picker;
+  const view=new P.DocsView(P.ViewId.DOCS).setParent(fd.id).setIncludeFolders(true).setMode(P.DocsViewMode.LIST).setMimeTypes([DRV.x,DRV.xls,DRV.gs,DRV.dir].join(','));
   let b=new P.PickerBuilder().addView(view).enableFeature(P.Feature.MULTISELECT_ENABLED).setOAuthToken(token).setDeveloperKey(G.api_key).setAppId(G.app_id)
-   .setTitle(fd.label+' — tick the files to upload').setCallback(d=>{if(d[P.Response.ACTION]===P.Action.PICKED)fetchPicked(d[P.Response.DOCUMENTS]||[],fd)});
+   .setTitle(fd.label+' — tick the files to upload').setCallback(d=>{if(d[P.Response.ACTION]!==P.Action.PICKED)return;
+    const docs=(d[P.Response.DOCUMENTS]||[]).map(x=>({id:x[P.Document.ID],name:x[P.Document.NAME],mimeType:x[P.Document.MIME_TYPE]})).filter(x=>x.mimeType!==DRV.dir);readFiles(docs,fd,token)});
   if(P.Feature.SUPPORT_DRIVES)b=b.enableFeature(P.Feature.SUPPORT_DRIVES);
-  b.build().setVisible(true)}
- async function fetchPicked(docs,fd){const files=[],bad=[];st.textContent=`Reading ${docs.length} file${docs.length===1?'':'s'} from ${fd.label}…`;
-  for(const doc of docs){const id=doc[google.picker.Document.ID]||doc.id,name=doc[google.picker.Document.NAME]||doc.name||id,mt=doc[google.picker.Document.MIME_TYPE]||doc.mimeType;
-   if(mt==='application/vnd.google-apps.folder'){bad.push(name+': a folder (open it and pick the files)');continue}
-   try{const sheet=mt==='application/vnd.google-apps.spreadsheet';
-    const url='https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+(sheet?'/export?mimeType='+encodeURIComponent('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):'?alt=media&supportsAllDrives=true');
-    const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});if(!r.ok)throw new Error(r.status===403?'no access (ask the folder owner to share it with you)':r.status+' '+r.statusText);
-    const blob=await r.blob();files.push(new File([blob],sheet||!/\.xlsx?$/i.test(name)?name+'.xlsx':name,{type:blob.type||'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}catch(e){bad.push(name+': '+e.message)}}
-  st.textContent=`${files.length} file${files.length===1?'':'s'} read from ${fd.label}`+(bad.length?` · not read: ${bad.join('; ')}`:'')+(files.length?' — check the preview below, then Import.':'');
-  if(files.length)onFiles(files)}}
+  b.build().setVisible(true)}}
 function uploadUI(s){
  const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, Zonal Tracker, Collection or Outstanding workbook'));
  s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));

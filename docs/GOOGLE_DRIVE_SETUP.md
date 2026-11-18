@@ -1,27 +1,27 @@
-# Upload from Google Drive — one-time setup
+# Upload from Google Drive
 
-Prepared by Shantanu Suravase · 18-Nov-2026 · wave 112 (set-up completed in wave 113)
+Prepared by Shantanu Suravase · 18-Nov-2026 · wave 112, set up in wave 113, links without sign-in in wave 113 (second request)
 
-**Status:** set up on 18-Nov-2026 in the Google Cloud project "BI Dashboard" and tested with the Zonal Tracker folder. The steps below
-are kept for reference (a new project, a new key, or moving the dashboard to another address).
+The upload page (Admin → Uploads) has a **Pick from Google Drive** card with one button per report folder: **Zonal Tracker**, **Point wise**,
+**Case wise**. The folders are shared "Anyone with the link", so the buttons work for every admin **without a Google sign-in**:
 
-The upload page (Admin → Uploads) has a **Pick from Google Drive** card with one button per report folder:
+1. Press a folder button. The dashboard lists the folder and reads at once the files that are new, or changed since they were last imported, in the
+   last 14 days (up to 25; Excel lock files "~$…" are skipped; Google Sheets are exported as .xlsx).
+2. The files go through exactly the same steps as a dropped file: file type detected, personal data removed in the browser, preview and checks.
+3. Press **Import validated files**. Nothing is written before that. Open "Files in …" to add an older file or leave one out, then **Read ticked files**.
 
-| Button | Folder |
-|---|---|
-| Zonal Tracker | the owner's Zonal Tracker folder |
-| Point wise | the owner's Point Wise folder |
-| Case wise | the owner's Case Wise folder |
+**Status:** set up on 18-Nov-2026 in the Google Cloud project "BI Dashboard"; folder links work without sign-in (tested with all three folders).
 
-The folder IDs are kept in the database (`bi.app_setting`, key `google_drive`) and shown to admins only — never in this public
-repository, because a Drive folder ID works like a link.
+## Folder links (admin, once)
 
-A button opens Google's own file picker on that folder. The admin ticks one or more files and presses **Select**. The files are downloaded
-in the admin's browser with the admin's own Google access and go through exactly the same steps as a dropped file: file type detected,
-personal data removed in the browser, preview and checks, and nothing is written until **Import validated files** is pressed. Manual
-upload (drag and drop) keeps working as before.
+Admin → Uploads → Pick from Google Drive → **Folder links**: paste each folder's link (in Google Drive: Share → General access "Anyone with the
+link" → Copy link) and press **Save**. The link is kept in the database (`bi.app_setting`, key `google_drive`) and shown to admins only — never in
+this public repository, because a link opens the folder.
 
-## What the dashboard needs from Google (about 15 minutes, once)
+Anyone who gets a folder link can open its files, including applicant details in Case Wise files. If you limit sharing to Crux accounts instead,
+the buttons fall back to Google sign-in (each admin signs in with a company Google account; the OAuth client below is already set up).
+
+## What the dashboard needs from Google (done 18-Nov-2026; kept for reference)
 
 Do this with the Google account that owns or can see the three folders (a Google Workspace admin account is best).
 
@@ -44,10 +44,10 @@ Do this with the Google account that owns or can see the three folders (a Google
    ID, the API key and the project number → **Save Drive settings**. The three folder IDs are already filled in; change them here if
    the folders move.
 
-## First use
+## Google sign-in (fallback only)
 
-Press a folder button. Google asks the admin to sign in and to allow "Crux BI" to see the files they pick (once per browser session).
-Allow pop-ups for the dashboard page if the browser blocks the sign-in window. Then tick the files and press **Select**.
+Only when a folder is not shared by link: the card offers "Open … with Google sign-in". Google asks the admin to sign in and to allow "Crux BI"
+to see the files they pick (once per browser session). Allow pop-ups for the dashboard page if the browser blocks the sign-in window.
 
 ## Troubleshooting
 
@@ -60,7 +60,7 @@ Allow pop-ups for the dashboard page if the browser blocks the sign-in window. T
 
 ## Notes and limits
 
-- Each person who picks files must be able to open the folder in Google Drive (shared with them, or in a shared drive they belong to).
+- With link sharing, no Google account is needed; with sign-in, each person must be able to open the folder in Google Drive.
 - Native Google Sheets are exported to .xlsx before reading; uploaded .xlsx / .xls files are read as they are.
 - The settings are stored in the database (`bi.app_setting`, key `google_drive`) and shown to admins only; the audit log records that
   a value was set, never the value. Changing a setting: same form. Removing access: delete the OAuth client or API key in Google Cloud.

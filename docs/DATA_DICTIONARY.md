@@ -355,3 +355,16 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.api_organic` — `total` and `rows[]` | added `clients` (client families), `teams`, `lines` (team × client lines) with a BAU expectation or business |
 | Text in `api_plan` method, `ask_h_plan`, `ask_h_potential`, `api_targets` method | "outlook" → "likely", "captured" → "now x% of the potential, by value", "headroom"/"opportunity" → "gap to potential" (JSON keys unchanged: `outlook`, `penetration`, `headroom`) |
 | `bi.test_growth` F3 | expects the written-out labels |
+
+## Planned targets, BRT, Drive by link (18-Nov-2026, wave 113 — bi_113a, bi_113b, bi_113c)
+| Object | Meaning |
+|---|---|
+| `bi.target_fill_set` | One planned target set per month: status active / replaced_by_owner / withdrawn, method, totals, bridge, who, why, when it ended and the report date whose file replaced it |
+| `bi.target_fill_row` | Planned target per team (location) × client code: target cases, target revenue, rate, situation, calculation, reason |
+| `bi.target_fill_log` | Every tracker leaf row the dashboard changed: report date, sheet row, kind (planned / owner / withdrawn), old and new target cases and revenue, old achievement and shortfall, source report date, current flag |
+| `bi.target_sheet_running(month)` | Target sheet for the running month with the previous month complete as the base (copy of `bi.api_target_sheet`) |
+| `bi.target_source(month)` | `{target_source: {source: planned / owner / tracker / none, as_of, owner_targets_from, set}}`; added to `bi.api_overview` and Ask Crux's business summary |
+| `bi.target_fill_on_commit(date)` | Called at the end of `bi.commit_zonal`; result returned as `target_fill`; errors become a `target_fill_failed` warning, never a failed upload |
+| `bi.client` BRT | family BOM, product BRT (was its own family) |
+| `bi.app_setting` google_drive `folders[]` | `{key, label, id, rk, link}`; `drive_config` op `imports` lists the latest import per kind and file name |
+

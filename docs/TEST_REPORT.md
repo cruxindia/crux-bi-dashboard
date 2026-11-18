@@ -1060,3 +1060,19 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Every Revenue / Cases switch (live page) | Pass 9/9 | Overview, Growth (expected revenue / billed revenue / cases), Business tracker → Daily count & case flow (two switches); 0 JavaScript errors |
 | Growth → BAU detail switch (live page) | Pass | Expected revenue shows ₹ figures; 0 JavaScript errors |
 | Live page = repository build | Pass | byte-for-byte equal |
+
+## 18-Nov-2026 — wave 113, second request (planned November targets, BRT and Tezzract, Drive by link)
+| Check | Result | Evidence |
+|---|---|---|
+| Planned set (dry run, rolled back) | Pass | 193 rows, ₹2,56,38,012 / 67,778 cases on 12 report dates (2,316 rows); withdraw restored 2,316 rows to 0 |
+| Re-upload without targets (dry run) | Pass | the 14-Nov rows set to 0 and the hook run → 193 planned rows written again |
+| Owner's file with targets (dry run) | Pass | 14-Nov with 2 cases × ₹1,000 per row → set "replaced_by_owner"; 11 other dates took them (4,322 rows); target source "tracker" |
+| Later file without targets after the owner's (dry run) | Pass | 13-Nov set to 0 → 394 rows carried from 14-Nov |
+| Live set | Pass | set 4 written (2,316 rows); same-figure check: target ₹2,56,38,012 on Overview / branch managers, Root cause, Planning and the potential page (10 of 12 agree; the 2 known client-branch counts until tonight's rebuild) |
+| Overview (local build at the dashboard address, live data) | Pass | note "Targets for Nov 2026 are the dashboard's planned targets (₹2.56 cr · 67,778 cases, set 18.11.2026) …"; hero "₹77.46 L of ₹2.56 cr target revenue"; Cases "20,793 of 67,778 target cases"; the "no targets" banner is gone |
+| Admin → Plan & targets card | Pass | source, bridge (₹2.39 cr → −₹17.13 L → +₹26.57 L → +₹7.96 L → ₹0 → ₹2.56 cr), Withdraw button, 193 rows table |
+| BRT under BOM | Pass | client BRT family BOM / product BRT; register model at Pune still "self" (Crux Branch), BOM codes "partner"; Business Associates vs Crux Branches totals unchanged (20,793 / ₹77,45,934); BOM × Pune pair compared per model (₹5,17,250 + ₹90,900 = ₹6,08,150) |
+| Tezzract | Pass | structure row "Tezzract — MSME lending platform" with source; no "structure not researched" rows left |
+| Drive without sign-in (local build served at https://cruxindia.github.io) | Pass | Zonal Tracker: 136 files, "nothing new or changed"; Point wise: 15 November files read with the browser key and previewed (e.g. MUMBAI_NOV.xlsx 15,163 rows, Ready), not imported; Case wise 162 files listed; a Google Sheet exported to .xlsx (1.03 MB); 17 Drive calls all 200; 0 JavaScript errors |
+| Drive from another address (file://) | Refused by Google as expected | 403 — the key only works from the dashboard's address |
+
