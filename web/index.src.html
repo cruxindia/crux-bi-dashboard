@@ -127,7 +127,9 @@ tr:hover td{background:var(--blue-soft)}
 .login input{width:100%;padding:8px;margin:6px 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .abtn{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer;white-space:nowrap;flex:none}
 .abtn.on{color:var(--ink);border-color:var(--blue);background:var(--blue-soft)}.abtn .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:6px;vertical-align:1px}
-.abtn .as{display:none}@media (max-width:600px){.abtn .al{display:none}.abtn .as{display:inline}.topbar .asof{display:none}.topbar{gap:8px;padding:8px 10px}}
+main select,main input:not([type=checkbox]):not([type=radio]){max-width:100%;box-sizing:border-box}   /* wave 114: long selects and inputs no longer push a phone page sideways */
+.upjobs{list-style:none;margin:6px 0 0;padding:0}.upjobs li{padding:8px 0;border-top:1px solid var(--line)}.upjobs .uj1{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.upjobs .uj1 b{overflow-wrap:anywhere}.upjobs progress{display:block;width:100%;margin:6px 0 2px}
+.abtn .as{display:none}@media (max-width:600px){.abtn .al{display:none}.abtn .as{display:inline}.topbar .asof{display:none}.topbar{gap:8px;padding:8px 10px}.topbar .sx{min-width:0;flex:1 1 60px}.abtn{padding:4px 9px}}
 .admmenu{position:fixed;top:calc(var(--hdr,48px) + 6px);right:12px;z-index:40;width:min(390px,calc(100vw - 24px));max-height:calc(100vh - var(--hdr,48px) - 24px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px 12px 8px}
 .admmenu[hidden]{display:none}.admmenu h4{margin:2px 0 8px;font:600 14px var(--f)}.admmenu .ai{display:block;width:100%;text-align:left;border:0;background:none;padding:8px;border-radius:6px;cursor:pointer;font-weight:600}
 .admmenu .ai:hover,.admmenu .ai:focus-visible{background:var(--blue-soft)}.admmenu .ai small{display:block;color:var(--muted);font-size:12px;font-weight:400}.admmenu .ai[aria-current="page"]{background:var(--blue-soft)}
@@ -1549,7 +1551,7 @@ function toast(t){const n=el('div',{class:'toast',role:'status'},t);document.bod
 const ADM={exp:null,t1:null,t2:null,
  on(){return S.role==='admin'},
  paint(){const b=$('#adminBtn');if(!b)return;const on=this.on();b.classList.toggle('on',on);b.textContent='';
-  if(on)b.append(el('span',{class:'dot','aria-hidden':'true'}),'Admin workspace');else b.append('Admin login');
+  if(on)b.append(el('span',{class:'dot','aria-hidden':'true'}),el('span',{class:'al'},'Admin workspace'),el('span',{class:'as'},'Admin'));else b.append(el('span',{class:'al'},'Admin login'),el('span',{class:'as'},'Admin'));   // wave 114: short label on a phone (the long one pushed the page sideways)
   b.title=on?(S.mode==='mcp'?'Admin through your Supabase connector':this.exp?'Admin session valid until '+dts(this.exp):'Admin session active'):'Sign in with the admin key';
   const ml=$('#modeLbl');if(ml)ml.textContent=S.mode==='mcp'?'Live via your Supabase connector':(on?'Admin':'Read-only view')},
  menu(){const mm=$('#admMenu');mm.innerHTML='';
@@ -4159,7 +4161,7 @@ async function drvRead(G,f,token){const sheet=f.mimeType===DRV.gs;
  u.search=new URLSearchParams(sheet?{mimeType:DRV.x,...(token?{}:{key:G.api_key})}:{alt:'media',supportsAllDrives:'true',...(token?{}:{key:G.api_key})});
  const r=await fetch(u,{headers:{...drvHdr(f.id,f.resourceKey),...(token?{Authorization:'Bearer '+token}:{})}});
  if(!r.ok){let m=r.status+' '+r.statusText;try{const j=await r.json();m=(j.error&&j.error.message)||m}catch{}throw new Error(m)}
- const blob=await r.blob();return new File([blob],sheet||!/\.xlsx?$/i.test(f.name)?f.name+'.xlsx':f.name,{type:blob.type||DRV.x})}
+ const blob=await r.blob();return new File([blob],sheet||!/\.xlsx?$/i.test(f.name)?f.name+'.xlsx':f.name,{type:blob.type||DRV.x,lastModified:Date.parse(f.modifiedTime)||Date.now()})}
 const drvWhen=t=>t?new Date(t).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'';
 async function drivePicker(box,onFiles){box.innerHTML='';
  box.append(el('h3',{style:'margin-top:0'},'Pick from Google Drive'),el('p',{class:'note'},'Press a folder: the files that are new or changed since they were last imported are read straight away — no Google sign-in. Check the preview below, then press Import validated files. Open the file list to add or leave out files.'));
@@ -4229,7 +4231,7 @@ async function drivePicker(box,onFiles){box.innerHTML='';
   b.build().setVisible(true)}}
 function uploadUI(s){
  const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, Zonal Tracker, Collection or Outstanding workbook'));
- s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing; a corrected file updates only the records that changed.'));
+ s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files. Each file is identified, previewed and validated before anything is written. Re-uploading the same file changes nothing (identical files are flagged before Import); a corrected file updates only the records that changed. After Import each file is sent to the server in a few seconds and imported there — once every file shows "Sent" you can close the page or your phone.'));
  s.append(el('details',{class:'card',id:'upGuide',style:'margin-bottom:12px'},el('summary',{},'Which file is which — what each one updates'),el('ul',{},
   el('li',{},el('b',{},'Zonal Tracker (daily): '),'month-to-date business by location × client for one report date — expected minimum revenue and the daily business count. Needs the report date.'),
   el('li',{},el('b',{},'Case Wise / Point Wise (Force1): '),'case and visit records for one location group and month — operations, TAT and utilisation. Applicant names and contact details are removed in your browser.'),
@@ -4239,24 +4241,87 @@ function uploadUI(s){
  const list=el('div');const inp=el('input',{type:'file',multiple:'',accept:'.xlsx,.xls',class:'hidden',id:'fin'});
  const drop=el('div',{class:'drop',tabindex:0,role:'button','aria-label':'Choose files to upload'},el('p',{},el('strong',{},'Drop .xlsx files here'),' or ',el('button',{class:'btn',onclick:()=>inp.click()},'choose files')),el('p',{class:'note'},'Personal data (applicant names, mobile, PAN, Aadhaar, account numbers, addresses) is removed in your browser before upload.'),inp);
  ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
- drop.addEventListener('drop',ev=>handle([...ev.dataTransfer.files]));inp.onchange=()=>handle([...inp.files]);const dvb=el('div',{class:'card',id:'drivePick',style:'margin:0 0 12px'});s.append(dvb,drop,list);drivePicker(dvb,fs=>handle(fs));   // wave 112d
- const items=[];const runBtn=el('button',{class:'btn primary',disabled:''},'Import validated files');list.append(el('div',{class:'tools'},runBtn));const tb=el('div');list.append(tb);
- async function handle(files){for(const file of files){const it={file,status:'Reading…'};items.push(it);draw();try{const buf=await file.arrayBuffer();it.hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');
+ drop.addEventListener('drop',ev=>handle([...ev.dataTransfer.files]));inp.onchange=()=>handle([...inp.files]);const dvb=el('div',{class:'card',id:'drivePick',style:'margin:0 0 12px'});
+ const jobsBox=el('div',{class:'card',id:'upJobs',style:'margin:0 0 12px',hidden:''});s.append(dvb,jobsBox,drop,list);drivePicker(dvb,fs=>handle(fs));   // wave 112d; wave 114a: uploads on the server
+ const items=[];const runBtn=el('button',{class:'btn primary',disabled:''},'Import validated files');
+ /* wave 114a: overall progress while files are being sent, and a line that says when the page may be closed */
+ const ovBar=el('progress',{max:1,value:0,hidden:'','aria-label':'Sending progress',style:'width:min(320px,100%)'}),ovTxt=el('span',{class:'note','aria-live':'polite'});
+ list.append(el('div',{class:'tools'},runBtn,ovBar,ovTxt));const tb=el('div');list.append(tb);
+ const overall=(d,t)=>{ovBar.hidden=false;ovBar.value=t?d/t:1;ovTxt.textContent=`Sending ${fmt(d)} of ${fmt(t)} rows — keep this page open until every file shows "Sent"`};
+ let wl=null,pollT=null,jobsT=null;const keepAwake=async on=>{try{if(on&&'wakeLock' in navigator&&!wl)wl=await navigator.wakeLock.request('screen');if(!on&&wl){await wl.release();wl=null}}catch{}};
+ const warnLeave=e=>{e.preventDefault();e.returnValue=''};
+ const KL={zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise'},JS={sending:'Sending',queued:'Waiting',running:'Importing',done:'Imported',failed:'Failed',cancelled:'Cancelled'};
+ const jobText=j=>{const r=j.result||{};
+  if(j.status==='done')return j.category==='zonal'?`Imported snapshot ${ddmm(j.snapshot_date)}: ${fmt(j.total)} rows · confirmed by the server`+(r.leaf_mtd!=null?` · leaf total ${fmt(r.leaf_mtd)}`:'')+' · the dashboard shows it within about 10 minutes'
+   :`Imported: ${fmt(r.new||0)} new · ${fmt(r.changed||0)} changed · ${fmt(r.unchanged||0)} unchanged · confirmed by the server`;
+  if(j.status==='running')return`Importing on the server: ${fmt(j.done)} of ${fmt(j.total)} rows`+(j.category!=='zonal'?` · new ${fmt(r.new||0)} · changed ${fmt(r.changed||0)}`:'');
+  if(j.status==='queued')return j.ahead?`Sent — waiting for ${j.ahead} file${j.ahead>1?'s':''} ahead on the server`:'Sent — the server starts it within a minute';
+  if(j.status==='failed')return`Failed on the server: ${j.error||'unknown error'}`+(j.done?` — ${fmt(j.done)} of ${fmt(j.total)} rows are saved; send the file again to finish (saved rows show as unchanged)`:' — nothing was saved; send the file again');
+  if(j.status==='cancelled')return'Cancelled: '+(j.error||'');return'Sending…'};
+ async function jobsRefresh(){clearTimeout(jobsT);let J;try{J=await ingest('jobs',{})}catch{return}
+  const L=J.jobs||[];jobsBox.innerHTML='';jobsBox.hidden=!L.length;if(!L.length)return;const act=L.filter(j=>['sending','queued','running'].includes(j.status));
+  jobsBox.append(el('h3',{style:'margin-top:0'},'Uploads on the server'),el('p',{class:'note'},act.length?`${act.length} file${act.length>1?'s are':' is'} still importing on the server — it keeps going if you close this page or your phone.`:'Files sent in the last 36 hours; all finished.'));
+  // a list, not a table, so it reads on a phone: file and state on one line, the bar, then what happened
+  const li=j=>el('li',{},el('div',{class:'uj1'},el('b',{},j.file_name||''),el('span',{class:'note'},`${KL[j.category]||j.category} · sent ${drvWhen(j.created_at)}`),
+    el('span',{class:'chip '+(j.status==='done'?'good':/failed|cancelled/.test(j.status)?'bad':'warn')},JS[j.status]||j.status)),
+   el('progress',{max:j.total||1,value:j.status==='done'?(j.total||1):(j.done||0),'aria-label':'Progress of '+(j.file_name||'file')}),el('div',{class:'note'},jobText(j)));
+  const fin=L.filter(j=>!act.includes(j));
+  if(act.length)jobsBox.append(el('ul',{class:'upjobs'},...act.map(li)));
+  if(fin.length){const d=el('details',{},el('summary',{},`Finished (${fin.length})`),el('ul',{class:'upjobs'},...fin.slice(0,40).map(li)));if(!act.length)d.open=true;jobsBox.append(d)}
+  if(act.length)jobsT=setTimeout(jobsRefresh,5000)}
+ jobsRefresh();
+ async function poll(){clearTimeout(pollT);const ids=items.filter(i=>i.batch&&!i.final).map(i=>i.batch);if(!ids.length)return;
+  try{const J=await ingest('jobs',{batch_ids:ids});for(const j of J.jobs||[]){const it=items.find(i=>i.batch===j.batch_id);if(!it)continue;it.status=jobText(j);
+    it.prog=j.status==='done'?1:/failed|cancelled/.test(j.status)?null:(j.total?j.done/j.total:0);if(['done','failed','cancelled'].includes(j.status)){it.final=true;it.err=j.status!=='done'}}draw()}catch{}
+  if(items.some(i=>i.batch&&!i.final))pollT=setTimeout(poll,3000);else{try{S.meta=await api('meta');renderFresh()}catch{}}}
+ /* wave 114a: identical files are flagged before Import — twice in this list, or already imported earlier (same content, checked by the server) */
+ async function markDups(){const seen=new Set();for(const it of items){if(!it.hash||it.batch||it.final)continue;if(it.status==='Ready'&&seen.has(it.hash)){it.status='Same file as above — skipped';it.dupe=true}else if(it.status==='Ready')seen.add(it.hash)}
+  const grp={};for(const it of items){if(it.status!=='Ready'||!KL[it.kind])continue;const k=it.kind==='zonal'?'zonal|'+it.snapshot:it.kind+'|'+it.group+'|'+it.period;(grp[k]=grp[k]||[]).push(it)}
+  for(const L of Object.values(grp))if(L.length>1){L.sort((a,b)=>b.mod-a.mod);for(const o of L.slice(1)){o.status=`Older copy of the same report (${o.kind==='zonal'?'report date '+ddmm(o.snapshot):o.group+' '+mlabel(o.period)}) — skipped; the newer file ${L[0].file.name} is used`;o.dupe=true}}
+  const hs=[...new Set(items.filter(i=>i.hash&&i.status==='Ready'&&KL[i.kind]).map(i=>i.hash))];
+  if(hs.length)try{const r=await ingest('check',{hashes:hs});for(const m of r.imported||[])for(const it of items)if(it.hash===m.hash&&it.status==='Ready'){it.status=`Already imported ${ddmm(String(m.committed_at||'').slice(0,10))} (identical file) — skipped`;it.dupe=true}}catch{}
+  draw()}
+ async function handle(files){for(const file of files){const it={file,status:'Reading…',mod:file.lastModified||0};items.push(it);draw();try{const buf=await file.arrayBuffer();it.hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');
    const wb=XLSX.read(buf,{type:'array',cellFormula:true,sheets:undefined});const x=CruxExtract.extractWorkbook(wb,file.name);it.x=x;it.kind=x.kind;
    if(!x.kind){it.status='Not recognised';it.err=true}else if(x.kind==='collection'||x.kind==='outstanding'){finPrepare(it,x,file)}else if(x.kind==='zonal'){it.snapshot=x.snapshot_date;it.period=x.report_month;const leaf=x.rows.filter(r=>r.row_type==='leaf');const t=leaf.reduce((a,r)=>a+(r.mtd_cases||0),0);const valOnly=!x.rows.some(r=>r.row_type==='zone_client_rollup');it.summary=(valOnly&&x.control&&Math.abs(t-x.control.mtd)>0.5)?`${x.rows.length} rows · values only (no formulas): zone roll-up rows are separated on the server and the leaf total is checked against the file's own Pan India total ${fmt(x.control.mtd)} at import`:`${leaf.length} leaf rows · MTD ${fmt(t)}`+(x.control?` · file's own Pan India total ${fmt(x.control.mtd)}`+(Math.abs(t-x.control.mtd)>0.5?' (differs — will be logged)':' ✓'):'');it.status=x.snapshot_date?'Ready':'Needs snapshot date'}
-   else{const base=file.name.replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)$/,'');const tok=base.replace(/_[A-Za-z]+$/,'').toUpperCase().replace(/[^A-Z]/g,'');it.group=UNITS[tok]||null;
+   else{const base=file.name.replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)$/,'');const tok=base.replace(/_[A-Za-z]+$/,'').toUpperCase().replace(/[^A-Z]/g,'').replace('MARATHAWADA','MARATHWADA');
+    it.group=UNITS[tok]||UNITS[Object.keys(UNITS).filter(k=>tok.includes(k)).sort((a,b)=>b.length-a.length)[0]]||null;   // wave 114a: UP-LUCKNOW → Lucknow
     const months={};x.rows.forEach(r=>{const d=r.received_at||r.created_at;if(d){const ist=new Date(Date.parse(d)+19800000).toISOString().slice(0,7);months[ist]=(months[ist]||0)+1}});const top=Object.entries(months).sort((a,b)=>b[1]-a[1])[0];it.period=top?top[0]+'-01':null;
-    it.summary=`${fmt(x.rows.length)} rows`+(x.issues.length?` · ${x.issues.length} issue(s)`:'');it.status=(it.group&&it.period)?'Ready':'Needs location group / month'}}catch(e){it.status='Failed: '+e.message;it.err=true}draw()}}
+    it.summary=`${fmt(x.rows.length)} rows`+(x.issues.length?` · ${x.issues.length} issue(s)`:'');it.status=(it.group&&it.period)?'Ready':'Needs location group / month'}}catch(e){it.status='Failed: '+e.message;it.err=true}draw()}
+  await markDups()}
  function draw(){tb.innerHTML='';runBtn.disabled=!items.some(i=>i.status==='Ready');
-  tb.append(table(items.map((i,ix)=>({...i,ix})),[{key:'name',label:'File',fmt:(v,r)=>r.file.name},{key:'kind',label:'Type',fmt:v=>({zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise',collection:'Collection workbook',outstanding:'Outstanding workbook'})[v]||'–'},
+  tb.append(table(items.map((i,ix)=>({...i,ix})),[{key:'name',label:'File',fmt:(v,r)=>r.file.name},{key:'status',label:'Status',fmt:(v,r)=>el('span',{},el('span',{class:'chip '+(/^(Ready|Imported|Sent)|unchanged|skipped/.test(v)?'good':/Fail|Not rec|rejected|Cancel/.test(v)?'bad':'warn')},v),
+   r.prog!=null?el('progress',{max:1,value:r.prog,style:'display:block;width:100%;margin-top:4px','aria-label':'Progress of '+r.file.name}):null)},{key:'kind',label:'Type',fmt:v=>({zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise',collection:'Collection workbook',outstanding:'Outstanding workbook'})[v]||'–'},
    {key:'group',label:'Location group',fmt:(v,r)=>r.kind==='case'||r.kind==='point'?(()=>{const sel=el('select',{'aria-label':'Location group'},el('option',{value:''},'Choose…'),[...new Set(Object.values(UNITS))].sort().map(u=>el('option',{value:u},u)));sel.value=v||'';sel.onchange=()=>{items[r.ix].group=sel.value||null;items[r.ix].status=(items[r.ix].group&&items[r.ix].period)?'Ready':'Needs location group / month';draw()};return sel})():'–'},
    {key:'period',label:'Period / snapshot',fmt:(v,r)=>{if(r.kind==='collection')return'Receipts to '+ddmm(r.period||'');if(r.kind==='outstanding'){const i3=el('input',{type:'date',value:r.asof||'','aria-label':'Snapshot date'});i3.onchange=()=>{const it=items[r.ix];it.asof=i3.value;it.asofBasis='Entered at upload';it.status=i3.value?'Ready':'Needs snapshot date';finPrepare(it,it.x,it.file);draw()};return i3}const i2=el('input',{type:r.kind==='zonal'?'date':'month',value:r.kind==='zonal'?(r.snapshot||''):(v||'').slice(0,7),'aria-label':'Period'});i2.onchange=()=>{const it=items[r.ix];if(r.kind==='zonal')it.snapshot=i2.value;else it.period=i2.value?i2.value+'-01':null;it.status=(r.kind==='zonal'?it.snapshot:(it.group&&it.period))?'Ready':it.status;draw()};return i2}},
-   {key:'summary',label:'Preview'},{key:'status',label:'Status',fmt:v=>el('span',{class:'chip '+(/^Ready|^Imported|unchanged/.test(v)?'good':/Fail|Not rec|rejected/.test(v)?'bad':'warn')},v)}],{search:false,pageSize:100}));
+   {key:'summary',label:'Preview'}],{search:false,pageSize:100}));
   items.filter(i=>i.x&&(i.kind==='collection'||i.kind==='outstanding')).forEach(i=>{const dd=el('details',{class:'card finpre',style:'margin-top:8px'},el('summary',{},`Before you import — ${i.file.name}`),finDetail(i));if(i.status==='Ready')dd.open=true;tb.append(dd);
    if(i.after)tb.append(el('div',{class:'banner'+(i.afterBad?' err':''),style:'margin-top:8px'},el('b',{},'After import — '+i.file.name+': '),i.after))});
   items.filter(i=>(i.issues||[]).length).forEach(i=>tb.append(el('details',{class:'card',style:'margin-top:8px'},el('summary',{},`Checks for ${i.file.name} (${i.issues.length})`),el('ul',{},i.issues.map(x=>el('li',{},(x.sheet?x.sheet+': ':'')+(x.detail||x.rule)))))))}
- runBtn.onclick=async()=>{runBtn.disabled=true;for(const it of items.filter(i=>i.status==='Ready')){try{it.status='Uploading…';draw();it.status=await importOne(it,p=>{it.status=p;draw()});if(it.kind==='collection'||it.kind==='outstanding'){draw();await finAfter(it)}}catch(e){it.status='Failed: '+e.message}draw()}S.meta=await api('meta');renderFresh()};
+ runBtn.onclick=async()=>{runBtn.disabled=true;const todo=items.filter(i=>i.status==='Ready').sort((a,b)=>(a.kind==='zonal'&&b.kind==='zonal'?String(a.snapshot).localeCompare(String(b.snapshot)):0)||(a.mod-b.mod)),bg=todo.filter(i=>KL[i.kind]),tot=bg.reduce((a,i)=>a+i.x.rows.length,0);let sent=0;
+  if(bg.length){keepAwake(true);window.addEventListener('beforeunload',warnLeave);overall(0,tot)}
+  try{for(const it of todo){try{if(KL[it.kind]){it.status='Sending…';it.prog=0;draw();
+      const r=await sendForImport(it,p=>{it.prog=p.done/(p.total||1);it.status=`Sending ${fmt(p.done)} of ${fmt(p.total)} rows`;overall(sent+p.done,tot);draw()});
+      sent+=it.x.rows.length;overall(sent,tot);
+      if(r.dup){it.status='Already imported (identical file) — skipped';it.prog=null;it.final=true}else{it.batch=r.batch;it.prog=0;it.status=r.ahead?`Sent — waiting for ${r.ahead} file${r.ahead>1?'s':''} ahead on the server`:'Sent — the server starts it within a minute'}}
+     else{it.status='Uploading…';draw();it.status=await importOne(it,p=>{it.status=p;draw()});draw();await finAfter(it)}}catch(e){it.status='Failed: '+e.message;it.err=true;it.prog=null}draw()}}
+  finally{keepAwake(false);window.removeEventListener('beforeunload',warnLeave)}
+  if(bg.length){ovBar.value=1;ovTxt.textContent=items.some(i=>i.batch)?'Every file is sent. The server imports them one by one — you can close this page or your phone now; progress stays under "Uploads on the server".':'Nothing was sent.'}
+  poll();jobsRefresh();if(!bg.length){S.meta=await api('meta');renderFresh()}};
 }
+/* wave 114a (owner 19-Nov: "Uploadings are failing, especially … from phone and close the browser"): the page reads, cleans and checks the file, then
+   sends its rows to the server in pieces of 1,000 (a few seconds) and hands the file over; the server imports it in the background in the same pieces as
+   before (bi.upload_work, every minute) and keeps the progress. A piece that fails on a weak connection is sent again; nothing is imported until the
+   whole file has arrived. Identical files are still refused by the server (same check as before). */
+async function sendForImport(it,progress){const x=it.x,rows=x.rows,total=rows.length,n=1000;
+ const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group||null,period_month:x.kind==='zonal'?x.report_month:it.period,snapshot_date:x.kind==='zonal'?it.snapshot:null});
+ if(b.duplicate)return{dup:true};
+ const send=async fn=>{for(let a=0;;a++){try{return await fn()}catch(e){if(a>=3||!/timeout|canceling statement|57014|50[234]|Failed to fetch|NetworkError|Load failed|network/i.test(e.message||''))throw e;await new Promise(r=>setTimeout(r,[2000,5000,12000][a]))}}};
+ try{if(x.kind==='zonal')await send(()=>ingest('hold',{batch_id:b.batch_id,seq_start:0,total,rows:[{snapshot_date:it.snapshot,report_month:x.report_month,control:x.control,issues:x.issues}]}));
+  if(!total)await send(()=>ingest('hold',{batch_id:b.batch_id,seq_start:1,total:0,rows:[]}));
+  for(let i=0;i<total;i+=n){await send(()=>ingest('hold',{batch_id:b.batch_id,seq_start:i+1,total,rows:rows.slice(i,i+n)}));progress({done:Math.min(i+n,total),total})}
+  const q=await send(()=>ingest('queue',{batch_id:b.batch_id}));return{batch:b.batch_id,total,ahead:q.ahead||0}}
+ catch(e){try{await ingest('cancel',{batch_id:b.batch_id})}catch{}throw new Error(e.message+' — not sent; nothing from this file was saved. Try again.')}}
 async function importOne(it,progress){const x=it.x;if(x.kind==='collection'||x.kind==='outstanding')return finImport(it,progress);
  /* Success is reported only after the server confirms the batch is committed (read back with 'finalize', which returns the stored batch row).
     A failed step marks the batch rejected so a retry starts clean; a slow reply after a real commit is recognised by the read-back. */

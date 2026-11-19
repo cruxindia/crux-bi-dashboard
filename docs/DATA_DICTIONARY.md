@@ -368,3 +368,12 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.client` BRT | family BOM, product BRT (was its own family) |
 | `bi.app_setting` google_drive `folders[]` | `{key, label, id, rk, link}`; `drive_config` op `imports` lists the latest import per kind and file name |
 
+## Background import (19-Nov-2026, wave 114 — bi_114a)
+| Object | Meaning |
+|---|---|
+| `bi.upload_hold` | Rows of a file sent by the page and waiting for the server import: batch, seq (0 = tracker header), payload (already cleaned of personal data) |
+| `bi.upload_job` | One per sent file: category, file name, total and done rows, status (sending / queued / running / done / failed / cancelled), result (new / changed / unchanged, tracker leaf totals), error, tries, who, when |
+| `bi.upload_action(actor, action, p)` | Page actions through `bi_ingest`: check (identical files already imported), hold (send rows), queue (hand over), jobs (status), cancel |
+| `bi.upload_work(seconds)` | Background importer (pg_cron `bi-upload-worker`, every minute): one file at a time with the existing commit functions; also closes stale sends and half-done page uploads |
+| Indexes | `point_store_case_pin_idx` (case_id, point_id) include (pincode, point_type_id) where pincode is a real pincode; `case_store_branch_id_idx` (branch_id) |
+

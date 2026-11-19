@@ -284,3 +284,9 @@ To deploy: publish the code (stash + sync, or a merged pull request), then deplo
 - **BRT** is client code BRT in family BOM (product BRT). Its Pune entry in the register is a product entry (client BRT); change it through the register's add form with client BRT.
 - **Drive by link:** Admin → Uploads → Pick from Google Drive → Folder links: paste each folder's link once. The buttons then work for every admin without Google sign-in while the folders are shared "Anyone with the link". If Google answers "Permission denied" from the dashboard, check the key's website restriction and that the page is opened from https://cruxindia.github.io.
 
+## Background import (19-Nov-2026, wave 114)
+- Admin → Uploads → "Uploads on the server" shows every file sent in the last 36 hours with its progress. SQL: `select bi.upload_action('ops', 'jobs', '{}')`.
+- The importer is the pg_cron job `bi-upload-worker` (`call bi.upload_work(52)`, every minute, one file at a time). If files stay "Waiting": check `cron.job_run_details` for that job. A failed file shows its reason; send it again (rows already saved show as unchanged).
+- Cancel a waiting file: `select bi.upload_action('<name>', 'cancel', '{"batch_id": <id>}')`.
+- Collection and outstanding workbooks are not part of the background import (their own flow, unchanged).
+
