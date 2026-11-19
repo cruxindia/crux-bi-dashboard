@@ -5,10 +5,14 @@ Prepared by Shantanu Suravase · 18-Nov-2026 · wave 112, set up in wave 113, li
 The upload page (Admin → Uploads) has a **Pick from Google Drive** card with one button per report folder: **Zonal Tracker**, **Point wise**,
 **Case wise**. The folders are shared "Anyone with the link", so the buttons work for every admin **without a Google sign-in**:
 
-1. Press a folder button. The dashboard lists the folder and reads at once the files that are new, or changed since they were last imported, in the
-   last 14 days (up to 25; Excel lock files "~$…" are skipped; Google Sheets are exported as .xlsx).
-2. The files go through exactly the same steps as a dropped file: file type detected, personal data removed in the browser, preview and checks.
-3. Press **Import validated files**. Nothing is written before that. Open "Files in …" to add an older file or leave one out, then **Read ticked files**.
+1. Press **All 3 folders — check for new files** (or one folder button). The dashboard lists the folders and reads the files that are new, or changed
+   since they were last imported, in the last 14 days (up to 25 per folder; Excel lock files "~$…" are skipped; Google Sheets are exported as .xlsx).
+2. The files go through exactly the same steps as a dropped file: file type detected, personal data removed in the browser, checks — and land in the
+   **review list**: a tick box per file, what is inside (rows by month, or the report date), location group and month, and the verdict. A file whose
+   name says another month than its rows is flagged and not ticked; another copy of the same report is skipped but can be ticked instead; a file
+   already imported cannot be ticked. Open "All files in …" to add any other file to the review (**Add ticked files to the review**).
+3. Press **Import N ticked files**. Nothing is written before that. The files are registered on the server at once; if the page is closed before a
+   file's turn, the next admin page opened (any device) reads it again from Drive and sends it.
 
 **Status:** set up on 18-Nov-2026 in the Google Cloud project "BI Dashboard"; folder links work without sign-in (tested with all three folders).
 

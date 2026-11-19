@@ -1115,3 +1115,15 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Server rules (database, rolled back) | Pass | failed with rows kept → `retried` (batch staged, job queued); stopped send with 2,000 rows → `resume` (held 2,000); nothing kept → `need_file`; "statement timeout" counts as a passing error, "duplicate key" does not |
 | Uploads panel on a phone | Pass | pill and open panel fit 390 px; screenshots panel_paused.png, panel_failed.png |
 
+## 19-Nov-2026 — wave 116 (why 24 of 32, review step, pending uploads)
+| Check | Result | Evidence |
+|---|---|---|
+| Reconstruction of the 19:27 upload | Pass | Drive folders listed at the dashboard address: 32 files changed 19-Nov; the same 32 read again and checked without importing: 24 identical to jobs 844–867, Zonal Tracker 17-Nov identical to batch 819, 7 Case Wise "Ready" (never sent); web server log: owner's sending calls stop at 19:31:11, a fresh page load at 19:31:33 |
+| `_OCT` Point Wise files | Pass | NAGPUR_YASH_OCT.xlsx: 5,703 of 5,704 rows dated November; GUWAHATI_OCT.xlsx batch 851: 2,568 rows last written are November — both filed under November |
+| File-name checks (unit) | Pass | NAGPUR_YASH_OCT → Oct; Guwahati_2026-07 → 2026-07; UP-LUCKNOW_SEPT → Sep; MUMBAI_NOV (1) → Nov; "As on 17 Nov 2026" → 17-Nov; no month → none |
+| Review list (local build at the dashboard address, live Drive) | Pass | "All 3 folders — check for new files": 8 files read and checked, 7 ticked, "Import 7 ticked files"; adding NAGPUR_YASH_OCT from the folder list → "Already imported", warning shown; adding MARATHWADA_NOV (older copy) → skipped, not tickable (already imported); no "Import straight away" option |
+| Ticks and copies (no import) | Pass | OCT-named copy with November rows → not ticked with the reason; two NOV copies → newest ticked; ticking the older copy swaps; ticking the OCT one swaps again; only ticked files would be imported |
+| Closed page before a file's turn | Pass | 7 files registered (868–874) at Import; page closed after the first was sent; 150 s later a new phone-size page on Overview read the other 6 again from Drive and sent them; all 7 done with the same upload numbers (resumed, none cancelled) |
+| Pending uploads finished | Pass | Delhi 763 (10 new · 8 changed · 745 unchanged), Odisha 65 (4 · 6 · 55), Nashik 634 (69 · 10 · 555), Jharkhand 86 (6 · 9 · 71), Marathwada 100 (8 · 57 · 35), Hyderabad 237 (26 · 25 · 186), Nagpur-Sudhir 326 (11 · 16 · 299) — each total = rows in the file |
+| Phone | Pass | 390 px: review list readable (verdict under the file name), page does not scroll sideways |
+| Database change | Pass | bi_116a applied with counted replacements (old bodies in bi.fn_backup, wave 116a): 'touch' action, resume of a registered file with no rows, 'touch' allowed through bi_ingest |

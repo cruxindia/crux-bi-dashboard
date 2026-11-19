@@ -293,5 +293,6 @@ To deploy: publish the code (stash + sync, or a merged pull request), then deplo
 ## Upload panel, retry and revival (19-Nov-2026, wave 115)
 - Every admin page shows the Uploads panel (bottom left) while files are being sent or imported, or need attention. "Retry all" runs the suggested step for every file.
 - Server side: `select bi.upload_action('ops', 'retry', '{"batch_id": <id>}')` queues a failed file again (rows kept 24 h) or reopens a stopped send. Files waiting to retry by themselves show `next_try_at` in `bi.upload_job`.
-- The Drive button "All 3 folders" reads new or changed files of all three folders; the option "Import straight away" is stored per browser.
+- The Drive button "All 3 folders — check for new files" reads and checks the new or changed files of all three folders and lists them for review; only ticked files are imported (wave 116; "Import straight away" removed).
+- Every ticked file is registered on the server at Import (`bi.upload_job` status `sending`, no rows yet, `source` = where the file came from). If the page closes before a file's turn, the next admin page opened sends it (Drive files are read again). Files still waiting: `select batch_id, file_name, heartbeat from bi.upload_job where status = 'sending'`. A registered file nobody sends is closed after 2 hours (still resumable for 24 hours); cancel one with the `cancel` action above.
 
