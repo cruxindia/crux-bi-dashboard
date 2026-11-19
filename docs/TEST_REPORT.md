@@ -1090,3 +1090,18 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Drive by link at the live address: Zonal Tracker "nothing new" (136 files); Point wise 15 files read and previewed, not imported; every Drive call 200; no sign-in | Pass |
 | Revenue / Cases switches | Pass 9/9 (a first run timed out on the tracker tab while the pages recomputed after the target change; rerun 9/9), 0 JavaScript errors |
 
+## 19-Nov-2026 — wave 114 (uploads failing, phone, progress bar, duplicates)
+| Check | Result | Evidence |
+|---|---|---|
+| Cause of the failures | Found | logs: 19 "canceling statement due to statement timeout" 17:44–17:55 IST in `commit_case → relocate_cases → case_locate`; Case Wise PUNE / GUWAHATI / MUMBAI rejected, BANGLORE and an 18-Nov GUWAHATI left "staged"; UP-LUCKNOW "Failed to fetch" (phone) |
+| Case location step after the indexes | Pass | 1,200 Mumbai cases 32.7 s → 8.7 s; 300 cases 2.7 s (same function, same answers) |
+| Identical file flagged before Import (live page) | Pass | the 17-Nov tracker read from Drive twice: "Already imported 19.11.2026 (identical file) — skipped" both times; Import stays disabled |
+| Older copy flagged (phone size) | Pass | Nagpur_Sudhir_NOV.xlsx (Drive 14-Nov) "Older copy of the same report (Nagpur-Sudhir Nov 2026) — skipped; the newer file Nagpur_Sudhir_Nov.xlsx is used" |
+| Background import with the page closed (local build at the dashboard address, live data) | Pass | 16 Case Wise files read from Drive; 15 sent in 32 s; page closed; reopened 60 s later: all imported by the server between 18:26 and 18:29 IST (e.g. PUNE 298 new · 198 changed · 907 unchanged; GUJARAT 3,030 new; MUMBAI 139 changed · 2,851 unchanged); the older Nagpur Sudhir copy was cancelled before it ran (this test started before the older-copy rule existed) |
+| UP-LUCKNOW_NOV matched to Lucknow and imported | Pass | 528 rows, all unchanged (its cases were already saved) |
+| Stuck uploads closed | Pass | 815 (18-Nov) closed by the worker with "the page was closed before the upload finished"; 824 (19-Nov 17:52) is closed after 3 hours; its 426 saved cases stay and the 18:28 re-import finished the file |
+| Phone (390 px): page width | Pass | Overview and Uploads 390 = screen width (before: 465 / 450 — the "Admin workspace" button and a wide select pushed the page sideways) |
+| "Uploads on the server" on a phone | Pass | list with file, state, bar and result (screenshot uploads_on_server_phone.png) |
+| Revenue / Cases switches (live) | Pass 9/9, 0 JavaScript errors |
+| Planned November targets → your tracker targets | Pass (in real use) | the 17-Nov tracker uploaded 17:43 IST carried targets (₹3,82,37,250 · 97,485 cases): the planned set ended ("replaced_by_owner") and all 12 earlier November dates took them (1,860 rows); the 16-Nov file uploaded after it had none and kept them (183 rows) |
+
