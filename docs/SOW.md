@@ -1,10 +1,16 @@
-# Statement of Work (living) — last updated 19-Nov-2026 (wave 116; waves 104–105f are recorded in the decision log D267–D296 and their requirement audits)
+# Statement of Work (living) — last updated 19-Nov-2026 (wave 116b; waves 104–105f are recorded in the decision log D267–D296 and their requirement audits)
 
 **Objective.** Replace spreadsheet MIS with one reliable BI system linking Zonal Tracker (authoritative), Case Wise and Point Wise, from 1-Apr-2024, with drill-down, Force usage, TAT, forecasting and data-grounded insights.
 
 **Scope.** In: the three source categories in the Drive folder; Supabase database; dashboard; upload centre; tests; docs. Out: other tracker sheets (`10 Days Analysis`, `Haque`, `June 2026 Target Sheet`, `Old Tracker till Feb 2026`) by instruction; the "BOM Testing Files" folder and the 83 MB zip (not one of the three categories).
 
 **Inputs (as loaded).** 105 tracker snapshots (1-Jun → 9-Oct-2026; monthly history Apr-24 → Sep-26), 136 Case Wise files (Jan → Oct-2026, 17 location groups), 96 Point Wise files (Jan → Jul-2026) + 57 Point Wise files added 14-Oct (Jul replacements, Aug, Sep, Oct-2026; Kolhapur-Vinayak July only).
+
+## Wave 116b (request 19-Nov-2026 20:29 IST) — "Import ticked files button is not working", no pop-up
+**Objective.** "Import ticked files button is not working — Review: 0 ticked to import · 1 skipped … I also didn't get this pop up which you said I will get."
+**Findings.** The button was correctly switched off: after the 7 pending files were imported at 20:01–20:04, the only file the folders still suggested was the 17-Nov Zonal Tracker, identical to its 17:43 import, so there was nothing to import (web server log 20:25–20:29: checks only, no errors). But a switched-off button looked exactly like a working one, its label did not say why, and the review appeared in the page below the folder buttons (far down on a phone) instead of as a pop-up; the Uploads panel only appears while files are being sent or imported.
+**Work.** (1) The review opens as a pop-up over the page as soon as a folder button is pressed: progress while reading, then every file with its tick box, what is inside, the verdict, and Import at the bottom; full-screen on a phone. (2) When nothing can be imported the button says "Nothing to import" and the pop-up says why and how to add an older file (the folders' full file lists are inside the pop-up). (3) Buttons that cannot be pressed now look pale everywhere in the dashboard. (4) Import closes the pop-up and opens the Uploads panel with the progress. (5) A Drive file found identical to an import is not suggested again in that browser.
+**Decision.** D388. **Status.** Done 19-Nov-2026 — see TEST_REPORT wave 116b.
 
 ## Wave 116 (request 19-Nov-2026 19:35 IST) — why 24 of 32 uploaded, a review step for the Drive folders, finish the pending uploads
 **Objective.** "Only 24 out of 32 got uploaded and 1 is cancelled why? Even when I click on upload all 3, I should get an option to review and select the correct files, Looks like thats the problem. Rectify and finish the pending uploads."
@@ -639,6 +645,7 @@
 | D385 | **Files are registered at Import** (wave 116): every ticked file becomes an upload on the server at once (no rows yet, with where it came from); if the page is closed before a file's turn, the next admin page opened on any device reads the Drive file again and sends it ("Not sent yet — the page was closed before its turn — reading it again from Drive"); a dropped file shows "Choose the file". The sending page marks its waiting files alive every 45 s so another open page does not take them over. |
 | D386 | **Send order** (wave 116): files go in the order Import chose (oldest file first, Zonal Tracker by report date), not the order they were read. |
 | D387 | **The data month decides, the name is only checked** (wave 116): a Case Wise or Point Wise file is filed under the month most of its rows belong to (as before); a different month in the file name is now shown to the reviewer instead of passing silently. The 19-Nov `_OCT` Point Wise files hold November rows and stay filed under November. |
+| D388 | **Review as a pop-up** (wave 116b, owner 19-Nov 20:29): every Drive folder button opens the review pop-up (full screen on a phone) with the files, their tick boxes and Import; "Nothing to import" with the reason when nothing can be imported; the pop-up holds the folders' full file lists; Import opens the Uploads panel; switched-off buttons look switched off; Drive files found identical are remembered per browser and not suggested again. |
 ## Open questions (need business confirmation)
 17. **Lumen security (new, urgent):** functions in the public schema of the shared project (for example reset_data, bulk_write_off, sync_invoice) can be called with the public key. reset_data empties the Lumen tables. Decide whether Lumen calls them from its own page; if not, revoke anon execute (script in supabase/owner/owner_storage_cleanup.sql, commented). Not changed here: it is the Lumen app. **— Closed 29-Oct-2026: Lumen functions and tables are no longer reachable through the API (D207).**
 18. **Workforce master:** upload the HR workforce list (Admin workspace → HR / workforce master data) to enable capacity and attrition alongside growth. **— Superseded 29-Oct-2026: workforce and attrition come from Force1 only (D208); the HR list is optional.**
@@ -1165,3 +1172,9 @@ Status values: verified complete · incomplete · blocked · failed. Evidence is
 | "I should get an option to review and select the correct files" | Review list with tick boxes, rows by month, name-vs-data warnings, copy choice, full folder lists; "Import straight away" removed | D384; test: 8 files read → 7 ticked, 1 skipped; OCT-named copy with November rows not ticked with the reason; ticking the older copy swaps the choice; phone 390 px no sideways scroll | Done |
 | "Rectify" | Files registered at Import; a closed page's waiting files are sent by the next page; send order fixed | D385, D386; bi_116a; test: page closed after the first file, a new phone-size page sent the other 6 by itself, same uploads resumed (no new or cancelled entries) | Done |
 | "finish the pending uploads" | The 7 Case Wise files imported | jobs 868–874 done; rows reconcile file = new + changed + unchanged for all 7 (e.g. Delhi 763 = 10 + 8 + 745) | Done |
+
+## Requirement audit — 19-Nov-2026 20:29 IST (wave 116b)
+| Requirement | Work performed | Evidence | Result |
+|---|---|---|---|
+| "Import ticked files button is not working" | Cause found: nothing left to import (only an identical file) and the switched-off button looked active; label, reason and pale switched-off style added | log 20:25–20:29: checks only, no errors; test: "Nothing to import" with the reason; with an importable file "Import 1 ticked file" works | Done |
+| "I also didn't get this pop up" | Review opens as a pop-up from every folder button; Import opens the Uploads panel | test: pop-up opens on press, shows reading progress, list, Import; after Import the pop-up closes and the Uploads panel is open; phone 390 px full screen, no sideways scroll | Done |

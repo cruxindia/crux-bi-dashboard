@@ -130,6 +130,15 @@ tr:hover td{background:var(--blue-soft)}
 main select,main input:not([type=checkbox]):not([type=radio]){max-width:100%;box-sizing:border-box}   /* wave 114: long selects and inputs no longer push a phone page sideways */
 .uppanel{position:fixed;left:12px;bottom:18px;z-index:41;max-width:calc(100vw - 24px)}.uppanel[hidden]{display:none}
 .upwarn{color:var(--ochre);font-weight:600;margin-top:4px;max-width:56ch;white-space:normal}.upmini{display:none}@media (max-width:600px){.upmini{display:block;margin-top:4px}}
+.btn:disabled,.btn[disabled]{opacity:.45;cursor:not-allowed;filter:saturate(.3)}   /* wave 116b: a button that cannot be pressed now looks it */
+dialog.uprev{width:min(940px,calc(100vw - 24px));max-height:88vh;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);box-shadow:0 18px 50px rgba(10,16,24,.28)}
+dialog.uprev[open]{display:flex;flex-direction:column}dialog.uprev::backdrop{background:rgba(10,16,24,.45)}
+.uprevh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px 4px}.uprev>.note,.uprevsum{margin:2px 18px}.uprevsum{font-weight:600}
+.uprevb{overflow:auto;padding:4px 18px 8px;flex:1 1 auto;min-height:80px}.uprevl{list-style:none;margin:0;padding:0}
+.uprevl li{display:grid;grid-template-columns:28px 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}.uprevl li:last-child{border-bottom:0}
+.uprevl li input{width:20px;height:20px;margin-top:2px}.uprevl li.skip{opacity:.72}.uprevl .uprevn{font-weight:600;overflow-wrap:anywhere}
+.uprevf{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);background:var(--panel);border-radius:0 0 14px 14px}
+@media (max-width:600px){dialog.uprev{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border-radius:0;border:0}.uprevf{border-radius:0}.uprevf .btn{flex:1 1 auto}}
 .uppill{display:flex;align-items:center;gap:8px;max-width:min(380px,calc(100vw - 190px));border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 12px;box-shadow:0 4px 14px rgba(0,0,0,.16);font:inherit;font-size:13px;cursor:pointer}
 .uppill .uptx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.uppill progress{width:64px;flex:none}.uppill .upic{font-weight:700;color:var(--blue)}.uppanel.upbad .uppill{border-color:var(--bad)}.uppanel.upbad .upic{color:var(--bad)}
 .uppanel.open{z-index:45;width:min(440px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:10px 12px;max-height:min(70vh,640px);overflow:auto}
@@ -4201,15 +4210,18 @@ async function drivePicker(box,onFiles){box.innerHTML='';
   el('p',{class:'note'},`Browser key ${mask(G.api_key)} (works only from this dashboard's address).`),el('div',{class:'tools'},save),msg);
  if(!G.configured_link){st.textContent='Folder links are not set yet: an admin pastes them once under Folder links. Until then, download the files from Drive and drop them below.';return}
  st.textContent='Choose a folder.';
+ const say=t=>{st.textContent=t;const D=document.getElementById('upRev');if(D&&D.open&&D._noteEl)D._noteEl.textContent=t};   // wave 116b: progress shows in the pop-up too
+ const shut=()=>{const D=document.getElementById('upRev');if(D&&D.open)D.close()};
  const imports=()=>IMP||(IMP=adminCall('drive_config',{op:'imports'}).then(j=>{const m={};for(const x of j.imports||[]){const k=x.kind+'|'+drvNorm(x.name);if(!m[k]||m[k]<x.at)m[k]=x.at}return m}).catch(()=>({})));
- async function openFolder(fd){if(busy)return;busy=true;pane.innerHTML='';st.className='note';st.textContent=`Opening ${fd.label}…`;
-  try{let files;try{files=await drvList(G,fd)}catch(e){st.textContent=`${fd.label} could not be opened without Google sign-in (${e.message}). In Drive, set the folder to "Anyone with the link"`+(G.configured?', or use Google sign-in below.':'.');
+ async function openFolder(fd){if(busy)return;busy=true;pane.innerHTML='';st.className='note';upReview({home:pane,note:`Opening ${fd.label}…`});say(`Opening ${fd.label}…`);
+  try{let files;try{files=await drvList(G,fd)}catch(e){shut();st.textContent=`${fd.label} could not be opened without Google sign-in (${e.message}). In Drive, set the folder to "Anyone with the link"`+(G.configured?', or use Google sign-in below.':'.');
     if(G.configured)pane.append(el('button',{type:'button',class:'btn',onclick:()=>signIn(fd)},'Open '+fd.label+' with Google sign-in'));return}
    const auto=await mark(fd,files);const det=fileList(fd,files);
    IMP=null;   // the next press sees the latest imports
    pane.append(det);
-   if(auto.length)await readFiles(auto,fd);
-   else{st.textContent=`${fd.label}: nothing new or changed in the last 14 days since the last import (${files.length} files in the folder). Open the list to read a file again.`;det.open=true}}
+   const none=`${fd.label}: nothing new or changed in the last 14 days since the last import (${files.length} files in the folder).`;
+   upReview({home:pane,lists:[det],note:auto.length?`${fd.label}: ${auto.length} new or changed — reading…`:none});
+   if(auto.length)await readFiles(auto,fd);else say(none)}
   finally{busy=false}}
  // every file of a folder, to add one that was not picked (read files join the review list; files already in the list are not read twice)
  function fileList(fd,files){const inList=f=>UPQ.items.some(i=>i.src&&i.src.drive_id===f.id&&i.src.modified===f.modifiedTime&&!i.cleared);
@@ -4220,20 +4232,24 @@ async function drivePicker(box,onFiles){box.innerHTML='';
    el('div',{class:'tablewrap'},el('table',{},el('thead',{},el('tr',{},el('th',{},''),el('th',{},'File'),el('th',{},'Changed in Drive (IST)'),el('th',{},'Status'))),tb)),el('div',{class:'tools'},rd))}
  const SX={new:'Not imported yet',changed:'Changed since its last import',imported:'Imported'};
  async function mark(fd,files){const im=await imports(),now=Date.now();
-  for(const f of files){const at=im[fd.key+'|'+drvNorm(f.name)];f.last=at||null;f.state=!at?'new':(new Date(f.modifiedTime)>new Date(at)?'changed':'imported');f.recent=now-new Date(f.modifiedTime)<14*864e5;f.folder=fd.label}
+  let same={};try{same=JSON.parse(localStorage.getItem('crux_drv_same')||'{}')}catch{}
+  for(const f of files){const at=im[fd.key+'|'+drvNorm(f.name)];f.last=at||null;f.state=same[f.id]===f.modifiedTime?'imported':!at?'new':(new Date(f.modifiedTime)>new Date(at)?'changed':'imported');f.recent=now-new Date(f.modifiedTime)<14*864e5;f.folder=fd.label}
   return files.filter(f=>f.state!=='imported'&&f.recent).slice(0,25)}
  // wave 115: all three folders in one press — new or changed files from each, read together, one preview (or straight to import)
  async function openAll(){if(busy)return;busy=true;pane.innerHTML='';st.className='note';const all=[],parts=[];
-  try{const lists=[];for(const fd of F){st.textContent=`Opening ${fd.label}…`;try{const files=await drvList(G,fd);const a=await mark(fd,files);all.push(...a);lists.push(fileList(fd,files));parts.push(`${fd.label}: ${a.length?a.length+' new or changed':'nothing new'}`)}
+  upReview({home:pane,note:'Opening the 3 folders…'});
+  try{const lists=[];for(const fd of F){say(`Opening ${fd.label}…`);try{const files=await drvList(G,fd);const a=await mark(fd,files);all.push(...a);lists.push(fileList(fd,files));parts.push(`${fd.label}: ${a.length?a.length+' new or changed':'nothing new'}`)}
     catch(e){parts.push(`${fd.label}: could not be opened (${e.message})`)}}
    IMP=null;pane.append(el('p',{class:'note'},parts.join(' · ')),...lists);
-   if(all.length)await readFiles(all,{label:'the 3 folders'});else st.textContent=`Nothing new or changed in the last 14 days — ${parts.join(' · ')}. Open a folder's file list to read a file again.`}
+   upReview({home:pane,lists,note:parts.join(' · ')});
+   if(all.length)await readFiles(all,{label:'the 3 folders'});else say(`Nothing new or changed in the last 14 days — ${parts.join(' · ')}.`)}
   finally{busy=false}}
  async function readFiles(list,fd,token){if(!list.length){st.textContent='Tick at least one file.';return}const ok=[],bad=[];
   const had=f=>UPQ.items.some(i=>i.src&&i.src.drive_id===f.id&&i.src.modified===f.modifiedTime&&!i.cleared);const todo=list.filter(f=>!had(f)),dup=list.length-todo.length;
-  for(const [i,f] of todo.entries()){st.textContent=`Reading ${i+1} of ${todo.length} from ${fd.label}: ${f.name}`;try{f.folder=f.folder||fd.label;ok.push(await drvRead(G,f,token));f.picked=true}catch(e){bad.push(f.name+': '+e.message)}}
-  st.textContent=`${ok.length} file${ok.length===1?'':'s'} read from ${fd.label}`+(dup?` · ${dup} already in the review list`:'')+(bad.length?` · not read: ${bad.join('; ')}`:'')+(ok.length?' — checking them; then review the list below, tick the right files and press Import.':'');
-  if(ok.length){await onFiles(ok);st.textContent=`${ok.length} file${ok.length===1?'':'s'} read from ${fd.label} and checked`+(dup?` · ${dup} already in the review list`:'')+(bad.length?` · not read: ${bad.join('; ')}`:'')+' — review the list below: tick the right files, then press Import.'}}
+  if(!document.getElementById('upRev')||!document.getElementById('upRev').open)upReview({home:pane});
+  for(const [i,f] of todo.entries()){say(`Reading ${i+1} of ${todo.length} from ${fd.label}: ${f.name}`);try{f.folder=f.folder||fd.label;ok.push(await drvRead(G,f,token));f.picked=true}catch(e){bad.push(f.name+': '+e.message)}}
+  say(`${ok.length} file${ok.length===1?'':'s'} read from ${fd.label}`+(dup?` · ${dup} already in the review list`:'')+(bad.length?` · not read: ${bad.join('; ')}`:'')+(ok.length?' — checking them…':''));
+  if(ok.length){await onFiles(ok);say(`${ok.length} file${ok.length===1?'':'s'} read from ${fd.label} and checked`+(dup?` · ${dup} already in the review list`:'')+(bad.length?` · not read: ${bad.join('; ')}`:'')+' — tick the right files, then press Import.')}}
  // fallback: Google sign-in and Google's file picker (only for a folder that is not shared by link)
  let tc=null,token=null,tokenExp=0,pending=null;
  async function signIn(fd){try{if(!tc){st.textContent='Loading Google sign-in…';await Promise.all([loadJs('https://accounts.google.com/gsi/client'),loadJs('https://apis.google.com/js/api.js')]);
@@ -4305,6 +4321,8 @@ const UPQ={items:[],jobs:[],views:new Set(),pollT:null,resT:null,booted:false,se
   for(const L of Object.values(grp))if(L.length>1){L.sort((a,b)=>(b.prefer?1:0)-(a.prefer?1:0)||b.mod-a.mod);
    for(const o of L.slice(1)){o.status=`Another copy of the same report (${o.kind==='zonal'?'report date '+ddmm(o.snapshot):o.group+' '+mlabel(o.period)}) — skipped; ${L[0].file.name} is used`+(L[0].impAt?' (it is already imported)':'')+(o.impAt?` · this copy was imported ${ddmm(o.impAt)}`:'. Tick this one to use it instead');o.phase='skip';o.skipWhy='older'}}
   for(const it of rd)if(it.phase==='ready'&&it.impAt){it.status=`Already imported ${ddmm(it.impAt)} (identical file) — skipped`;it.phase='skip';it.skipWhy='imported'}
+  try{const m=JSON.parse(localStorage.getItem('crux_drv_same')||'{}');let n=0;for(const it of rd)if(it.impAt&&it.src&&it.src.drive_id&&it.src.modified){m[it.src.drive_id]=it.src.modified;n++}
+   if(n){const k=Object.keys(m);for(const x of k.slice(0,Math.max(0,k.length-500)))delete m[x];localStorage.setItem('crux_drv_same',JSON.stringify(m))}}catch{}   // wave 116b
   for(const it of this.items)if(!it.started){if(it.phase!=='ready')it.pick=false;else if(!it.pickUser)it.pick=!it.warn}   // ticked by default: ready and nothing to question
   this.changed()},
  dupKey(it){return it.kind==='zonal'?'zonal|'+it.snapshot:it.kind+'|'+it.group+'|'+it.period},
@@ -4455,6 +4473,50 @@ const UPQ={items:[],jobs:[],views:new Set(),pollT:null,resT:null,booted:false,se
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)this.poll()});
   this.poll()}
 };
+const UPKN={zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise',collection:'Collection workbook',outstanding:'Outstanding workbook'};
+const upSrcTxt=it=>{const s=it.src;return s&&s.drive_id?`${s.folder||'Google Drive'} · changed in Drive ${drvWhen(s.modified)}`:'Chosen from this device'};
+const upMonthTxt=it=>it.kind==='zonal'?(it.snapshot?'report date '+ddmm(it.snapshot):'report date missing'):it.kind==='collection'?'receipts to '+ddmm(it.period||''):it.kind==='outstanding'?(it.asof?'as on '+ddmm(it.asof):'snapshot date missing'):(it.period?mlabel(it.period):'month missing');
+// review counts, shared by the list on the Uploads page and the review pop-up
+function upReviewStats(){const rev=UPQ.items.filter(i=>!i.started);return{rev,nPick:rev.filter(i=>i.phase==='ready'&&i.pick).length,nWarn:rev.filter(i=>i.phase==='ready'&&i.warn&&!i.pick).length,
+ nSkip:rev.filter(i=>i.phase==='skip').length,nFix:rev.filter(i=>i.phase==='needs').length,nOff:rev.filter(i=>i.phase==='ready'&&!i.pick&&!i.warn).length,nRead:rev.filter(i=>i.phase==='read').length}}
+function upReviewText(c){c=c||upReviewStats();if(!c.rev.length)return'';
+ return(c.nRead?`Checking ${c.nRead} file${c.nRead>1?'s':''}… · `:'')+`${c.nPick} ticked to import`+(c.nWarn?` · ${c.nWarn} not ticked — the file name and the data disagree; tick it if it is the right file`:'')+(c.nOff?` · ${c.nOff} unticked by you`:'')+
+  (c.nSkip?` · ${c.nSkip} skipped (already imported, the same file twice, or another copy of the same report)`:'')+(c.nFix?` · ${c.nFix} need a location group or month first`:'')}
+// Import from the review: the Uploads panel opens so the progress is visible at once
+function upImportTicked(){const c=upReviewStats();if(!c.nPick)return;UPQ.importReady();UPQ.open=true;UPQ.render();toast(`Importing ${c.nPick} file${c.nPick>1?'s':''} — progress is in the Uploads panel at the bottom left.`)}
+/* wave 116b (owner 19-Nov 20:29: "Import ticked files button is not working … I also didn't get this pop up"): after a Drive folder button the review
+   opens as a pop-up over the page — each file read, what is inside, the verdict and a tick box — with Import at the bottom. When nothing can be imported
+   it says why, and the folders' full file lists are in the same pop-up to add an older file. */
+function upReview(o={}){let D=document.getElementById('upRev');
+ if(!D){D=el('dialog',{id:'upRev',class:'uprev','aria-labelledby':'upRevH'});document.body.append(D);
+  D.addEventListener('close',()=>{UPQ.views.delete(D._view);if(D._home&&D._lists)D._home.append(...D._lists);D._lists=null})}
+ const keep=D.open?D._lists:null;if(keep&&o.lists&&D._home)D._home.append(...keep);
+ D.innerHTML='';D._home=o.home||D._home||null;D._lists=o.lists&&o.lists.length?o.lists:keep;D._noteEl=el('p',{class:'note'},o.note||'');
+ const sum=el('p',{class:'uprevsum','aria-live':'polite'}),list=el('ul',{class:'uprevl'}),why=el('p',{class:'note',style:'margin:0;flex-basis:100%'});
+ const go=el('button',{type:'button',class:'btn primary',onclick:()=>{upImportTicked();D.close()}}),
+  tAll=el('button',{type:'button',class:'btn ghost',onclick:()=>{for(const i of UPQ.items)if(!i.started&&i.phase==='ready'){i.pick=true;i.pickUser=true}UPQ.changed()}},'Tick all ready'),
+  unt=el('button',{type:'button',class:'btn ghost',onclick:()=>{for(const i of UPQ.items)if(!i.started){i.pick=false;i.pickUser=true}UPQ.changed()}},'Untick all');
+ D.append(el('div',{class:'uprevh'},el('h3',{id:'upRevH',style:'margin:0'},'Review before import'),el('button',{type:'button',class:'btn sm ghost',onclick:()=>D.close()},'Close')),
+  D._noteEl,sum,
+  el('div',{class:'uprevb'},list,D._lists?el('details',{style:'margin-top:12px'},el('summary',{},'Add a file that was not picked (all files in the folders)'),...D._lists):null),
+  el('div',{class:'uprevf'},go,tAll,unt,why));
+ const ord=i=>i.phase==='ready'?(i.pick?0:1):i.phase==='read'?2:i.phase==='needs'?3:4;
+ const draw=()=>{if(!D.open)return;const c=upReviewStats();sum.textContent=c.rev.length?upReviewText(c)+'.':'No files to review.';
+  go.disabled=!c.nPick;go.textContent=c.nPick?`Import ${c.nPick} ticked file${c.nPick>1?'s':''}`:'Nothing to import';tAll.hidden=unt.hidden=!c.rev.some(i=>i.phase==='ready');
+  why.textContent=c.nPick?'Nothing is written until you press Import. The files are then sent one by one; you can close the page once a file shows "Sent".':
+   c.nRead?'Still checking the files…':(c.rev.length?'Nothing new to import: every file found is already imported, another copy of the same report, or needs a fix first. ':'No new or changed files were found in the last 14 days. ')+
+   (D._lists?'To import an older file, open "Add a file that was not picked" above, tick it and press "Add ticked files to the review".':'');
+  list.innerHTML='';
+  for(const it of [...c.rev].sort((a,b)=>ord(a)-ord(b))){const can=it.phase==='ready'||(it.phase==='skip'&&it.skipWhy==='older'&&!it.impAt);
+   const cb=el('input',{type:'checkbox','aria-label':'Import '+it.file.name,disabled:can?null:''});cb.checked=!!(it.pick&&it.phase==='ready');cb.onchange=()=>UPQ.tick(it,cb.checked);
+   const chip=it.phase==='read'?['Checking…','warn']:it.phase==='ready'?(it.pick?['Ready — ticked','good']:it.warn?['Check before ticking','warn']:['Ready — not ticked','warn']):it.phase==='needs'?['Needs a fix','bad']:['Skipped','good'];
+   list.append(el('li',{class:it.phase==='skip'?'skip':''},el('div',{},cb),el('div',{},
+    el('div',{class:'uprevn'},it.file.name),el('div',{class:'note'},upSrcTxt(it)),
+    el('div',{class:'note'},[UPKN[it.kind]||'Not recognised',it.group||null,it.kind?upMonthTxt(it):null,it.summary||null].filter(Boolean).join(' · ')),
+    el('div',{style:'margin-top:4px'},el('span',{class:'chip '+chip[1]},chip[0]),it.phase==='skip'||it.phase==='needs'?el('span',{class:'note'},' '+it.status):null),
+    it.warn&&['ready','needs'].includes(it.phase)?el('div',{class:'upwarn'},'⚠ '+it.warn):null,
+    it.phase==='needs'?el('button',{type:'button',class:'btn sm',style:'margin-top:6px',onclick:()=>{D.close();const r=document.getElementById('upReview');if(r)r.scrollIntoView({behavior:'smooth'})}},'Fix it in the list on the Uploads page'):null)))}};
+ D._view=draw;UPQ.views.add(draw);if(!D.open)D.showModal();draw()}
 function uploadUI(s){
  const mx=el('div',{class:'card',style:'margin-bottom:18px'});s.append(mx);dailyUpdateUI(mx);s.append(el('h3',{},'File upload — Case Wise, Point Wise, Zonal Tracker, Collection or Outstanding workbook'));
  s.append(el('p',{class:'lede'},'Drop any mix of Zonal Tracker, Case Wise and Point Wise files, or pick them up from Google Drive. Each file is identified, previewed and checked before anything is written; identical files and older copies are skipped. After Import each file is sent to the server in a few seconds and imported there — the Uploads panel at the bottom of every page shows the progress, and once a file shows "Sent" you can close the page or your phone.'));
@@ -4470,8 +4532,8 @@ function uploadUI(s){
  drop.addEventListener('drop',ev=>UPQ.add([...ev.dataTransfer.files]));inp.onchange=()=>{UPQ.add([...inp.files]);inp.value=''};const dvb=el('div',{class:'card',id:'drivePick',style:'margin:0 0 12px'});
  const jobsBox=el('div',{class:'card',id:'upJobs',style:'margin:0 0 12px',hidden:''});s.append(dvb,drop,list,jobsBox);
  // wave 112d / 115 / 116: Drive folders — the files read from Drive join the review list below; nothing is imported until Import is pressed
- drivePicker(dvb,async fs=>{await UPQ.add(fs);try{list.scrollIntoView({behavior:'smooth',block:'start'})}catch{}});
- const runBtn=el('button',{class:'btn primary',disabled:'',onclick:()=>UPQ.importReady()},'Import ticked files'),
+ drivePicker(dvb,async fs=>{await UPQ.add(fs)});
+ const runBtn=el('button',{class:'btn primary',disabled:'',onclick:()=>upImportTicked()},'Import ticked files'),
   tickAll=el('button',{type:'button',class:'btn sm ghost',hidden:'',onclick:()=>{for(const i of UPQ.items)if(!i.started&&i.phase==='ready'){i.pick=true;i.pickUser=true}UPQ.changed()}},'Tick all ready'),
   untickAll=el('button',{type:'button',class:'btn sm ghost',hidden:'',onclick:()=>{for(const i of UPQ.items)if(!i.started){i.pick=false;i.pickUser=true}UPQ.changed()}},'Untick all'),
   revTxt=el('p',{class:'note',id:'upReview','aria-live':'polite'}),
@@ -4480,15 +4542,13 @@ function uploadUI(s){
  list.append(revTxt,el('div',{class:'tools'},runBtn,tickAll,untickAll,retryBtn,clearBtn,ovBar,ovTxt));const tb=el('div');list.append(tb);
  const KN={zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise',collection:'Collection workbook',outstanding:'Outstanding workbook'};
  const chipCls=it=>it.phase==='ready'&&it.warn&&!it.pick?'warn':['done','fin','skip'].includes(it.phase)||it.phase==='ready'?'good':['fail','sendfail','needs','cancelled'].includes(it.phase)?'bad':'warn';
- const srcTxt=it=>{const s=it.src;return s&&s.drive_id?`${s.folder||'Google Drive'} · changed in Drive ${drvWhen(s.modified)}`:'Chosen from this device'};
+ const srcTxt=upSrcTxt;
  function draw(){const items=UPQ.items;tb.innerHTML='';
   // wave 116 (owner 19-Nov 19:35: "I should get an option to review and select the correct files"): only ticked files are imported
-  const rev=items.filter(i=>!i.started),nPick=rev.filter(i=>i.phase==='ready'&&i.pick).length,nWarn=rev.filter(i=>i.phase==='ready'&&i.warn&&!i.pick).length,
-   nSkip=rev.filter(i=>i.phase==='skip').length,nFix=rev.filter(i=>i.phase==='needs').length,nOff=rev.filter(i=>i.phase==='ready'&&!i.pick&&!i.warn).length;
-  runBtn.disabled=!nPick;runBtn.textContent=nPick?`Import ${nPick} ticked file${nPick>1?'s':''}`:'Import ticked files';
+  const c=upReviewStats(),rev=c.rev,nPick=c.nPick;
+  runBtn.disabled=!nPick;runBtn.textContent=nPick?`Import ${nPick} ticked file${nPick>1?'s':''}`:(rev.length?'Nothing to import':'Import ticked files');
   tickAll.hidden=untickAll.hidden=!rev.some(i=>i.phase==='ready');
-  revTxt.textContent=!rev.length?'':`Review: ${nPick} ticked to import`+(nWarn?` · ${nWarn} not ticked — the file name and the data disagree; tick it if it is the right file`:'')+(nOff?` · ${nOff} unticked by you`:'')+
-   (nSkip?` · ${nSkip} skipped (already imported, the same file twice, or another copy of the same report)`:'')+(nFix?` · ${nFix} need a location group or month before they can be ticked`:'')+'. Nothing is written until you press Import.';
+  revTxt.textContent=!rev.length?'':'Review: '+upReviewText(c)+'. '+(nPick?'Nothing is written until you press Import.':'Nothing new to import — every file in the list is already imported, another copy, or needs a fix first.');
   const E=UPQ.entries(),fixable=E.some(e=>e.acts.some(a=>a[2])&&!['needs','done'].includes(e.phase));retryBtn.hidden=!fixable;clearBtn.hidden=!items.some(i=>!['send','queuedlocal','paused','srv'].includes(i.phase));
   const act=items.filter(i=>i.started&&i.x&&UPK[i.kind]),tot=act.reduce((a,i)=>a+i.x.rows.length,0),pc=tot?act.reduce((a,i)=>a+i.x.rows.length*(i.phase==='done'?1:(i.prog||0)),0)/tot:0;
   const sending=items.some(i=>['send','queuedlocal','paused'].includes(i.phase)),srv=items.some(i=>i.phase==='srv');

@@ -1127,3 +1127,14 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Pending uploads finished | Pass | Delhi 763 (10 new · 8 changed · 745 unchanged), Odisha 65 (4 · 6 · 55), Nashik 634 (69 · 10 · 555), Jharkhand 86 (6 · 9 · 71), Marathwada 100 (8 · 57 · 35), Hyderabad 237 (26 · 25 · 186), Nagpur-Sudhir 326 (11 · 16 · 299) — each total = rows in the file |
 | Phone | Pass | 390 px: review list readable (verdict under the file name), page does not scroll sideways |
 | Database change | Pass | bi_116a applied with counted replacements (old bodies in bi.fn_backup, wave 116a): 'touch' action, resume of a registered file with no rows, 'touch' allowed through bi_ingest |
+
+## 19-Nov-2026 — wave 116b (button "not working", review pop-up)
+| Check | Result | Evidence |
+|---|---|---|
+| Owner's 20:25–20:29 use | Explained | web server log: Drive checks only, all answered (200); the only suggested file was the 17-Nov Zonal Tracker, identical to its import → nothing to import |
+| Pop-up on press (local build at the dashboard address, live Drive) | Pass | opens at once ("Opening Zonal Tracker…"), then "0 ticked to import · 1 skipped", button "Nothing to import" switched off with the reason |
+| Add an older file inside the pop-up | Pass | ODISHA_OCT.xlsx from "All files in Point wise" → "Already imported 13.11.2026 (identical file)" |
+| Importable file | Pass | a re-saved copy (not identical) → "Import 1 ticked file"; the older copy shown as "Another copy … this copy was imported"; Import (stand-in, nothing written) received exactly that file; pop-up closed, toast shown |
+| Uploads panel after Import | Pass | panel open: "Uploading 0 of 1 done · 50%" |
+| Identical file not suggested again | Pass | second press in the same browser: "Nothing new or changed … Zonal Tracker: nothing new · Point wise: nothing new · Case wise: nothing new" |
+| Phone 390 px | Pass | pop-up full screen, Import at the bottom, page does not scroll sideways; screenshots modal_phone_1/2.png |
