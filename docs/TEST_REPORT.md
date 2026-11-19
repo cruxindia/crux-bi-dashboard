@@ -1105,3 +1105,13 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Revenue / Cases switches (live) | Pass 9/9, 0 JavaScript errors |
 | Planned November targets → your tracker targets | Pass (in real use) | the 17-Nov tracker uploaded 17:43 IST carried targets (₹3,82,37,250 · 97,485 cases): the planned set ended ("replaced_by_owner") and all 12 earlier November dates took them (1,860 rows); the 16-Nov file uploaded after it had none and kept them (183 rows) |
 
+## 19-Nov-2026 — wave 115 (one Drive button, progress pop-up, retry, revival)
+| Check | Result | Evidence |
+|---|---|---|
+| "All 3 folders" (local build at the dashboard address, live Drive) | Pass | one press: Zonal Tracker, Point wise and Case wise listed; only the unrecognised training copy was new ("Not recognised"); nothing imported |
+| Connection lost while sending (phone size; server replaced by a test double, nothing written) | Pass | real Drive file Pune_NOV.xlsx (3,132 rows); connection cut after piece 1: "Connection lost after 1,000 of 3,132 rows — it carries on by itself when the connection is back"; connection back → sent by itself |
+| Server failure → Retry | Pass | permanent error shown "The server could not import it … 1,566 of 3,132 rows are saved" with "Retry on the server" and "Re-upload"; "Retry all" → imported |
+| Revival after a closed page | Pass | a send stopped at 2,000 of 3,132 rows (no piece for 10 minutes) was read again from Drive, matched by content and finished from row 2,001 (9 pieces in total) |
+| Server rules (database, rolled back) | Pass | failed with rows kept → `retried` (batch staged, job queued); stopped send with 2,000 rows → `resume` (held 2,000); nothing kept → `need_file`; "statement timeout" counts as a passing error, "duplicate key" does not |
+| Uploads panel on a phone | Pass | pill and open panel fit 390 px; screenshots panel_paused.png, panel_failed.png |
+

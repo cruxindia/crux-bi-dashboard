@@ -377,3 +377,11 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.upload_work(seconds)` | Background importer (pg_cron `bi-upload-worker`, every minute): one file at a time with the existing commit functions; also closes stale sends and half-done page uploads |
 | Indexes | `point_store_case_pin_idx` (case_id, point_id) include (pincode, point_type_id) where pincode is a real pincode; `case_store_branch_id_idx` (branch_id) |
 
+## Upload retry and revival (19-Nov-2026, wave 115 — bi_115a, bi_115b)
+| Object | Meaning |
+|---|---|
+| `bi.upload_job.source` | Where the file came from: `{drive_id, rk, mime, modified, name}` for a Drive file, `{local, name, size, modified}` for a dropped file |
+| `bi.upload_job.revivals`, `next_try_at` | Server re-queues after a passing error (up to 3, after 10 / 20 / 30 minutes) and when the next try is due |
+| `bi.upload_action` 'retry' | failed with rows kept → queued again from the last saved piece; stopped send → reopened for the page (`resume`, rows held); else `need_file` |
+| `bi.upload_action` 'jobs' | adds file_hash, source, held (rows received), heartbeat, revivals, next_try_at |
+

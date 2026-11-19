@@ -290,3 +290,8 @@ To deploy: publish the code (stash + sync, or a merged pull request), then deplo
 - Cancel a waiting file: `select bi.upload_action('<name>', 'cancel', '{"batch_id": <id>}')`.
 - Collection and outstanding workbooks are not part of the background import (their own flow, unchanged).
 
+## Upload panel, retry and revival (19-Nov-2026, wave 115)
+- Every admin page shows the Uploads panel (bottom left) while files are being sent or imported, or need attention. "Retry all" runs the suggested step for every file.
+- Server side: `select bi.upload_action('ops', 'retry', '{"batch_id": <id>}')` queues a failed file again (rows kept 24 h) or reopens a stopped send. Files waiting to retry by themselves show `next_try_at` in `bi.upload_job`.
+- The Drive button "All 3 folders" reads new or changed files of all three folders; the option "Import straight away" is stored per browser.
+
