@@ -359,12 +359,13 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 ## Planned targets, BRT, Drive by link (18-Nov-2026, wave 113 — bi_113a, bi_113b, bi_113c)
 | Object | Meaning |
 |---|---|
-| `bi.target_fill_set` | One planned target set per month: status active / replaced_by_owner / withdrawn, method, totals, bridge, who, why, when it ended and the report date whose file replaced it |
-| `bi.target_fill_row` | Planned target per team (location) × client code: target cases, target revenue, rate, situation, calculation, reason |
-| `bi.target_fill_log` | Every tracker leaf row the dashboard changed: report date, sheet row, kind (planned / owner / withdrawn), old and new target cases and revenue, old achievement and shortfall, source report date, current flag |
+| `bi.target_fill_set` | A target set of a month — kind planned (dashboard) or final (the owner's finalized targets, wave 118): status active / replaced_by_owner / replaced_by_final / replaced / withdrawn, method, totals, bridge, who, why, file name, when it ended, the report date whose file replaced it and the set that replaced it |
+| `bi.target_fill_row` | Target per team (location) × client code of a set: target cases, target revenue, rate, situation, calculation, reason, note (finalized: the owner's note or "kept as it was (not in the file)") |
+| `bi.target_fill_log` | Every tracker leaf row the dashboard changed: report date, sheet row, kind (planned / owner / final / withdrawn), old and new target cases and revenue, old achievement and shortfall, source report date, current flag, the log row in use before (finalized; restored on withdraw) |
 | `bi.target_sheet_running(month)` | Target sheet for the running month with the previous month complete as the base (copy of `bi.api_target_sheet`) |
-| `bi.target_source(month)` | `{target_source: {source: planned / owner / tracker / none, as_of, owner_targets_from, set}}`; added to `bi.api_overview` and Ask Crux's business summary |
-| `bi.target_fill_on_commit(date)` | Called at the end of `bi.commit_zonal`; result returned as `target_fill`; errors become a `target_fill_failed` warning, never a failed upload |
+| `bi.target_source(month)` | `{target_source: {source: final / planned / owner / tracker / none, as_of, owner_targets_from, set (planned), final}}`; added to `bi.api_overview` and Ask Crux's business summary |
+| `bi.target_final_save / _check / _withdraw / _template / _apply / _write`, `bi.target_fill_auto()` | Finalized targets (wave 118): save, check (rolled back), withdraw, template rows, write into report dates; nightly planned targets |
+| `bi.target_fill_on_commit(date)` | Called at the end of `bi.commit_zonal` (finalized targets of the month first); result returned as `target_fill`; errors become a `target_fill_failed` warning, never a failed upload |
 | `bi.client` BRT | family BOM, product BRT (was its own family) |
 | `bi.app_setting` google_drive `folders[]` | `{key, label, id, rk, link}`; `drive_config` op `imports` lists the latest import per kind and file name |
 
