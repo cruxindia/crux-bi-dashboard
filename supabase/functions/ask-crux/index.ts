@@ -279,7 +279,8 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const cands: any[] = (Array.isArray(mem?.answers) ? mem.answers : []).filter((x: any) => !FOLLOW_C.test(String(x.question ?? '')));
   // similarity alone cannot separate "Pune" from "Nagpur" or "ahead" from "behind": the key words must match too (see questionKeys)
   const vocab = vocabOf(meta), qk = questionKeys(question, pseudo, vocab);
-  const keyed = (followUp ? [] : cands.filter((x) => x.same_ctx && x.answer?.answer)).map((x) => ({ x, k: questionKeys(String(x.question ?? ''), pseudo, vocab) }));
+  // wave 117: a detailed request is only answered from an earlier answer that was itself written in the detailed format (older short answers are not reused)
+  const keyed = (followUp ? [] : cands.filter((x) => x.same_ctx && x.answer?.answer && (!detailed || x.answer?.detailed === true) && !x.answer?.clarify)).map((x) => ({ x, k: questionKeys(String(x.question ?? ''), pseudo, vocab) }));
   const best = keyed.find(({ x, k }) => +x.sim >= reuseSim && String(x.data_version) === String(mem?.current_version) && k.content === qk.content)?.x ?? null;
   const near = keyed.find(({ x, k }) => +x.sim >= adaptSim && Array.isArray(x.plan) && x.plan.length && k.entity === qk.entity)?.x ?? null;
   const scopeTxt0 = Object.keys(filters).length ? Object.entries(filters).map(([k, v]) => `${k.replace('_id', '').replace('_', ' ')} ${v}`).join(', ') : 'All India';
@@ -292,7 +293,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
         answer: { ...A, reused_from: best.id }, mode: 'reused', reuse_of: best.id, embedding: vecTxt(emb), ctx_key: ctxKey, plan: best.plan ?? null,
         trace: { mode: 'reused', reuse_of: best.id, sim: best.sim, usage: { calls: 0, prompt: 0, output: 0 }, ms: Date.now() - t0 } });
     } catch { log = {}; }
-    return { mode: 'agent', provider: 'memory', answer: noVendor(A.answer), next: (A.next ?? []).map(noVendor), steps: A.steps ?? [], check: A.check ?? { figures: 0, traced: 0, untraced: [] },
+    return { mode: 'agent', provider: 'memory', detailed: !!A.detailed, history_turns: 0, answer: noVendor(A.answer), next: (A.next ?? []).map(noVendor), steps: A.steps ?? [], check: A.check ?? { figures: 0, traced: 0, untraced: [] },
       sources: A.sources ?? [], rounds: 0, usage: { calls: 0, prompt: 0, output: 0 }, memory: { mode: 'reused', of: best.id, sim: best.sim, asked: best.created_at, question: best.question },
       period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt0, as_of: dataAsOf, month: ctx.month,
       message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: 0 };

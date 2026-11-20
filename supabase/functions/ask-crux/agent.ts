@@ -503,7 +503,7 @@ HOW TO WORK
 13. CLIENT STRUCTURE: what a level or centre of a client bank does (LHO, AO, RBO, RACPC, SMECCC, ULP, Retail Asset Hub …), which products it handles and which level sends Crux work come from get_client_structure; so does "what is <client>" (pass the client code or name as client_family). Never guess what a client code or abbreviation stands for: if the reference does not give a full name, say it is not recorded; give the source basis (bank's own site, news report, encyclopedia, or read from unit names) when you describe a level.
 14. BRANCH WORDS: a "Business Associate" (older words: partner, associate, franchise) is a partner that runs a client in a location for Crux; a "Crux Branch" (older words: own branch, our branch) is our own team in a location. A "branch" named with a bank or client (SBI branch, HDFC branches) or a unit type (RACPC, RAC) is the CLIENT's branch (get_branch_units). "Crux Branch", "our branches", "own branches" or a Crux location name means our own team. Questions comparing associates / partners with Crux Branches / own branches, or about either group's performance, use get_assoc_comparison (who runs what and since when: get_operating_model). In answers always say "Business Associates" and "Crux Branches" (never "partners" or "own branches"), and never call client branches Crux Branches. If "branch" could mean either, say which meaning you used in the first line.
 15. TARGET SOURCE: when get_business_summary gives targets_source.note, add that sentence once, word for word, right after the first line whenever the answer gives a target, achievement or gap (never paraphrase it as "targets source is planned"). source "planned" = the dashboard's planned targets (the owner's own targets are not uploaded yet); "owner" = carried from the owner's tracker file of owner_targets_from; "tracker" = from the tracker files; "none" = no targets.
-16. CONVERSATION: the user's message may continue the conversation shown before it. Read it together with the earlier turns: resolve "it", "this", "that", "same", "also", "instead", "now", "only", "except", "add", "remove", "change", "more detail", "as a table", "for X" against them. When the user changes one thing (period, scope, person, team, client, columns, measure, format, level of detail), redo the earlier request with that change and keep everything else as before (re-run its look-ups with the change). When the user answers a question you asked (CLARIFY), carry on with the original request using that answer. Never treat a follow-up as a new, unrelated question, and never ask again what the conversation already settled.
+16. CONVERSATION: the user's message may continue the conversation shown before it. Read it together with the earlier turns: resolve "it", "this", "that", "same", "also", "instead", "now", "only", "except", "add", "remove", "change", "more detail", "as a table", "for X" against them. When the user changes one thing (period, scope, person, team, client, columns, measure, format, level of detail), redo the earlier request with only that change and keep everything else as before — the same kind of item (branch managers stay branch managers, teams stay teams), the same ranking measure, the same measures and the same format — by re-running the same look-ups (the same tools, as listed under "Look-ups behind this answer") with only that change. When the user answers a question you asked (CLARIFY), carry on with the original request using that answer. Never treat a follow-up as a new, unrelated question, and never ask again what the conversation already settled.
 17. ASK WHEN UNSURE: if the request is unclear in a way that would change the answer and no sensible default exists — a name or code matching several people, teams or clients; "branch" that could be a Crux Branch or a client branch when both readings fit; a ranking with no measure when cases and revenue would give different results; a large report with no scope — do not guess: reply with only these lines, before any look-up when possible:
 CLARIFY: <one short question>
 OPTION: <a short answer the user can tap>
@@ -526,6 +526,8 @@ DASHBOARD RULES (always apply)
 - Client rows of the full target sheet are admin-only for all India; viewers get zone and team totals and one team at a time (team_id).
 - Prefer the figures the dedicated tools return; do not recompute with run_sql what a tool already gives. Receivable ageing (over 90 / over 180 days) comes from get_collections (by_location, by_client, ageing); the outstanding view has invoice months only, not exact age.
 - Potential: total_potential = current_business + gap_to_potential; now_share_of_potential_by_value = current business ÷ total potential (by value, not branches); give the clients and branches (active of all) with it.
+- Rankings of low performers leave out items with neither a target nor any business (nothing to compare) and say how many were left out.
+- Client rows: name the client (code or product), not only its family — a family such as BOM has several products (BOM, BOM MSME, BRT …); never repeat a family on several rows without the product.
 - A question about a person (branch manager) is about everything that person manages: call get_branch_managers with filters {} (all India) and find the person's code there; a team named after a person is only one of their teams.
 
 TEAMS (team_id=label [zone group]): ${teams}
@@ -655,6 +657,8 @@ export function unitQuestion(q: string, teams: { id: number; label: string; zone
 export class AgentError extends Error { constructor(msg: string, public status = 0, public steps: any[] = [], public detail: any = null) { super(msg); } }
 export type AgentOut = { text: string; model: string; rounds: number; steps: any[]; check: ReturnType<typeof checkFigures>; usage: { calls: number; prompt: number; output: number }; clarify?: boolean };
 // wave 117: Ask Crux asks back when the request is unclear (rule 17)
+// wave 117: "## ## Title" or "#### Title" from the model becomes one "## Title"
+export const tidyHeadings = (t: string) => String(t ?? '').replace(/^[ \t]*(?:#{1,6}[ \t]+)+(?=\S)/gm, '## ');
 export const isClarify = (t: string) => /(^|\n)\s*\**CLARIFY\**\s*:/i.test(String(t ?? ''));
 export function parseClarify(t: string): { question: string; options: string[] } | null {
   if (!isClarify(t)) return null;
@@ -831,19 +835,19 @@ export async function runAgent(o: {
           (toolCalls ? '' : 'You did not call any tool. ') + 'Call the tools you need now, then write the full final answer again in the same format, using only figures from tool results.' }] });
         continue;
       }
-      finalText = text; finalCheck = ck;
+      finalText = tidyHeadings(text); finalCheck = ck;
       if (firstCheck && firstCheck.untraced.length < ck.untraced.length) { finalText = firstText; finalCheck = firstCheck; }
       break;
     }
     // wave 117: the review or the repair failed (provider error or time) — the reviewed draft is kept when it is sound
     if ((failed || !finalText) && draft) {
       const ck = draftCheck ?? checkFigures(draft, [...evidence, ...mEvidence, { question_numbers: o.question }]);
-      if (!(ck.untraced.length >= 3 && ck.figures < 12) && !(ck.figures && ck.untraced.length / ck.figures > 0.25)) return { text: draft, model, rounds, steps: [...steps, ...mSteps], check: ck, usage };
+      if (!(ck.untraced.length >= 3 && ck.figures < 12) && !(ck.figures && ck.untraced.length / ck.figures > 0.25)) return { text: tidyHeadings(draft), model, rounds, steps: [...steps, ...mSteps], check: ck, usage };
     }
     if (failed || !finalText) {
       // wave 105f: the repair turn failed (provider error or time) but the first answer was close enough: keep it
       if (repaired && firstText && firstCheck && firstCheck.untraced.length < 3 && !(firstCheck.figures && firstCheck.untraced.length / firstCheck.figures > 0.25)) {
-        return { text: firstText, model, rounds, steps: [...steps, ...mSteps], check: firstCheck, usage };
+        return { text: tidyHeadings(firstText), model, rounds, steps: [...steps, ...mSteps], check: firstCheck, usage };
       }
       steps.push(...mSteps.map((s) => ({ ...s, discarded: true })));
       if (!failed) lastErr = { msg: 'no final answer', status: 0 };
