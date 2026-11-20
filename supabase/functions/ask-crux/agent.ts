@@ -449,20 +449,20 @@ function collect(v: any, parent: number[], groups: number[][], all: Set<number>,
   if (mine.length) groups.push([...mine, ...parent.slice(0, 60)]);
   for (const [k, x] of Object.entries(v)) if (x && typeof x === 'object') collect(x, mine, groups, all, tot, Array.isArray(v) ? key : k);
 }
-export function checkFigures(answer: string, evidence: any[]): { figures: number; traced: number; untraced: string[] } {
+export function checkFigures(answer: string, evidence: any[]): { figures: number; traced: number; untraced: string[]; unchecked: string[] } {
   const groups: number[][] = [], all = new Set<number>(), tot: number[] = [];
   for (const e of evidence) collect(e, [], groups, all, tot);
   const arr = [...all];
   const T = [...new Set(tot)].slice(0, 40);
   const G0 = groups.slice(0, 400);   // bounded work: Edge Functions have a small CPU budget per request
-  const figs = figures(answer); const untraced: string[] = [];
-  // every figure is looked up directly; only the slower derived-pair search is bounded (Edge Functions have a small CPU budget per request)
-  let pairBudget = 30;
+  const figs = figures(answer); const untraced: string[] = [], unchecked: string[] = [];
+  // every figure is looked up directly; only the slower derived-pair search is bounded (Edge Functions have a small CPU budget per request).
+  // wave 117: a long report can hold hundreds of figures — those the bounded search cannot reach are reported as "not checked", not as wrong
+  let pairBudget = 40;
   for (const [fi, f] of figs.entries()) {
-    if (fi >= 120) { untraced.push(f.text); continue; }
     const near = (x: number) => Number.isFinite(x) && (Math.abs(x - f.v) <= f.tol || (f.pct && Math.abs(x - f.v * 100) <= f.tol * 100) || Math.abs(Math.abs(x) - Math.abs(f.v)) <= f.tol);
-    if (arr.some(near)) continue;
-    if (pairBudget-- <= 0) { untraced.push(f.text); continue; }
+    if (fi < 600 && arr.some(near)) continue;
+    if (fi >= 600 || pairBudget-- <= 0) { unchecked.push(f.text); continue; }
     const pair = (a: number, b: number) => near(a - b) || near(a + b) || (b !== 0 && (near(a / b) || near(a / b - 1) || near(1 - a / b)));
     let ok = false;
     outer: for (const g of G0) {
@@ -474,7 +474,7 @@ export function checkFigures(answer: string, evidence: any[]): { figures: number
     }
     if (!ok) untraced.push(f.text);
   }
-  return { figures: figs.length, traced: figs.length - untraced.length, untraced: [...new Set(untraced)] };
+  return { figures: figs.length, traced: figs.length - untraced.length - unchecked.length, untraced: [...new Set(untraced)], unchecked: [...new Set(unchecked)] };
 }
 
 // ---------------------------------------------------------------- system prompt
@@ -487,7 +487,7 @@ export function systemPrompt(o: { teams: any[]; clients: any[]; docs: Record<str
 Today is ${o.today}. The latest data is the tracker report of ${o.dataAsOf} (data month ${o.dataMonth.slice(0, 7)}); later days are not in the data yet.
 
 HOW TO WORK
-1. Understand the question, then fetch what you need with the tools. Call independent tools together in one turn. Use at most 6 tool calls in total.
+1. Understand the request, then fetch what you need with the tools. Call independent tools together in one turn (up to 6 at once). A quick question usually needs 1–3 look-ups; a detailed report may need up to 12 — fetch every part the request asks for.
    The STARTING SNAPSHOT covers only the page month and page filters. For any other team, zone, client, branch, manager, month or topic you MUST call a tool first (use team ids from TEAMS as filters.location_id). Never say data is unavailable before trying the tools.
 2. For business, targets, projections, plan, potential, receivables, branch managers and operations use the dedicated tools: they run the dashboard's own calculations, so the answer matches the dashboard. Use run_sql only for what they do not cover (lists, history, trends, day-by-day, counts, branch lists).
 3. Every figure you write must come from a tool result in this conversation, or simple arithmetic on those figures (difference, sum, ratio, % change). Never estimate, guess or use outside knowledge for figures. If the data cannot answer, say so plainly and say what is missing.
@@ -503,13 +503,20 @@ HOW TO WORK
 13. CLIENT STRUCTURE: what a level or centre of a client bank does (LHO, AO, RBO, RACPC, SMECCC, ULP, Retail Asset Hub …), which products it handles and which level sends Crux work come from get_client_structure; so does "what is <client>" (pass the client code or name as client_family). Never guess what a client code or abbreviation stands for: if the reference does not give a full name, say it is not recorded; give the source basis (bank's own site, news report, encyclopedia, or read from unit names) when you describe a level.
 14. BRANCH WORDS: a "Business Associate" (older words: partner, associate, franchise) is a partner that runs a client in a location for Crux; a "Crux Branch" (older words: own branch, our branch) is our own team in a location. A "branch" named with a bank or client (SBI branch, HDFC branches) or a unit type (RACPC, RAC) is the CLIENT's branch (get_branch_units). "Crux Branch", "our branches", "own branches" or a Crux location name means our own team. Questions comparing associates / partners with Crux Branches / own branches, or about either group's performance, use get_assoc_comparison (who runs what and since when: get_operating_model). In answers always say "Business Associates" and "Crux Branches" (never "partners" or "own branches"), and never call client branches Crux Branches. If "branch" could mean either, say which meaning you used in the first line.
 15. TARGET SOURCE: when get_business_summary gives targets_source.note, add that sentence once, word for word, right after the first line whenever the answer gives a target, achievement or gap (never paraphrase it as "targets source is planned"). source "planned" = the dashboard's planned targets (the owner's own targets are not uploaded yet); "owner" = carried from the owner's tracker file of owner_targets_from; "tracker" = from the tracker files; "none" = no targets.
+16. CONVERSATION: the user's message may continue the conversation shown before it. Read it together with the earlier turns: resolve "it", "this", "that", "same", "also", "instead", "now", "only", "except", "add", "remove", "change", "more detail", "as a table", "for X" against them. When the user changes one thing (period, scope, person, team, client, columns, measure, format, level of detail), redo the earlier request with that change and keep everything else as before (re-run its look-ups with the change). When the user answers a question you asked (CLARIFY), carry on with the original request using that answer. Never treat a follow-up as a new, unrelated question, and never ask again what the conversation already settled.
+17. ASK WHEN UNSURE: if the request is unclear in a way that would change the answer and no sensible default exists — a name or code matching several people, teams or clients; "branch" that could be a Crux Branch or a client branch when both readings fit; a ranking with no measure when cases and revenue would give different results; a large report with no scope — do not guess: reply with only these lines, before any look-up when possible:
+CLARIFY: <one short question>
+OPTION: <a short answer the user can tap>
+OPTION: <another> (2–4 options)
+Ask one question at a time. When a sensible default exists (the page month and filters, All India, revenue and cases together), use it and say the assumption in the first line instead of asking.
+18. COMPLETE THE REQUEST: list for yourself every part asked for (each measure, breakdown, table, person / team / client, period, comparison) and cover each one. When a part cannot be answered from the data, say so under "Not available" with the reason and the nearest figure that is available — never drop a part silently.
+19. FILES AND REPORTS: every answer can be downloaded by the user as Excel (each table becomes a sheet), Word or PDF with the buttons under the answer. When asked for a report, file, sheet, PDF or download, write the complete report in the answer and end with "Download it as Excel, Word or PDF with the buttons below." Never say you cannot create files and never invent links.
 
 ANSWER FORMAT
-- First line: the direct answer in one or two sentences.
-- Then 2–6 short bullets with the key figures and the reason (why), and what to do when it helps.
-- A small markdown table (≤ 10 rows) when comparing several items.
-- Last line: "Next: <one useful follow-up question>".
-- Money in Indian style: ₹2.39 cr, ₹11.97 L, ₹45,600. Percentages with one decimal (77.2%). Counts with Indian commas (65,185). No headings.
+- QUICK answers (a short question): first line the direct answer in one or two sentences; then 2–6 short bullets with the key figures and the reason (why), and what to do when it helps; a small markdown table (≤ 10 rows) when comparing several items. No headings.
+- DETAILED answers (the message says MODE: detailed, or the user asks for a report, tables, a breakdown, several measures, or detail per person / team / client): first line a one-sentence summary of the main finding; then one section per part of the request in the order asked, each starting with a heading line "## <title>"; markdown tables with every row asked for (up to 40 rows a table — say how many more exist) and every column asked; one table per person / team / client when the user asks for individual tables; a "## Not available" section for anything asked that the data cannot give; a "## What to do" section with concrete actions when it helps.
+- Last line always: "Next: <one follow-up the user might type, written as the user's own request, e.g. Break this down by client for Pune>" — never a question addressed to the user.
+- Money in Indian style: ₹2.39 cr, ₹11.97 L, ₹45,600. Percentages with one decimal (77.2%). Counts with Indian commas (65,185).
 
 DASHBOARD RULES (always apply)
 - Likely month end = month to date ÷ share of month done (the share already reached at the same number of working days left in past months). Use the tools' likely figures; do not use simple run-rate.
@@ -646,10 +653,22 @@ export function unitQuestion(q: string, teams: { id: number; label: string; zone
 
 // ---------------------------------------------------------------- the agent loop
 export class AgentError extends Error { constructor(msg: string, public status = 0, public steps: any[] = [], public detail: any = null) { super(msg); } }
-export type AgentOut = { text: string; model: string; rounds: number; steps: any[]; check: ReturnType<typeof checkFigures>; usage: { calls: number; prompt: number; output: number } };
+export type AgentOut = { text: string; model: string; rounds: number; steps: any[]; check: ReturnType<typeof checkFigures>; usage: { calls: number; prompt: number; output: number }; clarify?: boolean };
+// wave 117: Ask Crux asks back when the request is unclear (rule 17)
+export const isClarify = (t: string) => /(^|\n)\s*\**CLARIFY\**\s*:/i.test(String(t ?? ''));
+export function parseClarify(t: string): { question: string; options: string[] } | null {
+  if (!isClarify(t)) return null;
+  const q = String(t).match(/\**CLARIFY\**\s*:\s*(.+)/i)?.[1]?.replace(/\*+/g, '').trim() ?? '';
+  const options = [...String(t).matchAll(/\**OPTION\**\s*:\s*(.+)/gi)].map((m) => m[1].replace(/\*+/g, '').trim()).filter(Boolean).slice(0, 4);
+  return q ? { question: q, options } : null;
+}
+const REVIEW = (q: string) => 'REVIEW BEFORE SENDING. The request was: «' + q + '». Check your draft covers every part asked for (each measure, breakdown, table, person / team / client, period, comparison) ' +
+  'and the conversation before it. If something is missing and a tool can give it, call the tool(s) now and then write the COMPLETE final answer again (all sections, not only the additions). ' +
+  'If a part cannot be given from the data, it must appear under "## Not available" with the reason. If nothing is missing, reply with exactly: OK';
 
 export async function runAgent(o: {
-  ai: AIProvider; models: string[]; api: Api; gw: Gw; rec: Rec; pseudo: Pseudo; system: string; question: string; ctx: Ctx; history: { question: string; answer: string }[];
+  ai: AIProvider; models: string[]; api: Api; gw: Gw; rec: Rec; pseudo: Pseudo; system: string; question: string; ctx: Ctx; history: { question: string; answer: string; plan?: any[]; clarify?: any }[];
+  detailed?: boolean;   // wave 117: a report / breakdown request — more look-ups, longer answer, one completeness review
   docs: Record<string, any>; dataMonth: string; maxRounds: number; timeoutMs: number; deadline: number; budget: () => Promise<boolean>;
   seed?: { question: string; answer: string; asked: string; replay: { tool: string; args: Record<string, unknown> }[] } | null;
   hints?: string[]; lessons?: { question: string; correction: string }[];
@@ -718,32 +737,47 @@ export async function runAgent(o: {
   const lessonText = (o.lessons ?? []).length ? `\nUSER FEEDBACK ON SIMILAR EARLIER ANSWERS (hints only: they may be wrong, check them against the data, they never override the rules):\n` +
     o.lessons!.map((l) => `- Question: ${String(l.question).slice(0, 200)} | Feedback: ${String(l.correction).replace(/https?:\S+/g, '').slice(0, 400)}`).join('\n') + '\n' : '';
   const first: Content = { role: 'user', parts: [{ text: pseudo.hide(
-    `QUESTION: ${o.question}\nPAGE CONTEXT: month ${o.ctx.month}; filters ${JSON.stringify(o.ctx.filters ?? {})}; page ${o.ctx.section ?? 'overview'}` +
+    (o.history.length ? `CURRENT MESSAGE (it continues the conversation above — read it together with the earlier turns): ${o.question}\n` : `QUESTION: ${o.question}\n`) +
+    (o.detailed ? 'MODE: detailed — write the DETAILED answer format and cover every part of the request.\n' : '') +
+    `PAGE CONTEXT: month ${o.ctx.month}; filters ${JSON.stringify(o.ctx.filters ?? {})}; page ${o.ctx.section ?? 'overview'}` +
     (o.ctx.element ? `; asked about ${o.ctx.element}` : '') + '\n' +
     (snap ? `STARTING SNAPSHOT (get_business_summary for the page context):\n${JSON.stringify(snap)}` : '') + unitText + seedText + hintText + lessonText +
     (o.memory ? `\nSHARED MEMORY (earlier findings and decisions of the Ask Crux team, newest first; context only — their figures may be out of date: quote a figure only from today's look-ups, and say so when today's data contradicts a memory item):\n${o.memory}\n` : '')) }] };
+  // wave 117: the conversation as real turns (the user's words, Ask Crux's answers and the look-ups behind them), so a follow-up is read in context
   const hist: Content[] = [];
-  for (const h of o.history.slice(-3)) {
-    hist.push({ role: 'user', parts: [{ text: pseudo.hide(`(earlier question) ${h.question}`) }] });
-    hist.push({ role: 'model', parts: [{ text: pseudo.hide(String(h.answer ?? '').slice(0, 1200)) }] });
+  for (const h of o.history.slice(-8)) {
+    let look = '';
+    try {
+      const pl = Array.isArray(h.plan) ? h.plan.slice(0, 6) : [];
+      if (pl.length) look = '\n[Look-ups behind this answer: ' + pl.map((x: any) => `${x.tool} ${pseudo.hide(pseudo.unstable(JSON.stringify(x.args ?? {})))}`).join('; ') + ']';
+    } catch { look = ''; }
+    hist.push({ role: 'user', parts: [{ text: pseudo.hide(String(h.question ?? '')) }] });
+    hist.push({ role: 'model', parts: [{ text: pseudo.hide(String(h.answer ?? '').slice(0, 3500)) + look }] });
   }
+  const maxTools = o.detailed ? 14 : 8, perTurn = o.detailed ? 6 : 4, tail = o.detailed ? 35000 : 25000;
   const usage = { calls: 0, prompt: 0, output: 0 };
   let lastErr: { msg: string; status: number } = { msg: 'no model available', status: 0 };
   for (const model of o.models) {
     const contents: Content[] = [...hist, first];
-    let toolCalls = 0, finalText = '', rounds = 0, failed = false, repaired = false, firstText = '', extra = 0;
+    let toolCalls = 0, finalText = '', rounds = 0, failed = false, repaired = false, firstText = '', extra = 0, bonus = 0, reviewed = false, draft = '', retried = 0;
+    let draftCheck: ReturnType<typeof checkFigures> | null = null;
     let firstCheck: ReturnType<typeof checkFigures> | null = null, finalCheck: ReturnType<typeof checkFigures> | null = null;
     const mSteps: any[] = [];
     const mEvidence: any[] = [];
-    while (rounds < o.maxRounds + extra) {
+    while (rounds < o.maxRounds + bonus + extra) {
       if (Date.now() > o.deadline) { lastErr = { msg: 'time limit reached', status: 0 }; failed = true; break; }
       if ((rounds === 0 || rounds === 3) && !(await o.budget())) throw new AgentError('AI daily limit reached', 429, steps);   // wave 109b: fewer database round trips
       rounds++;
-      const last = rounds >= o.maxRounds || toolCalls >= 8;
-      const r = await o.ai.chat(model, { system: o.system, contents, tools: decls, noTools: last, maxTokens: o.maxTokens ?? 4096, temperature: 0.2 });
+      // wave 117: near the time limit the answer is written from what was found so far (instead of failing)
+      const last = rounds >= o.maxRounds + bonus || toolCalls >= maxTools || Date.now() > o.deadline - tail;
+      const r = await o.ai.chat(model, { system: o.system, contents, tools: decls, noTools: last, maxTokens: o.maxTokens ?? (o.detailed ? 8192 : 4096), temperature: 0.2 });
       usage.calls++; usage.prompt += r.promptTokens ?? 0; usage.output += r.outputTokens ?? 0;
       await o.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose: o.purpose ?? 'agent', agent: model.startsWith('or:') || r.via === 'main' ? null : (o.agent ?? null), ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
         prompt_tokens: r.promptTokens, output_tokens: r.outputTokens, note: r.ok ? (r.calls.length ? 'tools: ' + r.calls.map((c) => c.name).join(',') : 'answer') : r.error });
+      // wave 117: a model that is briefly overloaded (503) is asked once more before the next model is tried (seen 18-Nov 18:33 and 19:27)
+      if (!r.ok && retried < 2 && (r.status === 503 || (r.status === 0 && r.ms < 8000)) && Date.now() < o.deadline - tail - 10000) {
+        retried++; rounds--; await new Promise((ok) => setTimeout(ok, 2500)); continue;
+      }
       if (!r.ok) { lastErr = { msg: r.error ?? 'model error', status: r.status }; failed = true; break; }
       contents.push(r.content!);
       // some models still ask for tools on the last turn: answer once that no more look-ups are allowed, then take the final answer
@@ -753,7 +787,7 @@ export async function runAgent(o: {
         continue;
       }
       if (r.calls.length && !last) {
-        const calls = r.calls.slice(0, 4);
+        const calls = r.calls.slice(0, perTurn);
         const results = await Promise.all(calls.map(async (c) => {
           const t0 = Date.now(); const fn = TOOLS[c.name];
           const realArgs = pseudo.showAny(c.args ?? {});
@@ -772,22 +806,39 @@ export async function runAgent(o: {
         }));
         toolCalls += calls.length;
         const parts: Part[] = results.map(({ c, response }) => ({ functionResponse: { name: c.name, ...(c.id ? { id: c.id } : {}), response } }));
-        for (const c of r.calls.slice(4)) parts.push({ functionResponse: { name: c.name, ...(c.id ? { id: c.id } : {}), response: { error: 'skipped: at most 4 tools per turn' } } });
+        for (const c of r.calls.slice(perTurn)) parts.push({ functionResponse: { name: c.name, ...(c.id ? { id: c.id } : {}), response: { error: `skipped: at most ${perTurn} tools per turn — ask for it again in the next turn` } } });
         contents.push({ role: 'user', parts });
         continue;
       }
+      // wave 117: a question back to the user (rule 17) goes out as it is
+      let text = r.text;
+      if (isClarify(text) && !draft) return { text, model, rounds, steps: [...steps, ...mSteps], check: { figures: 0, traced: 0, untraced: [], unchecked: [] }, usage, clarify: true };
+      // wave 117: the completeness review found nothing missing — the draft stands
+      if (reviewed && draft && (/^\s*ok\.?\s*$/i.test(text) || isClarify(text) || text.length < Math.min(400, draft.length / 3))) text = draft;
+      // wave 117: a detailed answer gets one completeness review (look-ups allowed) before it is sent
+      if (o.detailed && !reviewed && !repaired && Date.now() < o.deadline - tail - 15000) {
+        reviewed = true; draft = text; bonus += 3;
+        contents.push({ role: 'user', parts: [{ text: pseudo.hide(REVIEW(o.question)) }] });
+        continue;
+      }
       // figure check: every figure must trace to the tool results; one repair turn (tools allowed) when it does not
-      const allEv = [...evidence, ...mEvidence, { question_numbers: o.question }];
-      const ck = checkFigures(r.text, allEv);
-      if (ck.untraced.length && !repaired && rounds < o.maxRounds && Date.now() < o.deadline - 20000) {
-        repaired = true; firstText = r.text; firstCheck = ck;
+      const allEv = [...evidence, ...mEvidence, { question_numbers: o.question }, ...o.history.map((h) => ({ earlier_question: String(h.question ?? '') }))];
+      const ck = checkFigures(text, allEv);
+      if (text === draft) draftCheck = ck;
+      if (ck.untraced.length && !repaired && rounds < o.maxRounds + bonus && Date.now() < o.deadline - 20000) {
+        repaired = true; firstText = text; firstCheck = ck;
         contents.push({ role: 'user', parts: [{ text: `CHECK FAILED: these figures in your answer do not appear in, and cannot be derived from, the tool results: ${ck.untraced.join(', ')}. ` +
           (toolCalls ? '' : 'You did not call any tool. ') + 'Call the tools you need now, then write the full final answer again in the same format, using only figures from tool results.' }] });
         continue;
       }
-      finalText = r.text; finalCheck = ck;
+      finalText = text; finalCheck = ck;
       if (firstCheck && firstCheck.untraced.length < ck.untraced.length) { finalText = firstText; finalCheck = firstCheck; }
       break;
+    }
+    // wave 117: the review or the repair failed (provider error or time) — the reviewed draft is kept when it is sound
+    if ((failed || !finalText) && draft) {
+      const ck = draftCheck ?? checkFigures(draft, [...evidence, ...mEvidence, { question_numbers: o.question }]);
+      if (!(ck.untraced.length >= 3 && ck.figures < 12) && !(ck.figures && ck.untraced.length / ck.figures > 0.25)) return { text: draft, model, rounds, steps: [...steps, ...mSteps], check: ck, usage };
     }
     if (failed || !finalText) {
       // wave 105f: the repair turn failed (provider error or time) but the first answer was close enough: keep it
@@ -804,7 +855,9 @@ export async function runAgent(o: {
     }
     const check = finalCheck!;
     // an answer whose figures mostly cannot be traced is not shown (the calculated answer is shown instead)
-    if (check.untraced.length >= 3 || (check.figures && check.untraced.length / check.figures > 0.25)) {
+    // wave 117: a long report keeps its answer with the untraced figures listed under it when they are few (at most 8% of its figures)
+    const tooMany = check.figures >= 25 ? check.untraced.length / check.figures > 0.08 : check.untraced.length >= 3;
+    if (tooMany || (check.figures && check.untraced.length / check.figures > 0.25)) {
       throw new AgentError(`figure check failed (${check.untraced.length} of ${check.figures} figures not found in the data)`, 422, [...steps, ...mSteps],
         { text: finalText, check, model, rounds, usage });
     }

@@ -9,7 +9,7 @@
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
 import { checkKey, embeddingCandidates, fallbackCandidates, generationCandidates, multiProvider, provider, type AIProvider, type ModelInfo } from './ai.ts';
 import { JOBS, runJob, type JobEnv } from './jobs.ts';
-import { AgentError, DECLS, Pseudo, planOf, questionKeys, runAgent, systemPrompt, unitQuestion, vocabOf, type Ctx } from './agent.ts';
+import { AgentError, DECLS, Pseudo, parseClarify, planOf, questionKeys, runAgent, systemPrompt, unitQuestion, vocabOf, type Ctx } from './agent.ts';
 import { noVendor } from './brand.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
@@ -187,12 +187,16 @@ async function agentKeys() {
   return akC.v;
 }
 const DEEP = /\b(why|root cause|compare|comparison|versus|vs\.?|strategy|plan|recommend\w*|suggest\w*|what should|how can|improve|forecast|scenario|explain why)\b/i;
+// wave 117 (owner 20-Nov 12:42: "bigger and detailed tasks are still failing or have a poor quality"): a request for a report, tables, a breakdown or detail per
+// person / team / client is answered in the detailed format with more look-ups, a longer answer and one completeness review
+const DETAIL = /\b(report|detail\w*|breakdown|break\s*(it\s*)?down|tables?|individual\w*|each|every|all\s+(the\s+)?(teams?|clients?|zones?|managers?|locations?|branches?)|list\s+(all|every|each)|analy[sz]\w*|full|complete|comprehensive|in[- ]depth|deep[- ]?dive|\w+[- ]wise|spreads?|summary\s+of|presentation|excel|sheet|pdf|word\s+file|download\w*|along with|as well as)\b/i;
+const QMAX = 4000;   // wave 117: long, multi-part requests are read in full (was 500 characters)
 // management (admin key) has its own analyst; questions from a tile, table or chart go to the explainer; long "why / compare / plan" questions to deep analysis
-function pickAgent(body: any, question: string, admin: boolean): string {
+function pickAgent(body: any, question: string, admin: boolean, detailed = false): string {
   if (admin) return 'process_2';
   const k = String(body?.origin?.kind ?? 'panel');
-  if (['tile', 'table', 'chart', 'card', 'drill'].includes(k)) return 'process_6';
-  if (DEEP.test(question) || question.length > 160) return 'process_3';
+  if (['tile', 'table', 'chart', 'card', 'drill'].includes(k) && !detailed) return 'process_6';
+  if (detailed || DEEP.test(question) || question.length > 160) return 'process_3';
   return 'process_1';
 }
 async function agentProvider(cfg: Record<string, string>, agent: string) {
@@ -246,13 +250,18 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   for (const k of ['zone_group', 'location_id', 'client_family', 'region', 'stakeholder']) if (c?.filters?.[k] != null && c.filters[k] !== '') filters[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
   const ctx: Ctx = { month: typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : dataMonth, filters, section: typeof c.section === 'string' ? c.section : undefined,
     element: elementOf(originOf(body)) };
-  const question = redactQ(String(body?.question ?? '').slice(0, 500));
-  const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 3 }).catch(() => []) : [];
+  const question = redactQ(String(body?.question ?? '').slice(0, QMAX));
+  const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 8 }).catch(() => []) : [];
+  const H: any[] = Array.isArray(history) ? history : [];
+  // wave 117: detailed when the request asks for it, or when a follow-up changes a detailed answer ("add TAT", "same for Pune")
+  const detailed = DETAIL.test(question) || question.length > 160 || (H.length > 0 && H[H.length - 1]?.detailed === true && question.length < 300 && !/\b(quick|short|brief|one line|just the)\b/i.test(question));
   const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
   const system = pseudo.hide(systemPrompt({ teams: meta?.locations ?? [], clients: meta?.clients ?? [], docs, dataAsOf, dataMonth, today }));
   // ---- wave 105c memory: look for the same or a similar earlier question before spending AI calls
   const ctxKey = ctxKeyOf(ctx.month, filters, !!adminKey);
-  const followUp = Array.isArray(history) && history.length > 0 && FOLLOW.test(question);
+  // wave 117: inside a conversation every message is read with the turns before it, so an earlier answer is never reused or adapted for it
+  const followUp = H.length > 0;
+  void FOLLOW;
   let emb: number[] | null = null, mem: any = null;
   if (cfg.MEMORY_ENABLED !== 'off' && cfg.GEMINI_EMBEDDING_MODEL) {
     try {
@@ -289,7 +298,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
       message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: 0 };
   }
   // (2) similar question on the same page: re-run its look-ups on today's data and let the AI update the earlier answer
-  const seed = near
+  const seed = near && !followUp
     ? { id: near.id, sim: near.sim, asked: String(near.created_at ?? '').slice(0, 10), question: String(near.question ?? ''), answer: String(near.answer.answer).slice(0, 2500),
         replay: near.plan.slice(0, 4).map((x: any) => ({ tool: String(x.tool), args: JSON.parse(pseudo.unstable(JSON.stringify(x.args ?? {}))) })) }
     : null;
@@ -303,15 +312,30 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const lastQ = Array.isArray(history) && history.length ? String(history[history.length - 1]?.question ?? '') : '';
   const uq = unitQuestion(question, meta?.locations ?? [], lastQ);
   const topics = topicsOf(filters, uq);
-  const [{ id: agentId, ai: agentAi }, memItems] = await Promise.all([agentProvider(cfg, pickAgent(body, question, !!adminKey)),
+  const [{ id: agentId, ai: agentAi }, memItems] = await Promise.all([agentProvider(cfg, pickAgent(body, question, !!adminKey, detailed)),
     cfg.AGENT_MEMORY === 'off' ? Promise.resolve([]) : gw({ op: 'memory_read', topics, audience: adminKey ? 'admin' : 'all', limit: 6 }).catch(() => [])]);
   const memText = (Array.isArray(memItems) ? memItems : []).map((m: any) => `- [${m.at}, ${m.kind}${m.status === 'confirmed' ? ', confirmed' : ''}] ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 400)}`).join('\n');
   const deep = agentId === 'process_3';
-  const out = await runAgent({ ai: agentAi, models, api, gw, rec: record, pseudo, system, question, ctx, history: Array.isArray(history) ? history : [],
-    docs, dataMonth, maxRounds: Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5) + (deep ? 2 : 0), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + 100000,
+  // wave 117: the whole request must finish inside the platform's 150-second limit — a detailed answer may use up to 135 seconds
+  const out = await runAgent({ ai: agentAi, models, api, gw, rec: record, pseudo, system, question, ctx, history: H, detailed,
+    docs, dataMonth, maxRounds: detailed ? 10 : Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5) + (deep ? 2 : 0), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + (detailed ? 135000 : 100000),
     budget: async () => !!(await gw({ op: 'budget', purpose: 'ask', ...(agentId ? { agent: agentId } : {}) }).catch(() => ({ ok: false }))).ok, seed, hints, lessons,
     agent: agentId ?? undefined, memory: memText ? pseudo.hide(memText) : undefined, teams: meta?.locations ?? [] });
   if (out.model !== models[0] && models[0] === primary) agentCoolUntil = Date.now() + 10 * 60000;
+  // wave 117: Ask Crux asks the user a question back (rule 17); the user's reply continues the same conversation
+  const cq = out.clarify ? parseClarify(pseudo.show(noVendor(out.text))) : null;
+  if (cq) {
+    const atext = `Before I answer: ${cq.question}` + (cq.options.length ? ` (options: ${cq.options.join(' | ')})` : '');
+    let log: any = {};
+    try {
+      log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...ctx, admin: !!adminKey }, filters, provider: 'gemini', model: out.model, intent: 'agent',
+        answer: { answer: atext, clarify: cq, detailed, next: [], steps: [], check: out.check, model: out.model, rounds: out.rounds, sources: [] }, mode: 'clarify', reuse_of: null, embedding: null, ctx_key: ctxKey, plan: null,
+        trace: { mode: 'clarify', rounds: out.rounds, usage: out.usage, models_tried: models, ms: Date.now() - t0, agent: agentId, detailed, follow_up: followUp } });
+    } catch { log = {}; }
+    return { mode: 'agent', provider: 'ask-crux', clarify: cq, answer: atext, next: [], steps: [], check: { figures: 0, traced: 0, untraced: [], unchecked: [] }, sources: [], rounds: out.rounds, usage: out.usage,
+      memory: { mode: 'fresh' }, detailed, period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt0, as_of: dataAsOf, month: ctx.month,
+      message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
+  }
   // names back for display; the "Next:" line becomes a suggested question
   let text = pseudo.show(noVendor(out.text)).trim();
   const next: string[] = [];
@@ -326,20 +350,20 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   };
   const steps = out.steps.filter((s) => !s.discarded).map((s) => ({ tool: s.tool, label: pseudo.show(String(s.label ?? s.tool)), detail: showArgs(s), ok: s.ok, rows: s.rows ?? null, ms: s.ms, auto: !!s.auto, replay: !!s.replay,
     error: s.error ? pseudo.show(String(s.error)) : undefined }));
-  const check = { ...out.check, untraced: out.check.untraced.map((x) => pseudo.show(x)) };
+  const check = { ...out.check, untraced: out.check.untraced.map((x) => pseudo.show(x)), unchecked: (out.check.unchecked ?? []).map((x) => pseudo.show(x)) };
   const sources = [...new Set(steps.filter((s) => s.ok).map((s) => s.tool === 'run_sql' ? 'Database views (read-only query)' : 'Dashboard calculation: ' + s.tool.replace(/^get_/, '').replace(/_/g, ' ')))];
   const scopeTxt = Object.keys(filters).length ? Object.entries(filters).map(([k, v]) => `${k.replace('_id', '').replace('_', ' ')} ${v}`).join(', ') : 'All India';
   const mode = seed ? 'adapted' : 'fresh';
   const memory = seed ? { mode, of: seed.id, sim: seed.sim, asked: seed.asked, question: seed.question, lessons: lessons.length, hints: hints.length }
     : { mode, lessons: lessons.length, hints: hints.length };
-  const answer = { answer: text, next, steps, check, model: out.model, rounds: out.rounds, sources, memory };
+  const answer = { answer: text, next, steps, check, model: out.model, rounds: out.rounds, sources, memory, detailed };
   let log: any = {};
   try {
     log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...ctx, admin: !!adminKey }, filters, provider: 'gemini', model: out.model, intent: 'agent', answer,
       mode, reuse_of: seed?.id ?? null, embedding: vecTxt(emb), ctx_key: ctxKey, plan: planOf(out.steps, pseudo),
       trace: { steps: out.steps, rounds: out.rounds, usage: out.usage, check: out.check, models_tried: models, names_hidden: pseudo.count, ms: Date.now() - t0, agent: agentId, memory_items: (memItems as any[])?.length ?? 0,
         memory: { mode, of: seed?.id ?? null, sim: seed?.sim ?? null, lessons: lessons.length, hints: hints.length, candidates: cands.length,
-          top: cands[0] ? { id: cands[0].id, sim: cands[0].sim, same_ctx: cands[0].same_ctx } : null, follow_up: followUp } } });
+          top: cands[0] ? { id: cands[0].id, sim: cands[0].sim, same_ctx: cands[0].same_ctx } : null, follow_up: followUp }, detailed, history_turns: H.length } });
   } catch { log = {}; }
   // wave 109b: the finding goes to the team's shared memory (only answers whose figures all traced; kept 45 days; admin answers stay admin-only)
   if (cfg.AGENT_MEMORY !== 'off' && text && !check.untraced.length) {
@@ -348,7 +372,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
       items: [{ kind: 'finding', topics, scope: { filters: { ...filters, ...(uq?.filters ?? {}) }, month: ctx.month }, as_of: dataAsOf, content: `Q: ${question} → ${gist}`,
         evidence: { message_id: log?.message_id ?? null, tools: steps.filter((x) => x.ok).map((x) => x.tool) } }] }).catch(() => null));
   }
-  return { mode: 'agent', provider: 'ask-crux', answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory,
+  return { mode: 'agent', provider: 'ask-crux', answer: text, next, steps, check, sources, rounds: out.rounds, usage: out.usage, memory, detailed, history_turns: H.length,
     period: `Data as of ${dataAsOf}; page month ${ctx.month.slice(0, 7)}`, scope: scopeTxt, as_of: dataAsOf, month: ctx.month,
     message_id: log?.message_id ?? null, conversation_id: log?.conversation_id ?? body?.conversation_id ?? null, ms: Date.now() - t0, names_hidden: pseudo.count };
 }
@@ -592,6 +616,18 @@ async function answer(body: any, cfg: Record<string, string>, ai: AIProvider, ac
     try { return json(await askAgent(body, cfg)); }
     catch (e) {
       const st = (e as AgentError)?.status ?? 0, msg = noVendor(String((e as Error)?.message ?? e));
+      // wave 117: a follow-up in a conversation, or a detailed request, is not answered by the standard calculated answer (it cannot read the conversation
+      // and answers a different question); the user gets the reason and Try again, and the conversation is kept
+      const q0 = String(body?.question ?? '');
+      if (body?.conversation_id || DETAIL.test(q0) || q0.length > 160) {
+        const why = st === 429 || /quota|RESOURCE_EXHAUSTED|daily limit/i.test(msg) ? 'Ask Crux is busy or has used its free allowance for the moment'
+          : st === 422 ? 'too many figures in the draft could not be traced to the data, so it was not shown'
+          : /time limit|timeout/i.test(msg) ? 'it ran out of time (a request must finish within about two minutes)'
+          : /UNAVAILABLE|high demand|503/i.test(msg) ? 'the AI service is overloaded right now' : msg.slice(0, 140);
+        return json({ mode: 'agent', provider: 'ask-crux', failed: true, retry: true, conversation_id: body?.conversation_id ?? null, message_id: null, steps: (e as AgentError)?.steps ?? [],
+          answer: `I could not finish this ${body?.conversation_id ? 'follow-up' : 'request'}: ${why}. The conversation is kept — press Try again${DETAIL.test(q0) ? ', or ask for one part first (for example one team or one measure)' : ''}.`,
+          next: [], check: { figures: 0, traced: 0, untraced: [], unchecked: [] }, sources: [], as_of: null });
+      }
       agentNote = st === 429 || /quota|RESOURCE_EXHAUSTED|daily limit/i.test(msg)
         ? 'Ask Crux is busy or has used up its free daily allowance for now, so this is the standard calculated answer. Try again in a few minutes.'
         : st === 422 ? `Ask Crux's answer did not pass the figure check (${msg.slice(0, 120)}), so this is the standard calculated answer.`
@@ -600,7 +636,7 @@ async function answer(body: any, cfg: Record<string, string>, ai: AIProvider, ac
   }
   // ---- ask ----
   // 'drop' is read as 'decline' (same meaning for the analysis)
-  const question = String(body?.question ?? '').slice(0, 500).replace(/\bdrop\b/gi, 'decline');
+  const question = String(body?.question ?? '').slice(0, QMAX).replace(/\bdrop\b/gi, 'decline');
   let base: any;
   try { base = await rpc('bi_ask3', { p_question: question, p_context: body?.context ?? {}, p_conversation: body?.conversation_id ?? null }, ANON); }
   catch (e) { return json({ error: 'Database unavailable: ' + (e as Error).message }, 502); }
