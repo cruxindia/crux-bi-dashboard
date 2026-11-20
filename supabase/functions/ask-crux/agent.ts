@@ -790,6 +790,7 @@ export async function runAgent(o: {
     hist.push({ role: 'model', parts: [{ text: pseudo.hide(String(h.answer ?? '').slice(0, 3500)) + look }] });
   }
   const maxTools = o.detailed ? 14 : 8, perTurn = o.detailed ? 6 : 4, tail = o.detailed ? 35000 : 25000;
+  const histEv = o.history.slice(-8).map((h) => ({ earlier_question: String(h.question ?? ''), earlier_answer: pseudo.hide(String(h.answer ?? '').slice(0, 4000)) }));
   const usage = { calls: 0, prompt: 0, output: 0 };
   let lastErr: { msg: string; status: number } = { msg: 'no model available', status: 0 };
   for (const model of o.models) {
@@ -857,7 +858,8 @@ export async function runAgent(o: {
         continue;
       }
       // figure check: every figure must trace to the tool results; one repair turn (tools allowed) when it does not
-      const allEv = [...evidence, ...mEvidence, { question_numbers: o.question }, ...o.history.map((h) => ({ earlier_question: String(h.question ?? '') }))];
+      // wave 117: figures from earlier turns of this conversation (each was checked when it was written) may be repeated in a follow-up
+      const allEv = [...evidence, ...mEvidence, { question_numbers: o.question }, ...histEv];
       const ck = checkFigures(text, allEv);
       if (text === draft) draftCheck = ck;
       if (ck.untraced.length && !repaired && rounds < o.maxRounds + bonus && Date.now() < o.deadline - 20000) {
@@ -872,7 +874,7 @@ export async function runAgent(o: {
     }
     // wave 117: the review or the repair failed (provider error or time) — the reviewed draft is kept when it is sound
     if ((failed || !finalText) && draft) {
-      const ck = draftCheck ?? checkFigures(draft, [...evidence, ...mEvidence, { question_numbers: o.question }]);
+      const ck = draftCheck ?? checkFigures(draft, [...evidence, ...mEvidence, { question_numbers: o.question }, ...histEv]);
       if (!(ck.untraced.length >= 3 && ck.figures < 12) && !(ck.figures && ck.untraced.length / ck.figures > 0.25)) return { text: tidyHeadings(draft), model, rounds, steps: [...steps, ...mSteps], check: ck, usage };
     }
     if (failed || !finalText) {
