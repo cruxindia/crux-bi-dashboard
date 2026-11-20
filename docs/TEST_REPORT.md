@@ -1138,3 +1138,15 @@ All 26 keys passed the key check; 21 agents enabled, 5 reserves off. No "not fou
 | Uploads panel after Import | Pass | panel open: "Uploading 0 of 1 done · 50%" |
 | Identical file not suggested again | Pass | second press in the same browser: "Nothing new or changed … Zonal Tracker: nothing new · Point wise: nothing new · Case wise: nothing new" |
 | Phone 390 px | Pass | pop-up full screen, Import at the bottom, page does not scroll sideways; screenshots modal_phone_1/2.png |
+
+## 20-Nov-2026 — wave 117 (Ask Crux: downloads, detail, asking back, conversations)
+| Check | Result | Evidence |
+|---|---|---|
+| Diagnosis | Done | owner's chats 18–20 Nov: 12:35 request answered with one short table, no client spreads or TAT; 18-Nov 18:34 / 19:27 failures from 503 (busy) and 404 (retired model) answered by the calculated answer to a different question; history of 3 turns × 1,200 characters; 500-character limit |
+| Owner's 12:35 request, test copy then production | Pass | every low performer with a client-spread table (team × client: cases, business so far, target, attainment, same day last month), revenue comparisons and TAT; 171 figures, all traced; 14 s (one look-up) |
+| Follow-ups | Pass | "Only the bottom 3, and add last month's revenue", "Same for October" (kept branch managers), "Add BAU and make it only the bottom 5", "and for Pune?", "Show it client wise in a table" — each read with the earlier turns (history turns 1–2) |
+| Asking back | Pass | "Rank the branches" → question with 2–3 options; "Crux Branches, by revenue this month" / tapping an option → ranked answer in the same conversation |
+| Big multi-part request | Pass | Business Associates vs Crux Branches zone-wise with revenue, cases, achievement, TAT and 5 weakest locations each with reasons: 7 sections, 120 figures traced, 17.5 s |
+| Viewer (no admin key) and unit counts | Pass | quick answer 5.7 s; follow-up in a table; "How many SBI RACPCs are in Gujarat?" still answered by the counting function |
+| Page (local build at the dashboard address, live Ask Crux) | Pass | request box 4,000 characters; question-back with option chips; Download Excel (2 sheets, 45 numeric cells), Word (.doc with the table), PDF (print window); after a reload the conversation is shown again (2 answers) and continues; ⤓ saves the conversation; Briefing Notes download bar; no sideways scroll; no page errors |
+| Database change | Pass | bi_117a: history returns up to 10 turns, answers up to 4,000 characters, the plan, detailed flag and the question asked back; old body in bi.fn_backup |

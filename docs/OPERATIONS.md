@@ -290,6 +290,14 @@ To deploy: publish the code (stash + sync, or a merged pull request), then deplo
 - Cancel a waiting file: `select bi.upload_action('<name>', 'cancel', '{"batch_id": <id>}')`.
 - Collection and outstanding workbooks are not part of the background import (their own flow, unchanged).
 
+## Ask Crux conversations, detailed reports and downloads (20-Nov-2026, wave 117)
+- **Detailed mode** is chosen in the function (DETAIL words: report, detail, breakdown, table(s), individual, each, every, analysis, full, complete, "…-wise", download, Excel, PDF …; or > 160 characters; or a follow-up to a detailed answer): up to 14 look-ups, 8,192-token answer, one completeness review, deadline 135 s. Quick questions keep the old limits.
+- **Asking back:** the model answers `CLARIFY:` / `OPTION:` lines; the function returns `clarify: {question, options}` and logs the message with mode `clarify` (no embedding, never reused).
+- **Conversation:** `bi_ai_gateway` op `history` (n up to 10) returns question, answer (4,000 characters), plan, detailed and clarify. Inside a conversation no answer is reused from memory.
+- **Failures:** inside a conversation or for a detailed request the response is `{mode: 'agent', failed: true, retry: true}` with the reason; the page shows Try again.
+- **Testing new Ask Crux code:** publish the code, deploy a test copy (another function name importing the new commit), test with an admin token, switch the `ask-crux` loader, retire the test copy, then delete the test questions (rule above).
+- **Downloads** are built in the page (askDownload): no server change is needed to add a format.
+
 ## Upload panel, retry and revival (19-Nov-2026, wave 115)
 - Every admin page shows the Uploads panel (bottom left) while files are being sent or imported, or need attention. "Retry all" runs the suggested step for every file.
 - Server side: `select bi.upload_action('ops', 'retry', '{"batch_id": <id>}')` queues a failed file again (rows kept 24 h) or reopens a stopped send. Files waiting to retry by themselves show `next_try_at` in `bi.upload_job`.
