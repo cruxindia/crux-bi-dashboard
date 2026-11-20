@@ -139,8 +139,9 @@ export const DECLS: ToolDecl[] = [
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
   { name: 'get_collections', description: 'Receivables and collections: outstanding, over 90 / 180 days, realisation, collected last month and this month, cash cover, ageing buckets, by team and client.',
     parameters: { type: 'object', properties: { filters: FILTERS, limit: { type: 'integer' } } } },
-  { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes.',
-    parameters: { type: 'object', properties: { month: MONTHP, filters: FILTERS, limit: { type: 'integer' } } } },
+  { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes. ' +
+      'detail=true adds, for up to 10 managers (lowest attainment first, or the codes in managers), each one\'s client spread — every team × client they run with cases, business so far, target, attainment, same day last month and change, and last completed month — and the case TAT of each of their teams: use it for manager-wise / individual reports (one call covers them all).',
+    parameters: { type: 'object', properties: { month: MONTHP, filters: FILTERS, limit: { type: 'integer' }, detail: { type: 'boolean' }, managers: { type: 'array', items: { type: 'string' }, description: 'manager codes to keep (optional)' } } } },
   { name: 'run_sql', description: 'One read-only SELECT (PostgreSQL) over the ai views listed in DATA VIEWS, for anything the other tools do not cover (lists, history, trends, counts, branch lists, day-by-day). Max 200 rows returned. Aggregate in SQL; filter by month/team/client.',
     parameters: { type: 'object', properties: { query: { type: 'string' }, purpose: { type: 'string', description: 'one line: what this query finds' } }, required: ['query'] } },
   { name: 'explain_metric', description: 'The dashboard definition and maths of a metric (keys in GLOSSARY).',
@@ -380,9 +381,37 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       revenue_change_vs_last_month: r4(m.revenue_change_pct), bau_revenue_to_date: r0(m.organic_revenue_to_date), pace_gap: r0(m.pace_gap), outstanding: r0(m.outstanding),
       collected_this_month: r0(m.collected_current), handovers_in: m.handovers_in, handovers_out: m.handovers_out });
     const ms = (B?.managers ?? []).map(pick).sort((x: any, y: any) => (x.projected_attainment ?? 9) - (y.projected_attainment ?? 9));
-    return { label: 'Branch managers', rows: ms.length, data: fit({ month, filters, share_of_month_done: r4(shareFrom(B)), total: B?.total ? { cases: B.total.cases, case_target: B.total.case_target,
+    // wave 117: the managers asked for by code (names come in as real names here; the answer sees codes again)
+    const want = Array.isArray(a?.managers) ? a.managers.map((x: any) => String(x ?? '').toUpperCase().trim()).filter(Boolean) : [];
+    const list = want.length ? ms.filter((m: any) => want.some((w: string) => String(m.manager ?? '').toUpperCase().includes(w))) : ms;
+    const shown = list.slice(0, lim);
+    // wave 117 (owner 20-Nov: "individual table for individual wise low performers, with a client spreads in it, revenue comparisons and TAT data too"):
+    // the dashboard's own per-manager portfolio (People page) and the TAT of each of their teams, for up to 10 managers in one call
+    let detail: any[] | undefined;
+    if (a?.detail === true || a?.detail === 'true') {
+      const top = shown.slice(0, 10);
+      const [tat, locs] = await Promise.all([t.api('drill_ops', { month, filters: {}, level: 'location', part: 'tat' }).catch(() => null), t.api('drill', { month, filters: {}, level: 'location', p: {} }).catch(() => null)]);
+      const tatBy = new Map<string, any>((tat?.children ?? []).map((x: any) => [String(x.id), x.case ?? {}]));
+      const nameBy = new Map<string, any>((locs?.children ?? []).map((x: any) => [String(x.id), x.group ?? x.id]));
+      const ports: any[] = [];
+      for (let i = 0; i < top.length; i += 4) ports.push(...await Promise.all(top.slice(i, i + 4).map((m: any) =>
+        t.api('bm', { month, filters, p: { manager: m.manager } }).then((r: any) => Array.isArray(r?.portfolio) ? r.portfolio : null).catch(() => null))));
+      detail = top.map((m: any, i: number) => {
+        const P: any[] = ports[i] ?? [];
+        const ids = [...new Set(P.map((x: any) => String(x.location_id)))];
+        return { manager: m.manager, client_spread: P.slice(0, 30).map((x: any) => ({ team: x.location, client: x.client, products: x.client_label, cases: x.cases, case_target: x.case_target,
+            business_so_far: r0(x.expected_revenue), revenue_target: r0(x.revenue_target), attainment_so_far: r4(x.revenue_attainment), pace_vs_target: r4(x.pace_ratio),
+            same_day_last_month: r0(x.expected_revenue_prev_same_day), change_vs_last_month: r4(x.revenue_change_pct), last_completed_month_revenue: r0(x.completed_month_revenue) })),
+          tat_by_team: ids.map((id) => { const c: any = tatBy.get(id) ?? {};
+            return { team: nameBy.get(id) ?? P.find((x: any) => String(x.location_id) === id)?.location, case_median_hours: c.median ?? null, case_p90_hours: c.p90 ?? null, sla_met: c.sla_met_pct ?? null,
+              open_past_due: c.open_past_due ?? null, tat_reliability: c.reliability ?? null }; }),
+          note: P.length ? undefined : 'no client portfolio returned for this manager' };
+      });
+    }
+    return { label: 'Branch managers' + (detail ? ' with client spread and TAT' : ''), rows: ms.length, data: fit({ month, filters, share_of_month_done: r4(shareFrom(B)), total: B?.total ? { cases: B.total.cases, case_target: B.total.case_target,
       revenue_target: r0(B.total.revenue_target), expected_revenue_mtd: r0(B.total.expected_revenue), projected_revenue: r0(B.total.projected_revenue) } : undefined,
-      managers_sorted_by: 'projected attainment, lowest first', managers: ms.slice(0, lim), rows_total: ms.length }, 15000) };
+      managers_sorted_by: 'projected attainment, lowest first', managers: shown, rows_total: ms.length, detail,
+      detail_note: detail ? 'business_so_far = expected revenue so far (cases × rate); same_day_last_month = the same working day last month; TAT = Force1 case turnaround of the team this month' : undefined }, detail ? 36000 : 15000) };
   },
 
   async run_sql(t, a) {
@@ -528,6 +557,7 @@ DASHBOARD RULES (always apply)
 - Potential: total_potential = current_business + gap_to_potential; now_share_of_potential_by_value = current business ÷ total potential (by value, not branches); give the clients and branches (active of all) with it.
 - Rankings of low performers leave out items with neither a target nor any business (nothing to compare) and say how many were left out.
 - Client rows: name the client (code or product), not only its family — a family such as BOM has several products (BOM, BOM MSME, BRT …); never repeat a family on several rows without the product.
+- Manager-wise / individual reports (client spread, revenue comparisons, TAT per manager): call get_branch_managers with detail=true once (it covers up to 10 managers) instead of many separate look-ups.
 - A question about a person (branch manager) is about everything that person manages: call get_branch_managers with filters {} (all India) and find the person's code there; a team named after a person is only one of their teams.
 
 TEAMS (team_id=label [zone group]): ${teams}
