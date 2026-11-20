@@ -667,7 +667,8 @@ export function parseClarify(t: string): { question: string; options: string[] }
   return q ? { question: q, options } : null;
 }
 const REVIEW = (q: string) => 'REVIEW BEFORE SENDING. The request was: «' + q + '». Check your draft covers every part asked for (each measure, breakdown, table, person / team / client, period, comparison) — for every item of your list, not a sample — ' +
-  'and the conversation before it. If something is missing and a tool can give it, call the tool(s) now and then write the COMPLETE final answer again (all sections, not only the additions). ' +
+  'and the conversation before it. Where the user asked for tables (for example "individual table" = one markdown table per person / team / client, with its client rows and figures), they must be markdown tables, not bullet lists. ' +
+  'If something is missing and a tool can give it, call the tool(s) now and then write the COMPLETE final answer again (all sections, not only the additions). ' +
   'If a part cannot be given from the data, it must appear under "## Not available" with the reason. If nothing is missing, reply with exactly: OK';
 
 export async function runAgent(o: {
