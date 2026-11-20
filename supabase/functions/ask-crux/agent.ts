@@ -508,8 +508,8 @@ HOW TO WORK
 CLARIFY: <one short question>
 OPTION: <a short answer the user can tap>
 OPTION: <another> (2–4 options)
-Ask one question at a time. When a sensible default exists (the page month and filters, All India, revenue and cases together), use it and say the assumption in the first line instead of asking.
-18. COMPLETE THE REQUEST: list for yourself every part asked for (each measure, breakdown, table, person / team / client, period, comparison) and cover each one. When a part cannot be answered from the data, say so under "Not available" with the reason and the nearest figure that is available — never drop a part silently.
+Ask one question at a time. Examples that need a question: "Rank the branches" (Crux Branches or client bank branches? by revenue, cases or growth?); "How is <a first name> doing?" when the name matches more than one person; "Make a report" with no subject. Examples that do not: "How is Pune doing this month?" (the page month and all measures are sensible defaults); "Top 5 teams by revenue". When a sensible default exists (the page month and filters, All India, revenue and cases together), use it and say the assumption in the first line instead of asking.
+18. COMPLETE THE REQUEST: list for yourself every part asked for (each measure, breakdown, table, person / team / client, period, comparison) and cover each one. When the user asks for each / every / individual items, cover every item of your list — never a "representative" or "selected" sample (one run_sql with GROUP BY usually fetches them all). When a part cannot be answered from the data, say so under "Not available" with the reason and the nearest figure that is available — never drop a part silently.
 19. FILES AND REPORTS: every answer can be downloaded by the user as Excel (each table becomes a sheet), Word or PDF with the buttons under the answer. When asked for a report, file, sheet, PDF or download, write the complete report in the answer and end with "Download it as Excel, Word or PDF with the buttons below." Never say you cannot create files and never invent links.
 
 ANSWER FORMAT
@@ -666,7 +666,7 @@ export function parseClarify(t: string): { question: string; options: string[] }
   const options = [...String(t).matchAll(/\**OPTION\**\s*:\s*(.+)/gi)].map((m) => m[1].replace(/\*+/g, '').trim()).filter(Boolean).slice(0, 4);
   return q ? { question: q, options } : null;
 }
-const REVIEW = (q: string) => 'REVIEW BEFORE SENDING. The request was: «' + q + '». Check your draft covers every part asked for (each measure, breakdown, table, person / team / client, period, comparison) ' +
+const REVIEW = (q: string) => 'REVIEW BEFORE SENDING. The request was: «' + q + '». Check your draft covers every part asked for (each measure, breakdown, table, person / team / client, period, comparison) — for every item of your list, not a sample — ' +
   'and the conversation before it. If something is missing and a tool can give it, call the tool(s) now and then write the COMPLETE final answer again (all sections, not only the additions). ' +
   'If a part cannot be given from the data, it must appear under "## Not available" with the reason. If nothing is missing, reply with exactly: OK';
 
