@@ -144,6 +144,8 @@ export const DECLS: ToolDecl[] = [
   { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes. ' +
       'detail=true adds, for up to 10 managers (lowest attainment first, or the codes in managers), each one\'s client spread — every team × client they run with cases, business so far, target, attainment, same day last month and change, and last completed month — and the case TAT of each of their teams: use it for manager-wise / individual reports (one call covers them all).',
     parameters: { type: 'object', properties: { month: MONTHP, filters: FILTERS, limit: { type: 'integer' }, detail: { type: 'boolean' }, managers: { type: 'array', items: { type: 'string' }, description: 'manager codes to keep (optional)' } } } },
+  { name: 'get_day_cases', description: 'Cases and expected revenue RECEIVED ON ONE DATE: Zonal Tracker month to date of that report minus the previous report, checked against the Force1 cases received that date (with the difference). Use for "cases received on <date>", "how many cases came in yesterday / on 21st".',
+    parameters: { type: 'object', properties: { date: { type: 'string', description: 'YYYY-MM-DD' }, filters: FILTERS }, required: ['date'] } },
   { name: 'run_sql', description: 'One read-only SELECT (PostgreSQL) over the ai views listed in DATA VIEWS, for anything the other tools do not cover (lists, history, trends, counts, branch lists, day-by-day). Max 200 rows returned. Aggregate in SQL; filter by month/team/client.',
     parameters: { type: 'object', properties: { query: { type: 'string' }, purpose: { type: 'string', description: 'one line: what this query finds' } }, required: ['query'] } },
   { name: 'explain_metric', description: 'The dashboard definition and maths of a metric (keys in GLOSSARY).',
@@ -458,6 +460,35 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       detail_note: detail ? 'business_so_far = expected revenue so far (cases × rate); same_day_last_month = the same working day last month; TAT = Force1 case turnaround of the team this month' : undefined }, detail ? 36000 : 15000) };
   },
 
+  // wave 120 (owner 23-Nov, #1284: "calculated from zonal and validated from Force1"): one date's cases from the tracker, checked against Force1
+  async get_day_cases(t, a) {
+    const { filters } = scope(t, a);
+    const d = typeof a?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.date) ? a.date : null;
+    if (!d) throw new Error('date (YYYY-MM-DD) is required');
+    const q = (v: unknown) => "'" + String(v).replace(/'/g, "''") + "'";
+    const wt: string[] = [], wc: string[] = [];
+    if (filters.location_id != null) { wt.push(`team_id = ${Number(filters.location_id)}`); wc.push(`team_id = ${Number(filters.location_id)}`); }
+    if (filters.zone_group) { wt.push(`zone_group = ${q(filters.zone_group)}`); wc.push(`team_id in (select team_id from teams where zone_group = ${q(filters.zone_group)})`); }
+    if (filters.client_family) { wt.push(`client_family = ${q(filters.client_family)}`); wc.push(`client_family = ${q(filters.client_family)}`); }
+    const and = (w: string[]) => (w.length ? ' and ' + w.join(' and ') : '');
+    const tq = `with p as (select max(snapshot_date) d0 from tracker_daily where snapshot_date < date ${q(d)} and month = date_trunc('month', date ${q(d)})::date) ` +
+      `select (select d0 from p) prev_report, sum(case when snapshot_date = date ${q(d)} then 1 else 0 end) rows_on_date, ` +
+      `sum(case when snapshot_date = date ${q(d)} then mtd_cases else 0 end) mtd_cases, sum(case when snapshot_date = (select d0 from p) then mtd_cases else 0 end) prev_mtd_cases, ` +
+      `sum(case when snapshot_date = date ${q(d)} then mtd_revenue else 0 end) mtd_revenue, sum(case when snapshot_date = (select d0 from p) then mtd_revenue else 0 end) prev_mtd_revenue ` +
+      `from tracker_daily where snapshot_date in (date ${q(d)}, (select d0 from p))${and(wt)}`;
+    const fq = `select count(*) force1_cases, (select max(received_on) from cases) force1_as_of from cases where received_on = date ${q(d)}${and(wc)}`;
+    const [T, F] = await Promise.all([t.gw({ op: 'sql', query: tq, max_rows: 5 }), t.gw({ op: 'sql', query: fq, max_rows: 5 })]);
+    const x = T?.rows?.[0] ?? {}, f = F?.rows?.[0] ?? {};
+    const has = +x.rows_on_date > 0, first = has && !x.prev_report;
+    const dayC = has ? +x.mtd_cases - (first ? 0 : +x.prev_mtd_cases) : null, dayR = has ? +x.mtd_revenue - (first ? 0 : +x.prev_mtd_revenue) : null;
+    return { label: `Cases received on ${d}`, data: { date: d, scope: t.ctx.scope?.label,
+      zonal_tracker: has ? { report: d, previous_report: x.prev_report ?? '(first report of the month)', mtd_cases: r0(x.mtd_cases), previous_mtd_cases: first ? 0 : r0(x.prev_mtd_cases), cases_on_date: r0(dayC),
+        mtd_revenue: r0(x.mtd_revenue), previous_mtd_revenue: first ? 0 : r0(x.prev_mtd_revenue), expected_revenue_on_date: r0(dayR) } : { note: `no Zonal Tracker report dated ${d} (Sundays and no-report days have none)` },
+      force1: { cases_received_on_date: r0(f.force1_cases), force1_data_to: f.force1_as_of ?? null },
+      difference_tracker_minus_force1: has && f.force1_cases != null ? r0(+dayC! - +f.force1_cases) : null,
+      note: 'The tracker counts cases by report; Force1 counts by the date a case was received, and not every location enters every case in Force1, so the two can differ.' } };
+  },
+
   async run_sql(t, a) {
     const q = String(a?.query ?? '').trim();
     // wave 120 (owner 23-Nov, #1284): a question about all locations is never narrowed to one team or zone in SQL
@@ -591,7 +622,7 @@ Ask one question at a time. Examples that need a question: "Rank the branches" (
 19. FILES AND REPORTS: every answer can be downloaded by the user as Excel (each table becomes a sheet), Word or PDF with the buttons under the answer. When asked for a report, file, sheet, PDF or download, write the complete report in the answer and end with "Download it as Excel, Word or PDF with the buttons below." Never say you cannot create files and never invent links.
 20. SCOPE: the message has a SCOPE line. A place, client or "overall / all locations / total" named in the question replaces the page filters; a follow-up keeps the scope of the conversation. Tools use the SCOPE when you leave filters out. Only when the SCOPE line says "page filter" does the first line start with "For <scope> (page filter):"; for any other scope write "For <scope>:" — never "(page filter)". Never add a team, zone or client that the question did not ask for — not in tool filters and not in run_sql WHERE clauses (in run_sql, filter only by the SCOPE). To compare several places, pass each one's filters explicitly.
 21. MONTH VS MONTH: "vs / against last month", "against October", "% vs last month", "growth over last month" compare like for like: this month so far against the previous month UP TO THE SAME WORKING DAY (get_business_summary vs_last_month_same_working_day; get_breakdown same_point_last_month and change_vs_last_month for zones, teams and clients; get_breakdown level branch for client branches). Use the previous month's full figures (last_month_full) only when the user asks for the full / whole / final month, or when the current month is complete. Give revenue next to cases (both with % change) unless the question asks only for counts (rule 10). Name the two dates compared, e.g. "1–23 Nov vs 1–24 Oct (same working day)" — for client branches the Force1 dates the tool gives (force1_as_of, compared_to).
-25. CASES ON A DAY: cases received on a date = the Zonal Tracker month-to-date of that report minus the previous report (tracker_daily), with the expected revenue added the same way (mtd_revenue); check it against the Force1 cases received that date (cases.received_on; Force1 can differ — give both and the difference). Whole company unless a scope is named.
+25. CASES ON A DAY: for cases received on a date use get_day_cases — the Zonal Tracker count (that report minus the previous one) with its expected revenue, checked against the Force1 cases received that date; give both and the difference.
 22. OPERATING MODEL: Business Associates vs Crux Branches — who runs a location or client, since when, and either group's business, growth or TAT — come only from get_operating_model and get_assoc_comparison. Never build that split with run_sql, from team ids, team names or zones (there is no rule such as "team ids 1–35 are Crux Branches"); if those tools cannot give a figure, say so under "Not available".
 23. TABLE LAYOUT: when the user gives the columns of a table (for example "month, Operating Model, Revenue, Target, Potential, performance"), the table has exactly those columns, in that order, with the user's names. Do not add, drop, merge or reorder columns; a column the data cannot fill stays in place with "n/a" and is explained under "Not available".
 24. COVERAGE (look-up: get_operations with part coverage): client branch coverage is the share of code-matchable client branches with a Force1 case in the last 6 months: coverage_6m = now, coverage_6m_prev_month = at the end of last month, coverage_change_pts = the change in percentage points. For "this month vs last month" give both and the change in points. A client in coverage_notes.clients_not_measured has business in the tracker but no Force1 cases: say its coverage cannot be measured — never that it has no business or 0% coverage.
