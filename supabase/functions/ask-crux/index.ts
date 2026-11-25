@@ -178,6 +178,14 @@ async function backupKey(): Promise<string> {
   return bkC.v;
 }
 
+// wave 121b: extra keys added by admins on the dashboard (Vault), cached 2 minutes so a new key is used soon after it is saved; never logged
+let pkC: { at: number; v: { slot: number; key: string }[] } | null = null;
+async function poolKeys(): Promise<{ slot: number; key: string }[]> {
+  if (pkC && Date.now() - pkC.at < 120000) return pkC.v;
+  try { const r = await gw({ op: 'pool_keys' }); pkC = { at: Date.now(), v: Array.isArray(r) ? r.filter((x: any) => x?.key) : [] }; }
+  catch { pkC = { at: Date.now() - 60000, v: pkC?.v ?? [] }; }
+  return pkC.v;
+}
 // wave 109b: the agent teams — one key per agent (owner's separate projects, Vault), read through the gateway and cached 10 minutes; never logged
 let akC: { at: number; v: Record<string, { key: string; team: string; title: string; job_kind: string | null }> } | null = null;
 async function agentKeys() {
@@ -202,7 +210,7 @@ function pickAgent(body: any, question: string, admin: boolean, detailed = false
 async function agentProvider(cfg: Record<string, string>, agent: string) {
   const keys = await agentKeys();
   const id = keys[agent]?.key ? agent : keys.process_1?.key ? 'process_1' : '';
-  return { id: id || null, ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), id ? keys[id].key : undefined) };
+  return { id: id || null, ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), id ? keys[id].key : undefined, 0, await poolKeys()) };
 }
 const ZONE_LABEL: Record<string, string> = { REST_MAHA: 'Rest of Maharashtra', MUMBAI_GOA: 'Mumbai & Goa', BHOPAL_MP: 'Bhopal / MP', TAMILNADU: 'Tamil Nadu' };
 const zoneName = (z: string) => ZONE_LABEL[z] ?? z.charAt(0) + z.slice(1).toLowerCase();
@@ -431,7 +439,7 @@ async function jobEnv(cfg: Record<string, string>, job = ''): Promise<JobEnv> {
     await record({ model: cfg.GEMINI_EMBEDDING_MODEL, purpose: 'embed_documents', ok: r.ok, ms: r.ms, in: 0, out: 0, http_status: r.status, retries: r.retries, note: r.ok ? `agent lessons ${texts.length}` : r.error });
     return r.ok ? r.vectors : null;
   };
-  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), agentId ? keys[agentId].key : undefined, 1), models, api, gw,
+  return { ai: multiProvider(Number(cfg.AGENT_TIMEOUT_MS || 25000), cfg.OPENROUTER_PAID_ALLOWED === 'on', await backupKey(), agentId ? keys[agentId].key : undefined, 1, await poolKeys()), models, api, gw,
     rec: (p: Record<string, unknown>) => record({ ...p, agent: p.agent !== undefined ? p.agent : String(p.model ?? '').startsWith('or:') ? null : agentId }), pseudo, system, docs, meta, dataMonth, dataAsOf, cfg, embed, t0, agent: agentId };
 }
 
@@ -504,7 +512,7 @@ Deno.serve(async (req) => {
   if (action === 'key_check') {
     if (!(await authorised(body?.token, ['admin', 'job']))) return json({ error: 'admin key or job token required' }, 401);
     const names = [...Array.from({ length: 9 }, (_, i) => `gemini_key_process_${i + 1}`), ...Array.from({ length: 8 }, (_, i) => `gemini_key_pdm_${i + 1}`),
-      ...Array.from({ length: 9 }, (_, i) => `gemini_key_pd_${i + 1}`)];
+      ...Array.from({ length: 9 }, (_, i) => `gemini_key_pd_${i + 1}`), ...(await poolKeys()).map((k) => `gemini_key_pool_${k.slot}`)];   // wave 121b: the extra keys too
     const results = await Promise.all(names.map(async (n) => {
       const v = await gw({ op: 'secret', name: n }).catch(() => null);
       const key = typeof v?.value === 'string' ? v.value : '';
@@ -513,7 +521,7 @@ Deno.serve(async (req) => {
       return { key_name: n, ok: r.ok, http_status: r.status, note: noVendor(r.note) };
     }));
     await gw({ op: 'key_check_put', results }).catch(() => null);
-    akC = null;
+    akC = null; pkC = null;
     return json({ checked: results.length, ok: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).map((r) => ({ key_name: r.key_name, status: r.http_status, note: r.note })) });
   }
 

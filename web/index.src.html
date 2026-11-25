@@ -1852,7 +1852,7 @@ async function agentTeamCard(reload){const c=el('div',{class:'card',style:'margi
  const out=el('span',{class:'note'});const kc=el('button',{type:'button',class:'btn sm'},'Check all keys');
  kc.onclick=async()=>{kc.disabled=true;out.textContent='Checking 26 keys…';try{const r=await fetch(ASK.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ASK.jwt,apikey:ASK.jwt},body:JSON.stringify({action:'key_check',token:S.adminKey})});
   const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'HTTP '+r.status);out.textContent=`${j.ok} of ${j.checked} keys accepted`+(j.failed&&j.failed.length?' · failing: '+j.failed.map(f=>f.key_name.replace('gemini_key_','')).join(', '):'');reload&&setTimeout(reload,1500)}catch(e){out.textContent='Failed: '+e.message}finally{kc.disabled=false}};
- c.append(el('p',{class:'note'},'Each agent has its own key (a separate project with its own free allowance) and a daily cap of its own. If an agent\u2019s key is refused, it falls back to the main key; when its allowance is used up it moves to the backup engine — it never borrows another agent\u2019s allowance. Keys are kept in the database vault and are never shown.'),
+ c.append(el('p',{class:'note'},'Each agent has its own key (a separate project with its own free allowance) and a daily cap of its own. If an agent\u2019s key is refused, it falls back to the main key; when its allowance is used up it moves to the backup engine — it never borrows another agent\u2019s allowance. Keys are kept in the database vault and are never shown. To add more free keys: Admin → Database health & maintenance → Extra AI keys.'),
   el('div',{class:'tiles'},tile('Agents',fmt(A.filter(a=>a.enabled).length)+' on',`${fmt(A.length)} in 3 teams`),tile('Keys',chk?`${fmt(ok)} of ${fmt(chk)} accepted`:'not checked yet',A.find(a=>a.key_checked)?'checked '+A.find(a=>a.key_checked).key_checked:''),
    tile('Calls today',fmt(A.reduce((s,a)=>s+(+a.calls_today||0),0)),fmt(A.reduce((s,a)=>s+(+a.fails_7d||0),0))+' failed in 7 days'),tile('Shared memory',fmt(M.total||0)+' items',`${fmt(M.decisions||0)} decisions · ${fmt(M.confirmed||0)} confirmed · ${fmt(M.superseded||0)} retired`)),
   el('div',{class:'tools'},kc,out));
@@ -3157,7 +3157,28 @@ async function aiStatusSection(box){box.append(el('h3',{},'Ask Crux — status')
   box.append(el('div',{class:'card',id:'bkKey',style:'margin:14px 0'},el('h4',{style:'margin-top:0'},'Backup engine key'),
    el('p',{class:'note'},(a.backup_key_present==='yes'?'A backup key is stored (encrypted). ':'No backup key is stored yet: when the main engine is busy, Ask Crux shows the calculated answer. ')+'Paste a key to add or replace it. It is stored encrypted and is never shown again.'),
    el('div',{class:'tools'},inp,save,msg2)))}
+ // wave 121b (owner 25-Nov: "where can I add free API keys"): extra free keys — pasted here, stored encrypted, used when a key's daily allowance runs out
+ if(S.adminKey&&S.sb){const pc=el('div',{class:'card',id:'aiPool',style:'margin:14px 0'});box.append(pc);aiPoolCard(pc)}
  if(a.last_failure)box.append(el('p',{class:'note'},`Last Ask Crux failure or rejection: ${dts(a.last_failure.at)} — ${a.last_failure.purpose}${a.last_failure.engine?' ('+a.last_failure.engine+' engine)':''}: ${a.last_failure.note||''}. The calculated answer is shown whenever Ask Crux cannot answer.`))}
+async function aiPoolCard(c){c.innerHTML='';const by=()=>localStorage.getItem('crux_editor')||'admin';
+ c.append(el('h4',{style:'margin-top:0'},'Extra AI keys (free)'),
+  el('p',{class:'note'},'Add free keys here when Ask Crux or the agents run out of their daily allowance. A key is used only after the key in use has run out; the keys take turns, and one that ran out rests for 15 minutes. Each key must come from a different Google project (in Google AI Studio choose "Create API key in new project"): keys of the same project share one allowance. Keys are stored encrypted and never shown again; only the last 4 characters are listed.'));
+ let L;try{const {data,error}=await S.sb.rpc('bi_ai_pool_list',{p_admin_key:S.adminKey});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);L=data}catch(e){c.append(el('p',{class:'note'},'Not available: '+e.message));return}
+ const F=L.failures_7d||{};
+ if(F.calls)c.append(el('p',{class:'note'},`Last 7 days: ${fmt(F.calls)} AI calls; failed — model busy or too slow ${fmt(F.busy_or_timeout||0)}, allowance used up ${fmt(F.allowance_used_up||0)}, retired model ${fmt(F.retired_model||0)}, other ${fmt(F.other||0)}. Extra keys help with "allowance used up"; a busy model is handled by trying the next model.`));
+ const K=L.keys||[];
+ c.append(K.length?table(K,[{key:'slot',label:'#',num:1},{key:'label',label:'Name'},{key:'ends_with',label:'Ends with',fmt:v=>'…'+v},{key:'added_at',label:'Added',fmt:dts},{key:'added_by',label:'By'},
+   {key:'calls_today',label:'Used today',num:1,fmt:fmt},{key:'failed_today',label:'Failed today',num:1,fmt:fmt},{key:'check_ok',label:'Last check',fmt:(v,r)=>r.checked_at?(v?'accepted':'refused')+' · '+dts(r.checked_at):'not checked'},
+   {key:'_x',label:'',raw:()=>'',fmt:(v,r)=>{const b=el('button',{type:'button',class:'btn sm ghost'},'Remove');b.onclick=async()=>{b.disabled=true;try{const {data,error}=await S.sb.rpc('bi_ai_pool_drop',{p_admin_key:S.adminKey,p_slot:r.slot,p_by:by()});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);toast('Key removed.');aiPoolCard(c)}catch(e){toast(e.message);b.disabled=false}};return b}}],{search:false,name:'extra_ai_keys.csv'})
+  :el('p',{class:'note'},'No extra keys yet.'));
+ const inp=el('input',{type:'password',autocomplete:'off',spellcheck:'false',placeholder:'Paste a free key (AIza…)','aria-label':'Free AI key',style:'min-width:min(300px,100%)'});
+ const lab=el('input',{type:'text',maxlength:60,placeholder:'Name (e.g. project or owner)','aria-label':'Key name',style:'max-width:220px'});
+ const msg=el('span',{class:'note',role:'status',style:'margin:0'});
+ const add=el('button',{type:'button',class:'btn sm primary',onclick:async()=>{if(!inp.value.trim()){msg.textContent='Paste the key first.';return}add.disabled=true;msg.textContent='Saving…';
+  try{const {data,error}=await S.sb.rpc('bi_ai_pool_put',{p_admin_key:S.adminKey,p_value:inp.value,p_label:lab.value,p_by:by()});if(error)throw new Error(error.message);if(data&&data.error)throw new Error(data.error);
+   inp.value='';lab.value='';toast(`Key saved (place ${data.slot}). Ask Crux can use it within 2 minutes.`);aiPoolCard(c)}catch(e){msg.textContent=e.message}add.disabled=false}},'Add key');
+ c.append(el('div',{class:'tools'},inp,lab,add,msg),
+  el('details',{class:'note'},el('summary',{},'Where the other keys are'),el('p',{},'Main key: a server secret (Supabase → Edge Functions → Secrets). Agent keys: one per agent, in the database vault (Admin → Ask Crux agents → Check all keys). Backup engine key: the box above. Extra keys: this list (up to 20).')))}
 async function branchReviewSection(box){box.append(el('h3',{},'Branch review queue'));const msg=el('p',{class:'note'},'Loading…');box.append(msg);
  let rows;try{rows=await api('branch_reviews',{status:'open',limit:500})}catch(e){msg.textContent='Review queue unavailable: '+e.message;return}msg.remove();
  if(!Array.isArray(rows)||!rows.length){box.append(el('p',{class:'note'},'No open review items.'));return}
@@ -4465,6 +4486,20 @@ const UNITS={PUNE:'Pune',DELHI:'Delhi',BHOPAL:'Bhopal',MUMBAI:'Mumbai',MMUMBAI:'
    nothing is written until Import. Google's sign-in and picker (wave 112d) stay only as the fallback for a folder that is not shared by link. */
 const loadJs=(()=>{const P={};return src=>P[src]||(P[src]=new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.async=true;x.onload=ok;x.onerror=()=>{delete P[src];no(new Error('could not load '+src))};document.head.append(x)}))})();
 const DRV={x:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',gs:'application/vnd.google-apps.spreadsheet',xls:'application/vnd.ms-excel',dir:'application/vnd.google-apps.folder'};
+/* wave 121a (owner 25-Nov: "up_lucknow_maneesh … was only allowing 1 file of Lucknow to tick"): the group comes from the file name with only the month or date
+   removed; a name after the city is its own file group ("UP_LUCKNOW_MANEESH_NOV" → Lucknow-Maneesh, next to "UP-LUCKNOW_NOV" → Lucknow), so the two files are not
+   taken for two copies of one report. Known two-part groups (Nagpur-Yash …) keep their names. */
+const UPMSFX=/[\s_.-]+(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s_.-]*(\d{2,4})?$/i, UPFILL=/^(CASES?|POINTS?|WISE|CASEWISE|POINTWISE|REPORT|DATA|FILE|FINAL|NEW|COPY|LATEST|UPDATED|MIS|SHEET)+$/;
+function upGroup(name){let b=String(name||'').replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)\s*$/,'').trim();
+ b=b.replace(/[\s_.-]+20\d{2}[-_.]\d{1,2}([-_.]\d{1,2})?$/,'').replace(/[\s_.-]+\d{1,2}[-_.]\d{1,2}[-_.]20\d{2}$/,'').replace(UPMSFX,'').replace(/[\s_.-]+(case|point)s?[\s_.-]*(wise)?$/i,'');
+ const tok=b.toUpperCase().replace(/[^A-Z]/g,'').replace('MARATHAWADA','MARATHWADA');if(!tok)return null;if(UNITS[tok])return UNITS[tok];
+ const k=Object.keys(UNITS).filter(x=>tok.includes(x)).sort((x,y)=>y.length-x.length)[0];if(!k)return null;
+ const rest=tok.slice(tok.indexOf(k)+k.length);return rest.length>=3&&!UPFILL.test(rest)?UNITS[k]+'-'+rest.charAt(0)+rest.slice(1).toLowerCase():UNITS[k]}
+// the file groups the server knows (with their unit) — a new group needs a unit before it is imported, unless the city in its name gives it
+let UPG=null,UPG_V=null;const upGroups=()=>UPG||(UPG=api('file_groups',{}).then(g=>(UPG_V=g||{groups:[],units:[]})).catch(()=>(UPG_V={groups:[],units:[]})));
+const upGKnown=(G,g)=>!!g&&(G.groups||[]).some(x=>String(x.group).toLowerCase()===String(g).toLowerCase());
+function upGUnit(G,g){if(!g)return null;const hit=(G.groups||[]).find(x=>String(x.group).toLowerCase()===String(g).toLowerCase());if(hit)return hit.unit;
+ const head=String(g).split('-')[0].trim().toLowerCase();const h=head&&String(g).includes('-')?(G.groups||[]).find(x=>String(x.group).toLowerCase()===head):null;return h?h.unit:null}
 const drvParse=s=>{s=String(s||'').trim();const m=s.match(/\/folders\/([A-Za-z0-9_-]{10,})/)||s.match(/[?&]id=([A-Za-z0-9_-]{10,})/)||s.match(/^([A-Za-z0-9_-]{10,})$/);
  return m?{id:m[1],rk:(s.match(/[?&]resourcekey=([A-Za-z0-9_-]+)/)||[])[1]||'',link:/^https?:\/\//.test(s)?s:''}:null};
 const drvNorm=n=>String(n||'').toLowerCase().replace(/\.(xlsx|xls)$/,'').replace(/\s*\(\d+\)\s*$/,'').replace(/[\s_-]+/g,' ').trim();
@@ -4585,6 +4620,10 @@ async function drivePicker(box,onFiles){box.innerHTML='';
 const UPK={zonal:'Zonal Tracker',case:'Case Wise',point:'Point Wise'};
 // wave 116: the month (or report date) a file name claims, to compare with what is inside the file
 const UPMON={JAN:1,JANUARY:1,FEB:2,FEBRUARY:2,MAR:3,MARCH:3,APR:4,APRIL:4,MAY:5,JUN:6,JUNE:6,JUL:7,JULY:7,AUG:8,AUGUST:8,SEP:9,SEPT:9,SEPTEMBER:9,OCT:10,OCTOBER:10,NOV:11,NOVEMBER:11,DEC:12,DECEMBER:12};
+/* wave 121a: a group the server does not know yet — counted under the unit of the city in its name, or under the unit the admin picks */
+async function upGroupCheck(it){if(!UPK[it.kind]||!it.group){it.gNew=false;return}const G=await upGroups();
+ if(upGKnown(G,it.group)){it.gNew=false;it.unit=null;return}it.gNew=true;const u=it.unit||upGUnit(G,it.group);it.unitAuto=!it.unit&&!!u;
+ if(!u&&it.phase==='ready'){it.phase='needs';it.status='Needs the unit for a new file group'}}
 const upNameMonth=n=>{const b=String(n||'').replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)\s*$/,'');const y=b.match(/(20\d{2})[-_ .](0[1-9]|1[0-2])(?!\d)/);if(y)return y[1]+'-'+y[2];
  const t=b.toUpperCase().split(/[^A-Z]+/).filter(w=>UPMON[w]);return t.length?String(UPMON[t[t.length-1]]):null};
 const upNameDate=n=>{const m=String(n||'').match(/as[\s_]*on[\s_]*(\d{1,2})[\s_-]*([A-Za-z]{3,9})[\s_-]*(\d{4})/i);const mo=m&&UPMON[m[2].toUpperCase()]||UPMON[m&&m[2].slice(0,3).toUpperCase()];
@@ -4604,14 +4643,13 @@ const UPQ={items:[],jobs:[],views:new Set(),pollT:null,resT:null,booted:false,se
     it.summary=(valOnly&&x.control&&Math.abs(t-x.control.mtd)>0.5)?`${x.rows.length} rows · values only (no formulas): zone roll-up rows are separated on the server and the leaf total is checked against the file's own Pan India total ${fmt(x.control.mtd)} at import`:`${leaf.length} leaf rows · MTD ${fmt(t)}`+(x.control?` · file's own Pan India total ${fmt(x.control.mtd)}`+(Math.abs(t-x.control.mtd)>0.5?' (differs — will be logged)':' ✓'):'');
     it.status=x.snapshot_date?'Ready':'Needs snapshot date';it.phase=x.snapshot_date?'ready':'needs';
     const nd=upNameDate(file.name);if(nd&&x.snapshot_date&&nd!==x.snapshot_date)it.warn=`The file name says ${ddmm(nd)}, but the report inside is dated ${ddmm(x.snapshot_date)} — tick it only if this is the right file`}
-   else{const base=file.name.replace(/\.xlsx?$/i,'').replace(/\s*\(\d+\)$/,'');const tok=base.replace(/_[A-Za-z]+$/,'').toUpperCase().replace(/[^A-Z]/g,'').replace('MARATHAWADA','MARATHWADA');
-    it.group=it.group||UNITS[tok]||UNITS[Object.keys(UNITS).filter(k=>tok.includes(k)).sort((a,b)=>b.length-a.length)[0]]||null;   // wave 114a: UP-LUCKNOW → Lucknow
+   else{it.group=it.group||upGroup(file.name);   // wave 114a: UP-LUCKNOW → Lucknow; wave 121a: UP_LUCKNOW_MANEESH → Lucknow-Maneesh
     const months={};x.rows.forEach(r=>{const d=r.received_at||r.created_at;if(d){const ist=new Date(Date.parse(d)+19800000).toISOString().slice(0,7);months[ist]=(months[ist]||0)+1}});const top=Object.entries(months).sort((a,b)=>b[1]-a[1])[0];it.period=it.period||(top?top[0]+'-01':null);
     it.months=Object.entries(months).sort((a,b)=>b[1]-a[1]);   // wave 116: the month each row belongs to, shown in the review
     it.summary=`${fmt(x.rows.length)} rows`+(it.months.length?' · '+it.months.slice(0,3).map(([m,c])=>`${mlabel(m+'-01')} ${fmt(c)}`).join(' · ')+(it.months.length>3?' · …':''):'')+(x.issues.length?` · ${x.issues.length} issue(s)`:'');
     const nm=upNameMonth(file.name);   // wave 116 (owner 19-Nov: review before import): a file named for one month whose rows are from another is flagged, not ticked
     if(nm&&top&&(nm.length===7?nm!==top[0]:+nm!==+top[0].slice(5,7)))it.warn=`The file name says ${nm.length===7?mlabel(nm+'-01'):MON3[+nm-1]}, but ${top[1]===x.rows.length?'all':fmt(top[1])+' of '+fmt(x.rows.length)} rows are from ${mlabel(top[0]+'-01')} — tick it only if this is the right file (it is filed under ${mlabel(top[0]+'-01')})`;
-    it.status=(it.group&&it.period)?'Ready':'Needs location group / month';it.phase=(it.group&&it.period)?'ready':'needs'}}
+    it.status=(it.group&&it.period)?'Ready':'Needs location group / month';it.phase=(it.group&&it.period)?'ready':'needs';await upGroupCheck(it)}}
   catch(e){it.status='Failed to read: '+e.message;it.err=true;it.phase='needs'}
   return it},
  async add(files){const added=[];for(const file of files){const it={file,status:'Reading…',phase:'read',mod:file.lastModified||0};this.items.push(it);added.push(it);this.changed();await this.prep(file,it);this.changed()}
@@ -4638,7 +4676,8 @@ const UPQ={items:[],jobs:[],views:new Set(),pollT:null,resT:null,booted:false,se
  // the reviewer ticks or unticks one file; ticking another copy of the same report uses that copy instead
  tick(it,on){it.pickUser=true;it.pick=!!on;if(on&&it.phase==='skip'&&it.skipWhy==='older'&&!it.impAt){const k=this.dupKey(it);for(const o of this.items)if(o!==it&&!o.started&&UPK[o.kind]&&this.dupKey(o)===k){o.prefer=false;o.pick=false;o.pickUser=true}it.prefer=true;return this.markDups()}
   this.changed()},
- setReady(it){if(it.phase==='needs'||it.phase==='ready'){const ok=it.kind==='zonal'?!!it.snapshot:UPK[it.kind]?!!(it.group&&it.period):it.status==='Ready';it.phase=ok?'ready':'needs';if(UPK[it.kind])it.status=ok?'Ready':(it.kind==='zonal'?'Needs snapshot date':'Needs location group / month')}},
+ setReady(it){if(it.phase==='needs'||it.phase==='ready'){const ok=it.kind==='zonal'?!!it.snapshot:UPK[it.kind]?!!(it.group&&it.period):it.status==='Ready';it.phase=ok?'ready':'needs';if(UPK[it.kind])it.status=ok?'Ready':(it.kind==='zonal'?'Needs snapshot date':'Needs location group / month');
+  if(ok&&UPK[it.kind]&&it.gNew&&!it.unit&&!it.unitAuto){it.phase='needs';it.status='Needs the unit for a new file group'}}},
  async keepAwake(on){try{if(on&&'wakeLock' in navigator&&!this.wl)this.wl=await navigator.wakeLock.request('screen');if(!on&&this.wl){await this.wl.release();this.wl=null}}catch{}},
  warnLeave(e){e.preventDefault();e.returnValue=''},
  // Import: oldest first, so where two reports overlap the newer one is applied last; Zonal Tracker by report date
@@ -4659,7 +4698,7 @@ const UPQ={items:[],jobs:[],views:new Set(),pollT:null,resT:null,booted:false,se
  // register every waiting file on the server (4 at a time); a file that cannot be registered now is registered when its turn comes
  async register(){const L=this.queue.filter(i=>i.phase==='queuedlocal'&&UPK[i.kind]&&!i.batch&&!i.regTried);if(!L.length)return;
   const one=async it=>{it.regTried=true;const x=it.x;try{
-    const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group||null,period_month:x.kind==='zonal'?x.report_month:it.period,snapshot_date:x.kind==='zonal'?it.snapshot:null});
+    const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group||null,recon_unit:it.unit||null,period_month:x.kind==='zonal'?x.report_month:it.period,snapshot_date:x.kind==='zonal'?it.snapshot:null});
     if(b.duplicate){it.status='Already imported (identical file) — skipped';it.phase='skip';it.skipWhy='imported';it.prog=null;return}
     it.batch=b.batch_id;it.sent=0;it.hdr=false;
     await ingest('hold',{batch_id:it.batch,seq_start:1,total:x.rows.length,source:this.srcOf(it),rows:[]});
@@ -4672,7 +4711,7 @@ const UPQ={items:[],jobs:[],views:new Set(),pollT:null,resT:null,booted:false,se
  /* send one file; it can pick up where it stopped (it.batch / it.sent): pieces are stored by position, so a piece sent twice changes nothing */
  async sendItem(it){const x=it.x,rows=x.rows,total=rows.length,n=1000;it.phase='send';it.err=false;this.changed();
   const once=async fn=>{for(let a=0;;a++){try{return await fn()}catch(e){if(a>=2||!UPNET.test(e.message||''))throw e;await new Promise(r=>setTimeout(r,[2000,6000][a]))}}};
-  try{if(!it.batch){const b=await once(()=>ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group||null,period_month:x.kind==='zonal'?x.report_month:it.period,snapshot_date:x.kind==='zonal'?it.snapshot:null}));
+  try{if(!it.batch){const b=await once(()=>ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group||null,recon_unit:it.unit||null,period_month:x.kind==='zonal'?x.report_month:it.period,snapshot_date:x.kind==='zonal'?it.snapshot:null}));
      if(b.duplicate){it.status='Already imported (identical file) — skipped';it.phase='skip';it.skipWhy='imported';it.prog=null;this.changed();return}it.batch=b.batch_id;it.sent=0;it.hdr=false}
    const src=this.srcOf(it);
    if(x.kind==='zonal'&&!it.hdr){await once(()=>ingest('hold',{batch_id:it.batch,seq_start:0,total,source:src,rows:[{snapshot_date:it.snapshot,report_month:x.report_month,control:x.control,issues:x.issues}]}));it.hdr=true}
@@ -4871,7 +4910,19 @@ function uploadUI(s){
    {key:'name',label:'File',fmt:(v,r)=>{const it=items[r.ix];return el('div',{style:'white-space:normal;min-width:150px;max-width:34ch;overflow-wrap:anywhere'},r.file.name,el('div',{class:'note'},srcTxt(it)),
      el('div',{class:'upmini note'},el('span',{class:'chip '+chipCls(it)},it.phase==='ready'&&!it.started?(it.pick?'Ready — ticked':it.warn?'Check before ticking':'Ready — not ticked'):({skip:'Skipped',needs:'Needs a fix'})[it.phase]||it.status.slice(0,40)),' ',it.summary||'',
       it.warn&&!it.started&&['ready','needs'].includes(it.phase)?el('div',{class:'upwarn'},'⚠ '+it.warn):it.phase==='skip'?el('div',{},it.status):null))}},   // phones: the verdict under the file name   {key:'kind',label:'Type',fmt:v=>KN[v]||'–'},
-   {key:'group',label:'Location group',fmt:(v,r)=>(r.kind==='case'||r.kind==='point')&&['ready','needs'].includes(r.phase)?(()=>{const sel=el('select',{'aria-label':'Location group'},el('option',{value:''},'Choose…'),[...new Set(Object.values(UNITS))].sort().map(u=>el('option',{value:u},u)));sel.value=v||'';sel.onchange=()=>{const it=items[r.ix];it.group=sel.value||null;UPQ.setReady(it);UPQ.markDups()};return sel})():(v||'–')},
+   {key:'group',label:'Location group',fmt:(v,r)=>(r.kind==='case'||r.kind==='point')&&['ready','needs'].includes(r.phase)?(()=>{const it=items[r.ix],G=UPG_V||{groups:[],units:[]};
+     const names=[...new Set([...(G.groups||[]).map(x=>x.group),...Object.values(UNITS),...(v?[v]:[])])].sort((a,b)=>String(a).localeCompare(String(b)));
+     const sel=el('select',{'aria-label':'Location group'},el('option',{value:''},'Choose…'),names.map(u=>el('option',{value:u},u+(upGKnown(G,u)?'':' (new)'))),el('option',{value:'__new'},'New group…'));sel.value=v||'';
+     const box=el('div',{style:'display:grid;gap:4px;min-width:150px'},sel);
+     const apply=async g=>{it.group=g||null;it.unit=null;it.pickUser=false;if(it.phase==='needs'||it.phase==='ready'){it.phase=it.group&&it.period?'ready':'needs'}await upGroupCheck(it);UPQ.setReady(it);UPQ.markDups()};
+     sel.onchange=()=>{if(sel.value!=='__new'){apply(sel.value);return}const nm=el('input',{type:'text',placeholder:'e.g. Lucknow-Maneesh','aria-label':'New group name',maxlength:40});
+      const ok=el('button',{type:'button',class:'btn sm'},'Use');ok.onclick=()=>{const g=nm.value.trim().replace(/\s*-\s*/g,'-');if(g)apply(g)};box.append(nm,ok);nm.focus()};
+     if(it.gNew){const u0=it.unit||upGUnit(G,it.group);
+      if(it.unitAuto&&!it.unit)box.append(el('div',{class:'note',style:'margin:0'},`New file group — counted under ${u0} (the city in its name)`));
+      else{const us=el('select',{'aria-label':'Unit for the new group'},el('option',{value:''},'Counted under which unit?'),(G.units||[]).map(u=>el('option',{value:u},u)));us.value=it.unit||'';
+       us.onchange=()=>{it.unit=us.value||null;it.unitAuto=false;if(it.phase==='needs'&&it.group&&it.period&&it.unit){it.phase='ready';it.status='Ready'}UPQ.setReady(it);UPQ.markDups()};
+       box.append(el('div',{class:'note',style:'margin:0'},'New file group: pick the unit its cases belong to'),us)}}
+     return box})():(v||'–')},
    {key:'period',label:'Month / report date',fmt:(v,r)=>{if(r.kind==='collection')return'Receipts to '+ddmm(r.period||'');if(!['ready','needs'].includes(r.phase))return r.kind==='zonal'?ddmm(r.snapshot||''):mlabel(v||'');
     if(['outstanding','sales','unadjusted'].includes(r.kind)){const i3=el('input',{type:'date',value:r.asof||'','aria-label':r.kind==='sales'?'Register date':'Snapshot date'});i3.onchange=()=>{const it=items[r.ix];it.asof=i3.value;it.asofBasis='Entered at upload';it.status=i3.value?'Ready':'Needs snapshot date';finPrepare(it,it.x,it.file);it.phase=it.status==='Ready'?'ready':'needs';UPQ.changed()};return i3}
     const i2=el('input',{type:r.kind==='zonal'?'date':'month',value:r.kind==='zonal'?(r.snapshot||''):(v||'').slice(0,7),'aria-label':'Period'});i2.onchange=()=>{const it=items[r.ix];if(r.kind==='zonal')it.snapshot=i2.value;else it.period=i2.value?i2.value+'-01':null;UPQ.setReady(it);UPQ.markDups()};return i2}},
@@ -4905,7 +4956,7 @@ async function importOne(it,progress){const x=it.x;if(['collection','outstanding
   if(st.status!=='committed'||st.rows_in!==x.rows.length)throw new Error(`the server reports status "${st.status}" with ${fmt(st.rows_in||0)} of ${fmt(x.rows.length)} rows — not confirmed`);
   const pan=cz&&x.control&&cz.leaf_mtd!=null?(Math.abs(cz.leaf_mtd-x.control.mtd)<=0.5?` · leaf total ${fmt(cz.leaf_mtd)} = file's Pan India total ✓`:` · leaf total ${fmt(cz.leaf_mtd)} ≠ file's Pan India total ${fmt(x.control.mtd)} (logged in Data health)`):'';
   return`Imported snapshot ${ddmm(it.snapshot)}: ${fmt(st.rows_in)} rows · confirmed by the server`+pan+' · the dashboard shows it within about 10 minutes'}
- const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group,period_month:it.period});if(b.duplicate)return'Already imported (identical file) — unchanged';
+ const b=await ingest('begin',{category:x.kind,file_name:it.file.name,file_hash:it.hash,location_group:it.group,recon_unit:it.unit||null,period_month:it.period});if(b.duplicate)return'Already imported (identical file) — unchanged';
  /* 30-Oct-2026: case files are committed in smaller pieces (each piece re-checks every case's location) and a piece that hits the
     server time limit is retried twice after a pause — a commit that timed out was rolled back, so retrying it is safe. */
  const n=S.mode==='mcp'?250:(x.kind==='case'?300:600);const acc={new:0,changed:0,unchanged:0};let saved=0,st=null;

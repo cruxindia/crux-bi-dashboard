@@ -957,7 +957,7 @@ export async function runAgent(o: {
       const last = rounds >= o.maxRounds + bonus || toolCalls >= maxTools || Date.now() > o.deadline - tail;
       const r = await o.ai.chat(model, { system: o.system, contents, tools: decls, noTools: last, maxTokens: o.maxTokens ?? (o.detailed || o.long ? 8192 : 4096), temperature: 0.2 });
       usage.calls++; usage.prompt += r.promptTokens ?? 0; usage.output += r.outputTokens ?? 0;
-      await o.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose: o.purpose ?? 'agent', agent: model.startsWith('or:') || r.via === 'main' ? null : (o.agent ?? null), ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
+      await o.rec({ model, provider: model.startsWith('or:') ? 'openrouter' : 'gemini', purpose: o.purpose ?? 'agent', agent: model.startsWith('or:') || r.via === 'main' ? null : String(r.via ?? '').startsWith('pool_') ? String(r.via) : (o.agent ?? null), ok: r.ok, ms: r.ms, in: JSON.stringify(contents).length + o.system.length, out: r.text.length, http_status: r.status, retries: r.retries,
         prompt_tokens: r.promptTokens, output_tokens: r.outputTokens, note: r.ok ? (r.calls.length ? 'tools: ' + r.calls.map((c) => c.name).join(',') : 'answer') : r.error });
       // wave 117: a model that is briefly overloaded (503) is asked once more before the next model is tried (seen 18-Nov 18:33 and 19:27)
       if (!r.ok && retried < 2 && (r.status === 503 || (r.status === 0 && r.ms < 8000)) && Date.now() < o.deadline - tail - 10000) {

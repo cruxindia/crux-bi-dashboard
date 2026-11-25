@@ -260,11 +260,41 @@ export class KeyFailover implements AIProvider {
   async chat(m: string, q: ChatReq) { const r = await this.own.chat(m, q); return keyRefused(r) && this.main.configured() ? { ...(await this.main.chat(m, q)), via: 'main' } : r; }
   embed(m: string, t: string[], k: string, d: number) { return this.main.embed(m, t, k, d); }
 }
+// wave 121b (owner 25-Nov: "where can I add free API keys, as now tokens of the keys are getting over fast"): extra keys that admins add on the dashboard.
+// A pool key is used only when the key in use has used up its allowance (429 / quota) or is refused; the pool keys are tried in turn and one that ran out
+// rests for 15 minutes for that model. A busy model (503) or a time-out is not a key problem, so it goes to the next model as before.
+const quotaHit = (r: { ok: boolean; status: number; error?: string }) =>
+  !r.ok && (r.status === 429 || /RESOURCE_EXHAUSTED|quota/i.test(r.error ?? '') || keyRefused(r));
+const poolRest = new Map<string, number>();
+let poolTurn = 0;
+export class PoolFailover implements AIProvider {
+  readonly name = 'gemini';
+  constructor(private base: AIProvider, private pool: { slot: number; p: AIProvider }[]) {}
+  configured() { return this.base.configured() || this.pool.length > 0; }
+  listModels() { return this.base.listModels(); }
+  private async run<T extends { ok: boolean; status: number; error?: string; via?: string }>(m: string, f: (p: AIProvider) => Promise<T>): Promise<T> {
+    let r = await f(this.base);
+    if (!quotaHit(r) || !this.pool.length) return r;
+    const start = poolTurn++ % this.pool.length;
+    for (let i = 0; i < this.pool.length; i++) {
+      const k = this.pool[(start + i) % this.pool.length], tag = `${k.slot}|${m}`;
+      if ((poolRest.get(tag) ?? 0) > Date.now()) continue;
+      const r2 = await f(k.p);
+      if (r2.ok || !quotaHit(r2)) return { ...r2, via: 'pool_' + k.slot };
+      poolRest.set(tag, Date.now() + 15 * 60000); r = { ...r2, via: 'pool_' + k.slot };
+    }
+    return r;
+  }
+  generate(m: string, q: GenReq) { return this.run(m, (p) => p.generate(m, q)); }
+  chat(m: string, q: ChatReq) { return this.run(m, (p) => p.chat(m, q)); }
+  embed(m: string, t: string[], k: string, d: number) { return this.base.embed(m, t, k, d); }
+}
 // wave 106a: the backup key comes from the Edge Function secret OPENROUTER_API_KEY or, when that is not set, from Vault (passed in by index.ts)
 // retries: scheduled jobs pass 1 so a short "busy / resource exhausted" spell (seen 13-Nov 23:15 IST) is waited out once on the same key and model
-export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string, agentKey?: string, retries = 0): AIProvider {
+export function multiProvider(timeoutMs = 25000, paidAllowed = false, backupKey?: string, agentKey?: string, retries = 0, pool: { slot: number; key: string }[] = []): AIProvider {
   const main = new GeminiProvider(Deno.env.get('GEMINI_API_KEY') ?? '', timeoutMs, retries);
-  const g = agentKey ? new KeyFailover(new GeminiProvider(agentKey, timeoutMs, retries), main) : main;
+  const g0 = agentKey ? new KeyFailover(new GeminiProvider(agentKey, timeoutMs, retries), main) : main;
+  const g = pool.length ? new PoolFailover(g0, pool.filter((k) => k?.key).map((k) => ({ slot: k.slot, p: new GeminiProvider(k.key, timeoutMs, retries) }))) : g0;
   return new MultiProvider(g, new OpenRouterProvider(Deno.env.get('OPENROUTER_API_KEY') || backupKey || '', timeoutMs, paidAllowed));
 }
 // wave 109b: key check without spending tokens (lists one model); the key is never returned or logged
