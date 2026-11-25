@@ -1,5 +1,5 @@
--- PROPOSAL — NOT APPLIED (25-Nov-2026). Wave 119 stage C draft: bi.api_b2c and the call_compute patch. Not in the database yet;
--- it will be tested and applied as part of the remaining wave 119 work (SOW wave 119, stages B–F). Do not run without that review.
+-- APPLIED 25-Nov-2026 as docs/migrations-manual/20261125_bi_121c_business_to_cash.sql, with changes (unreliable Force1 TAT left out, 'Location not
+-- identified' / '(no zone)' not scored, groups with receivables but no billing kept, client filter keeps every unit). Kept for history; do not run this file.
 -- wave 119f (21-Nov-2026): business-to-cash — one SQL answer that puts business generation, operations, billing, settlement, cash and receivables side by
 -- side for a comparable window, by location (billing unit), zone or client; with a health score whose components and weights are stated, the
 -- associations between operational efficiency and financial results (rank correlation — association, not cause) and the signals of where business gets

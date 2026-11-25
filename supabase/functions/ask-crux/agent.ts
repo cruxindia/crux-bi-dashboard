@@ -141,6 +141,11 @@ export const DECLS: ToolDecl[] = [
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
   { name: 'get_collections', description: 'Receivables and collections: outstanding, over 90 / 180 days, realisation, collected last month and this month, cash cover, ageing buckets, by team and client.',
     parameters: { type: 'object', properties: { filters: FILTERS, limit: { type: 'integer' } } } },
+  { name: 'get_business_to_cash', description: 'BUSINESS TO CASH (wave 121c) over the last completely billed months whose settlement can be seen: cases → expected minimum revenue → invoiced → settled / still open → cash received, ' +
+      'receivables now (over 90 days), days to collect, case TAT and SLA, by location (billing unit), zone or client; a health score 0–100 (percentile ranks with stated weights), signals of where business gets stuck, ' +
+      'associations between operations and money across locations, and a collection outlook (likely settlement in the 30 days after the outstanding snapshot, cash pace, months of cash to clear receivables). Use for billing conversion, settlement / realisation by location, health score, which locations or clients turn business into cash best or worst, and whether faster TAT goes with better collection.',
+    parameters: { type: 'object', properties: { group: { type: 'string', enum: ['location', 'zone', 'client'] }, months: { type: 'integer', description: 'window length 1–6, default 3' }, filters: FILTERS,
+      sort: { type: 'string', enum: ['billed', 'health_low', 'health_high', 'outstanding'] }, limit: { type: 'integer' } } } },
   { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes. ' +
       'detail=true adds, for up to 10 managers (lowest attainment first, or the codes in managers), each one\'s client spread — every team × client they run with cases, business so far, target, attainment, same day last month and change, and last completed month — and the case TAT of each of their teams: use it for manager-wise / individual reports (one call covers them all).',
     parameters: { type: 'object', properties: { month: MONTHP, filters: FILTERS, limit: { type: 'integer' }, detail: { type: 'boolean' }, managers: { type: 'array', items: { type: 'string' }, description: 'manager codes to keep (optional)' } } } },
@@ -418,6 +423,23 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       trend: Array.isArray(C?.trend) ? C.trend.slice(-6) : undefined, alerts: C?.alerts, limitations: C?.limitations }, 15000) };
   },
 
+  // wave 121c (wave 119 stage E): business to cash — the same figures as Revenue & collections → Business to cash and the Overview card
+  async get_business_to_cash(t, a) {
+    const { month, filters } = scope(t, a);
+    const group = ['location', 'zone', 'client'].includes(String(a?.group)) ? String(a.group) : 'location';
+    const months = Math.min(Math.max(Number(a?.months) || 3, 1), 6);
+    const lim = Math.min(Math.max(Number(a?.limit) || 15, 1), 40);
+    const W = await t.api('b2c', { month, filters, p: { group, months } });
+    if (W?.error) throw new Error(String(W.error));
+    if (W?.available === false) return { label: 'Business to cash', data: { available: false, reason: W.reason } };
+    const sort = ['health_low', 'health_high', 'outstanding'].includes(String(a?.sort)) ? String(a.sort) : 'billed';
+    const key = (r: any) => sort === 'health_low' ? (r.health?.score ?? 999) : sort === 'health_high' ? -(r.health?.score ?? -1) : sort === 'outstanding' ? -(+r.outstanding || 0) : -(+r.billed || 0);
+    const rows = (W.rows ?? []).slice().sort((x: any, y: any) => key(x) - key(y));
+    return { label: 'Business to cash', rows: rows.length,
+      data: fit({ group, sorted_by: sort, window: W.window, basis: W.basis, total: W.total, stages: W.stages, rows: rows.slice(0, lim), rows_total: rows.length,
+        associations: W.associations, outlook: W.outlook, health_method: W.health_method, notes: W.notes }, 18000) };
+  },
+
   async get_branch_managers(t, a) {
     const { month, filters } = scope(t, a);
     const lim = Math.min(Math.max(Number(a?.limit) || 25, 1), 40);
@@ -627,6 +649,7 @@ Ask one question at a time. Examples that need a question: "Rank the branches" (
 22. OPERATING MODEL: Business Associates vs Crux Branches — who runs a location or client, since when, and either group's business, growth or TAT — come only from get_operating_model and get_assoc_comparison. Never build that split with run_sql, from team ids, team names or zones (there is no rule such as "team ids 1–35 are Crux Branches"); if those tools cannot give a figure, say so under "Not available".
 23. TABLE LAYOUT: when the user gives the columns of a table (for example "month, Operating Model, Revenue, Target, Potential, performance"), the table has exactly those columns, in that order, with the user's names. Do not add, drop, merge or reorder columns; a column the data cannot fill stays in place with "n/a" and is explained under "Not available".
 24. COVERAGE (look-up: get_operations with part coverage): client branch coverage is the share of code-matchable client branches with a Force1 case in the last 6 months: coverage_6m = now, coverage_6m_prev_month = at the end of last month, coverage_change_pts = the change in percentage points. For "this month vs last month" give both and the change in points. A client in coverage_notes.clients_not_measured has business in the tracker but no Force1 cases: say its coverage cannot be measured — never that it has no business or 0% coverage.
+26. BUSINESS TO CASH: how business turns into money — billing conversion, settlement / realisation by location or client, the health score, "which locations turn business into cash best / worst", "does faster TAT go with better collection" — comes from get_business_to_cash. Say its window (months) and the outstanding date. Cash received includes GST and is a cash-flow figure: never call it revenue, never divide it by ex-GST revenue, never add receivables to revenue or cash. A missing measure is "no data", never 0. Associations are rank correlations across locations: write "goes with", never "causes". The health score is a rank among the groups (50 = the middle, not a pass mark); when you show it, give its weights once. The collection outlook is an estimate from one outstanding snapshot (ex-GST): call it likely or estimated, give its snapshot date, and never add it to cash received.
 
 ANSWER FORMAT
 - QUICK answers (a short question): first line the direct answer in one or two sentences; then 2–6 short bullets with the key figures and the reason (why), and what to do when it helps; a small markdown table (≤ 10 rows) when comparing several items. No headings.
