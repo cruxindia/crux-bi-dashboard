@@ -468,7 +468,8 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const q = (v: unknown) => "'" + String(v).replace(/'/g, "''") + "'";
     const wt: string[] = [], wc: string[] = [];
     if (filters.location_id != null) { wt.push(`team_id = ${Number(filters.location_id)}`); wc.push(`team_id = ${Number(filters.location_id)}`); }
-    if (filters.zone_group) { wt.push(`zone_group = ${q(filters.zone_group)}`); wc.push(`team_id in (select team_id from teams where zone_group = ${q(filters.zone_group)})`); }
+    // tracker_daily.zone_group holds the sheet's zone label ("Kolkata Zone"); zone codes live in teams.zone_group
+    if (filters.zone_group) { const z = `team_id in (select team_id from teams where zone_group = ${q(filters.zone_group)})`; wt.push(z); wc.push(z); }
     if (filters.client_family) { wt.push(`client_family = ${q(filters.client_family)}`); wc.push(`client_family = ${q(filters.client_family)}`); }
     const and = (w: string[]) => (w.length ? ' and ' + w.join(' and ') : '');
     const tq = `with p as (select max(snapshot_date) d0 from tracker_daily where snapshot_date < date ${q(d)} and month = date_trunc('month', date ${q(d)})::date) ` +
@@ -655,7 +656,7 @@ DATA VIEWS for run_sql (PostgreSQL; only these views; no schema prefix; revenue 
 - teams(team_id, team, team_code, zone_group, region, tier, is_rollup)
 - clients(client_code, client_name, client_family, product, summary_under)
 - monthly_business(month, team_id, team, zone_group, client_code, client_family, cases, revenue, target_cases, revenue_target, as_of) — tracker month totals; current month = to date
-- tracker_daily(snapshot_date, month, zone_group, team_id, team, client_code, client_family, target_cases, mtd_cases, rate, revenue_target, mtd_revenue) — cumulative month to date per report date
+- tracker_daily(snapshot_date, month, zone_group, team_id, team, client_code, client_family, target_cases, mtd_cases, rate, revenue_target, mtd_revenue) — cumulative month to date per report date; its zone_group is the sheet's zone label (e.g. 'Kolkata Zone'): filter a zone code with team_id in (select team_id from teams where zone_group = 'KOLKATA')
 - cases(case_id, client_code, client_family, branch_code, team_id, status, received_on, completed_on, due_on, received_month, points_declared, raw_tat_hours) — Force1 case records
 - branches(client_family, branch_code, branch_name, city, district, state, pincode, team_id, team, zone_group, first_case_month, last_case_month, cases_total, cases_last_3_months, crux_status, status_month, unit_type) — crux_status: 'active' | 'dormant' | 'never active'; unit_type: 'RACPC' | 'Mini RACPC' | 'RASMECCC' | 'SMECCC' | 'SARC' | 'RAC' | 'RACC' | 'Other CPC' | 'Other processing centre' | 'SME branch' | 'Branch'
 - potential(zone_group, team_id, team, client_family, layer, branches, cases, revenue, basis_month, run_id) — layers: current, recover, dormant, never_served, never_not_served, never_no_team
