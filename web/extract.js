@@ -49,16 +49,21 @@
     return out;
   }
   function headerAt(rows, pred, depth) { for (let i = 0; i < Math.min(depth || 8, rows.length); i++) if ((rows[i] || []).some((x) => pred(lc(x)))) return i; return -1; }
+  // wave 119: two more finance layouts — a consolidated sales register (first column Month, one sheet; "Sale.xlsx") and the unadjusted-receipts
+  // workbook (bank credits with a location but no invoice column; "Unadj till Oct26.xlsx")
   function detectFinance(wb) {
-    let credit = 0, outstanding = 0;
+    let credit = 0, outstanding = 0, register = 0, unadj = 0;
     for (const n of wb.SheetNames) {
       const rows = sheetRows(wb.Sheets[n]).slice(0, 8);
-      if (headerAt(rows, (x) => x.startsWith('actual outstanding')) >= 0) outstanding++;
+      const ho = headerAt(rows, (x) => x.startsWith('actual outstanding'));
+      if (ho >= 0) { outstanding++; const h = rows[ho].map(lc); if (h[0] === 'month' && h.some((x) => /^inv/.test(x)) && (h.includes('zone') || h.includes('date')) && !h.includes('location')) register++; }
       const hi = headerAt(rows, (x) => x === 'credit');
-      if (hi >= 0 && rows[hi].some((x) => /^invoice/.test(lc(x)))) credit++;
+      if (hi >= 0) { const h = rows[hi].map(lc); if (h.some((x) => /^invoice/.test(x))) credit++; else if (h.includes('location') && h.some((x) => /^(date\.?|txn date|transaction date|value date)$/.test(x))) unadj++; }
     }
+    if (register >= 1 && register === outstanding) return 'sales';
     if (outstanding >= 1) return 'outstanding';
     if (credit >= 1) return 'collection';
+    if (unadj >= 1) return 'unadjusted';
     return null;
   }
   function finDate(v) { // -> 'YYYY-MM-DD' | null ; Indian day-first order for numeric dates
@@ -102,6 +107,126 @@
     while ((m = re.exec(s))) { const yy = +m[2], mm = +m[3]; if (!IR_STOP.has(m[1]) && yy >= 23 && yy <= 30 && mm >= 1 && mm <= 12) return `${m[1]}-${m[2]}${m[3]}-${m[4]}`; }
     return null;
   }
+  // of several "Branch code" columns before Credit, the one whose values are mostly codes (digits / IFSC); a value date in a mislabelled column is skipped
+  function codeCol(rows, hi, h, ci) {
+    const cand = []; for (let i = 0; i < Math.min(ci < 0 ? h.length : ci, h.length); i++) if (h[i] === 'branch code') cand.push(i);
+    if (cand.length <= 1) return cand.length ? cand[0] : -1;
+    let best = cand[0], bestScore = -1;
+    for (const i of cand) { let sc = 0, n = 0; for (let r = hi + 1; r < Math.min(rows.length, hi + 400); r++) { const v = String((rows[r] || [])[i] == null ? '' : rows[r][i]).trim(); if (!v) continue; n++; if (/^\d{1,6}(\.0+)?$/.test(v) || /^[A-Z]{4}0[A-Z0-9]{6}$/i.test(v) || (/^[A-Za-z][A-Za-z .&-]{2,}$/.test(v) && !finDate(v))) sc++; } if (n && sc / n > bestScore) { bestScore = sc / n; best = i; } }
+    return best;
+  }
+
+  /* wave 119: unadjusted receipts — money in the bank not yet applied to an invoice (one row per credit, plus a pivot summary). Only business
+     fields leave the browser: location label, bank, month, date, amount, paying branch code / name and an 8-character fingerprint of the narration
+     (used only to spot the same credit twice); the narration itself (it can carry customer names) is never sent. */
+  const UNADJ_COLS = ['r', 'loc', 'bank', 'rm', 'd', 'amt', 'h', 'pbc', 'pbn', 'ir'];
+  function extractUnadjusted(wb, fileName) {
+    const sheets = []; const issues = [];
+    for (const name of wb.SheetNames) {
+      const rows = sheetRows(wb.Sheets[name]);
+      const hi = headerAt(rows, (x) => x === 'credit');
+      const h = hi >= 0 ? rows[hi].map(lc) : [];
+      if (hi < 0 || !h.includes('location')) { // pivot summary: "Row Labels | Sum of CREDIT"
+        const ph = headerAt(rows, (x) => x === 'row labels'); const by = {}; let gt = null;
+        if (ph >= 0) for (let r = ph + 1; r < rows.length; r++) { const x = rows[r] || []; const lab = clean(x[0]); const v = num(x[1]); if (!lab || v == null) continue; if (/^grand total$/i.test(lab)) gt = v; else by[lab.toLowerCase()] = (by[lab.toLowerCase()] || 0) + v; }
+        sheets.push({ sheet: name, role: 'summary', cols: [], rows: [], controls: { by_label: by, grand_total: gt } }); continue;
+      }
+      const idx = (pred, from) => { for (let i = from || 0; i < h.length; i++) if (pred(h[i], i)) return i; return -1; };
+      const ci = idx((x) => x === 'credit');
+      const c = { loc: idx((x) => x === 'location'), bank: idx((x) => x === 'bank'), rm: idx((x) => x === 'month'),
+        d: idx((x) => ['date', 'date.', 'txn date', 'transaction date', 'value date'].includes(x)),
+        nar: idx((x) => ['narration', 'description', 'discription', 'descripion', 'details', 'particulars'].includes(x)),
+        bc: codeCol(rows, hi, h, ci < 0 ? h.length : ci), bnm: idx((x) => x === 'branch name') };
+      const out = []; const ctl = { rows: 0, credit: 0, by_month: {}, by_label: {}, min_date: null, max_date: null, negative_rows: 0, no_date: 0, no_location_label: 0, text_credit_rows: 0, text_credit: 0 };
+      for (let r = hi + 1; r < rows.length; r++) {
+        const row = rows[r]; if (typeof row[ci] === 'string' && !row[ci].trim()) continue; const amt = num(row[ci]); if (amt == null) continue;
+        const d = c.d >= 0 ? finDate(row[c.d]) : null; const rm = (c.rm >= 0 ? finMonth(row[c.rm]) : null) || (d ? d.slice(0, 7) : null);
+        const code = c.bc >= 0 ? String(row[c.bc] == null ? '' : row[c.bc]).replace(/\.0+$/, '').trim() : '';
+        const pbc = /^\d{1,6}$/.test(code) && code !== '0' ? code : /^[A-Z]{4}0[A-Z0-9]{6}$/i.test(code) ? code.toUpperCase() : null;
+        const pbn = c.bnm >= 0 && clean(row[c.bnm]) ? cut(row[c.bnm], 40) : (code && !/^\d+$/.test(code) && !/posting|transfer|charges/i.test(code) ? cut(code, 40) : null);
+        const loc = cut(row[c.loc], 40); const bank = cut(row[c.bank], 30);
+        const fp = fnv([c.nar >= 0 ? lc(row[c.nar]) : '', lc(bank), code, d || lc(row[c.d]), amt].join('|'));
+        out.push([r + 1, loc, bank, rm, d, amt, fp, pbc, pbn, c.nar >= 0 ? invRef(row[c.nar]) : null]);
+        if (typeof row[ci] === 'string') { ctl.text_credit_rows++; ctl.text_credit += amt; } // typed as text: a workbook pivot leaves these out
+        ctl.rows++; ctl.credit += amt; if (rm) ctl.by_month[rm] = (ctl.by_month[rm] || 0) + amt; if (amt < 0) ctl.negative_rows++; if (!d) ctl.no_date++;
+        const lk = (loc || '(blank)').toLowerCase(); ctl.by_label[lk] = (ctl.by_label[lk] || 0) + amt; if (!loc || /^unadj/i.test(loc)) ctl.no_location_label++;
+        if (d) { if (!ctl.min_date || d < ctl.min_date) ctl.min_date = d; if (!ctl.max_date || d > ctl.max_date) ctl.max_date = d; }
+      }
+      ctl.credit = Math.round(ctl.credit * 100) / 100; for (const k in ctl.by_month) ctl.by_month[k] = Math.round(ctl.by_month[k] * 100) / 100; for (const k in ctl.by_label) ctl.by_label[k] = Math.round(ctl.by_label[k] * 100) / 100;
+      sheets.push({ sheet: name, role: 'unadj', cols: UNADJ_COLS, rows: out, controls: ctl });
+    }
+    const data = sheets.filter((s) => s.role === 'unadj'); const piv = sheets.find((s) => s.role === 'summary' && s.controls.grand_total != null);
+    const tot = Math.round(data.reduce((a, s) => a + s.controls.credit, 0) * 100) / 100;
+    if (piv) {
+      const txt = data.reduce((a, s) => a + s.controls.text_credit, 0), txn = data.reduce((a, s) => a + s.controls.text_credit_rows, 0);
+      if (Math.abs(piv.controls.grand_total - tot) > 1) {
+        if (txn && Math.abs(piv.controls.grand_total - (tot - txt)) <= 1) issues.push({ rule: 'pivot_text_credits', severity: 'info', detail: `${txn} credits (${txt.toFixed(2)}) are typed as text in the workbook, so its summary leaves them out; they are real receipts and are included (rows ${tot.toFixed(2)} = summary ${piv.controls.grand_total.toFixed(2)} + ${txt.toFixed(2)}).` });
+        else issues.push({ rule: 'pivot_vs_rows', severity: 'error', detail: `The summary sheet's grand total ${piv.controls.grand_total.toFixed(2)} differs from the rows ${tot.toFixed(2)} by ${(tot - piv.controls.grand_total).toFixed(2)}, not explained by credits typed as text (${txt.toFixed(2)}).` });
+      }
+      const rowsBy = {}; for (const s of data) for (const k in s.controls.by_label) rowsBy[k] = (rowsBy[k] || 0) + s.controls.by_label[k];
+      const diff = Object.keys({ ...rowsBy, ...piv.controls.by_label }).filter((k) => Math.abs((rowsBy[k] || 0) - (piv.controls.by_label[k] || 0)) > 1);
+      if (diff.length && !(txn && Math.abs(piv.controls.grand_total - (tot - txt)) <= 1)) issues.push({ rule: 'pivot_label_mismatch', severity: 'warn', detail: `Summary and rows differ for ${diff.slice(0, 8).join(', ')}.` });
+    } else issues.push({ rule: 'no_pivot', severity: 'info', detail: 'No summary sheet found; the rows are used without a control total.' });
+    const months = [...new Set(data.flatMap((s) => Object.keys(s.controls.by_month)))].sort();
+    const maxDate = data.map((s) => s.controls.max_date).filter(Boolean).sort().pop() || null;
+    const nm = nameMonth(fileName);
+    return { kind: 'unadjusted', file_name: fileName, name_period: nm, period_from: months[0] ? months[0] + '-01' : null, period_to: months.length ? months[months.length - 1] + '-01' : null,
+             data_through: maxDate, total: tot, control_total: piv ? piv.controls.grand_total : null, sheets, issues };
+  }
+
+  /* wave 119: sales register ("Sale.xlsx") — every invoice raised, one consolidated sheet. The first column is the Month (not a location); location
+     comes from the invoice series in the database. "Zone" holds the billed client's zonal office or GSTIN: only the zone text or "GST state NN" is
+     kept as a place hint (the GSTIN itself and the Name column — client branch text — are not sent). Blank outstanding stays blank (never 0). */
+  const SALES_COLS = ['r', 'loc', 'im', 'ims', 'cl', 'br', 'inv', 'basic', 'gross', 'tds', 'net', 'partial', 'os', 'rk', 'idt', 'gst'];
+  function extractSales(wb, fileName) {
+    const sheets = []; const issues = [];
+    for (const name of wb.SheetNames) {
+      const rows = sheetRows(wb.Sheets[name]);
+      const hi = headerAt(rows, (x) => x.startsWith('actual outstanding'));
+      if (hi < 0) { sheets.push({ sheet: name, role: 'summary', cols: [], rows: [], controls: {} }); continue; }
+      const h = rows[hi].map(lc); const idx = (pred, from) => { for (let i = from || 0; i < h.length; i++) if (pred(h[i], i)) return i; return -1; };
+      const c = { mo: idx((x) => x === 'month'), cl: idx((x) => x === 'client' || x === 'clinet'), inv: idx((x) => /^inv/.test(x)), basic: idx((x) => x === 'basic'), gst: idx((x) => x === 'gst' || x === 'igst' || x === 'tax'),
+        gross: idx((x) => x === 'gross'), tds: idx((x) => x === 'tds'), net: idx((x) => x === 'net'), pr: idx((x) => x.startsWith('partial')), ao: idx((x) => x.startsWith('actual outstanding')),
+        rk: idx((x) => x.startsWith('remark') || x === 'status'), dt: idx((x) => x === 'date' || x === 'invoice date'), zone: idx((x) => x === 'zone') };
+      const out = []; const ctl = { rows: 0, basic: 0, gst: 0, gross: 0, tds: 0, net: 0, partial: 0, os: 0, os_blank_rows: 0, os_equals_net_rows: 0, paid_rows: 0, paid_os_equals_net_rows: 0,
+        negative_rows: 0, no_invoice_rows: 0, unreadable_invoice: 0, bad_date_rows: 0, month_differs_from_number: 0, by_month: {}, by_column_month: {}, repeated_lines: 0 };
+      const seen = new Map();
+      for (let r = hi + 1; r < rows.length; r++) {
+        const row = rows[r]; const invRaw = clean(row[c.inv]); const basic = num(row[c.basic]); const net = num(row[c.net]);
+        if (!invRaw && basic == null && net == null) continue;
+        const iv = invParse(row[c.inv]); const colYm = finMonth(row[c.mo]); let im = null, ims = null;
+        if (iv && iv.ym) { im = iv.ym; ims = 'n'; if (colYm && colYm !== iv.ym) ctl.month_differs_from_number++; } else if (colYm) { im = colYm; ims = 'c'; }
+        const z = c.zone >= 0 ? clean(row[c.zone]) : null; const gstin = z && /^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z0-9]Z[A-Z0-9]$/i.test(z);
+        const hint = z ? (gstin ? 'GST state ' + z.slice(0, 2) : cut(z, 40)) : null;
+        const osRaw = num(row[c.ao]); const idt = c.dt >= 0 ? finDate(row[c.dt]) : null; const rk = cut(row[c.rk], 40);
+        if (c.dt >= 0 && clean(row[c.dt]) && !idt) ctl.bad_date_rows++;
+        const line = [r + 1, null, im, ims, cut(row[c.cl], 40), hint, iv ? cut(iv.raw, 40) : null, basic, num(row[c.gross]), num(row[c.tds]), net, num(row[c.pr]), osRaw, rk, idt, c.gst >= 0 ? num(row[c.gst]) : null];
+        out.push(line); ctl.rows++;
+        ctl.basic += basic || 0; ctl.gst += line[15] || 0; ctl.gross += line[8] || 0; ctl.tds += line[9] || 0; ctl.net += net || 0; ctl.partial += line[11] || 0;
+        if (osRaw == null) ctl.os_blank_rows++; else { ctl.os += osRaw; if (osRaw < 0) ctl.negative_rows++; if (net != null && Math.abs(osRaw - net) < 1) ctl.os_equals_net_rows++; }
+        const paid = /^paid\b/i.test(rk || ''); if (paid) { ctl.paid_rows++; if (osRaw != null && net != null && Math.abs(osRaw - net) < 1) ctl.paid_os_equals_net_rows++; }
+        if (!iv) ctl.no_invoice_rows++; else if (iv.odd) ctl.unreadable_invoice++;
+        if (im) { const b = ctl.by_month[im] || (ctl.by_month[im] = { n: 0, basic: 0 }); b.n++; b.basic += basic || 0; }
+        if (colYm) ctl.by_column_month[colYm] = (ctl.by_column_month[colYm] || 0) + 1;
+        const key = [iv ? iv.key : '', basic, net, osRaw, lc(row[c.cl])].join('|'); if (seen.has(key)) ctl.repeated_lines++; else seen.set(key, 1);
+      }
+      for (const k of ['basic', 'gst', 'gross', 'tds', 'net', 'partial', 'os']) ctl[k] = Math.round(ctl[k] * 100) / 100;
+      for (const k in ctl.by_month) ctl.by_month[k].basic = Math.round(ctl.by_month[k].basic * 100) / 100;
+      sheets.push({ sheet: name, role: 'sales', cols: SALES_COLS, rows: out, controls: ctl });
+    }
+    const reg = sheets.filter((s) => s.role === 'sales'); const C = reg.reduce((a, s) => { for (const k of ['rows', 'paid_rows', 'paid_os_equals_net_rows', 'os_blank_rows', 'os_equals_net_rows', 'repeated_lines', 'unreadable_invoice', 'negative_rows', 'bad_date_rows']) a[k] = (a[k] || 0) + s.controls[k]; return a; }, {});
+    if (C.paid_rows && C.paid_os_equals_net_rows / C.paid_rows > 0.5) issues.push({ rule: 'outstanding_not_maintained', severity: 'warn', detail: `${C.paid_os_equals_net_rows} of ${C.paid_rows} lines marked "paid" still show Actual Outstanding = Net; the outstanding column is not used as the receivables snapshot (billing only).` });
+    if (C.rows && C.os_blank_rows / C.rows > 0.05) issues.push({ rule: 'outstanding_blank', severity: 'warn', detail: `${C.os_blank_rows} lines have no Actual Outstanding (kept blank, never read as zero).` });
+    if (C.repeated_lines) issues.push({ rule: 'repeated_lines', severity: 'info', detail: `${C.repeated_lines} lines repeat an earlier line exactly (same invoice, amounts and client); each invoice is billed once.` });
+    if (C.unreadable_invoice) issues.push({ rule: 'unreadable_invoice', severity: 'info', detail: `${C.unreadable_invoice} invoice numbers do not follow SERIES-YYMM-NUMBER; their month comes from the Month column.` });
+    if (C.bad_date_rows) issues.push({ rule: 'bad_invoice_dates', severity: 'info', detail: `${C.bad_date_rows} invoice dates could not be read (the invoice month is used).` });
+    // the months the register covers = its Month column (an invoice number with another month does not widen the period)
+    const colN = {}; for (const s of reg) for (const k in s.controls.by_column_month) colN[k] = (colN[k] || 0) + s.controls.by_column_month[k];
+    const fy = Object.keys(colN).filter((m) => m >= '2015-01' && colN[m] >= Math.max(1, 0.01 * (C.rows || 0) / Math.max(1, Object.keys(colN).length))).sort(); const nm = nameMonth(fileName);
+    const saved = wb.Props && wb.Props.ModifiedDate ? finDate(wb.Props.ModifiedDate instanceof Date ? wb.Props.ModifiedDate : String(wb.Props.ModifiedDate).slice(0, 10)) : null;
+    return { kind: 'sales', file_name: fileName, name_period: nm, period_from: fy[0] ? fy[0] + '-01' : null, period_to: fy.length ? fy[fy.length - 1] + '-01' : null, workbook_saved: saved, sheets, issues };
+  }
+
   function extractCollection(wb, fileName) {
     const sheets = []; const issues = [];
     for (const name of wb.SheetNames) {
@@ -115,7 +240,8 @@
       const c = { loc: idx((x) => x === 'location'), bank: idx((x) => x === 'bank'), rm: idx((x) => x === 'month'),
         d: idx((x, i) => i < ci && ['date', 'txn date', 'date.', 'transaction date', 'value date'].includes(x)),
         cl: idx((x) => x === 'client', ci), br: idx((x) => x === 'branch', ci), inv: idx((x) => /^invoice( no\.?| number)?$/.test(x), ci), basic: idx((x) => x === 'basic', ci),
-        nar: idx((x, i) => i < ci && ['narration', 'description', 'discription', 'details', 'remarks', 'particulars'].includes(x)), chq: idx((x, i) => i < ci && x.startsWith('cheque')), bc: idx((x, i) => i < ci && x === 'branch code'), bcn: idx((x, i) => i < ci && x === 'branch code with name'), bnm: idx((x, i) => i < ci && x === 'branch name'), ifsc: idx((x) => x === 'ifsc'), im };
+        nar: (() => { const NAR = ['narration', 'description', 'discription', 'descripion', 'details', 'remarks', 'particulars']; const b = idx((x, i) => i < ci && NAR.includes(x)); return b >= 0 ? b : idx((x) => NAR.includes(x)); })(),
+        chq: idx((x, i) => i < ci && x.startsWith('cheque')), bc: codeCol(rows, hi, h, ci), bcn: idx((x, i) => i < ci && x === 'branch code with name'), bnm: idx((x, i) => i < ci && x === 'branch name'), ifsc: idx((x) => x === 'ifsc'), im };
       const out = []; const ctl = { rows: 0, credit: 0, by_month: {}, min_date: null, max_date: null, with_invoice: 0, invoice_credit: 0, ym_number_vs_column_differ: 0, odd_invoice: 0, multi_invoice: 0, no_receipt_month: 0 };
       for (let r = hi + 1; r < rows.length; r++) {
         const row = rows[r]; const amt = num(row[ci]); if (amt == null) continue;
@@ -127,7 +253,8 @@
         const ifsc = c.ifsc >= 0 ? String(row[c.ifsc] == null ? '' : row[c.ifsc]).trim().toUpperCase() : '';
         const code = c.bc >= 0 ? String(row[c.bc] == null ? '' : row[c.bc]).replace(/\.0+$/, '').trim() : '';
         const pbc = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc) ? ifsc : /^\d{1,6}$/.test(code) ? code : bcn ? bcn[1] : null;
-        const pbn = bcn ? cut(bcn[2], 40) : c.bnm >= 0 ? cut(row[c.bnm], 40) : null;
+        // wave 119: in the consolidated sheet the code column holds the paying branch's name when there is no code (e.g. NASIK); posting labels are not names
+        const pbn = bcn ? cut(bcn[2], 40) : c.bnm >= 0 ? cut(row[c.bnm], 40) : (code && !/^\d+$/.test(code) && !/posting|transfer|charges|^0$/i.test(code) ? cut(code, 40) : null);
         out.push([r + 1, cut(row[c.loc], 40), cut(row[c.bank], 30), rm, d, amt, cut(row[c.cl], 30), c.br >= 0 ? cut(row[c.br], 40) : null, iv ? cut(iv.raw, 40) : null, c.basic >= 0 ? num(row[c.basic]) : null, ym, ims, fp,
           pbc, pbn, iv ? null : (c.nar >= 0 ? invRef(row[c.nar]) : null)]);
         ctl.rows++; ctl.credit += amt; if (rm) ctl.by_month[rm] = (ctl.by_month[rm] || 0) + amt; else ctl.no_receipt_month++;
@@ -389,6 +516,8 @@
     if (cat === 'point') { const x = extractRecords(wb, POINT_MAP, 'point'); return { kind: 'point', file_name: fileName, group: meta.group, month_token: meta.monthToken, ...x }; }
     if (cat === 'collection') return extractCollection(wb, fileName);
     if (cat === 'outstanding') return extractOutstanding(wb, fileName);
+    if (cat === 'sales') return extractSales(wb, fileName);
+    if (cat === 'unadjusted') return extractUnadjusted(wb, fileName);
     return { kind: null, file_name: fileName, issues: [{ rule: 'unrecognised_file', severity: 'error' }] };
   }
   const api = { extractWorkbook, detectCategory, parseNameMeta, decodeMonthHeader, serialToIso, invParse, finDate, finMonth };

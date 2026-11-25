@@ -9,7 +9,7 @@
 // (GEMINI_MODEL, GEMINI_EMBEDDING_MODEL, caps, timeouts); an env var of the same name overrides the table.
 import { checkKey, embeddingCandidates, fallbackCandidates, generationCandidates, multiProvider, provider, type AIProvider, type ModelInfo } from './ai.ts';
 import { JOBS, runJob, type JobEnv } from './jobs.ts';
-import { AgentError, DECLS, Pseudo, parseClarify, planOf, questionKeys, runAgent, systemPrompt, unitQuestion, vocabOf, type Ctx } from './agent.ts';
+import { AgentError, DECLS, Pseudo, effectiveScope, parseClarify, planOf, questionKeys, questionScope, runAgent, systemPrompt, unitQuestion, vocabOf, type Ctx } from './agent.ts';
 import { noVendor } from './brand.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
@@ -206,6 +206,14 @@ async function agentProvider(cfg: Record<string, string>, agent: string) {
 }
 const ZONE_LABEL: Record<string, string> = { REST_MAHA: 'Rest of Maharashtra', MUMBAI_GOA: 'Mumbai & Goa', BHOPAL_MP: 'Bhopal / MP', TAMILNADU: 'Tamil Nadu' };
 const zoneName = (z: string) => ZONE_LABEL[z] ?? z.charAt(0) + z.slice(1).toLowerCase();
+// wave 120: a scope in words — "Pune", "Kolkata zone", "SBI · All India"
+function scopeLabel(f: Record<string, unknown>, locations: any[]): string {
+  const team = f.location_id != null ? (locations ?? []).find((l: any) => Number(l.id) === Number(f.location_id))?.label ?? `team ${f.location_id}` : null;
+  const place = team ?? (f.zone_group ? zoneName(String(f.zone_group)) + ' zone' : f.region ? String(f.region) : f.stakeholder ? String(f.stakeholder) : null);
+  return [f.client_family ? String(f.client_family) : null, place ?? (f.client_family ? 'All India' : 'All India')].filter(Boolean).join(' · ');
+}
+// wave 120 (#1276): explanations of a tile, table or chart, and "explain / what is behind" questions, get the longer answer length
+const LONG = /\b(explain\w*|what\s+is\s+behind|behind\s+this|why)\b/i;
 // shared-memory topics of a question: its scope (zone, team, client) and the unit types it asks about
 function topicsOf(filters: Record<string, unknown>, uq: ReturnType<typeof unitQuestion>): string[] {
   const f = { ...filters, ...(uq?.filters ?? {}) } as Record<string, unknown>;
@@ -246,13 +254,17 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const dataAsOf = String(meta?.freshness?.zonal_latest_snapshot ?? '').slice(0, 10);
   const dataMonth = (meta?.months ?? [])[0] ?? (dataAsOf ? dataAsOf.slice(0, 8) + '01' : new Date().toISOString().slice(0, 8) + '01');
   const c = body?.context ?? {};
-  const filters: Record<string, unknown> = {};
-  for (const k of ['zone_group', 'location_id', 'client_family', 'region', 'stakeholder']) if (c?.filters?.[k] != null && c.filters[k] !== '') filters[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
-  const ctx: Ctx = { month: typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : dataMonth, filters, section: typeof c.section === 'string' ? c.section : undefined,
-    element: elementOf(originOf(body)) };
+  const pageFilters: Record<string, unknown> = {};
+  for (const k of ['zone_group', 'location_id', 'client_family', 'region', 'stakeholder']) if (c?.filters?.[k] != null && c.filters[k] !== '') pageFilters[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
   const question = redactQ(String(body?.question ?? '').slice(0, QMAX));
   const history = body?.conversation_id ? await gw({ op: 'history', conversation_id: body.conversation_id, n: 8 }).catch(() => []) : [];
   const H: any[] = Array.isArray(history) ? history : [];
+  // wave 120 (owner 25-Nov, #1282-1284): the scope the question names (or the conversation named) replaces the page filters; otherwise the page filters, said in the first line
+  const eff = effectiveScope(question, H.map((h: any) => String(h?.question ?? '')), pageFilters, meta?.locations ?? []);
+  const filters: Record<string, unknown> = eff.filters;
+  const ctx: Ctx = { month: typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : dataMonth, filters, section: typeof c.section === 'string' ? c.section : undefined,
+    element: elementOf(originOf(body)),
+    scope: { source: eff.source, label: scopeLabel(filters, meta?.locations ?? []), page_label: Object.keys(pageFilters).length ? scopeLabel(pageFilters, meta?.locations ?? []) : '', places: eff.places, all: eff.all, note: eff.note } };
   // wave 117: detailed when the request asks for it, or when a follow-up changes a detailed answer ("add TAT", "same for Pune")
   const detailed = DETAIL.test(question) || question.length > 160 || (H.length > 0 && H[H.length - 1]?.detailed === true && question.length < 300 && !/\b(quick|short|brief|one line|just the)\b/i.test(question));
   const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
@@ -308,7 +320,9 @@ async function askAgent(body: any, cfg: Record<string, string>) {
     .map((x) => `"${x.question}": ` + x.plan.map((s: any) => `${s.tool} ${pseudo.unstable(JSON.stringify(s.args ?? {}))}`).join('; '));
   const lessons = (Array.isArray(mem?.lessons) ? mem.lessons : []).map((x: any) => ({ question: String(x.question ?? ''), correction: String(x.correction ?? '') }));
   const primary = cfg.AGENT_MODEL, fbs = String(cfg.AGENT_FALLBACK_MODEL ?? '').split(',').map((x) => x.trim()).filter(Boolean);
-  const models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
+  let models = [...new Set((Date.now() < agentCoolUntil && fbs.length ? [...fbs, primary] : [primary, ...fbs]).filter(Boolean))];
+  // wave 120: an admin test can name the models to try (to test a fallback model in a real agent run); never used by the page
+  if (Array.isArray(body?.test_models) && body.test_models.length && await authorised(body?.token, ['admin'])) models = body.test_models.map(String).filter(Boolean).slice(0, 3);
   // wave 109b: the answering agent (own key) and what the team already found about this scope
   const lastQ = Array.isArray(history) && history.length ? String(history[history.length - 1]?.question ?? '') : '';
   const uq = unitQuestion(question, meta?.locations ?? [], lastQ);
@@ -318,7 +332,8 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const memText = (Array.isArray(memItems) ? memItems : []).map((m: any) => `- [${m.at}, ${m.kind}${m.status === 'confirmed' ? ', confirmed' : ''}] ${String(m.content ?? '').replace(/\s+/g, ' ').slice(0, 400)}`).join('\n');
   const deep = agentId === 'process_3';
   // wave 117: the whole request must finish inside the platform's 150-second limit — a detailed answer may use up to 135 seconds
-  const out = await runAgent({ ai: agentAi, models, api, gw, rec: record, pseudo, system, question, ctx, history: H, detailed,
+  const long = !detailed && (LONG.test(question) || ['tile', 'table', 'chart', 'card'].includes(String(body?.origin?.kind ?? '')));
+  const out = await runAgent({ ai: agentAi, models, api, gw, rec: record, pseudo, system, question, ctx, history: H, detailed, long,
     docs, dataMonth, maxRounds: detailed ? 10 : Math.min(Math.max(Number(cfg.AGENT_MAX_ROUNDS || 5) + (deep ? 2 : 0), 2), 8), timeoutMs: Number(cfg.AGENT_TIMEOUT_MS || 25000), deadline: t0 + (detailed ? 135000 : 100000),
     budget: async () => !!(await gw({ op: 'budget', purpose: 'ask', ...(agentId ? { agent: agentId } : {}) }).catch(() => ({ ok: false }))).ok, seed, hints, lessons,
     agent: agentId ?? undefined, memory: memText ? pseudo.hide(memText) : undefined, teams: meta?.locations ?? [] });
@@ -341,6 +356,11 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   let text = pseudo.show(noVendor(out.text)).trim();
   const next: string[] = [];
   text = text.replace(/^\s*\**next\**\s*:\s*(.+)$/gim, (_m, q) => { next.push(String(q).replace(/\*+/g, '').trim()); return ''; }).trim();
+  // wave 120: an answer for the page filters says so in its first line and offers all locations
+  if (ctx.scope?.source === 'page') {
+    if (!/page filter/i.test(text.slice(0, 400))) text = `*For ${ctx.scope.label} (page filter) — ask "Same for all locations" for the whole company.*\n\n` + text;
+    if (!next.some((x) => /all locations|all india|overall/i.test(x))) next.unshift('Same for all locations');
+  }
   const showArgs = (s: any) => {
     const a = s.args ?? {};
     if (s.tool === 'run_sql') return pseudo.show(String(a.query ?? ''));
@@ -578,6 +598,7 @@ async function unitFast(body: any): Promise<Record<string, unknown> | null> {
   if (!+S.total) answer = `${scope}: no ${typeTxt} in the client branch master.`;
   const notes = `Active = at least one Crux case in ${win}; dormant = Crux cases earlier but none in ${win}; never active = no Crux case found for the unit.` +
     ((uq.unit_type ?? []).includes('RACPC') && !(uq.unit_type ?? []).includes('Mini RACPC') ? ' RACPC here does not include Mini RACPC.' : '') +
+    ((uq.unit_type ?? []).includes('LHO') ? ' An LHO (Local Head Office) is an administrative office of the bank: it is counted only when asked for, and it does not usually send verification cases itself, so "never active" is expected.' : '') +   // wave 120
     (+U.in_master_not_counted?.total ? ` ${n_(U.in_master_not_counted.total)} rows in the branch master are not counted (${Object.entries(U.in_master_not_counted.by_reason ?? {}).map(([k, v]) => `${k}: ${v}`).join(', ')}).` : '');
   const byTeam = filters.location_id == null && !filters.zone_group;
   const rowsBy: any[] = byTeam ? (U.by_zone ?? []) : (U.by_team ?? []);
@@ -600,6 +621,49 @@ async function unitFast(body: any): Promise<Record<string, unknown> | null> {
     const log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...c, admin: !!adminKey }, filters, provider: 'calculated', model: null,
       intent: 'units', mode: 'calculated', answer: { answer: `${answer} ${notes}`.slice(0, 1400), findings: { ...findings, rows: findings.rows.slice(0, 12) } },
       trace: { mode: 'units', uq, ms: Date.now() - t0 } });
+    out.message_id = log?.message_id ?? null; out.conversation_id = log?.conversation_id ?? body?.conversation_id ?? null;
+  } catch { out.conversation_id = body?.conversation_id ?? null; }
+  out.ms = Date.now() - t0;
+  return out;
+}
+
+// ---------------------------------------------------------------- wave 120: coverage answered by the calculation when Ask Crux cannot finish
+// (24-Nov: "coverage ratio this month vs last month, SBI only" was asked 4 times while the AI service was overloaded; the standard calculated answer
+// replied about cases instead). Coverage now vs the end of last month, by client, from the same function as the page.
+const pctTxt = (v: unknown) => v == null || !Number.isFinite(+v!) ? '–' : (Math.round(+v! * 1000) / 10).toFixed(1) + '%';
+async function coverageFallback(body: any, note: string): Promise<Record<string, unknown> | null> {
+  const t0 = Date.now();
+  const question = redactQ(String(body?.question ?? '').slice(0, 500));
+  const adminKey = typeof body?.admin_key === 'string' && body.admin_key.length > 10 ? body.admin_key : null;
+  const api = async (fn: string, args: Record<string, unknown>) => {
+    const r = await rpc('bi_call', { p_fn: fn, p_args: adminKey ? { ...args, admin_key: adminKey } : args }, ANON);
+    if (r && typeof r === 'object' && !Array.isArray(r) && r.error) throw new Error(String(r.error));
+    return r;
+  };
+  const metaR = await cached(metaC, 600000, () => api('meta', {})); const meta: any = metaR[0]; metaC = metaR[1];
+  const c = body?.context ?? {};
+  const pageF: Record<string, unknown> = {};
+  for (const k of ['zone_group', 'location_id', 'client_family']) if (c?.filters?.[k] != null && c.filters[k] !== '') pageF[k] = k === 'location_id' ? Number(c.filters[k]) : String(c.filters[k]);
+  const eff = effectiveScope(question, [], pageF, meta?.locations ?? []);
+  const filters = eff.filters, scope = scopeLabel(filters, meta?.locations ?? []);
+  const month = typeof c.month === 'string' && MONTH_RE.test(c.month) ? c.month : (meta?.months ?? [])[0];
+  const [T, BC] = await Promise.all([api('drill_ops', { month, filters, level: 'none', part: 'coverage' }), api('branch_coverage', { filters }).catch(() => null)]);
+  const v = T?.total; if (!v || v.coverage_6m == null) return null;
+  const chg = v.coverage_change_pts != null ? `${+v.coverage_change_pts > 0 ? '+' : ''}${(+v.coverage_change_pts).toFixed(1)} pts` : 'change not available';
+  let answer = `${scope}: client branch coverage ${pctTxt(v.coverage_6m)} now vs ${pctTxt(v.coverage_6m_prev_month)} at the end of last month (${chg}) — ${n_(v.active_6m)} of ${n_(v.matchable)} code-matchable branches had a Force1 case in the last 6 months (${n_(v.active_6m_prev_month)} at the end of last month).`;
+  const nm = (BC?.by_client ?? []).filter((x: any) => x.coverage_measured === false && x.matching === 'branch code');
+  if (nm.length) answer += ` Not measurable: ${nm.map((x: any) => x.client_code).join(', ')} (business in the Zonal Tracker but no Force1 cases).`;
+  const rows = (BC?.by_client ?? []).filter((x: any) => x.matching === 'branch code' && (!filters.client_family || x.client_code === filters.client_family)).slice(0, 15);
+  const findings = { columns: ['Client', 'Code-matchable branches', 'Active now (6 months)', 'Coverage now', 'Last month', 'Change (pts)', 'Note'],
+    rows: rows.map((x: any) => [x.client_code, x.verified_active, x.active_with_crux_6m, x.coverage_measured === false ? 'not measured' : pctTxt(x.coverage_6m),
+      x.coverage_measured === false ? '–' : pctTxt(x.coverage_6m_prev_month), x.coverage_measured === false || x.coverage_change_pts == null ? '–' : (+x.coverage_change_pts > 0 ? '+' : '') + (+x.coverage_change_pts).toFixed(1), x.coverage_note ?? '']) };
+  const notes = 'Coverage = client branches with a Force1 case in the last 6 months ÷ verified client branches that can be matched by branch code. Last month = the same count at the end of the previous month, on today\'s branch list. Coverage counts Force1 cases only.';
+  const out: Record<string, any> = { mode: 'coverage', provider: 'calculated', intent: 'coverage', answer, notes, scope, period: 'Last 6 months to date vs the 6 months to the end of last month', findings, tables: [],
+    next: [`Which ${filters.client_family ?? ''} branches went quiet in the last 6 months?`.replace('  ', ' '), 'Coverage by Crux location'], provider_note: note,
+    method: 'bi.api_drill_ops part coverage and bi.api_branch_coverage (the Business tracker → Branch coverage figures).', sources: ['Verified client branch list', 'Force1 cases by branch code'], filters, ms: 0 };
+  try {
+    const log = await gw({ op: 'agent_log', question, conversation_id: body?.conversation_id ?? null, context: { ...c, admin: !!adminKey }, filters, provider: 'calculated', model: null,
+      intent: 'coverage', mode: 'calculated', answer: { answer: `${answer} ${notes}`.slice(0, 1400), findings: { ...findings, rows: findings.rows.slice(0, 12) } }, trace: { mode: 'coverage', note, ms: Date.now() - t0 } });
     out.message_id = log?.message_id ?? null; out.conversation_id = log?.conversation_id ?? body?.conversation_id ?? null;
   } catch { out.conversation_id = body?.conversation_id ?? null; }
   out.ms = Date.now() - t0;
@@ -633,13 +697,25 @@ async function answer(body: any, cfg: Record<string, string>, ai: AIProvider, ac
         ? 'Ask Crux is busy or has used up its free daily allowance for now, so this is the standard calculated answer. Try again in a few minutes.'
         : st === 422 ? `Ask Crux's answer did not pass the figure check (${msg.slice(0, 120)}), so this is the standard calculated answer.`
         : `Ask Crux could not finish (${msg.slice(0, 120)}), so this is the standard calculated answer.`;
+      // wave 120: coverage questions get the coverage calculation (not the standard business answer)
+      if (/\bcoverage\b/i.test(String(body?.question ?? ''))) {
+        try { const cv = await coverageFallback(body, agentNote.replace('the standard calculated answer', 'the calculated coverage answer')); if (cv) return json(cv); } catch { /* the standard answer below */ }
+      }
     }
   }
   // ---- ask ----
   // 'drop' is read as 'decline' (same meaning for the analysis)
   const question = String(body?.question ?? '').slice(0, QMAX).replace(/\bdrop\b/gi, 'decline');
   let base: any;
-  try { base = await rpc('bi_ask3', { p_question: question, p_context: body?.context ?? {}, p_conversation: body?.conversation_id ?? null }, ANON); }
+  // wave 120: the place, client or "overall" named in the question replaces the page filters here too
+  let ctx3 = body?.context ?? {};
+  try {
+    const metaR = await cached(metaC, 600000, async () => { const r = await rpc('bi_call', { p_fn: 'meta', p_args: {} }, ANON); if (!r || r.error) throw new Error('meta'); return r; });
+    metaC = metaR[1];
+    const qs = questionScope(question, (metaR[0] as any)?.locations ?? []);
+    if (qs.named || qs.all) ctx3 = { ...ctx3, filters: qs.all && !qs.named ? {} : qs.filters };
+  } catch { /* page filters */ }
+  try { base = await rpc('bi_ask3', { p_question: question, p_context: ctx3, p_conversation: body?.conversation_id ?? null }, ANON); }
   catch (e) { return json({ error: 'Database unavailable: ' + (e as Error).message }, 502); }
   const det = (note?: string) => json({ ...base, provider: 'deterministic', ...(note ? { provider_note: note } : {}) });
   if (base?.error || !base?.answer) return det();

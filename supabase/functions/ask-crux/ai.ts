@@ -230,6 +230,8 @@ export class OpenRouterProvider implements AIProvider {
     const usage = { promptTokens: j.usage?.prompt_tokens, outputTokens: j.usage?.completion_tokens };
     const done = { ...base, ...usage, status, ms: Date.now() - t0, model: `${model}${j.model && j.model !== model ? ' → ' + j.model : ''}` };
     if (!calls.length && !text) return { ...done, ok: false, text: '', finish: c?.finish_reason, error: `empty content (finish reason ${c?.finish_reason ?? 'unknown'})` };
+    // wave 120: a reply cut off at the length limit is incomplete (as on the main provider), never shown as it is
+    if (!calls.length && c?.finish_reason === 'length') return { ...done, ok: false, text, finish: c.finish_reason, error: 'incomplete answer (finish reason length)' };
     const parts: Part[] = [...(text ? [{ text }] : []), ...calls.map((x) => ({ functionCall: { name: x.name, args: x.args, id: x.id } }))];
     return { ...done, ok: true, text, calls, content: { role: 'model', parts }, finish: c?.finish_reason };
   }
