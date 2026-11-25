@@ -357,6 +357,7 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   const next: string[] = [];
   text = text.replace(/^\s*\**next\**\s*:\s*(.+)$/gim, (_m, q) => { next.push(String(q).replace(/\*+/g, '').trim()); return ''; }).trim();
   // wave 120: an answer for the page filters says so in its first line and offers all locations
+  if (ctx.scope && ctx.scope.source !== 'page') text = text.replace(/[ \t]*\(page filters?\)/gi, '');   // the page filters were not used for this answer
   if (ctx.scope?.source === 'page') {
     if (!/page filter/i.test(text.slice(0, 400))) text = `*For ${ctx.scope.label} (page filter) — ask "Same for all locations" for the whole company.*\n\n` + text;
     if (!next.some((x) => /all locations|all india|overall/i.test(x))) next.unshift('Same for all locations');
@@ -612,7 +613,9 @@ async function unitFast(body: any): Promise<Record<string, unknown> | null> {
     series: [{ name: 'Active', values: rowsBy.slice(0, 20).map((r) => r.active) }, { name: 'Dormant', values: rowsBy.slice(0, 20).map((r) => r.dormant) },
       { name: 'Never active', values: rowsBy.slice(0, 20).map((r) => r.never_active) }] } : null;
   const t1 = (uq.unit_type ?? [])[0] ?? 'unit';
-  const next = [`Business from the active ${t1} units this month`, `Which never-active ${t1} units in ${scope} are worth a visit?`];
+  const onlyLho = (uq.unit_type ?? []).length === 1 && t1 === 'LHO';   // wave 120: LHOs are offices — suggest the structure and the processing centres instead
+  const next = onlyLho ? [`How is ${filters.client_family ?? 'SBI'} organised (levels and processing centres)?`, `How many RACPCs does ${filters.client_family ?? 'SBI'} have?`]
+    : [`Business from the active ${t1} units this month`, `Which never-active ${t1} units in ${scope} are worth a visit?`];
   const out: Record<string, any> = { mode: 'units', provider: 'calculated', intent: 'units', answer, notes, scope, period: `Unit status as of ${win}`, findings, tables, chart, next,
     method: 'Client branch master (active rows; one row per client and branch code), unit type from the branch name; status from Crux cases by branch code.',
     limitations: 'Counts follow the branch master as uploaded; a unit named differently by the bank may be typed as a branch.', sources: ['Branch master', 'Crux cases by branch'],
