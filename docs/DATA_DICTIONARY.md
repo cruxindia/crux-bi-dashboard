@@ -386,3 +386,12 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.upload_action` 'retry' | failed with rows kept → queued again from the last saved piece; stopped send → reopened for the page (`resume`, rows held); else `need_file` |
 | `bi.upload_action` 'jobs' | adds file_hash, source, held (rows received), heartbeat, revivals, next_try_at |
 
+**Wave 120 (25-Nov-2026)**
+
+| Object | Meaning |
+|---|---|
+| `bi.branch_activity.prev_last_m` | Wave 120: last Force1 case month before the current month (IST) per client branch — coverage at the end of last month |
+| `bi.api_lfl(month, f, group)` | Wave 120 adds per row `id`, `revenue_current`, `revenue_previous`, `revenue_change`, `previous_month_final_cases / _revenue`; totals `total_revenue_current / _previous`, `previous_month_final_snapshot / _cases / _revenue`; groups `client_code` and `total` |
+| `bi.api_branch_lfl(month, f, p)` | Wave 120: client branches this month vs last month to the same working day (Force1 cases), estimated revenue, totals; `p.sort` decline / growth / cases / lowest, `p.limit` ≤ 100 (`bi_call('branch_lfl')`) |
+| `bi.api_drill_ops` part coverage, `bi.api_branch_coverage` | Wave 120 add `active_6m_prev_month` / `active_with_crux_6m_prev_month`, `coverage_6m_prev_month`, `coverage_change_pts`; by client also `force1_cases_6m`, `tracker_revenue_6m`, `coverage_measured`, `coverage_note` |
+| `bi.unit_type` 'LHO' | Wave 120: offices named LHO / Local Head Office; `bi.api_branch_units` counts them only when 'LHO' is asked for |

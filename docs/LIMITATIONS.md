@@ -235,4 +235,9 @@ L48 and L49 above are superseded: finance is no longer shared out by expected re
 | L178 | A team × client that first appears in a later tracker file is not in the saved set and keeps that file's target | New teams or clients mid-month | Upload the file again with the new row |
 | L179 | Revenue is worked out with the ₹ per case of the latest tracker file; a team × client without a rate (not in any file yet) needs both cases and revenue | New team × client | Enter both figures |
 | L180 | The revenue formula in the template works in Excel, Google Sheets and Numbers; a CSV keeps values only (then a row where only the cases changed gets revenue = cases × ₹ per case) | CSV uploads | Upload .xlsx |
+| L181 | Revenue of a client branch is an estimate (Force1 cases × the team's tracker rate for that client): the Zonal Tracker does not split business by branch | Client-branch comparisons | Use team or client revenue (tracker) for exact figures |
+| L182 | Coverage cannot be measured for clients whose cases are not entered in Force1 (25-Nov: UNION, PSB): shown as "not measured" | Coverage by client | Enter their cases in Force1 |
+| L183 | Coverage last month uses today's verified branch list (the list's history is not kept), so a branch added this month counts in both months | Coverage change | — |
+| L184 | A place name that matches several teams (e.g. Nagpur) gives an all-India default with the teams listed; the answer then splits by team | Scope of a question | Name the team ("Nagpur Yash team") |
+| L185 | Cases on one date need a tracker report of that date (none on Sundays and no-report days); Force1 runs to its own date and does not cover every location | Day counts | Ask for the next report date |
 

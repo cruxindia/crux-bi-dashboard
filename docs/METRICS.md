@@ -296,3 +296,10 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 - **Force1 cases of units** = cases in Force1 case data for those branch codes in the last 3 months. The Zonal Tracker is per team × client and is never split by unit.
 - **Partner / own** of a month = the register entry in force on the 15th (product entry before family entry); no entry = "not set".
 - **Force1 gap** (location group, month) = max(Zonal Tracker cases − Force1 cases, 0); reported = cases done outside Force1 on the template; still unexplained = max(gap − reported, 0); covered = min(Force1 + reported, tracker) ÷ tracker.
+
+## Wave 120 (25-Nov-2026)
+- **Like for like vs last month** = this month so far (latest tracker report) vs the previous month at the same working day (Mon–Sat, no-report days excluded; `bi.api_lfl`), for cases and revenue (₹ = tracker revenue); the previous month's final report is shown separately and used only when the full month is asked for.
+- **Client branches vs last month** (`bi.api_branch_lfl`) = Force1 cases by bank branch code, the 1st to the Force1 date vs the previous month to the same working day; estimated revenue = cases × the team's latest tracker rate for that client.
+- **Cases received on a date** = Zonal Tracker month to date of that report − the previous report of the month (first report: its month to date); expected revenue the same way; Force1 check = cases with that received date.
+- **Coverage last month** (`coverage_6m_prev_month`) = code-matchable verified client branches with a Force1 case in the 6 months before the current month, up to the end of last month ÷ code-matchable branches (today's list); **change** = (coverage now − coverage last month) in percentage points. **Not measured** = a client with Zonal Tracker business but no Force1 cases in the last 6 months.
+- **LHO** (Local Head Office) = an administrative office named LHO / Local Head Office; a unit type counted only when asked for.

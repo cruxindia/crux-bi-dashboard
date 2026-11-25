@@ -25,7 +25,21 @@
 **Risks / limitations.** Client-branch revenue is an estimate (the tracker does not split by branch). Coverage cannot be measured for clients whose cases are not in Force1. A question naming a place that matches several teams (e.g. Nagpur) uses all India with the teams listed for the agent to split.
 
 **Acceptance.** Replays of #1282–1284 with page filter Pune: all locations for #1284, the Kolkata zone for #1282, stated scope for #1283; a no-scope question with a page filter states it; a follow-up keeps the scope; month comparisons give both dates and revenue; coverage now vs last month for SBI with the change in points; one agent run on the new fallback model; test questions deleted; TEST_REPORT wave 120.
-**Decisions.** D412–D425. **Migrations.** bi_120a (LHO), bi_120b (like for like with revenue, client branches, coverage last month). **Function.** ask-crux test copy first, then the loader. **Status.** In progress 25-Nov-2026.
+**Decisions.** D412–D425. **Migrations.** bi_120a (LHO), bi_120b (like for like with revenue, client branches, coverage last month). **Function.** ask-crux loader v47 → commit 54a037b (tested first on `ask-crux-next`, which is a 410 stub again). **Setting.** `AGENT_FALLBACK_MODEL` changed (audit 7575). **Improver PRs.** #2 and #3 done on the current code and closed with a comment; note on issue #1.
+**Requirement audit (25-Nov-2026).**
+| Requirement | Work | Evidence | Result |
+|---|---|---|---|
+| 1a question scope replaces page filters | `questionScope` / `effectiveScope`, SCOPE line, tools default to it | 22 offline cases; replays #1282 (Kolkata zone), #1284 (all India) | Done |
+| 1b page filter stated, all locations offered | first line "(page filter)" + "Same for all locations" (service adds both when missing) | #1283 replay, "How is business this month?" | Done |
+| 1c no unasked team / zone / client in queries | rule 20; query guard for "all locations" questions | #1284 replay: no team filter | Done |
+| 2 like for like with revenue, earlier month to the same day | `bi.api_lfl` revenue + final month; summary, breakdown, client branches; rule 21; day counts with Force1 check | #1282, #1283, #1284 replays; totals equal the tracker rows | Done (same working day, D414) |
+| 3 operating model only from its tools; table layout kept | rules 22–23 | #1252 question: exact columns, assoc tool | Done |
+| 4 coverage last month + change; non-core 0 % | `prev_last_m`; API, tool, page; "not measured"; coverage fallback | SBI 8.2 % vs 8.0 % (+0.2 pts); UNION / PSB not measured | Done (0 % explained: their cases are not in Force1) |
+| 5 PRs #2 and #3 | bi_120a + Ask Crux LHO; Overview card | LHO 14; card on the live page | Done; PRs closed |
+| 6 fallback model | replaced, one agent run, D423, no name on the page | provider log; audit 7575 | Done |
+| 7 cut-off explanations | long length for explanations; rewrite once when cut; backup provider cut replies not shown | planning tile replay | Done |
+| Process | SOW, decisions, TEST_REPORT, OPERATIONS, LIMITATIONS, METRICS, DATA_DICTIONARY, publish, test copy, loader, test questions deleted | audit 7576 | Done |
+**Status.** Done 25-Nov-2026 — see TEST_REPORT wave 120. Wave 119 stages B–F remain open (see wave 119).
 
 ## Wave 119 (request 21-Nov-2026 12:54 IST) — one business and financial intelligence system; uploads for the Collection Sheet, Sale and Unadj files
 **Objective (owner's SOW, summarised; full text kept with the request).** Connect business generation, operational efficiency, revenue and billing, collections and receivables in the existing dashboard (no separate collections tab): answer how much business, how efficiently processed, expected vs invoiced vs collected vs outstanding, business-to-cash conversion, TAT impact, where value is created or lost. Add a repeatable upload for the three finance files (Collection Sheet.xlsx, Sale.xlsx, Unadj till Oct26.xlsx) that detects, validates, reconciles, never double-counts and keeps history. Upgrade Ask Crux to a business-and-finance analyst. Keep architecture (GitHub Pages, Supabase `bi`, SQL calculations, `bi_call` / `bi_ingest`, `web/extract.js`, admin and data-quality systems).
