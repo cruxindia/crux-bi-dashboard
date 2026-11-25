@@ -1,7 +1,8 @@
 -- Wave 121c (25-Nov-2026): wave 119 stage C applied — business-to-cash (bi.api_b2c, bi_call 'b2c'). Reviewed from the proposal of 21-Nov
 -- (supabase/proposals/2026-11-21_bi_119f_business_to_cash.sql). Change from the proposal: a location's case TAT / SLA is used only when tat_summary
 -- marks it reliable (not 'unreliable' back-entered closures, not low sample); field TAT likewise; 'Location not identified' / '(no zone)' get no score or signals;
--- a client filter alone keeps receivables of every unit; a collection outlook (settlement curve by invoice age, cash pace); an association weaker than 0.2 (or under 8 locations) has no direction; statement timeout 40 s. Additive; call_compute body saved in bi.fn_backup ('119f').
+-- a client filter alone keeps receivables of every unit; a collection outlook (settlement curve by invoice age, cash pace); receivables, cash, unadjusted and TAT of a zone-billed unit's own location
+-- (e.g. Lucknow / ROUP Zone) count under that unit, as its invoices do in bi.fin_rev_facts (the proposal joined members only, which put them under 'Location not identified'); an association weaker than 0.2 (or under 8 locations) has no direction; statement timeout 40 s. Additive; call_compute body saved in bi.fn_backup ('119f').
 -- wave 119f (21-Nov-2026): business-to-cash — one SQL answer that puts business generation, operations, billing, settlement, cash and receivables side by
 -- side for a comparable window, by location (billing unit), zone or client; with a health score whose components and weights are stated, the
 -- associations between operational efficiency and financial results (rank correlation — association, not cause) and the signals of where business gets
@@ -48,18 +49,18 @@ begin
   gp as (select gkey, sum(coalesce(cases, 0)) cases, sum(coalesce(expected, 0)) expected, sum(coalesce(billed, 0)) billed from kp group by gkey),
   -- receivables at the snapshot (gross), > 90 days, by unit × family
   os as (select coalesce(u.unit_id, 0) unit_id, a.family fam, sum(a.os) os, sum(a.os) filter (where (a.inv_month + interval '1 month' - interval '1 day')::date < v_asof - 90) os90
-           from bi.fin_os_agg a left join um u on u.location_id = a.location_id and u.is_member
+           from bi.fin_os_agg a left join um u on u.location_id = a.location_id
           where a.upload_id = v_os and a.n > 0 group by 1, 2),
   osg as (select case v_group when 'client' then o.fam when 'zone' then coalesce(ul.zone, '(no zone)') else o.unit_id::text end gkey, sum(o.os) os, sum(o.os90) os90
             from os o left join ul on ul.unit_id = o.unit_id where (v_nofilter or o.unit_id in (select unit_id from units)) and (v_fam is null or o.fam = v_fam) group by 1),
   -- cash received in the window (receipt months) and how fast invoices are paid
   rc as (select coalesce(u.unit_id, 0) unit_id, r.family fam, sum(r.amount) cash, sum(r.lag_x_amount) lx, sum(r.lag_amount) la
-           from bi.fin_rcpt_agg r left join um u on u.location_id = r.location_id and u.is_member
+           from bi.fin_rcpt_agg r left join um u on u.location_id = r.location_id
           where r.upload_id = any (v_co) and r.rcpt_month between v_from and v_to and r.n > 0 group by 1, 2),
   rcg as (select case v_group when 'client' then r.fam when 'zone' then coalesce(ul.zone, '(no zone)') else r.unit_id::text end gkey, sum(r.cash) cash, sum(r.lx) lx, sum(r.la) la
             from rc r left join ul on ul.unit_id = r.unit_id where (v_nofilter or r.unit_id in (select unit_id from units)) and (v_fam is null or r.fam = v_fam) group by 1),
   -- unadjusted receipts (latest file) by unit
-  ua as (select coalesce(u.unit_id, 0) unit_id, sum(t.amount) amt from bi.fin_unadj_txn t left join um u on u.location_id = t.location_id and u.is_member
+  ua as (select coalesce(u.unit_id, 0) unit_id, sum(t.amount) amt from bi.fin_unadj_txn t left join um u on u.location_id = t.location_id
           where t.upload_id = v_ua and t.n > 0 group by 1),
   uag as (select case v_group when 'zone' then coalesce(ul.zone, '(no zone)') else a.unit_id::text end gkey, sum(a.amt) amt
             from ua a left join ul on ul.unit_id = a.unit_id where v_group <> 'client' and (v_nofilter or a.unit_id in (select unit_id from units)) group by 1),
@@ -74,7 +75,7 @@ begin
            from jsonb_array_elements(case when jsonb_typeof(v_tat) = 'array' then v_tat else '[]'::jsonb end) x),
   ttk as (select case v_group when 'client' then coalesce((select family from bi.client c where c.code = tt.id), tt.id)
                               when 'zone' then case when u.unit_id is not null then coalesce(ul.zone, '(no zone)') end else u.unit_id::text end gkey, tt.*   -- 121c: Force1 locations outside the billing map are left out
-            from tt left join um u on v_group <> 'client' and u.location_id::text = tt.id and u.is_member left join ul on ul.unit_id = u.unit_id),
+            from tt left join um u on v_group <> 'client' and u.location_id::text = tt.id left join ul on ul.unit_id = u.unit_id),
   ttg as (select gkey, sum(n) tat_n, sum(med * n) / nullif(sum(n) filter (where med is not null), 0) tat, sum(sla * n) / nullif(sum(n) filter (where sla is not null), 0) sla,
                  sum(fmed * n) / nullif(sum(n) filter (where fmed is not null), 0) ftat, sum(dmed * n) / nullif(sum(n) filter (where dmed is not null), 0) dtat, sum(late) late
             from ttk where n > 0 and gkey is not null group by 1),
@@ -192,7 +193,7 @@ begin
        h as (select h0.*, case when raw is not null then greatest(0, least(1, raw)) end hz0 from h0),   -- greatest / least skip nulls: keep a null a null
        h2 as (select h.*, coalesce(hz0, lag(hz0) over (order by month desc)) hz from h),
        un as (select distinct unit_id from bi.fin_rev_facts(v_pfrom, v_to, coalesce(f, '{}'::jsonb) - 'client_family', m) where unit_ok and not v_nofilter),
-       rm as (select r.rcpt_month, sum(r.amount) amt from bi.fin_rcpt_agg r left join bi.fin_unit_map() u on u.location_id = r.location_id and u.is_member
+       rm as (select r.rcpt_month, sum(r.amount) amt from bi.fin_rcpt_agg r left join bi.fin_unit_map() u on u.location_id = r.location_id
                where r.upload_id = any (v_co) and r.n > 0 and r.rcpt_month < date_trunc('month', v_rthru + 1)::date and (v_fam is null or r.family = v_fam)
                  and (v_nofilter or coalesce(u.unit_id, 0) in (select unit_id from un))
                group by 1 order by 1 desc limit 3)

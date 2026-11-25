@@ -395,3 +395,14 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.api_branch_lfl(month, f, p)` | Wave 120: client branches this month vs last month to the same working day (Force1 cases), estimated revenue, totals; `p.sort` decline / growth / cases / lowest, `p.limit` ≤ 100 (`bi_call('branch_lfl')`) |
 | `bi.api_drill_ops` part coverage, `bi.api_branch_coverage` | Wave 120 add `active_6m_prev_month` / `active_with_crux_6m_prev_month`, `coverage_6m_prev_month`, `coverage_change_pts`; by client also `force1_cases_6m`, `tracker_revenue_6m`, `coverage_measured`, `coverage_note` |
 | `bi.unit_type` 'LHO' | Wave 120: offices named LHO / Local Head Office; `bi.api_branch_units` counts them only when 'LHO' is asked for |
+
+**Wave 121 (25-Nov-2026)**
+
+| Object | Meaning |
+|---|---|
+| `bi.file_group_ensure(group, unit, actor)` | Maps a new Case / Point Wise file group to a reconciliation unit on its first upload (city in the name, else the unit picked on the page); called by `bi.ingest_as` 'begin' (returns `file_group`) |
+| `bi.api_file_groups()` | `bi_call('file_groups')`: every file group with its unit, files in 90 days, last import, `added_at_upload`; and the units a new group can join |
+| `bi.ai_key_pool(slot, label, key_tail, added_by, added_at)` | Extra free AI keys added on the dashboard (the keys themselves are in Vault `gemini_key_pool_<slot>`); RLS on, read through `public.bi_ai_pool_list / _put / _drop` (admin key) |
+| `bi.ai_pool_keys()` | Service role only (gateway op `pool_keys`): the extra keys for Ask Crux |
+| `bi.api_b2c(month, f, p)` | `bi_call('b2c')`: business to cash — `window`, `basis`, `total`, `stages`, `rows` (per location / zone / client: cases, expected, invoiced, settled, open, realisation, cash, days to collect, receivables, over-90 share, unadjusted, TAT, SLA, `health {score, weight_covered, components}`, `signals`), `associations`, `outlook`, `health_method`, `notes`. `p.group` location / zone / client, `p.months` 1–6 |
+| `bi.metric_doc` 'business_to_cash', 'health_score' | Definitions shown in the page hints and to Ask Crux (explain_metric) |
