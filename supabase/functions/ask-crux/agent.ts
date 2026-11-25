@@ -429,7 +429,7 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const group = ['location', 'zone', 'client'].includes(String(a?.group)) ? String(a.group) : 'location';
     const months = Math.min(Math.max(Number(a?.months) || 3, 1), 6);
     const lim = Math.min(Math.max(Number(a?.limit) || 15, 1), 40);
-    const W = await t.api('b2c', { month, filters, p: { group, months } });
+    const W = await t.api('b2c', { month, filters, p: months === 3 ? { group } : { group, months } });   // the page's cache entry when 3 months
     if (W?.error) throw new Error(String(W.error));
     if (W?.available === false) return { label: 'Business to cash', data: { available: false, reason: W.reason } };
     const sort = ['health_low', 'health_high', 'outstanding'].includes(String(a?.sort)) ? String(a.sort) : 'billed';
@@ -882,7 +882,11 @@ export async function runAgent(o: {
 }): Promise<AgentOut> {
   const decls = o.allow ? DECLS.filter((d) => o.allow!.includes(d.name)) : DECLS;
   const { pseudo } = o;
-  const t: ToolCtx = { api: o.api, gw: o.gw, ctx: o.ctx, pseudo, docs: o.docs, dataMonth: o.dataMonth };
+  // wave 121c: identical look-ups within one run share one call (the model sometimes asks for the same figures twice at once)
+  const memo = new Map<string, Promise<any>>();
+  const api: Api = (fn, args) => { const k = fn + '|' + JSON.stringify(args ?? {}); let pr = memo.get(k);
+    if (!pr) { pr = o.api(fn, args); memo.set(k, pr); pr.catch(() => memo.delete(k)); } return pr; };
+  const t: ToolCtx = { api, gw: o.gw, ctx: o.ctx, pseudo, docs: o.docs, dataMonth: o.dataMonth };
   // starting snapshot for the page context: many questions need no further tool call
   // wave 109a: unit questions (RACPC, Mini RACPC, RAC, ...) get the one counting function up front, so the first answer already has the right counts
   // wave 109b: the snapshot and the unit counts are fetched together (faster first answer)

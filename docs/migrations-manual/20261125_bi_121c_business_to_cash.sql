@@ -12,7 +12,29 @@
 -- settlement of those invoices can be seen). Expected revenue and cases: tracker; billed: invoices by invoice month (register / traced, see D411);
 -- settled and open: ex-GST against the outstanding snapshot; cash in the window: bank credits by receipt month (incl. GST, after TDS — never a revenue
 -- figure); outstanding: latest snapshot, all ages, gross; unadjusted: latest unadjusted file; TAT / SLA: Force1 case TAT of the window's last month.
-create or replace function bi.api_b2c(m date, f jsonb default '{}'::jsonb, p jsonb default '{}'::jsonb) returns jsonb language plpgsql stable security definer set search_path to 'bi', 'public' set statement_timeout to '40s' as $f$
+-- 121c: a computed figure shared between callers inside the database (same cache entry and key as bi_call): used for the Force1 TAT inside bi.api_b2c,
+-- so the location, zone and client views and parallel Ask Crux look-ups do not each recompute it (6 s). A result of the current data version is used;
+-- an older one only when computed in the last 6 hours and after the latest correction floor. Callers of the same figure wait for the first (advisory lock).
+create or replace function bi.cached_compute(p_fn text, p_args jsonb) returns jsonb language plpgsql security definer set search_path to 'bi', 'public' as $cc$
+declare v_key text := md5(p_fn || '|' || coalesce(p_args::text, '')); v_ver bigint := bi.cache_version(); r jsonb; c_ver bigint; c_at timestamptz;
+begin
+  perform pg_advisory_xact_lock(hashtext('cached_compute:' || v_key));
+  select v, version, computed_at into r, c_ver, c_at from bi.api_cache where k = v_key;
+  if r is not null and (c_ver = v_ver or (c_at > now() - interval '6 hours'
+       and c_at >= (select coalesce(max(floor_at), '-infinity'::timestamptz) from bi.api_cache_floor))) then return r; end if;
+  r := bi.call_compute(p_fn, p_args);
+  if r is not null then
+    begin perform set_config('lock_timeout', '1500ms', true);
+      insert into bi.api_cache(k, v, version, fn, args) values (v_key, r, v_ver, p_fn, p_args)
+      on conflict (k) do update set v = excluded.v, version = excluded.version, fn = excluded.fn, args = excluded.args, computed_at = now();
+    exception when lock_not_available then null; end;
+    perform set_config('lock_timeout', '0', true);
+  end if;
+  return r;
+end $cc$;
+revoke all on function bi.cached_compute(text, jsonb) from public, anon, authenticated;
+
+create or replace function bi.api_b2c(m date, f jsonb default '{}'::jsonb, p jsonb default '{}'::jsonb) returns jsonb language plpgsql volatile security definer set search_path to 'bi', 'public' set statement_timeout to '40s' as $f$
 declare b jsonb := bi.fin_billing_basis(); v_asof date; v_lc date; v_fc date; v_to date; v_from date; v_pto date; v_pfrom date; v_rthru date;
         v_n int := least(greatest(coalesce(nullif(p->>'months', '')::int, 3), 1), 6); v_group text := coalesce(nullif(p->>'group', ''), 'location');
         v_os bigint; v_ua bigint; v_ua_asof date; v_co bigint[]; v_tat jsonb; v_rows jsonb; v_tot jsonb; v_assoc jsonb; v_outlook jsonb; v_fam text := nullif(f->>'client_family', '');
@@ -29,7 +51,7 @@ begin
   select id into v_os from bi.fin_upload where kind = 'outstanding' and status = 'committed' order by as_of desc, id desc limit 1;
   select id, as_of into v_ua, v_ua_asof from bi.fin_upload where kind = 'unadjusted' and status = 'committed' order by as_of desc, id desc limit 1;
   select coalesce(array_agg(id), '{}') into v_co from bi.fin_upload where kind = 'collection' and status = 'committed';
-  v_tat := bi.tat_summary(v_to, coalesce(f, '{}'::jsonb), case when v_group = 'client' then 'client' else 'location' end);
+  v_tat := bi.cached_compute('tat_summary', jsonb_build_object('month', v_to, 'filters', coalesce(f, '{}'::jsonb), 'group', case when v_group = 'client' then 'client' else 'location' end));   -- 121c: shared
 
   with um as materialized (select * from bi.fin_unit_map()),
   ul as materialized (select distinct um.unit_id, um.unit_label, um.zone_level, coalesce(l.rollup_zone, l.zone_group) zone from um join bi.location l on l.id = um.unit_id where um.unit_id > 0),
