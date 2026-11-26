@@ -751,6 +751,34 @@ export function rowCheck(answer: string, evidence: any[], totals: number[] = [])
   }
   return [...new Set(bad)];
 }
+// wave 123a: a unit's code in a table row is set to that unit's own code when the row names the unit and the code differs (the model twice wrote
+// 000800 for 0080xx units on 26-Nov); a code is an identifier, not a finding, so it is corrected rather than sent back
+export function fixCodes(answer: string, evidence: any[]): string {
+  const byName = new Map<string, Set<string>>();
+  const walk = (v: any, depth: number) => {
+    if (!v || typeof v !== 'object' || depth > 6) return;
+    if (Array.isArray(v)) { for (const x of v) walk(x, depth + 1); return; }
+    const ent = Object.entries(v);
+    const name = ent.find(([k, x]) => /^(unit|branch_name|branch|name)$/.test(k) && typeof x === 'string' && x.trim())?.[1] as string | undefined;
+    const code = ent.find(([k, x]) => /^(code|branch_code)$/.test(k) && typeof x === 'string' && /^\s*0\d{2,}\s*$/.test(x))?.[1] as string | undefined;
+    if (name && code) { const k = normLbl(name); const c = byName.get(k) ?? new Set<string>(); c.add(code.trim()); byName.set(k, c); }
+    for (const [, x] of ent) if (x && typeof x === 'object') walk(x, depth + 1);
+  };
+  for (const e of evidence) walk(e, 0);
+  if (!byName.size) return answer;
+  return String(answer ?? '').split('\n').map((line) => {
+    if (!/^\s*\|/.test(line) || /^\s*\|[\s:|-]+\|\s*$/.test(line)) return line;
+    const cells = line.split('|');
+    const ni = cells.findIndex((c) => byName.has(normLbl(c)));
+    if (ni < 0) return line;
+    const cs = byName.get(normLbl(cells[ni]))!;
+    if (cs.size !== 1) return line;
+    const real = [...cs][0];
+    let changed = false;
+    const out = cells.map((c, i) => { if (i !== ni && /^\s*0\d{2,}\s*$/.test(c) && c.trim() !== real) { changed = true; return c.replace(c.trim(), real); } return c; });
+    return changed ? out.join('|') : line;
+  }).join('\n');
+}
 export function checkFigures(answer: string, evidence: any[]): { figures: number; traced: number; untraced: string[]; unchecked: string[] } {
   const groups: number[][] = [], all = new Set<number>(), tot: number[] = [];
   for (const e of evidence) collect(e, [], groups, all, tot);
@@ -823,7 +851,7 @@ Ask one question at a time. Examples that need a question: "Rank the branches" (
 23. TABLE LAYOUT: when the user gives the columns of a table (for example "month, Operating Model, Revenue, Target, Potential, performance"), the table has exactly those columns, in that order, with the user's names. Do not add, drop, merge or reorder columns; a column the data cannot fill stays in place with "n/a" and is explained under "Not available".
 24. COVERAGE (look-up: get_operations with part coverage): client branch coverage is the share of code-matchable client branches with a Force1 case in the last 6 months: coverage_6m = now, coverage_6m_prev_month = at the end of last month, coverage_change_pts = the change in percentage points. For "this month vs last month" give both and the change in points. A client in coverage_notes.clients_not_measured has business in the tracker but no Force1 cases: say its coverage cannot be measured — never that it has no business or 0% coverage.
 26. BUSINESS TO CASH: how business turns into money — billing conversion, settlement / realisation by location or client, the health score, "which locations turn business into cash best / worst", "does faster TAT go with better collection" — comes from get_business_to_cash. Say its window (months) and the outstanding date. Cash received includes GST and is a cash-flow figure: never call it revenue, never divide it by ex-GST revenue, never add receivables to revenue or cash. A missing measure is "no data", never 0. Associations are rank correlations across locations: write "goes with", never "causes", and do not explain one with a cause the data does not show. The health score is a rank among the groups (50 = the middle, not a pass mark); when you show it, give its weights once. "How much will we collect" / "expected collections" = the collection outlook: next_30_days_settlement is an estimate (ex-GST) for the 30 days AFTER the outstanding snapshot — say "estimated" and give that date (not "the next 30 days" from today); add the cash pace (avg_monthly_cash, incl. GST) and months of cash to clear receivables; never add the estimate to cash received. Realisation = settled ÷ (settled + still open).
-27. UNITS BY MONTH: "which / how many RACs, RACPCs, branches … were active (gave business) in <month>", "active vs inactive in Oct vs Nov", "which units stopped / started" come from get_unit_activity (unit_type, month, compare_month, filters, list) — never from get_branch_units' status and never built with run_sql. Give: total units (equal to the unit counts), active units and cases in each period, active in both, stopped, started, inactive in both, and the change, with each period's label exactly as the tool gives it (e.g. "Nov 1–24, 2026" vs "Oct 1–26, 2026 (same working day)"). For an open month, the comparison is the earlier month to the same working day (never count working days yourself — use the tool's period labels); give the earlier full month too, labelled "full month", never as the comparison. Tables: one row per unit (or per team / state when asked "by location"), columns named with the periods. Units that stopped or started come ONLY from stopped_units / started_units (each row's change says what it did); never present rows of the general units list as stopped or started, and never put a unit in a table under a heading its change does not match. Copy each unit's figures from its own row. A unit is active in a period when it has at least one Force1 case in it (or the user's own rule, rule 28). If the user wants a variant the tool cannot give, run_sql over branches LEFT JOIN branch_months ON client_family AND branch_key.
+27. UNITS BY MONTH: "which / how many RACs, RACPCs, branches … were active (gave business) in <month>", "active vs inactive in Oct vs Nov", "which units stopped / started" come from get_unit_activity (unit_type, month, compare_month, filters, list) — never from get_branch_units' status and never built with run_sql. Give: total units (equal to the unit counts), active units and cases in each period, active in both, stopped, started, inactive in both, and the change, with each period's label exactly as the tool gives it (e.g. "Nov 1–24, 2026" vs "Oct 1–26, 2026 (same working day)"). For an open month, the comparison is the earlier month to the same working day (never count working days yourself — use the tool's period labels); give the earlier full month too, labelled "full month", never as the comparison. Tables: one row per unit (or per team / state when asked "by location"), columns named with the periods. "Total RACs / units in that location" = by_team (or by_state) units for that team (state): show it. Units that stopped or started come ONLY from stopped_units / started_units (each row's change says what it did); never present rows of the general units list as stopped or started, and never put a unit in a table under a heading its change does not match. Copy each unit's figures from its own row. A unit is active in a period when it has at least one Force1 case in it (or the user's own rule, rule 28). If the user wants a variant the tool cannot give, run_sql over branches LEFT JOIN branch_months ON client_family AND branch_key.
 28. USER DEFINITIONS: when the user defines a word ("active = RACs that gave business in Nov-2026", "inactive = no case for 2 months", "big branch = over 50 cases"), use exactly that definition for the whole conversation — in every sentence and every table column — compute it (rule 27 for unit activity), and say in the first line that you used their definition. Never put the dashboard's unit status (active / dormant / never active = a case in the last 3 months, from get_branch_units) in a column or sentence about activity in a month — and, if the dashboard uses another (active = a case in the last 3 months), give the dashboard figure once beside it, labelled.
 29. CHALLENGED ANSWER: when the user says an answer is wrong or asks for the "correct" figure, do not repeat the same look-ups unchanged. Re-check the method: the unit list and its total against get_branch_units, the join (branch_key), the period (same working day for an open month), the definition (rule 28) and the scope; then answer with the corrected figures and say in one line what was corrected. If nothing was wrong, show the check that proves it.
 
@@ -1255,6 +1283,7 @@ export async function runAgent(o: {
       // figure check: every figure must trace to the tool results; one repair turn (tools allowed) when it does not
       // wave 117: figures from earlier turns of this conversation (each was checked when it was written) may be repeated in a follow-up
       const allEv = [...evidence, ...mEvidence, { question_numbers: o.question }, ...histEv];
+      try { text = fixCodes(text, allEv); } catch { /* codes stay as written */ }
       const ck = checkFigures(text, allEv);
       if (text === draft) draftCheck = ck;
       if (ck.untraced.length && !repaired && rounds < o.maxRounds + bonus && Date.now() < o.deadline - 20000) {
