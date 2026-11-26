@@ -145,7 +145,7 @@ export const DECLS: ToolDecl[] = [
       'receivables now (over 90 days), days to collect, case TAT and SLA, by location (billing unit), zone or client; a health score 0–100 (percentile ranks with stated weights), signals of where business gets stuck, ' +
       'associations between operations and money across locations, and a collection outlook (likely settlement in the 30 days after the outstanding snapshot, cash pace, months of cash to clear receivables). Use for billing conversion, settlement / realisation by location, health score, which locations or clients turn business into cash best or worst, and whether faster TAT goes with better collection.',
     parameters: { type: 'object', properties: { group: { type: 'string', enum: ['location', 'zone', 'client'] }, months: { type: 'integer', description: 'window length 1–6, default 3' }, filters: FILTERS,
-      sort: { type: 'string', enum: ['billed', 'health_low', 'health_high', 'outstanding'] }, limit: { type: 'integer' } } } },
+      sort: { type: 'string', enum: ['billed', 'health_low', 'health_high', 'outstanding'] }, limit: { type: 'integer', description: 'only for "top N" questions; leave out for a full table' } } } },
   { name: 'get_branch_managers', description: 'Branch-manager scorecard for a month: teams, cases vs target, expected and projected revenue vs revenue target, attainment, change vs last month, BAU to date, receivables. Manager names appear as codes. ' +
       'detail=true adds, for up to 10 managers (lowest attainment first, or the codes in managers), each one\'s client spread — every team × client they run with cases, business so far, target, attainment, same day last month and change, and last completed month — and the case TAT of each of their teams: use it for manager-wise / individual reports (one call covers them all).',
     parameters: { type: 'object', properties: { month: MONTHP, filters: FILTERS, limit: { type: 'integer' }, detail: { type: 'boolean' }, managers: { type: 'array', items: { type: 'string' }, description: 'manager codes to keep (optional)' } } } },
@@ -428,7 +428,7 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const { month, filters } = scope(t, a);
     const group = ['location', 'zone', 'client'].includes(String(a?.group)) ? String(a.group) : 'location';
     const months = Math.min(Math.max(Number(a?.months) || 3, 1), 6);
-    const lim = Math.min(Math.max(Number(a?.limit) || 15, 1), 40);
+    const lim0 = Math.min(Math.max(Number(a?.limit) || 40, 1), 40);
     const W = await t.api('b2c', { month, filters, p: months === 3 ? { group } : { group, months } });   // the page's cache entry when 3 months
     if (W?.error) throw new Error(String(W.error));
     if (W?.available === false) return { label: 'Business to cash', data: { available: false, reason: W.reason } };
@@ -443,9 +443,13 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       o.health_score = r.health?.score ?? 'not scored'; if (r.health) { o.weight_covered = r.health.weight_covered; o.parts_rank = r.health.components; }
       if ((r.signals ?? []).length) o.signals = r.signals; return o; };
     const rows = (W.rows ?? []).slice().sort((x: any, y: any) => key(x) - key(y));
+    // a limit close to the number of groups means "all of them" (a model asking for 14 of 15 zones dropped one); the names of any groups
+    // left out are listed so a table can say they exist
+    const lim = lim0 >= rows.length - 3 ? rows.length : lim0;
     return { label: 'Business to cash', rows: rows.length,
       data: fit({ group, sorted_by: sort, window: W.window, basis: W.basis, total: W.total, outlook: W.outlook, associations: W.associations,
-        health_method: W.health_method, rows: rows.slice(0, lim).map(slim), rows_total: rows.length, notes: W.notes }, 18000) };
+        health_method: W.health_method, rows_total: rows.length, rows_shown: Math.min(lim, rows.length),
+        groups_not_shown: rows.slice(lim).map((r: any) => r.label), rows: rows.slice(0, lim).map(slim), notes: W.notes }, 26000) };   // 28 locations ≈ 25 k
   },
 
   async get_branch_managers(t, a) {
