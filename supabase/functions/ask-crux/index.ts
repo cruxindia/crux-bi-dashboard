@@ -364,6 +364,8 @@ async function askAgent(body: any, cfg: Record<string, string>) {
   let text = pseudo.show(noVendor(out.text)).trim();
   const next: string[] = [];
   text = text.replace(/^\s*\**next\**\s*:\s*(.+)$/gim, (_m, q) => { next.push(String(q).replace(/\*+/g, '').trim()); return ''; }).trim();
+  // wave 121c: the page does not render math markup — "$\rho = -0.56$" → "ρ = -0.56", "$\text{₹1.5 cr}$" → "₹1.5 cr", "$n=20$" → "n=20"
+  text = plainMath(text);
   // wave 120: an answer for the page filters says so in its first line and offers all locations
   if (ctx.scope && ctx.scope.source !== 'page') text = text.replace(/[ \t]*\(page filters?\)/gi, '');   // the page filters were not used for this answer
   if (ctx.scope?.source === 'page') {
@@ -642,6 +644,16 @@ async function unitFast(body: any): Promise<Record<string, unknown> | null> {
 // (24-Nov: "coverage ratio this month vs last month, SBI only" was asked 4 times while the AI service was overloaded; the standard calculated answer
 // replied about cases instead). Coverage now vs the end of last month, by client, from the same function as the page.
 const pctTxt = (v: unknown) => v == null || !Number.isFinite(+v!) ? '–' : (Math.round(+v! * 1000) / 10).toFixed(1) + '%';
+// wave 121c: math markup out of answers (the page shows plain markdown); only short inline $…$ spans without a currency amount inside are touched
+export function plainMath(t: string): string {
+  const G: Record<string, string> = { rho: 'ρ', approx: '≈', times: '×', le: '≤', ge: '≥', leq: '≤', geq: '≥', pm: '±', Delta: 'Δ', sigma: 'σ', mu: 'μ', to: '→', rightarrow: '→', cdot: '·', neq: '≠' };
+  return t.replace(/\$([^$\n]{1,80})\$/g, (m, inner: string) => {
+    if (!/\\|[=<>^_{}]|^[a-zA-Z]$/.test(inner)) return m;   // "$5 and $6" style text stays as it is
+    return inner.replace(/\\text\{([^}]*)\}/g, '$1').replace(/\\(?:mathrm|mathbf|textbf)\{([^}]*)\}/g, '$1').replace(/\\([A-Za-z]+)/g, (_x, w: string) => G[w] ?? w)
+      .replace(/[{}]/g, '').replace(/\s*=\s*/g, ' = ').replace(/\s+/g, ' ').trim();
+  });
+}
+
 async function coverageFallback(body: any, note: string): Promise<Record<string, unknown> | null> {
   const t0 = Date.now();
   const question = redactQ(String(body?.question ?? '').slice(0, 500));
