@@ -703,7 +703,7 @@ function collect(v: any, parent: number[], groups: number[][], all: Set<number>,
 // (several rows of the same name together, e.g. the same team from two look-ups), simple arithmetic between them, or the totals.
 const normLbl = (x: string) => String(x ?? '').toUpperCase().replace(/\*|_/g, ' ').replace(/[^A-Z0-9&+]+/g, ' ').trim();
 export function rowCheck(answer: string, evidence: any[], totals: number[] = []): string[] {
-  const idx = new Map<string, number[][]>();
+  const idx = new Map<string, number[][]>(), codes = new Map<string, Set<string>>();
   const walk = (v: any, depth: number) => {
     if (!v || typeof v !== 'object' || depth > 6) return;
     if (Array.isArray(v)) { for (const x of v) walk(x, depth + 1); return; }
@@ -713,7 +713,11 @@ export function rowCheck(answer: string, evidence: any[], totals: number[] = [])
     if (first && first.length <= 90) keys.add(normLbl(first));
     for (const [k, x] of ent) if (/^(code|branch_code)$/.test(k) && typeof x === 'string' && x.trim()) keys.add(normLbl(x));
     const nums = own(v);
-    if (nums.length >= 2) for (const k of keys) if (k.length >= 3 && /[A-Z]/.test(k) || /^\d{4,}$/.test(k)) { const a = idx.get(k) ?? []; a.push(nums); idx.set(k, a); }
+    const cds = ent.filter(([k, x]) => /^(code|branch_code)$/.test(k) && typeof x === 'string' && x.trim()).map(([, x]) => normLbl(x as string));
+    if (nums.length >= 2) for (const k of keys) if (k.length >= 3 && /[A-Z]/.test(k) || /^\d{4,}$/.test(k)) {
+      const a = idx.get(k) ?? []; a.push(nums); idx.set(k, a);
+      if (cds.length) { const c = codes.get(k) ?? new Set<string>(); cds.forEach((x) => c.add(x)); codes.set(k, c); }
+    }
     for (const [, x] of ent) if (x && typeof x === 'object') walk(x, depth + 1);
   };
   for (const e of evidence) walk(e, 0);
@@ -728,6 +732,12 @@ export function rowCheck(answer: string, evidence: any[], totals: number[] = [])
     const cand = idx.get(lbl)!;
     if (cand.length > 6) continue;   // a name shared by many rows says too little to check against
     const pool = [...new Set(cand.flat())];
+    // a unit's code in the row must be that unit's code (26-Nov: RETAIL ASSET AMBERNATH written with another code)
+    const own_codes = codes.get(lbl);
+    if (own_codes && own_codes.size) for (const [i, c] of cells.entries()) {
+      if (i === li || !/^\s*0\d{2,}\s*$/.test(c)) continue;
+      if (!own_codes.has(normLbl(c))) bad.push(`code ${c.trim()} (row "${cells[li].trim().replace(/\*/g, '')}": not that unit's code)`);
+    }
     const rest = cells.filter((_, i) => i !== li).filter((c) => !/^\s*0\d+\s*$/.test(c)).join(' | ');
     for (const f of figures(rest)) {
       const near = (x: number) => Number.isFinite(x) && (Math.abs(x - f.v) <= f.tol || (f.pct && Math.abs(x - f.v * 100) <= f.tol * 100) || Math.abs(Math.abs(x) - Math.abs(f.v)) <= f.tol);
