@@ -4242,7 +4242,9 @@ function mdTables(md){const L=String(md||'').replace(/\r/g,'').split('\n'),out=[
    if(rows.length)out.push({title:title||('Table '+(out.length+1)),rows});continue}
   if(ln.trim())title=mdPlain(ln).replace(/[:.]$/,'').slice(0,80)}
  return out}
-function askCell(v){const s=String(v??'').trim(),n=s.replace(/,/g,'');
+function askCell(v,h){const s=String(v??'').trim(),n=s.replace(/,/g,'');
+ // wave 123a: codes stay text (008034 kept its zeros; a code or PIN column is never a number)
+ if(/^0\d+$/.test(n)||/\b(code|ifsc|pin\s*code|pincode|phone|mobile|account)\b/i.test(String(h||'')))return{t:'s',v:s};
  if(/^[-−]?\d+(\.\d+)?%$/.test(n))return{t:'n',v:Number(n.replace('−','-').slice(0,-1))/100,z:'0.0%'};
  if(/^[-−]?\d+(\.\d+)?$/.test(n)&&n.length<16)return{t:'n',v:Number(n.replace('−','-')),z:n.includes('.')?'#,##0.0#':'#,##0'};
  return{t:'s',v:s}}
@@ -4267,9 +4269,9 @@ function askDownload(kind,items,title){try{
   const wb=XLSX.utils.book_new(),used=new Set(),sheet=t=>{let b=String(t).replace(/[\[\]:*?/\\]/g,' ').trim().slice(0,28)||'Table',n=b,i=2;while(used.has(n.toLowerCase()))n=b.slice(0,26)+' '+(i++);used.add(n.toLowerCase());return n};
   const all=[[title],['Prepared '+askStamp()+' IST · Crux BI · Ask Crux'],[]];
   items.forEach(({q,a})=>{all.push(['Question: '+(q||'')]);if(a.as_of)all.push(['Data as of '+ddmm(a.as_of)+(a.scope?' · '+a.scope:'')]);
-   String(a.answer||'').split('\n').forEach(l=>{if(/^\s*\|[\s:|-]+\|\s*$/.test(l))return;if(/^\s*\|/.test(l))all.push(l.trim().replace(/^\||\|$/g,'').split('|').map(c=>askCell(mdPlain(c))));else if(l.trim())all.push([mdPlain(l.replace(/^\s*[-*•]\s+/,'• '))])});all.push([])});
+   let hdr=null;String(a.answer||'').split('\n').forEach(l=>{if(/^\s*\|[\s:|-]+\|\s*$/.test(l))return;if(/^\s*\|/.test(l)){const cs=l.trim().replace(/^\||\|$/g,'').split('|').map(c=>mdPlain(c));if(!hdr){hdr=cs;all.push(cs)}else all.push(cs.map((c,j)=>askCell(c,hdr[j])))}else{hdr=null;if(l.trim())all.push([mdPlain(l.replace(/^\s*[-*•]\s+/,'• '))])}});all.push([])});
   const ws0=XLSX.utils.aoa_to_sheet(all);ws0['!cols']=[{wch:60},{wch:18},{wch:18},{wch:18},{wch:18},{wch:18},{wch:18}];XLSX.utils.book_append_sheet(wb,ws0,sheet('Answer'));
-  items.forEach(({a})=>mdTables(a.answer).forEach(t=>{const ws=XLSX.utils.aoa_to_sheet(t.rows.map((r,i)=>i?r.map(askCell):r));ws['!cols']=t.rows[0].map((h,j)=>({wch:Math.min(42,Math.max(10,...t.rows.map(r=>String(r[j]??'').length+2)))}));XLSX.utils.book_append_sheet(wb,ws,sheet(t.title))}));
+  items.forEach(({a})=>mdTables(a.answer).forEach(t=>{const ws=XLSX.utils.aoa_to_sheet(t.rows.map((r,i)=>i?r.map((c,j)=>askCell(c,t.rows[0][j])):r));ws['!cols']=t.rows[0].map((h,j)=>({wch:Math.min(42,Math.max(10,...t.rows.map(r=>String(r[j]??'').length+2)))}));XLSX.utils.book_append_sheet(wb,ws,sheet(t.title))}));
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});saveBlob(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name+'.xlsx');return}
  }catch(e){toast('Download failed: '+e.message)}}
 function askDlBar(items,title,label){const b=(k,t)=>el('button',{type:'button',class:'btn sm',onclick:()=>askDownload(k,typeof items==='function'?items():items,typeof title==='function'?title():title)},t);
