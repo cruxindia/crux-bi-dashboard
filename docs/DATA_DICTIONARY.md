@@ -281,8 +281,9 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | ai.teams / ai.clients | team id, label, zone group, region, tier, roll-up flag / client code, name, family, product |
 | ai.monthly_business | bi.v_month_business by month × team × client: cases, revenue, tracker targets, as_of |
 | ai.tracker_daily | Zonal Tracker leaf rows per report date (cumulative month to date) |
-| ai.cases | Force1 case records (dates in IST, raw TAT hours) |
-| ai.branches | Branch universe and active / dormant / never-active rule of bi.api_branch_list (same counts: 2,883 / 1,316 / 61,769) |
+| ai.cases | Force1 case records (dates in IST, raw TAT hours); `branch_key` = the branch code normalised as the dashboard does (`bi.norm_code`, wave 123a) — join units on client_family + branch_key |
+| ai.branches | Branch universe and active / dormant / never-active rule of bi.api_branch_list; `unit_type` = `bi.unit_type` + `bi.unit_type_override` (same as the unit counts, wave 123a); `branch_key` = match key to cases |
+| ai.branch_months | wave 123a: Force1 cases per client unit (client_family, branch_key) and month since Jan-2026: `cases` (open month to `force1_data_to`), `cases_to_same_working_day` up to `same_working_day_to` (the dashboard's month-vs-month cut-off); no row = no case |
 | ai.potential | bi.potential_cell for the latest potential run, by layer |
 | ai.outstanding / ai.collections | latest committed outstanding / collection workbook by team × family × invoice / receipt month |
 | ai.run_select(q, max_rows) | the agent's SQL tool; owner ai_reader; validator + read-only transaction + EXPLAIN cost cap; ≤ 500 rows |

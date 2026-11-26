@@ -318,3 +318,7 @@ Overview hero (wave 095): Revenue view = expected revenue so far, target revenue
 ## Wave 122 (26-Nov-2026) — unit types
 - **RAC** = a client branch-master unit whose name says RAC, or (IDBI) "Retail Asset (Centre) <place>" — not a hub, credit centre, processing centre, "Br" or department; units the name cannot show are typed from the client's list (`bi.unit_type_override`). A RAC without its own code is listed at the branch it works from. Status (active / dormant / never active) is from Crux cases as before.
 
+## Wave 123 (26-Nov-2026) — units active by month
+- **Unit active in a period** = at least one Force1 case received from the unit (client family + normalised branch code) in that period; units and types as in the unit counts.
+- **Month vs month for units**: the open month (to the Force1 date) against the earlier month to the same working day (Mon–Sat less report holidays, as `bi.api_branch_lfl`); the earlier full month is shown beside it, never as the comparison. Stopped = active in the earlier period, no case now; started = the reverse.
+- **Dashboard unit status** (active / dormant / never active) stays "a case in the last 3 months" and is not the same as active in a month.

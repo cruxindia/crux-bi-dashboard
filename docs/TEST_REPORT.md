@@ -1213,6 +1213,23 @@ Database checks ran on the live database; page checks on the local build at the 
 | Database availability | Fixed 25-Nov 23:11 IST | down from about 17:50 IST (522 / timeouts; storage "connection to the database timed out"; dashboard status Unhealthy). Cause: the 2 GB disk filled — database 0.6 GB + write-ahead log 1 GB (allowed up to 4 GB) + system 0.17 GB — during heavy recomputation and parallel tests, so the database went read-only and stopped answering; a restart did not help. Fix: compute Nano → Micro (included in the Pro plan, $9.68 / month before and after; 1 GB memory instead of 0.5 GB) and disk 8 GB (Pro plan), read-only mode cleared. Checked 26-Nov 09:45: pages answer in about 1 s, nightly refresh wrote at 09:44, no queries running, no replication slots |
 | Live switch 26-Nov | Pass | live loader → commit c724889 (business-to-cash tool, no-sum rule, plain maths, full tables), deployed from the Supabase dashboard: zone table 16.8 s with all zones; "which zones turn business into cash worst" 10.3 s. The first two questions right after the switch fell back to the standard answer at 108–113 s (cold start of the new version); later ones normal |
 
+## 26-Nov-2026 — wave 123 (Ask Crux: units by month, case match, other clients)
+| Check | Result | Evidence |
+|---|---|---|
+| Claim valid? | Yes | owner's export: 57 IDBI RACs, Panvel Oct 158 / Nov 0; Ask Crux SQL joined cases to branches on the code as written: Nov 1,540 of 24,897 cases matched (normalised 23,502); SBI 817 vs 19,033, BOM 23 vs 2,506 |
+| Past answers affected | 5 + 1 | 1091, 1106, 1283, 1344, 1345 (wrong join) and 1343 (3-month status for "business in Nov") marked disputed; 4 team-memory findings rejected |
+| 123a applied | Pass | in-migration reader check: IDBI RAC view 111 = unit counts 111; Nov cases join through branch_key; `ai.branch_months` filled |
+| Unit counts view = dashboard | Pass | 11 clients × 11 types, 65,968 units, 0 differences |
+| Same-working-day cut-off | Pass | `ai.branch_months` Oct cut-off 26-Oct for Force1 to 24-Nov = `bi.api_branch_lfl` compared_to 26-Oct (20 working days; 2 and 20-Oct holidays) |
+| Join guard | Pass | 9 unit tests (owner's SQL refused; branch_key joins, literal code filters, cases-only queries allowed) |
+| IDBI conversation (owner's 3 questions) | Pass | Force1 to 26-Nov: 111 RACs, 31 active 1–26 Nov, 31 in 1–28 Oct, 0 stopped / started, cases 1,384 vs 1,340 (+3.3%); 31 unit rows each = `bi.api_branch_lfl` (independent); codes correct; 25–32 s |
+| SBI RACPC Oct vs Nov | Pass | 184 units; 50 (1–24 Nov) vs 46 (1–26 Oct) and 46 (full Oct); both 44, stopped 2, started 6, inactive 132 = SQL ground truth; 23 s |
+| BOM branches Oct vs Nov, which stopped | Pass | 2,829; 751 vs 814 (same working day) and 888 (full Oct); stopped 272, started 209; listed stopped branches all have 0 November cases (first build listed active branches as stopped — fixed by separate stopped / started lists) |
+| Row check | Pass | unit tests: state rows with a team's figures flagged (739, 213, 260); a unit row carrying its team total accepted; wrong unit code flagged and corrected |
+| Regression | Pass | "teams behind target", "bottom 10 SBI branches vs October", "Pune vs last month": figures all traced, 13–21 s |
+| Excel codes | Pass | unit test of the export cell rule: 008034, 000821 and code / IFSC / PIN columns stay text; counts and % stay numbers |
+| Test clean-up | Open | 28 test questions; script 123b ready (SQL editor unreachable at 20:23 IST) |
+
 ## 26-Nov-2026 — wave 122 (IDBI RAC listing)
 | Check | Result | Evidence |
 |---|---|---|

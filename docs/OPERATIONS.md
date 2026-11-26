@@ -329,3 +329,8 @@ To deploy: publish the code (stash + sync, or a merged pull request), then deplo
 ## Unit types from a client's list (26-Nov-2026, wave 122)
 - When a client's unit (RAC, RACPC …) does not show its type in the branch-master name, add it to `bi.unit_type_override` (client_family, branch_code, unit_type, source, note) and clear the cache: `delete from bi.api_cache where fn = 'branch_units'`. Never add a unit without a code — ask the client for it.
 
+## Ask Crux unit questions (26-Nov-2026, wave 123)
+- Ask Crux reads units through `ai.branches` (same universe, status and unit type as the unit counts — it calls `bi.unit_type` and `bi.unit_type_override`, so a rule change needs no Ask Crux change) and Force1 cases per unit and month through `ai.branch_months`. Cases join units only on client family + `branch_key`.
+- Check after any branch-master or unit-type change: `select client_family, unit_type, count(*) from ai.branches group by 1, 2` must equal `bi.api_branch_units('{}', '{}')` by client and type.
+- "Active / gave business in <month>", "Oct vs Nov active" questions use the `get_unit_activity` tool: an open month runs to the Force1 date and is compared with the earlier month to the same working day (`same_working_day_to`), the full earlier month beside it.
+- After live tests: run `docs/migrations-manual/20261126_bi_123b_ask_test_cleanup.sql` (pending from 26-Nov) — `do $x$ declare s text; begin select content into s from bi.repo_file where path='docs/migrations-manual/20261126_bi_123b_ask_test_cleanup.sql'; execute s; end $x$;`
