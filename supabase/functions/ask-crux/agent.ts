@@ -414,9 +414,15 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const lt = ['any', 'active', 'stopped', 'started', 'inactive', 'all', 'none'].includes(String(a?.list)) ? String(a.list) : 'any';
     const cond = ({ any: `c_m > 0 or ${PX} > 0 or c_pf > 0`, active: 'c_m > 0', stopped: `c_m = 0 and ${PX} > 0`, started: `c_m > 0 and ${PX} = 0`, inactive: `c_m = 0 and ${PX} = 0`, all: 'true', none: 'false' } as Record<string, string>)[lt];
     const lim = Math.min(Math.max(Number(a?.limit) || 60, 1), 200);
-    const listQ = `with u as (select b.branch_name, b.branch_code, b.city, b.state, b.team, coalesce(m.cases, 0) c_m, coalesce(p.cases_to_same_working_day, 0) c_ps, coalesce(p.cases, 0) c_pf ${base}) ` +
-      `select branch_name, branch_code, city, state, coalesce(team, 'No team yet') team, c_m, ${PX} c_p, c_pf, count(*) over () n_match from u where ${cond} order by c_m desc, ${PX} desc, c_pf desc, branch_name limit ${lim}`;
-    const [S, L]: any[] = await Promise.all([t.gw({ op: 'sql', max_rows: 400, query: sumQ }), lt === 'none' ? Promise.resolve({ rows: [] }) : t.gw({ op: 'sql', max_rows: 200, query: listQ })]);
+    const listOf = (where: string, order: string, k: number) => `with u as (select b.branch_name, b.branch_code, b.city, b.state, b.team, coalesce(m.cases, 0) c_m, coalesce(p.cases_to_same_working_day, 0) c_ps, coalesce(p.cases, 0) c_pf ${base}) ` +
+      `select branch_name, branch_code, city, state, coalesce(team, 'No team yet') team, c_m, ${PX} c_p, c_pf, count(*) over () n_match from u where ${where} order by ${order}, branch_name limit ${k}`;
+    const listQ = listOf(cond, `c_m desc, ${PX} desc, c_pf desc`, lim);
+    // the units that stopped and started are always listed on their own (a general list sorted by this month's cases has none of the stopped ones)
+    const none = Promise.resolve({ rows: [] });
+    const [S, L, LS, LT]: any[] = await Promise.all([t.gw({ op: 'sql', max_rows: 400, query: sumQ }),
+      lt === 'none' ? none : t.gw({ op: 'sql', max_rows: 200, query: listQ }),
+      lt === 'stopped' ? none : t.gw({ op: 'sql', max_rows: 40, query: listOf(`c_m = 0 and ${PX} > 0`, `${PX} desc, c_pf desc`, 40) }),
+      lt === 'started' ? none : t.gw({ op: 'sql', max_rows: 40, query: listOf(`c_m > 0 and ${PX} = 0`, `c_m desc`, 40) })]);
     const rows: any[] = Array.isArray(S?.rows) ? S.rows : [];
     const tot = rows.find((r) => +r.gt === 1 && +r.gs === 1) ?? {};
     const n = (v: any) => (v == null ? 0 : Math.round(+v));
@@ -427,8 +433,11 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
     const byState = rows.filter((r) => +r.gs === 0).map((r) => ({ state: r.state ?? 'not recorded', ...grp(r) })).sort((x, y) => y.units - x.units);
     const lrows: any[] = Array.isArray(L?.rows) ? L.rows : [];
     const chg = (r: any) => (n(r.c_m) > 0 && n(r.c_p) > 0 ? 'active in both' : n(r.c_m) > 0 ? 'started' : n(r.c_p) > 0 ? 'stopped' : 'inactive in both');
-    const units = lrows.map((r) => ({ unit: r.branch_name, code: String(r.branch_code ?? ''), city: r.city, state: r.state, team: r.team, cases_month: n(r.c_m), cases_compared: n(r.c_p),
-      ...(sameOk ? { cases_compared_full_month: n(r.c_pf) } : {}), change: chg(r) }));
+    const row = (r: any) => ({ unit: r.branch_name, code: String(r.branch_code ?? ''), city: r.city, state: r.state, team: r.team, cases_month: n(r.c_m), cases_compared: n(r.c_p),
+      ...(sameOk ? { cases_compared_full_month: n(r.c_pf) } : {}), change: chg(r) });
+    const units = lrows.map(row);
+    const rowsOf = (x: any) => (Array.isArray(x?.rows) ? x.rows : []);
+    const stoppedRows = lt === 'stopped' ? lrows : rowsOf(LS), startedRows = lt === 'started' ? lrows : rowsOf(LT);
     if (!sameOk && open) notes.push('the same-working-day cut-off of the earlier month is not available, so the full earlier month is used');
     return { label: `Units active by month${types.length ? ' — ' + types.join(', ') : ''} (${mon(M)} vs ${mon(P)})`, rows: n(tot.units),
       data: fit({ scope: { client_family: fam ?? 'all clients', unit_types: types.length ? types : 'all types', ...(filters.zone_group ? { zone_group: filters.zone_group } : {}), ...(filters.location_id != null ? { team_id: filters.location_id } : {}) },
@@ -439,8 +448,10 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
           change: { active_units: n(tot.a_m) - n(tot.a_p), cases_pct: pct(tot.cases_m, tot.cases_p) },
           movement: { active_in_both: n(tot.both_months), stopped: n(tot.stopped), started: n(tot.started), inactive_in_both: n(tot.neither) } },
         by_team: byTeam.slice(0, 60), by_state: byState.slice(0, 40),
-        units_listed: { which: lt, shown: units.length, matching: n(lrows[0]?.n_match ?? 0) }, units,
-        notes: [...notes, 'Force1 is the case system; the Zonal Tracker does not split business by unit.'] }, 20000) };
+        units_listed: { which: lt, shown: units.length, matching: n(lrows[0]?.n_match ?? 0), order: 'most cases this month first' }, units,
+        stopped_units: { note: 'had cases in the compared period and none this month; most cases in the compared period first', total: n(tot.stopped), shown: Math.min(stoppedRows.length, 40), rows: stoppedRows.slice(0, 40).map(row) },
+        started_units: { note: 'no case in the compared period, cases this month; most cases first', total: n(tot.started), shown: Math.min(startedRows.length, 40), rows: startedRows.slice(0, 40).map(row) },
+        notes: [...notes, 'Force1 is the case system; the Zonal Tracker does not split business by unit.'] }, 26000) };
   },
 
   // wave 109c: who runs each client × location (no associate names) and the Force1 gap. wave 112: Business Associate = partner, Crux Branch = own branch.
@@ -686,6 +697,50 @@ function collect(v: any, parent: number[], groups: number[][], all: Set<number>,
   if (mine.length) groups.push([...mine, ...parent.slice(0, 60)]);
   for (const [k, x] of Object.entries(v)) if (x && typeof x === 'object') collect(x, mine, groups, all, tot, Array.isArray(v) ? key : k);
 }
+// wave 123a: a table row must take its figures from the data row of the same item. The value check alone passed a state table filled with a
+// team's figures (26-Nov, IDBI RACs by state: Maharashtra 739 was the Mumbai team's figure, Karnataka 213 / 260 another row's). Evidence rows are
+// indexed by their name (first text field, or code); an answer row whose first matching cell names such an item may use only that item's numbers
+// (several rows of the same name together, e.g. the same team from two look-ups), simple arithmetic between them, or the totals.
+const normLbl = (x: string) => String(x ?? '').toUpperCase().replace(/\*|_/g, ' ').replace(/[^A-Z0-9&+]+/g, ' ').trim();
+export function rowCheck(answer: string, evidence: any[], totals: number[] = []): string[] {
+  const idx = new Map<string, number[][]>();
+  const walk = (v: any, depth: number) => {
+    if (!v || typeof v !== 'object' || depth > 6) return;
+    if (Array.isArray(v)) { for (const x of v) walk(x, depth + 1); return; }
+    const ent = Object.entries(v);
+    const first = ent.find(([, x]) => typeof x === 'string' && x.trim())?.[1] as string | undefined;
+    const keys = new Set<string>();
+    if (first && first.length <= 90) keys.add(normLbl(first));
+    for (const [k, x] of ent) if (/^(code|branch_code)$/.test(k) && typeof x === 'string' && x.trim()) keys.add(normLbl(x));
+    const nums = own(v);
+    if (nums.length >= 2) for (const k of keys) if (k.length >= 3 && /[A-Z]/.test(k) || /^\d{4,}$/.test(k)) { const a = idx.get(k) ?? []; a.push(nums); idx.set(k, a); }
+    for (const [, x] of ent) if (x && typeof x === 'object') walk(x, depth + 1);
+  };
+  for (const e of evidence) walk(e, 0);
+  if (!idx.size) return [];
+  const bad: string[] = [];
+  for (const line of String(answer ?? '').split('\n')) {
+    if (!/^\s*\|/.test(line) || /^\s*\|[\s:|-]+\|\s*$/.test(line)) continue;
+    const cells = line.trim().replace(/^\||\|$/g, '').split('|');
+    const li = cells.findIndex((c) => idx.has(normLbl(c)));
+    if (li < 0) continue;
+    const lbl = normLbl(cells[li]);
+    const cand = idx.get(lbl)!;
+    if (cand.length > 6) continue;   // a name shared by many rows says too little to check against
+    const pool = [...new Set(cand.flat())];
+    const rest = cells.filter((_, i) => i !== li).filter((c) => !/^\s*0\d+\s*$/.test(c)).join(' | ');
+    for (const f of figures(rest)) {
+      const near = (x: number) => Number.isFinite(x) && (Math.abs(x - f.v) <= f.tol || (f.pct && Math.abs(x - f.v * 100) <= f.tol * 100) || Math.abs(Math.abs(x) - Math.abs(f.v)) <= f.tol);
+      if (pool.some(near)) continue;
+      const P = [...pool.slice(0, 40), ...totals.slice(0, 20)];
+      const pair = (a: number, b: number) => near(a - b) || near(a + b) || (b !== 0 && (near(a / b) || near(a / b - 1) || near(1 - a / b)));
+      let ok = false;
+      outer: for (let i = 0; i < P.length; i++) for (let j = 0; j < P.length; j++) if (i !== j && pair(P[i], P[j])) { ok = true; break outer; }
+      if (!ok) bad.push(`${f.text} (row "${cells[li].trim().replace(/\*/g, '')}": not that row's figure)`);
+    }
+  }
+  return [...new Set(bad)];
+}
 export function checkFigures(answer: string, evidence: any[]): { figures: number; traced: number; untraced: string[]; unchecked: string[] } {
   const groups: number[][] = [], all = new Set<number>(), tot: number[] = [];
   for (const e of evidence) collect(e, [], groups, all, tot);
@@ -711,7 +766,10 @@ export function checkFigures(answer: string, evidence: any[]): { figures: number
     }
     if (!ok) untraced.push(f.text);
   }
-  return { figures: figs.length, traced: figs.length - untraced.length - unchecked.length, untraced: [...new Set(untraced)], unchecked: [...new Set(unchecked)] };
+  // wave 123a: figures in a table row must belong to that row's item
+  try { for (const b of rowCheck(answer, evidence, T)) if (untraced.length < 40) untraced.push(b); } catch { /* the value check stands */ }
+  const un = [...new Set(untraced)];
+  return { figures: figs.length, traced: Math.max(0, figs.length - un.length - unchecked.length), untraced: un, unchecked: [...new Set(unchecked)] };
 }
 
 // ---------------------------------------------------------------- system prompt
@@ -755,7 +813,7 @@ Ask one question at a time. Examples that need a question: "Rank the branches" (
 23. TABLE LAYOUT: when the user gives the columns of a table (for example "month, Operating Model, Revenue, Target, Potential, performance"), the table has exactly those columns, in that order, with the user's names. Do not add, drop, merge or reorder columns; a column the data cannot fill stays in place with "n/a" and is explained under "Not available".
 24. COVERAGE (look-up: get_operations with part coverage): client branch coverage is the share of code-matchable client branches with a Force1 case in the last 6 months: coverage_6m = now, coverage_6m_prev_month = at the end of last month, coverage_change_pts = the change in percentage points. For "this month vs last month" give both and the change in points. A client in coverage_notes.clients_not_measured has business in the tracker but no Force1 cases: say its coverage cannot be measured — never that it has no business or 0% coverage.
 26. BUSINESS TO CASH: how business turns into money — billing conversion, settlement / realisation by location or client, the health score, "which locations turn business into cash best / worst", "does faster TAT go with better collection" — comes from get_business_to_cash. Say its window (months) and the outstanding date. Cash received includes GST and is a cash-flow figure: never call it revenue, never divide it by ex-GST revenue, never add receivables to revenue or cash. A missing measure is "no data", never 0. Associations are rank correlations across locations: write "goes with", never "causes", and do not explain one with a cause the data does not show. The health score is a rank among the groups (50 = the middle, not a pass mark); when you show it, give its weights once. "How much will we collect" / "expected collections" = the collection outlook: next_30_days_settlement is an estimate (ex-GST) for the 30 days AFTER the outstanding snapshot — say "estimated" and give that date (not "the next 30 days" from today); add the cash pace (avg_monthly_cash, incl. GST) and months of cash to clear receivables; never add the estimate to cash received. Realisation = settled ÷ (settled + still open).
-27. UNITS BY MONTH: "which / how many RACs, RACPCs, branches … were active (gave business) in <month>", "active vs inactive in Oct vs Nov", "which units stopped / started" come from get_unit_activity (unit_type, month, compare_month, filters, list) — never from get_branch_units' status and never built with run_sql. Give: total units (equal to the unit counts), active units and cases in each period, active in both, stopped, started, inactive in both, and the change, with each period's label exactly as the tool gives it (e.g. "Nov 1–24, 2026" vs "Oct 1–26, 2026 (same working day)"). For an open month, the comparison is the earlier month to the same working day; give the earlier full month too, labelled "full month", never as the comparison. Tables: one row per unit (or per team / state when asked "by location"), columns named with the periods. A unit is active in a period when it has at least one Force1 case in it (or the user's own rule, rule 28). If the user wants a variant the tool cannot give, run_sql over branches LEFT JOIN branch_months ON client_family AND branch_key.
+27. UNITS BY MONTH: "which / how many RACs, RACPCs, branches … were active (gave business) in <month>", "active vs inactive in Oct vs Nov", "which units stopped / started" come from get_unit_activity (unit_type, month, compare_month, filters, list) — never from get_branch_units' status and never built with run_sql. Give: total units (equal to the unit counts), active units and cases in each period, active in both, stopped, started, inactive in both, and the change, with each period's label exactly as the tool gives it (e.g. "Nov 1–24, 2026" vs "Oct 1–26, 2026 (same working day)"). For an open month, the comparison is the earlier month to the same working day (never count working days yourself — use the tool's period labels); give the earlier full month too, labelled "full month", never as the comparison. Tables: one row per unit (or per team / state when asked "by location"), columns named with the periods. Units that stopped or started come ONLY from stopped_units / started_units (each row's change says what it did); never present rows of the general units list as stopped or started, and never put a unit in a table under a heading its change does not match. Copy each unit's figures from its own row. A unit is active in a period when it has at least one Force1 case in it (or the user's own rule, rule 28). If the user wants a variant the tool cannot give, run_sql over branches LEFT JOIN branch_months ON client_family AND branch_key.
 28. USER DEFINITIONS: when the user defines a word ("active = RACs that gave business in Nov-2026", "inactive = no case for 2 months", "big branch = over 50 cases"), use exactly that definition for the whole conversation, compute it (rule 27 for unit activity), and say in the first line that you used their definition — and, if the dashboard uses another (active = a case in the last 3 months), give the dashboard figure once beside it, labelled.
 29. CHALLENGED ANSWER: when the user says an answer is wrong or asks for the "correct" figure, do not repeat the same look-ups unchanged. Re-check the method: the unit list and its total against get_branch_units, the join (branch_key), the period (same working day for an open month), the definition (rule 28) and the scope; then answer with the corrected figures and say in one line what was corrected. If nothing was wrong, show the check that proves it.
 
@@ -1017,7 +1075,7 @@ export async function runAgent(o: {
   const actQ = !!uq && (qMonths.length > 0 || /\b(vs|versus|against|compar\w*|gave|given|giving|stopped|started)\b/i.test(o.question)) &&
     /\b(active|inactive|business|cases?|gave|given|giving|stopped|started|dormant|working)\b/i.test(o.question);
   const actArgs = actQ ? { ...(uq?.unit_type?.length ? { unit_type: uq.unit_type } : {}), ...(uq?.filters ? { filters: uq.filters } : {}),
-    ...(qMonths[0] ? { month: qMonths[0] } : {}), ...(qMonths[1] ? { compare_month: qMonths[1] } : {}), list: 'any', limit: 120 } : null;
+    ...(qMonths[0] ? { month: qMonths[0] } : {}), ...(qMonths[1] ? { compare_month: qMonths[1] } : {}), list: 'any', limit: 60 } : null;
   const [snapR, unitR, actR] = await Promise.all([TOOLS.get_business_summary(t, {}).then((x) => x.data).catch(() => null),
     uq ? TOOLS.get_branch_units(t, uq).catch((e) => ({ error: e })) : Promise.resolve(null),
     actArgs ? TOOLS.get_unit_activity(t, actArgs).catch((e) => ({ error: e })) : Promise.resolve(null)]);
