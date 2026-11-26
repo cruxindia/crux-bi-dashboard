@@ -1212,3 +1212,15 @@ Database checks ran on the live database; page checks on the local build at the 
 | Type check | Pass | `deno check` — only the 2 known messages in jobs.ts:79 |
 | Database availability | Fixed 25-Nov 23:11 IST | down from about 17:50 IST (522 / timeouts; storage "connection to the database timed out"; dashboard status Unhealthy). Cause: the 2 GB disk filled — database 0.6 GB + write-ahead log 1 GB (allowed up to 4 GB) + system 0.17 GB — during heavy recomputation and parallel tests, so the database went read-only and stopped answering; a restart did not help. Fix: compute Nano → Micro (included in the Pro plan, $9.68 / month before and after; 1 GB memory instead of 0.5 GB) and disk 8 GB (Pro plan), read-only mode cleared. Checked 26-Nov 09:45: pages answer in about 1 s, nightly refresh wrote at 09:44, no queries running, no replication slots |
 | Live switch 26-Nov | Pass | live loader → commit c724889 (business-to-cash tool, no-sum rule, plain maths, full tables), deployed from the Supabase dashboard: zone table 16.8 s with all zones; "which zones turn business into cash worst" 10.3 s. The first two questions right after the switch fell back to the standard answer at 108–113 s (cold start of the new version); later ones normal |
+
+## 26-Nov-2026 — wave 122 (IDBI RAC listing)
+| Check | Result | Evidence |
+|---|---|---|
+| Claim valid? | Yes | dashboard RAC list (57 IDBI) vs IDBI list (95): Mumbai 2 of 10 shown; the other 8 in the branch master as "RETAIL ASSET …" typed Branch |
+| Dry run, all banks | Pass | 65,968 verified branch rows: new name rule changes 41 IDBI rows only; on the full master the guard found 2 BOB "Retail Asset Br" rows → excluded, re-run passed |
+| Applied | Pass | IDBI RAC units 111 (active 35, dormant 14, never active 62); overrides 13; old definitions in `bi.fn_backup` ('122a') |
+| Mumbai | Pass | 10 RACs, all active: Panvel 443, Kalyan-Dombivli 95, Ambernath 65, Andheri 131, Belapur 143, Borivali 539, Deonar 368, Thane 671, Virar 187, Worli 169 cases in 3 months |
+| IDBI totals unchanged | Pass | IDBI units 2,317, active 93, dormant 30 — only types changed |
+| List coverage | Pass | 94 of 95 listed RACs shown as RAC; open: Nehru Enclave–Kalkaji (no IDBI branch of that name) |
+| Test clean-up (wave 121) | Pass | messages 1315–1339 and 17 memory findings deleted; 2 later user questions untouched; `ask-crux-next` answers 410 |
+

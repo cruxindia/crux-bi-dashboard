@@ -406,3 +406,11 @@ Grains: **business** = `bi.v_month_business` (tracker cases, expected minimum re
 | `bi.ai_pool_keys()` | Service role only (gateway op `pool_keys`): the extra keys for Ask Crux |
 | `bi.api_b2c(month, f, p)` | `bi_call('b2c')`: business to cash — `window`, `basis`, `total`, `stages`, `rows` (per location / zone / client: cases, expected, invoiced, settled, open, realisation, cash, days to collect, receivables, over-90 share, unadjusted, TAT, SLA, `health {score, weight_covered, components}`, `signals`), `associations`, `outlook`, `health_method`, `notes`. `p.group` location / zone / client, `p.months` 1–6 |
 | `bi.metric_doc` 'business_to_cash', 'health_score' | Definitions shown in the page hints and to Ask Crux (explain_metric) |
+
+**Wave 122 (26-Nov-2026)**
+
+| Object | Meaning |
+|---|---|
+| `bi.unit_type(name, type)` | Unit type from the branch-master name; 122a: IDBI "Retail Asset (Centre) <place>" = RAC |
+| `bi.unit_type_override(client_family, branch_code, unit_type, source, note, added_at)` | Unit type from the client's own unit list where the name cannot show it (13 IDBI RACs); read by `bi.api_branch_units`; RLS on |
+
