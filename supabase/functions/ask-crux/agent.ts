@@ -131,6 +131,7 @@ export const DECLS: ToolDecl[] = [
     parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'] }, description: 'unit types; omit for all units of the client' },
       month: { type: 'string', description: 'the month to look at, YYYY-MM-01 (default: the latest data month)' }, compare_month: { type: 'string', description: 'the earlier month, YYYY-MM-01 (default: the month before)' },
       filters: FILTERS, list: { type: 'string', enum: ['any', 'active', 'stopped', 'started', 'inactive', 'all', 'none'], description: 'which units to list: any = active in either period (default)' },
+      group: { type: 'string', enum: ['team', 'state', 'both'], description: 'totals by team (default), by state, or both' },
       limit: { type: 'integer', description: 'max units listed (default 60, max 200)' } } } },
   { name: 'get_operating_model', description: 'The register of who runs each client in each location: a Business Associate (a partner; older words partner / franchise) or a Crux Branch (our own team; older words own branch), with from / to dates, and how many pairs are not set yet. Use for "which locations or clients are run by Business Associates", "since when", "what is not set". For performance (business, growth, TAT) use get_assoc_comparison.',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
@@ -412,6 +413,8 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       `count(*) filter (where c_m > 0 and ${PX} > 0) both_months, count(*) filter (where c_m = 0 and ${PX} > 0) stopped, count(*) filter (where c_m > 0 and ${PX} = 0) started, ` +
       `count(*) filter (where c_m = 0 and ${PX} = 0) neither, sum(c_m) cases_m, sum(${PX}) cases_p, sum(c_pf) cases_pf from u group by grouping sets ((team, zone_group), (state), ())`;
     const lt = ['any', 'active', 'stopped', 'started', 'inactive', 'all', 'none'].includes(String(a?.list)) ? String(a.list) : 'any';
+    // by team and by state side by side were mixed up in tables (26-Nov): state totals only when asked for
+    const grp_by = ['team', 'state', 'both'].includes(String(a?.group)) ? String(a.group) : 'team';
     const cond = ({ any: `c_m > 0 or ${PX} > 0 or c_pf > 0`, active: 'c_m > 0', stopped: `c_m = 0 and ${PX} > 0`, started: `c_m > 0 and ${PX} = 0`, inactive: `c_m = 0 and ${PX} = 0`, all: 'true', none: 'false' } as Record<string, string>)[lt];
     const lim = Math.min(Math.max(Number(a?.limit) || 60, 1), 200);
     const listOf = (where: string, order: string, k: number) => `with u as (select b.branch_name, b.branch_code, b.city, b.state, b.team, coalesce(m.cases, 0) c_m, coalesce(p.cases_to_same_working_day, 0) c_ps, coalesce(p.cases, 0) c_pf ${base}) ` +
@@ -447,7 +450,7 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
           ...(sameOk ? { compared_full_month: { period: (periods as any).compared_full_month.period, active_units: n(tot.a_pf), cases: n(tot.cases_pf) } } : {}),
           change: { active_units: n(tot.a_m) - n(tot.a_p), cases_pct: pct(tot.cases_m, tot.cases_p) },
           movement: { active_in_both: n(tot.both_months), stopped: n(tot.stopped), started: n(tot.started), inactive_in_both: n(tot.neither) } },
-        by_team: byTeam.slice(0, 60), by_state: byState.slice(0, 40),
+        ...(grp_by !== 'state' ? { by_team: byTeam.slice(0, 60) } : {}), ...(grp_by !== 'team' ? { by_state: byState.slice(0, 40) } : {}),
         units_listed: { which: lt, shown: units.length, matching: n(lrows[0]?.n_match ?? 0), order: 'most cases this month first' }, units,
         stopped_units: { note: 'had cases in the compared period and none this month; most cases in the compared period first', total: n(tot.stopped), shown: Math.min(stoppedRows.length, 40), rows: stoppedRows.slice(0, 40).map(row) },
         started_units: { note: 'no case in the compared period, cases this month; most cases first', total: n(tot.started), shown: Math.min(startedRows.length, 40), rows: startedRows.slice(0, 40).map(row) },
@@ -731,7 +734,9 @@ export function rowCheck(answer: string, evidence: any[], totals: number[] = [])
     const lbl = normLbl(cells[li]);
     const cand = idx.get(lbl)!;
     if (cand.length > 6) continue;   // a name shared by many rows says too little to check against
-    const pool = [...new Set(cand.flat())];
+    // the row may also carry figures of the other items it names (the unit's team or state, e.g. "total RACs in that location")
+    const others = cells.map((c, i) => (i === li ? null : idx.get(normLbl(c)))).filter((x): x is number[][] => !!x && x.length <= 6);
+    const pool = [...new Set([...cand.flat(), ...others.flat().flat()])];
     // a unit's code in the row must be that unit's code (26-Nov: RETAIL ASSET AMBERNATH written with another code)
     const own_codes = codes.get(lbl);
     if (own_codes && own_codes.size) for (const [i, c] of cells.entries()) {
@@ -1113,7 +1118,8 @@ export async function runAgent(o: {
   const actQ = !!uq && (qMonths.length > 0 || /\b(vs|versus|against|compar\w*|gave|given|giving|stopped|started)\b/i.test(o.question)) &&
     /\b(active|inactive|business|cases?|gave|given|giving|stopped|started|dormant|working)\b/i.test(o.question);
   const actArgs = actQ ? { ...(uq?.unit_type?.length ? { unit_type: uq.unit_type } : {}), ...(uq?.filters ? { filters: uq.filters } : {}),
-    ...(qMonths[0] ? { month: qMonths[0] } : {}), ...(qMonths[1] ? { compare_month: qMonths[1] } : {}), list: 'any', limit: 60 } : null;
+    ...(qMonths[0] ? { month: qMonths[0] } : {}), ...(qMonths[1] ? { compare_month: qMonths[1] } : {}), list: 'any', limit: 60,
+    group: /\bstates?\b/i.test(o.question) ? (/\b(team|location|city|zone)s?\b/i.test(o.question) ? 'both' : 'state') : 'team' } : null;
   const [snapR, unitR, actR] = await Promise.all([TOOLS.get_business_summary(t, {}).then((x) => x.data).catch(() => null),
     // a month question gets only the month-by-month activity (its unit totals equal the unit counts): the 3-month status beside it was copied
     // into tables headed "active in Nov" (26-Nov test)
