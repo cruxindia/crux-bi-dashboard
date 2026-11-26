@@ -127,6 +127,11 @@ export const DECLS: ToolDecl[] = [
   { name: 'get_branch_units', description: 'COUNTS of client units by type — RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, other CPC, other processing centre, SME branch, branch, LHO (Local Head Office; counted only when asked for by name) — with active, dormant and never active, by zone, team and client, the rows in the branch master that cannot be counted (with reason), and optionally the list of units. Use for any "how many / count / which / list" question about branches, RACPCs, RACs or other units. RACPC excludes Mini RACPC unless both are asked.',
     parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch', 'LHO'] }, description: 'omit for all unit types (LHO is counted only when asked for)' },
       filters: FILTERS, list: { type: 'boolean', description: 'true to also return the units (name, code, team, status, last case month, cases)' }, limit: { type: 'integer', description: 'max units listed (default 60)' } } } },
+  { name: 'get_unit_activity', description: 'UNITS ACTIVE BY MONTH (wave 123a): for client units (RAC, RACPC, branches … of one client or all) — how many and which had at least one Force1 case in a month, against an earlier month: units, active in each period, active in both, stopped, started, inactive in both, cases, by team and by state, and the unit list with cases per period. An open month runs to the Force1 date and is compared with the earlier month to the same working day (the earlier full month is given too). Units and types are the dashboard\'s (same total as get_branch_units); units are matched to cases by branch code the dashboard\'s way. Use for "active / inactive in <month>", "gave business in <month>", "Oct vs Nov active", "which stopped / started".',
+    parameters: { type: 'object', properties: { unit_type: { type: 'array', items: { type: 'string', enum: ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'] }, description: 'unit types; omit for all units of the client' },
+      month: { type: 'string', description: 'the month to look at, YYYY-MM-01 (default: the latest data month)' }, compare_month: { type: 'string', description: 'the earlier month, YYYY-MM-01 (default: the month before)' },
+      filters: FILTERS, list: { type: 'string', enum: ['any', 'active', 'stopped', 'started', 'inactive', 'all', 'none'], description: 'which units to list: any = active in either period (default)' },
+      limit: { type: 'integer', description: 'max units listed (default 60, max 200)' } } } },
   { name: 'get_operating_model', description: 'The register of who runs each client in each location: a Business Associate (a partner; older words partner / franchise) or a Crux Branch (our own team; older words own branch), with from / to dates, and how many pairs are not set yet. Use for "which locations or clients are run by Business Associates", "since when", "what is not set". For performance (business, growth, TAT) use get_assoc_comparison.',
     parameters: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM-01' }, filters: FILTERS } } },
   { name: 'get_consistency', description: 'The latest "same figure on every page" check: for business so far, cases so far, likely month end, business as usual, target and client branch counts, the value each page / data source gives, whether they agree, the lowest, highest and difference. Use when someone says two pages (or Ask Crux) show different numbers, or asks whether the figures match.',
@@ -360,6 +365,82 @@ export const TOOLS: Record<string, (t: ToolCtx, a: any) => Promise<{ data: any; 
       data: fit({ filters, unit_types: U?.unit_types ?? 'all', status_month: U?.status_month, summary: U?.summary, by_unit_type: U?.by_unit_type, by_zone: U?.by_zone,
         by_team: (U?.by_team ?? []).slice(0, 60), by_client: (U?.by_client ?? []).slice(0, 25), in_master_not_counted: U?.in_master_not_counted,
         units: U?.units ?? undefined, method: U?.method }, 16000) };
+  },
+
+  // wave 123a (owner 26-Nov: "wrong output and analysis ... same with other clients too"): units active in a month and month vs month.
+  // Units, types and the case match are the dashboard's (ai.branches + ai.branch_months on branch_key); an open month runs to the Force1 date
+  // and is compared with the earlier month to the same working day (the full earlier month is given too).
+  async get_unit_activity(t, a) {
+    const { filters } = scope(t, a);
+    const q = (v: unknown) => "'" + String(v).replace(/'/g, "''") + "'";
+    const TYPES = ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'];
+    const types = (Array.isArray(a?.unit_type) ? a.unit_type : typeof a?.unit_type === 'string' && a.unit_type ? String(a.unit_type).split(',') : [])
+      .map((x: any) => String(x).trim()).filter((x: string) => TYPES.includes(x));
+    const ym = (v: any) => (typeof v === 'string' && /^\d{4}-\d{2}/.test(v) ? v.slice(0, 7) + '-01' : null);
+    let M = ym(a?.month) ?? t.dataMonth, P = ym(a?.compare_month) ?? addMonth(M, -1);
+    if (P === M) P = addMonth(M, -1);
+    if (P > M) [M, P] = [P, M];
+    const fam = typeof filters.client_family === 'string' && filters.client_family ? filters.client_family : null;
+    const w: string[] = [];
+    if (fam) w.push(`b.client_family = ${q(fam)}`);
+    if (types.length) w.push(`b.unit_type in (${types.map(q).join(', ')})`);
+    if (filters.location_id != null && Number.isFinite(Number(filters.location_id))) w.push(`b.team_id = ${Number(filters.location_id)}`);
+    if (filters.zone_group) w.push(`b.zone_group = ${q(filters.zone_group)}`);
+    const notes: string[] = [];
+    if ((filters as any).region || (filters as any).stakeholder) notes.push('region / stakeholder are not applied here (client, zone and team are)');
+    const per: any = await t.gw({ op: 'sql', max_rows: 5, query: `select month, max(force1_data_to) f1, max(same_working_day_to) swd from branch_months where month in (date ${q(M)}, date ${q(P)}) group by month` });
+    const pr: any[] = Array.isArray(per?.rows) ? per.rows : [];
+    const f1 = String(pr.find((r) => r.f1)?.f1 ?? '').slice(0, 10);
+    if (!f1) throw new Error('no Force1 cases for these months');
+    if (M.slice(0, 7) > f1.slice(0, 7)) throw new Error(`no Force1 data for ${M.slice(0, 7)} yet (Force1 runs to ${f1})`);
+    const open = M.slice(0, 7) === f1.slice(0, 7);
+    const swd = String(pr.find((r) => String(r.month).slice(0, 7) === P.slice(0, 7))?.swd ?? '').slice(0, 10);
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mon = (d: string) => MON[+d.slice(5, 7) - 1], day = (d: string) => +d.slice(8, 10), yr = (d: string) => d.slice(0, 4);
+    const endOf = (d: string) => new Date(Date.parse(addMonth(d, 1) + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10);
+    const sameOk = open && !!swd;
+    const PX = sameOk ? 'c_ps' : 'c_pf';
+    const periods = {
+      month: { period: open ? `${mon(M)} 1–${day(f1)}, ${yr(M)} (Force1 data to ${f1})` : `${mon(M)} ${yr(M)} (full month)`, from: M, to: open ? f1 : endOf(M), open },
+      compared_with: { period: sameOk ? `${mon(P)} 1–${day(swd)}, ${yr(P)} (same working day as ${mon(M)} ${day(f1)})` : `${mon(P)} ${yr(P)} (full month)`, from: P, to: sameOk ? swd : endOf(P) },
+      ...(sameOk ? { compared_full_month: { period: `${mon(P)} ${yr(P)} (full month)`, from: P, to: endOf(P) } } : {}),
+    };
+    const base = `from branches b left join branch_months m on m.client_family = b.client_family and m.branch_key = b.branch_key and m.month = date ${q(M)} ` +
+      `left join branch_months p on p.client_family = b.client_family and p.branch_key = b.branch_key and p.month = date ${q(P)}${w.length ? ' where ' + w.join(' and ') : ''}`;
+    const sumQ = `with u as (select b.team, b.state, coalesce(m.cases, 0) c_m, coalesce(p.cases_to_same_working_day, 0) c_ps, coalesce(p.cases, 0) c_pf ${base}) ` +
+      `select grouping(team) gt, grouping(state) gs, team, state, count(*) units, count(*) filter (where c_m > 0) a_m, count(*) filter (where ${PX} > 0) a_p, count(*) filter (where c_pf > 0) a_pf, ` +
+      `count(*) filter (where c_m > 0 and ${PX} > 0) both_months, count(*) filter (where c_m = 0 and ${PX} > 0) stopped, count(*) filter (where c_m > 0 and ${PX} = 0) started, ` +
+      `count(*) filter (where c_m = 0 and ${PX} = 0) neither, sum(c_m) cases_m, sum(${PX}) cases_p, sum(c_pf) cases_pf from u group by grouping sets ((team), (state), ())`;
+    const lt = ['any', 'active', 'stopped', 'started', 'inactive', 'all', 'none'].includes(String(a?.list)) ? String(a.list) : 'any';
+    const cond = ({ any: `c_m > 0 or ${PX} > 0 or c_pf > 0`, active: 'c_m > 0', stopped: `c_m = 0 and ${PX} > 0`, started: `c_m > 0 and ${PX} = 0`, inactive: `c_m = 0 and ${PX} = 0`, all: 'true', none: 'false' } as Record<string, string>)[lt];
+    const lim = Math.min(Math.max(Number(a?.limit) || 60, 1), 200);
+    const listQ = `with u as (select b.branch_name, b.branch_code, b.city, b.state, b.team, coalesce(m.cases, 0) c_m, coalesce(p.cases_to_same_working_day, 0) c_ps, coalesce(p.cases, 0) c_pf ${base}) ` +
+      `select branch_name, branch_code, city, state, coalesce(team, 'No team yet') team, c_m, ${PX} c_p, c_pf, count(*) over () n_match from u where ${cond} order by c_m desc, ${PX} desc, c_pf desc, branch_name limit ${lim}`;
+    const [S, L]: any[] = await Promise.all([t.gw({ op: 'sql', max_rows: 400, query: sumQ }), lt === 'none' ? Promise.resolve({ rows: [] }) : t.gw({ op: 'sql', max_rows: 200, query: listQ })]);
+    const rows: any[] = Array.isArray(S?.rows) ? S.rows : [];
+    const tot = rows.find((r) => +r.gt === 1 && +r.gs === 1) ?? {};
+    const n = (v: any) => (v == null ? 0 : Math.round(+v));
+    const pct = (x: any, y: any) => (n(y) > 0 ? Math.round((n(x) - n(y)) / n(y) * 1000) / 10 : null);
+    const grp = (r: any) => ({ units: n(r.units), active_month: n(r.a_m), active_compared: n(r.a_p), ...(sameOk ? { active_compared_full_month: n(r.a_pf) } : {}),
+      stopped: n(r.stopped), started: n(r.started), cases_month: n(r.cases_m), cases_compared: n(r.cases_p) });
+    const byTeam = rows.filter((r) => +r.gt === 0).map((r) => ({ team: r.team ?? 'No team yet', ...grp(r) })).sort((x, y) => y.units - x.units);
+    const byState = rows.filter((r) => +r.gs === 0).map((r) => ({ state: r.state ?? 'not recorded', ...grp(r) })).sort((x, y) => y.units - x.units);
+    const lrows: any[] = Array.isArray(L?.rows) ? L.rows : [];
+    const chg = (r: any) => (n(r.c_m) > 0 && n(r.c_p) > 0 ? 'active in both' : n(r.c_m) > 0 ? 'started' : n(r.c_p) > 0 ? 'stopped' : 'inactive in both');
+    const units = lrows.map((r) => ({ unit: r.branch_name, code: String(r.branch_code ?? ''), city: r.city, state: r.state, team: r.team, cases_month: n(r.c_m), cases_compared: n(r.c_p),
+      ...(sameOk ? { cases_compared_full_month: n(r.c_pf) } : {}), change: chg(r) }));
+    if (!sameOk && open) notes.push('the same-working-day cut-off of the earlier month is not available, so the full earlier month is used');
+    return { label: `Units active by month${types.length ? ' — ' + types.join(', ') : ''} (${mon(M)} vs ${mon(P)})`, rows: n(tot.units),
+      data: fit({ scope: { client_family: fam ?? 'all clients', unit_types: types.length ? types : 'all types', ...(filters.zone_group ? { zone_group: filters.zone_group } : {}), ...(filters.location_id != null ? { team_id: filters.location_id } : {}) },
+        definition: 'active in a period = at least one Force1 case from the unit in that period; units and types as in the unit counts (same total); cases matched by branch code as on the dashboard. "month" = periods.month; "compared" = periods.compared_with (stopped, started, both use it).',
+        periods, totals: { units: n(tot.units), month: { period: periods.month.period, active_units: n(tot.a_m), cases: n(tot.cases_m) },
+          compared_with: { period: periods.compared_with.period, active_units: n(tot.a_p), cases: n(tot.cases_p) },
+          ...(sameOk ? { compared_full_month: { period: (periods as any).compared_full_month.period, active_units: n(tot.a_pf), cases: n(tot.cases_pf) } } : {}),
+          change: { active_units: n(tot.a_m) - n(tot.a_p), cases_pct: pct(tot.cases_m, tot.cases_p) },
+          movement: { active_in_both: n(tot.both_months), stopped: n(tot.stopped), started: n(tot.started), inactive_in_both: n(tot.neither) } },
+        by_team: byTeam.slice(0, 60), by_state: byState.slice(0, 40),
+        units_listed: { which: lt, shown: units.length, matching: n(lrows[0]?.n_match ?? 0) }, units,
+        notes: [...notes, 'Force1 is the case system; the Zonal Tracker does not split business by unit.'] }, 20000) };
   },
 
   // wave 109c: who runs each client × location (no associate names) and the Force1 gap. wave 112: Business Associate = partner, Crux Branch = own branch.
@@ -654,7 +735,7 @@ HOW TO WORK
 8. When PAGE CONTEXT says the question was asked about a tile, table or chart, answer about that element first: use the tool that gives the same figures as that page, then explain what drives it and what to do.
 9. Words people understand: say "likely" (actual so far + expected at the current pace), never "outlook"; say "now x% of potential (by value)" and "gap to potential", never "captured", "penetration" or "headroom". Whenever you give a potential, give its clients and branches (how many active) and what makes up the gap. Quarters follow the Indian financial year written in full, e.g. Q3 FY 2026-27 (Oct–Dec 2026).
 10. COUNT OR VALUE: when the question asks how many, count, number of, units, branches or cases, the first line gives counts (cases or units), not rupees; add revenue only when the question asks for value, revenue or business in rupees. Never answer a count question with revenue.
-11. Units (RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, CPC, branches, LHO = Local Head Office): counts come only from get_branch_units (never count units with run_sql or from potential) — except units active in a given month or month vs month, which come from rule 27 (its total equals get_branch_units' total). Give total, active, dormant and never active, say which unit types are included (RACPC does not include Mini RACPC unless both are asked), and mention units with no team yet and rows not counted when they matter. Business BY UNIT exists only in Force1 case data by branch code (get_branch_units with list true: cases_last_3_months, cases_since_jan, last_case_month; by month: run_sql over branches + branch_months, rule 27; Force1 data runs to its own as-of date). The Zonal Tracker gives business per team × client only: never present a team's or client's tracker business as the business of its RACPCs or any unit type — say that the tracker does not split by unit and give the unit-level Force1 figures instead.
+11. Units (RACPC, Mini RACPC, RASMECCC, SMECCC, SARC, RAC, RACC, CPC, branches, LHO = Local Head Office): counts come only from get_branch_units (never count units with run_sql or from potential) — except units active in a given month or month vs month, which come from get_unit_activity (rule 27; same total). Give total, active, dormant and never active, say which unit types are included (RACPC does not include Mini RACPC unless both are asked), and mention units with no team yet and rows not counted when they matter. Business BY UNIT exists only in Force1 case data by branch code (get_branch_units with list true: cases_last_3_months, cases_since_jan, last_case_month; by month: get_unit_activity, rule 27; Force1 data runs to its own as-of date). The Zonal Tracker gives business per team × client only: never present a team's or client's tracker business as the business of its RACPCs or any unit type — say that the tracker does not split by unit and give the unit-level Force1 figures instead.
 12. DIFFERENT NUMBERS: when someone says two pages, a page and Ask Crux, or two answers show different figures, call get_consistency first and say which pages agree, which differ, by how much and why.
 13. CLIENT STRUCTURE: what a level or centre of a client bank does (LHO, AO, RBO, RACPC, SMECCC, ULP, Retail Asset Hub …), which products it handles and which level sends Crux work come from get_client_structure; so does "what is <client>" (pass the client code or name as client_family). Never guess what a client code or abbreviation stands for: if the reference does not give a full name, say it is not recorded; give the source basis (bank's own site, news report, encyclopedia, or read from unit names) when you describe a level.
 14. BRANCH WORDS: a "Business Associate" (older words: partner, associate, franchise) is a partner that runs a client in a location for Crux; a "Crux Branch" (older words: own branch, our branch) is our own team in a location. A "branch" named with a bank or client (SBI branch, HDFC branches) or a unit type (RACPC, RAC) is the CLIENT's branch (get_branch_units). "Crux Branch", "our branches", "own branches" or a Crux location name means our own team. Questions comparing associates / partners with Crux Branches / own branches, or about either group's performance, use get_assoc_comparison (who runs what and since when: get_operating_model). In answers always say "Business Associates" and "Crux Branches" (never "partners" or "own branches"), and never call client branches Crux Branches. If "branch" could mean either, say which meaning you used in the first line.
@@ -674,7 +755,7 @@ Ask one question at a time. Examples that need a question: "Rank the branches" (
 23. TABLE LAYOUT: when the user gives the columns of a table (for example "month, Operating Model, Revenue, Target, Potential, performance"), the table has exactly those columns, in that order, with the user's names. Do not add, drop, merge or reorder columns; a column the data cannot fill stays in place with "n/a" and is explained under "Not available".
 24. COVERAGE (look-up: get_operations with part coverage): client branch coverage is the share of code-matchable client branches with a Force1 case in the last 6 months: coverage_6m = now, coverage_6m_prev_month = at the end of last month, coverage_change_pts = the change in percentage points. For "this month vs last month" give both and the change in points. A client in coverage_notes.clients_not_measured has business in the tracker but no Force1 cases: say its coverage cannot be measured — never that it has no business or 0% coverage.
 26. BUSINESS TO CASH: how business turns into money — billing conversion, settlement / realisation by location or client, the health score, "which locations turn business into cash best / worst", "does faster TAT go with better collection" — comes from get_business_to_cash. Say its window (months) and the outstanding date. Cash received includes GST and is a cash-flow figure: never call it revenue, never divide it by ex-GST revenue, never add receivables to revenue or cash. A missing measure is "no data", never 0. Associations are rank correlations across locations: write "goes with", never "causes", and do not explain one with a cause the data does not show. The health score is a rank among the groups (50 = the middle, not a pass mark); when you show it, give its weights once. "How much will we collect" / "expected collections" = the collection outlook: next_30_days_settlement is an estimate (ex-GST) for the 30 days AFTER the outstanding snapshot — say "estimated" and give that date (not "the next 30 days" from today); add the cash pace (avg_monthly_cash, incl. GST) and months of cash to clear receivables; never add the estimate to cash received. Realisation = settled ÷ (settled + still open).
-27. UNITS BY MONTH: "which / how many RACs, RACPCs, branches … were active (gave business) in <month>", "active vs inactive in Oct vs Nov", "units that stopped / started" — use ONE run_sql: start FROM branches (filter client_family and unit_type; its unit_type and total are the dashboard's, the same as get_branch_units) LEFT JOIN branch_months ON client_family AND branch_key for each month, so units with no case show 0. Never join on branch_code (Force1 writes codes differently) and never take the unit list from cases. Give the total units of that type (it must equal get_branch_units' total), active in each month, active in both, stopped, started, inactive in both, and cases. The open month runs only to force1_data_to: against an earlier month use that month's cases_to_same_working_day (1st to same_working_day_to) and name both date ranges (e.g. "1–24 Nov vs 1–23 Oct, same working day"); give the earlier month's full cases as well when it helps, labelled "full month". A unit is active in a month when it has at least one Force1 case in that month (or the user's own rule, rule 28).
+27. UNITS BY MONTH: "which / how many RACs, RACPCs, branches … were active (gave business) in <month>", "active vs inactive in Oct vs Nov", "which units stopped / started" come from get_unit_activity (unit_type, month, compare_month, filters, list) — never from get_branch_units' status and never built with run_sql. Give: total units (equal to the unit counts), active units and cases in each period, active in both, stopped, started, inactive in both, and the change, with each period's label exactly as the tool gives it (e.g. "Nov 1–24, 2026" vs "Oct 1–26, 2026 (same working day)"). For an open month, the comparison is the earlier month to the same working day; give the earlier full month too, labelled "full month", never as the comparison. Tables: one row per unit (or per team / state when asked "by location"), columns named with the periods. A unit is active in a period when it has at least one Force1 case in it (or the user's own rule, rule 28). If the user wants a variant the tool cannot give, run_sql over branches LEFT JOIN branch_months ON client_family AND branch_key.
 28. USER DEFINITIONS: when the user defines a word ("active = RACs that gave business in Nov-2026", "inactive = no case for 2 months", "big branch = over 50 cases"), use exactly that definition for the whole conversation, compute it (rule 27 for unit activity), and say in the first line that you used their definition — and, if the dashboard uses another (active = a case in the last 3 months), give the dashboard figure once beside it, labelled.
 29. CHALLENGED ANSWER: when the user says an answer is wrong or asks for the "correct" figure, do not repeat the same look-ups unchanged. Re-check the method: the unit list and its total against get_branch_units, the join (branch_key), the period (same working day for an open month), the definition (rule 28) and the scope; then answer with the corrected figures and say in one line what was corrected. If nothing was wrong, show the check that proves it.
 
@@ -782,6 +863,22 @@ const ZONE_WORDS: [RegExp, string][] = [[/\bguj\w*|\bgurajat\b/i, 'GUJARAT'], [/
   [/\bdelhi\b|\bncr\b/i, 'DELHI'], [/\bbengaluru\b|\bbangalore\b|\bkarnataka\b/i, 'BENGALURU'], [/\bhyderabad\b|\btelangana\b|\bandhra\b/i, 'HYDERABAD'],
   [/\blucknow\b|\buttar pradesh\b/i, 'LUCKNOW'], [/\btamil\s*nadu\b|\bchennai\b/i, 'TAMILNADU'], [/\bbhopal\b|\bmadhya pradesh\b/i, 'BHOPAL_MP'], [/\bpatna\b|\bbihar\b/i, 'PATNA'],
   [/\bkolkata\b|\bcalcutta\b|\bwest bengal\b/i, 'KOLKATA'], [/\bpunjab\b|\bchandigarh\b/i, 'PUNJAB'], [/\bodisha\b|\borissa\b|\bbhubaneswar\b/i, 'ODISHA'], [/\bguwahati\b|\bassam\b/i, 'GUWAHATI']];
+// wave 123a: months named in a question ("Nov-2026", "October", "this month", "last month"), latest first, as YYYY-MM-01
+export function monthsIn(q: string, dataMonth: string): string[] {
+  const s = String(q ?? '').toLowerCase(), out: string[] = [];
+  const dy = +dataMonth.slice(0, 4), dm = +dataMonth.slice(5, 7);
+  const NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const re = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b(?:[\s,'’-]*(20\d\d|\d\d)\b)?/g;
+  for (const m of s.matchAll(re)) {
+    const k = NAMES.indexOf(m[1].slice(0, 3)) + 1;
+    if (m[1] === 'may' && !m[2]) continue;   // "may" is usually the verb
+    const y = m[2] ? (m[2].length === 2 ? 2000 + +m[2] : +m[2]) : (k <= dm ? dy : dy - 1);
+    out.push(`${y}-${String(k).padStart(2, '0')}-01`);
+  }
+  if (/\bthis month\b|\bcurrent month\b|\bmtd\b/.test(s)) out.push(dataMonth);
+  if (/\b(last|previous|prior) month\b/.test(s)) out.push(addMonth(dataMonth, -1));
+  return [...new Set(out)].sort().reverse();
+}
 const UNIT_FOLLOW = /^\s*(and|also|what about|how about|same|give same|now|then)\b|\bsame\b|\b(for|of|in)\s+\w+\s*\??\s*$/i;
 // wave 109a/b: unit questions are recognised here (no AI call) so the counting function runs before the model starts; a short follow-up
 // ("Give same data of Gujarat") takes the unit types of the previous question
@@ -915,8 +1012,15 @@ export async function runAgent(o: {
   // wave 109b: the snapshot and the unit counts are fetched together (faster first answer)
   const uq = unitQuestion(o.question, o.teams ?? [], o.history.length ? String(o.history[o.history.length - 1]?.question ?? '') : '');
   const t0u = Date.now();
-  const [snapR, unitR] = await Promise.all([TOOLS.get_business_summary(t, {}).then((x) => x.data).catch(() => null),
-    uq ? TOOLS.get_branch_units(t, uq).catch((e) => ({ error: e })) : Promise.resolve(null)]);
+  // wave 123a: a unit question about a month ("active RACs = gave business in Nov", "Oct vs Nov active / inactive") also gets the month-by-month activity up front
+  const qMonths = monthsIn(o.question, o.dataMonth);
+  const actQ = !!uq && (qMonths.length > 0 || /\b(vs|versus|against|compar\w*|gave|given|giving|stopped|started)\b/i.test(o.question)) &&
+    /\b(active|inactive|business|cases?|gave|given|giving|stopped|started|dormant|working)\b/i.test(o.question);
+  const actArgs = actQ ? { ...(uq?.unit_type?.length ? { unit_type: uq.unit_type } : {}), ...(uq?.filters ? { filters: uq.filters } : {}),
+    ...(qMonths[0] ? { month: qMonths[0] } : {}), ...(qMonths[1] ? { compare_month: qMonths[1] } : {}), list: 'any', limit: 120 } : null;
+  const [snapR, unitR, actR] = await Promise.all([TOOLS.get_business_summary(t, {}).then((x) => x.data).catch(() => null),
+    uq ? TOOLS.get_branch_units(t, uq).catch((e) => ({ error: e })) : Promise.resolve(null),
+    actArgs ? TOOLS.get_unit_activity(t, actArgs).catch((e) => ({ error: e })) : Promise.resolve(null)]);
   const snap: any = snapR;
   const evidence: any[] = snap ? [snap] : [];
   const sc = o.ctx.scope;
@@ -929,7 +1033,16 @@ export async function runAgent(o: {
       const hidden = pseudo.hideAny(out.data);
       evidence.push(hidden);
       steps.push({ tool: 'get_branch_units', label: out.label, args: uq, ok: true, rows: out.rows, ms: Date.now() - t0, auto: true });
-      unitText = `\nUNIT COUNTS (get_branch_units ${JSON.stringify(uq)}; use these for counts; call get_branch_units again only for another scope):\n${JSON.stringify(hidden)}\n`;
+      unitText = `\nUNIT COUNTS (get_branch_units ${JSON.stringify(uq)}; use these for counts; call get_branch_units again only for another scope. Its "active" = a case in the 3 months up to status_month — not "gave business in a month"):\n${JSON.stringify(hidden)}\n`;
+    } catch { /* the model can still call the tool */ }
+  }
+  if (actArgs && actR && !(actR as any).error) {
+    try {
+      const out = actR as any;
+      const hidden = pseudo.hideAny(out.data);
+      evidence.push(hidden);
+      steps.push({ tool: 'get_unit_activity', label: out.label, args: actArgs, ok: true, rows: out.rows, ms: Date.now() - t0u, auto: true });
+      unitText += `\nUNITS ACTIVE BY MONTH (get_unit_activity ${JSON.stringify(actArgs)}; use these for "active / gave business in <month>" and month-vs-month active, stopped, started — rules 27–28):\n${JSON.stringify(hidden)}\n`;
     } catch { /* the model can still call the tool */ }
   }
   // wave 112: "page A shows x, page B shows y" — the same-figure check is looked up first, so the answer starts from what actually differs

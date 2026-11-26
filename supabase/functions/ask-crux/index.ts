@@ -571,13 +571,16 @@ async function logOrigin(body: any, res: Response, ms: number) {
 // "How many RACPCs in Gujarat", "list SBI Mini RACPCs", "same for Pune": exact, in about a second, no AI call. Questions that mix units with business,
 // potential, targets etc. still go to the agent (which gets the same counts up front).
 const NOT_UNITS = /\b(revenue|business|potential|targets?|tat|turnaround|collections?|outstanding|receivables?|why|compare|comparison|trend|growth|rupees?|value|amount|bau|forecast|pace|penetration|share|billing|sla|force1|managers?|rate|rates|performance|analysis|analyse|analyze|strategy|plan)\b|₹/i;
+// wave 123a: a unit question about a month or two months ("active in October vs November", "gave business in Nov-2026") goes to the agent's
+// month-by-month activity — the counting answer gives the 3-month status only
+const NOT_UNITS_MONTH = /\b(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|june?|july?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?|vs|versus|against|months?|monthly|gave|given|cases?|stopped|started|week|weekly|today|yesterday|20\d\d)\b|\bmay\s*[-,']?\s*(20)?\d\d\b|=/i;
 const UNIT_TYPES_ALL = ['RACPC', 'Mini RACPC', 'RASMECCC', 'SMECCC', 'SARC', 'RAC', 'RACC', 'Other CPC', 'Other processing centre', 'SME branch', 'Branch'];
 const n_ = (v: unknown) => Number(v ?? 0).toLocaleString('en-IN');
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 async function unitFast(body: any): Promise<Record<string, unknown> | null> {
   const t0 = Date.now();
   const question = redactQ(String(body?.question ?? '').slice(0, 500));
-  if (question.length < 4 || NOT_UNITS.test(question)) return null;
+  if (question.length < 4 || NOT_UNITS.test(question) || NOT_UNITS_MONTH.test(question)) return null;
   const adminKey = typeof body?.admin_key === 'string' && body.admin_key.length > 10 ? body.admin_key : null;
   const api = async (fn: string, args: Record<string, unknown>) => {
     const r = await rpc('bi_call', { p_fn: fn, p_args: adminKey ? { ...args, admin_key: adminKey } : args }, ANON);
